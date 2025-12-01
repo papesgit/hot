@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             x:Class="HlaeObsTools.Views.Docks.VideoDisplayDockView"
+             x:DataType="vm:VideoDisplayDockViewModel">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Video display area -->
+        <Border Grid.Row="0" Background="Black" ClipToBounds="True">
+            <Viewbox Stretch="Uniform">
+                <Image Source="{Binding CurrentFrame}"
+                       RenderOptions.BitmapInterpolationMode="LowQuality"
+                       Stretch="None"/>
+            </Viewbox>
+        </Border>
+
+        <!-- No signal overlay -->
+        <Border Grid.Row="0"
+                Background="#1A1A1A"
+                IsVisible="{Binding !IsStreaming}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="No Signal"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="#666666"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,10"/>
+                <TextBlock Text="Start RTP stream to display video"
+                           FontSize="14"
+                           Foreground="#888888"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Status bar -->
+        <Border Grid.Row="1" Background="#2D2D30" Padding="8,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusText}"
+                           Foreground="#CCCCCC"
+                           VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="1"
+                           Foreground="#CCCCCC"
+                           VerticalAlignment="Center"
+                           Margin="10,0">
+                    <Run Text="FPS: "/>
+                    <Run Text="{Binding FrameRate, StringFormat={}{0:F1}}"/>
+                </TextBlock>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
+                    <Button Content="Start"
+                            Click="StartButton_Click"
+                            IsEnabled="{Binding !IsStreaming}"
+                            Padding="10,5"/>
+                    <Button Content="Stop"
+                            Click="StopButton_Click"
+                            IsEnabled="{Binding IsStreaming}"
+                            Padding="10,5"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

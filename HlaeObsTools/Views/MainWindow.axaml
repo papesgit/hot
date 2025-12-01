@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HlaeObsTools.ViewModels"
+        xmlns:dock="using:Dock.Avalonia.Controls"
+        xmlns:vmd="using:HlaeObsTools.ViewModels.Docks"
+        xmlns:vd="using:HlaeObsTools.Views.Docks"
+        x:Class="HlaeObsTools.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="HLAE Observer Tools"
+        Width="1600"
+        Height="900"
+        MinWidth="800"
+        MinHeight="600">
+
+    <Window.DataTemplates>
+        <!-- Data template for PlaceholderDockViewModel -->
+        <DataTemplate DataType="vmd:PlaceholderDockViewModel">
+            <vd:PlaceholderDockView />
+        </DataTemplate>
+
+        <!-- Data template for VideoDisplayDockViewModel -->
+        <DataTemplate DataType="vmd:VideoDisplayDockViewModel">
+            <vd:VideoDisplayDockView />
+        </DataTemplate>
+    </Window.DataTemplates>
+
+    <Grid>
+        <dock:DockControl Layout="{Binding Layout}" />
+    </Grid>
+</Window>
