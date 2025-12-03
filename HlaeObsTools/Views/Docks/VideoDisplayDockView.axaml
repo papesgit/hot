@@ -10,7 +10,7 @@
         </Grid.RowDefinitions>
 
         <!-- Video display area -->
-        <Border Grid.Row="0" Background="Black" ClipToBounds="True"
+        <Border Grid.Row="0" Background="Black" ClipToBounds="True" Focusable="True"
                 x:Name="VideoContainer"
                 PointerPressed="VideoContainer_PointerPressed"
                 PointerReleased="VideoContainer_PointerReleased"

@@ -3,7 +3,7 @@
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              x:Class="HlaeObsTools.Views.Docks.PlaceholderDockView"
              x:DataType="vm:PlaceholderDockViewModel">
-    <Border Background="#2D2D30" Padding="10">
+    <Border Background="#2D2D30" Padding="10" Focusable="True">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock Text="{Binding Title}"
                        FontSize="18"

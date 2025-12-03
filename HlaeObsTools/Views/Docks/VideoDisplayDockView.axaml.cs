@@ -51,6 +51,7 @@ public partial class VideoDisplayDockView : UserControl
         if (pointer.Properties.IsRightButtonPressed && !_isRightButtonDown)
         {
             _isRightButtonDown = true;
+            (sender as IInputElement)?.Focus();
 
             if (DataContext is VideoDisplayDockViewModel vm && VideoContainer != null)
             {

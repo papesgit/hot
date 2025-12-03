@@ -22,6 +22,11 @@
         <DataTemplate DataType="vmd:VideoDisplayDockViewModel">
             <vd:VideoDisplayDockView />
         </DataTemplate>
+
+        <!-- Data template for NetConsoleDockViewModel -->
+        <DataTemplate DataType="vmd:NetConsoleDockViewModel">
+            <vd:NetConsoleDockView />
+        </DataTemplate>
     </Window.DataTemplates>
 
     <Grid>

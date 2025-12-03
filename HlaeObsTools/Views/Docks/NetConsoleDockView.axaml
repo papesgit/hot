@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             x:Class="HlaeObsTools.Views.Docks.NetConsoleDockView"
+             x:DataType="vm:NetConsoleDockViewModel">
+  <Border Background="#1E1E1E" Padding="10">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+      <Grid ColumnDefinitions="Auto,100,*,Auto" ColumnSpacing="8">
+        <TextBlock Text="Port"
+                   VerticalAlignment="Center"
+                   Foreground="#D0D0D0" />
+        <TextBox Grid.Column="1"
+                 Text="{Binding PortText, Mode=TwoWay}"
+                 HorizontalAlignment="Stretch"
+                 MinWidth="80"
+                 VerticalContentAlignment="Center"
+                 Background="#2A2A2A"
+                 Foreground="#E0E0E0"
+                 BorderBrush="#3A3A3A" />
+        <TextBlock Grid.Column="2"
+                   Text="{Binding StatusText}"
+                   VerticalAlignment="Center"
+                   Foreground="#8AC6FF" />
+        <Button Grid.Column="3"
+                Content="{Binding ConnectionButtonText}"
+                Command="{Binding ToggleConnectionCommand}"
+                IsEnabled="{Binding CanToggleConnection}"
+                MinWidth="110"
+                Background="#3C6DD2"
+                Foreground="White" />
+      </Grid>
+
+      <Border Grid.Row="1"
+              Background="#121212"
+              BorderBrush="#2E2E2E"
+              BorderThickness="1"
+              Padding="6">
+        <TextBox x:Name="LogTextBox"
+                 Text="{Binding LogText}"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 AcceptsTab="True"
+                 BorderThickness="0"
+                 Background="Transparent"
+                 Foreground="#E0E0E0"
+                 FontFamily="Consolas, 'Cascadia Mono', monospace"
+                 TextWrapping="Wrap"
+                 Padding="0"
+                 IsTabStop="False" />
+      </Border>
+
+      <Grid Grid.Row="2" RowDefinitions="Auto,Auto" RowSpacing="4">
+        <Border IsVisible="{Binding HasSuggestions}"
+                Background="#121212"
+                BorderBrush="#2E2E2E"
+                BorderThickness="1"
+                Padding="4"
+                CornerRadius="2">
+          <ListBox x:Name="SuggestionListBox"
+                   ItemsSource="{Binding Suggestions}"
+                   SelectedIndex="{Binding SelectedSuggestionIndex, Mode=TwoWay}"
+                   SelectionChanged="OnSuggestionSelectionChanged"
+                   DoubleTapped="OnSuggestionDoubleTapped"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   Foreground="#E0E0E0"
+                   MaxHeight="220">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Name}"
+                             FontFamily="Consolas, 'Cascadia Mono', monospace"
+                             FontSize="14" />
+                  <TextBlock Text="{Binding Description}"
+                             IsVisible="{Binding HasDescription}"
+                             FontSize="12"
+                             Foreground="#9AA5B1"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBox x:Name="InputBox"
+                   Text="{Binding InputText, Mode=TwoWay}"
+                   Watermark="Type a console command..."
+                   Background="#2A2A2A"
+                   Foreground="#E0E0E0"
+                   BorderBrush="#3A3A3A"
+                   VerticalContentAlignment="Center"
+                   KeyDown="OnInputKeyDown" />
+          <Button Grid.Column="1"
+                  Content="Send"
+                  Command="{Binding SendCommand}"
+                  MinWidth="80"
+                  Background="#3C6DD2"
+                  Foreground="White" />
+        </Grid>
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>

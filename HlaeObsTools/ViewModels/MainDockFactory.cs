@@ -55,10 +55,10 @@ public class MainDockFactory : Factory
 
     public override IRootDock CreateLayout()
     {
-        // Create the 5 placeholder docks
+        // Create the 5 docks (top-right hosts the CS2 console)
         var topLeft = new PlaceholderDockViewModel { Id = "TopLeft", Title = "Radar" };
         var topCenter = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
-        var topRight = new PlaceholderDockViewModel { Id = "TopRight", Title = "Settings" };
+        var topRight = new NetConsoleDockViewModel { Id = "TopRight", Title = "Console" };
         var bottomLeft = new PlaceholderDockViewModel { Id = "BottomLeft", Title = "Events" };
         var bottomRight = new PlaceholderDockViewModel { Id = "BottomRight", Title = "Timeline" };
 
