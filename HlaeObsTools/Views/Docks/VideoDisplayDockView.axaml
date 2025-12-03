@@ -10,12 +10,26 @@
         </Grid.RowDefinitions>
 
         <!-- Video display area -->
-        <Border Grid.Row="0" Background="Black" ClipToBounds="True">
-            <Viewbox Stretch="Uniform">
-                <Image Source="{Binding CurrentFrame}"
-                       RenderOptions.BitmapInterpolationMode="LowQuality"
-                       Stretch="None"/>
-            </Viewbox>
+        <Border Grid.Row="0" Background="Black" ClipToBounds="True"
+                x:Name="VideoContainer"
+                PointerPressed="VideoContainer_PointerPressed"
+                PointerReleased="VideoContainer_PointerReleased"
+                PointerMoved="VideoContainer_PointerMoved">
+            <Grid>
+                <Viewbox Stretch="Uniform">
+                    <Image Source="{Binding CurrentFrame}"
+                           RenderOptions.BitmapInterpolationMode="LowQuality"
+                           Stretch="None"/>
+                </Viewbox>
+
+                <!-- Freecam active indicator -->
+                <Border BorderBrush="Red"
+                        BorderThickness="4"
+                        IsVisible="{Binding IsFreecamActive}"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        IsHitTestVisible="False"/>
+            </Grid>
         </Border>
 
         <!-- No signal overlay -->
@@ -67,6 +81,10 @@
                             Click="StopButton_Click"
                             IsEnabled="{Binding IsStreaming}"
                             Padding="10,5"/>
+                    <Button Content="Refresh Binds"
+                            Click="RefreshBindsButton_Click"
+                            Padding="10,5"
+                            ToolTip.Tip="Refresh spectator bindings (1-5: CT, 6-0: T)"/>
                 </StackPanel>
             </Grid>
         </Border>

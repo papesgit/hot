@@ -1,0 +1,12 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dock="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia"
+        x:Class="HlaeObsTools.Views.DockHostWindow"
+        Width="800"
+        Height="600"
+        MinWidth="400"
+        MinHeight="300"
+        Background="#1E1E1E"
+        Title="HLAE Observer">
+    <dock:DockControl Name="DockControl"/>
+</Window>

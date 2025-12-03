@@ -1,9 +1,21 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:views="using:HlaeObsTools.Views.Docks"
              x:Class="HlaeObsTools.App"
              RequestedThemeVariant="Dark">
     <Application.Styles>
         <FluentTheme />
-        <StyleInclude Source="avares://Dock.Avalonia/Themes/DockFluentTheme.axaml"/>
+        <DockFluentTheme />
     </Application.Styles>
+
+    <Application.DataTemplates>
+        <!-- Map ViewModels to Views -->
+        <DataTemplate DataType="vm:VideoDisplayDockViewModel">
+            <views:VideoDisplayDockView/>
+        </DataTemplate>
+        <DataTemplate DataType="vm:PlaceholderDockViewModel">
+            <views:PlaceholderDockView/>
+        </DataTemplate>
+    </Application.DataTemplates>
 </Application>

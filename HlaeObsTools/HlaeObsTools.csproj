@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,14 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.2" />
-    <PackageReference Include="Avalonia.Diagnostics" Version="11.2.2" />
-    <PackageReference Include="Dock.Avalonia" Version="11.1.0" />
-    <PackageReference Include="Dock.Model.Mvvm" Version="11.1.0" />
+    <PackageReference Include="Avalonia" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.9" />
+    <PackageReference Include="Dock.Avalonia" Version="11.3.8" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.8" />
+    <PackageReference Include="Dock.Model.Mvvm" Version="11.3.8" />
     <PackageReference Include="FFmpeg.AutoGen" Version="8.0.0" />
   </ItemGroup>
 

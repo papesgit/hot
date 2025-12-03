@@ -2,6 +2,8 @@ using Avalonia.Media.Imaging;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Video;
 using HlaeObsTools.Services.Video.RTP;
+using HlaeObsTools.Services.WebSocket;
+using HlaeObsTools.Services.Input;
 using System;
 using System.Runtime.InteropServices;
 using Avalonia;
@@ -29,6 +31,11 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private WriteableBitmap? _bitmap0;
     private WriteableBitmap? _bitmap1;
     private bool _useFirstBitmap;
+
+    // Freecam state
+    private bool _isFreecamActive;
+    private HlaeWebSocketClient? _webSocketClient;
+    private HlaeInputSender? _inputSender;
 
     public WriteableBitmap? CurrentFrame
     {
@@ -70,11 +77,86 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         }
     }
 
+    public bool IsFreecamActive
+    {
+        get => _isFreecamActive;
+        private set
+        {
+            _isFreecamActive = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public event EventHandler<bool>? FreecamStateChanged;
+
     public VideoDisplayDockViewModel()
     {
         CanClose = false;
         CanFloat = true;
         CanPin = true;
+    }
+
+    /// <summary>
+    /// Set WebSocket client for sending commands to HLAE
+    /// </summary>
+    public void SetWebSocketClient(HlaeWebSocketClient client)
+    {
+        _webSocketClient = client;
+    }
+
+    /// <summary>
+    /// Set input sender for freecam control
+    /// </summary>
+    public void SetInputSender(HlaeInputSender sender)
+    {
+        _inputSender = sender;
+    }
+
+    /// <summary>
+    /// Activate freecam (called when right mouse button pressed)
+    /// </summary>
+    public async void ActivateFreecam()
+    {
+        if (_webSocketClient == null)
+            return;
+
+        // Send freecam enable command to HLAE
+        await _webSocketClient.SendCommandAsync("freecam_enable");
+
+        IsFreecamActive = true;
+        FreecamStateChanged?.Invoke(this, true);
+        Console.WriteLine("Freecam activated");
+    }
+
+    /// <summary>
+    /// Deactivate freecam (called when right mouse button released)
+    /// </summary>
+    public async void DeactivateFreecam()
+    {
+        if (!IsFreecamActive || _webSocketClient == null)
+            return;
+
+        // Send freecam disable command to HLAE
+        await _webSocketClient.SendCommandAsync("freecam_disable");
+
+        IsFreecamActive = false;
+        FreecamStateChanged?.Invoke(this, false);
+
+        Console.WriteLine("Freecam deactivated");
+    }
+
+    /// <summary>
+    /// Refresh spectator bindings (keys 1-0 to switch players)
+    /// </summary>
+    public async void RefreshSpectatorBindings()
+    {
+        if (_webSocketClient == null)
+            return;
+
+        // Send refresh_binds command to HLAE
+        await _webSocketClient.SendCommandAsync("refresh_binds");
+
+        Console.WriteLine("Spectator bindings refresh requested");
     }
 
     public void StartRtpStream(RtpReceiverConfig? config = null)
