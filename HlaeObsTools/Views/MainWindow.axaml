@@ -23,6 +23,11 @@
             <vd:VideoDisplayDockView />
         </DataTemplate>
 
+        <!-- Data template for RadarDockViewModel -->
+        <DataTemplate DataType="vmd:RadarDockViewModel">
+            <vd:RadarDockView />
+        </DataTemplate>
+
         <!-- Data template for CampathsDockViewModel -->
         <DataTemplate DataType="vmd:CampathsDockViewModel">
             <vd:CampathsDockView />

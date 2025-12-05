@@ -2,12 +2,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:views="using:HlaeObsTools.Views.Docks"
+             xmlns:conv="using:HlaeObsTools.Converters"
              x:Class="HlaeObsTools.App"
              RequestedThemeVariant="Dark">
     <Application.Styles>
         <FluentTheme />
         <DockFluentTheme />
     </Application.Styles>
+
+    <Application.Resources>
+        <conv:RelativeToCanvasConverter x:Key="RelativeToCanvasConverter" />
+        <conv:BooleanNegationConverter x:Key="BooleanNegationConverter" />
+    </Application.Resources>
 
     <Application.DataTemplates>
         <!-- Map ViewModels to Views -->
@@ -16,6 +22,9 @@
         </DataTemplate>
         <DataTemplate DataType="vm:PlaceholderDockViewModel">
             <views:PlaceholderDockView/>
+        </DataTemplate>
+        <DataTemplate DataType="vm:RadarDockViewModel">
+            <views:RadarDockView/>
         </DataTemplate>
     </Application.DataTemplates>
 </Application>

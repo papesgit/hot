@@ -8,6 +8,7 @@ using System.Threading;
 using HlaeObsTools.Services.Input;
 using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.ViewModels.Docks;
+using HlaeObsTools.Services.Gsi;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -18,6 +19,8 @@ public class MainDockFactory : Factory
     private readonly HlaeInputSender _inputSender;
     private readonly RawInputHandler _rawInputHandler;
     private readonly Timer _inputFlushTimer;
+    private readonly GsiServer _gsiServer;
+    private readonly RadarConfigProvider _radarConfigProvider;
 
     public MainDockFactory(object context)
     {
@@ -32,6 +35,9 @@ public class MainDockFactory : Factory
         _inputSender = new HlaeInputSender("127.0.0.1", 31339);
         _inputSender.SendRate = 240; // Hz
         _inputSender.Start();
+
+        _gsiServer = new GsiServer();
+        _radarConfigProvider = new RadarConfigProvider();
 
         // Initialize global raw input handler and periodically flush into UDP sender
         _rawInputHandler = new RawInputHandler();
@@ -56,7 +62,7 @@ public class MainDockFactory : Factory
     public override IRootDock CreateLayout()
     {
         // Create the 5 docks (top-right hosts the CS2 console)
-        var topLeft = new PlaceholderDockViewModel { Id = "TopLeft", Title = "Radar" };
+        var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider) { Id = "TopLeft", Title = "Radar" };
         var topCenter = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
         var topRight = new NetConsoleDockViewModel { Id = "TopRight", Title = "Console" };
         var bottomLeft = new PlaceholderDockViewModel { Id = "BottomLeft", Title = "Events" };

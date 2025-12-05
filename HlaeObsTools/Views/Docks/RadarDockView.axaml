@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:conv="using:HlaeObsTools.Converters"
+             xmlns:svg="using:Avalonia.Svg.Skia"
+             x:Class="HlaeObsTools.Views.Docks.RadarDockView"
+             x:DataType="vm:RadarDockViewModel">
+  <UserControl.Resources>
+    <conv:RelativeToCanvasConverter x:Key="RelativeToCanvasConverter" />
+  </UserControl.Resources>
+
+  <Border Background="#0D1015" Padding="10" Focusable="True">
+    <Grid>
+      <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid Width="1024" Height="1024">
+          <Image Source="{Binding RadarImage}"
+                 Stretch="Fill"
+                 Width="1024"
+                 Height="1024" />
+
+          <ItemsControl ItemsSource="{Binding Players}"
+                        Width="1024"
+                        Height="1024"
+                        IsHitTestVisible="False"
+                        x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding CanvasX}" />
+                <Setter Property="Canvas.Top" Value="{Binding CanvasY}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RadarPlayerViewModel">
+                <Canvas Width="36" Height="36">
+                  <Path Data="M 18,4 Q 12,10 8,22 A 10,10 0 0 0 28,22 Q 24,10 18,4 Z"
+                        Fill="{Binding Fill}"
+                        Stroke="{Binding ActualBorder}"
+                        StrokeThickness="2">
+                    <Path.RenderTransform>
+                      <RotateTransform Angle="{Binding Rotation}" CenterX="4" CenterY="6" />
+                    </Path.RenderTransform>
+                  </Path>
+                  <TextBlock Text="{Binding DisplayNumber}"
+                             Canvas.Left="10"
+                             Canvas.Top="14"
+                             Width="16"
+                             Height="16"
+                             FontSize="16"
+                             FontWeight="Bold"
+                             Foreground="#000000"
+                             TextAlignment="Center"
+                             VerticalAlignment="Center" />
+                 <TextBlock Text="{Binding Name}"
+                             Canvas.Left="-12"
+                             Canvas.Top="36"
+                             Width="60"
+                             FontSize="10"
+                             Foreground="#E6E6E6"
+                             TextAlignment="Center" />
+                </Canvas>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Grenades -->
+          <ItemsControl ItemsSource="{Binding Grenades}"
+                        Width="1024"
+                        Height="1024"
+                        IsHitTestVisible="False"
+                        x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding CanvasX}" />
+                <Setter Property="Canvas.Top" Value="{Binding CanvasY}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RadarGrenadeViewModel">
+                <Canvas>
+                  <!-- Show icon for projectiles (not detonated) -->
+                  <svg:Svg Path="{Binding IconPath}"
+                           Width="24"
+                           Height="24"
+                           IsVisible="{Binding !IsDetonated}" />
+
+                  <!-- Show smoke bloom circle for detonated smoke -->
+                  <Ellipse Width="80"
+                           Height="80"
+                           Canvas.Left="-32"
+                           Canvas.Top="-32"
+                           Fill="#40FFFFFF"
+                           IsVisible="{Binding IsSmoke}" />
+                </Canvas>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Flames (for inferno grenades) -->
+          <ItemsControl ItemsSource="{Binding Flames}"
+                        Width="1024"
+                        Height="1024"
+                        IsHitTestVisible="False"
+                        x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding CanvasX}" />
+                <Setter Property="Canvas.Top" Value="{Binding CanvasY}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:FlameViewModel">
+                <Ellipse Width="16"
+                         Height="16"
+                         Fill="#80FF5353" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Grid>
+      </Viewbox>
+
+      <TextBlock Text="Waiting for GSI data..."
+                 Foreground="#808899"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 IsVisible="{Binding HasRadar, Converter={StaticResource BooleanNegationConverter}}" />
+    </Grid>
+  </Border>
+</UserControl>

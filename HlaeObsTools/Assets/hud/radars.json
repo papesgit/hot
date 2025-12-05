@@ -1,0 +1,954 @@
+{
+	"ar_baggage": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -1316,
+		"pos_y": 1288,
+		"scale": 2.539062,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMax": 10000,
+				"AltitudeMin": -5
+			},
+
+			"lower": {
+				"AltitudeMax": -5,
+				"AltitudeMin": -10000
+			}
+		}
+	},
+
+	"ar_pool_day": {
+		"pos_x": -1088,
+		"pos_y": 1600,
+		"scale": 2.125
+	},
+
+	"ar_shoots": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -1368,
+		"pos_y": 1952,
+		"scale": 2.6875
+	},
+
+	"cs_italy": {
+		"radarImageTransparentBackgrond": true,
+		"radarImageUrl": "/hud/img/radars/ingame-transparent/cs_italy.png",
+
+		"pos_x": -2647,
+		"pos_y": 2592,
+		"scale": 4.6
+	},
+
+	"cs_office": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -1838,
+		"pos_y": 1858,
+		"scale": 4.1
+	},
+
+	"de_ancient": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -2953,
+		"pos_y": 2164,
+		"scale": 5
+	},
+
+	"de_anubis": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -2796,
+		"pos_y": 3328,
+		"scale": 5.22
+	},
+
+	"de_basalt": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -2345.6,
+		"pos_y": 2391.8,
+		"scale": 4.37
+	},
+
+	"de_dust2": {
+		"radarImageTransparentBackgrond": true,
+		"radarImageUrl": "/hud/img/radars/simpleradar/de_dust2.webp",
+
+		"pos_x": -2476,
+		"pos_y": 3239,
+		"scale": 4.4
+	},
+
+	"de_edin": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -383.30038,
+		"pos_y": 4420.2134,
+		"scale": 4.803717
+	},
+
+	"de_inferno": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -2087,
+		"pos_y": 3870,
+		"scale": 4.9
+	},
+
+	"de_mirage": {
+		"radarImageTransparentBackgrond": true,
+		"radarImageUrl": "/hud/img/radars/simpleradar/de_mirage.webp",
+
+		"pos_x": -3230,
+		"pos_y": 1713,
+		"scale": 5
+	},
+
+	"de_nuke": {
+		"radarImageTransparentBackgrond": true,
+		"radarImageUrl": "/hud/img/radars/simpleradar/de_nuke.webp",
+
+		"pos_x": -3453,
+		"pos_y": 2887,
+		"scale": 7,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMax": 10000,
+				"AltitudeMin": -495
+			},
+
+			"lower": {
+				"AltitudeMax": -495,
+				"AltitudeMin": -10000
+			}
+		}
+	},
+
+	"de_overpass": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": -4831,
+		"pos_y": 1781,
+		"scale": 5.2
+	},
+
+	"de_palais": {
+		"pos_x": -1353.2374,
+		"pos_y": 2044.8105,
+		"scale": 2.8003397,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMin": -16384,
+				"AltitudeMax": 47.99997
+			},
+
+			"higher1": {
+				"AltitudeMin": 47.99997,
+				"AltitudeMax": 214.00027
+			},
+
+			"higher2": {
+				"AltitudeMin": 214.00027,
+				"AltitudeMax": 16384
+			}
+		}
+	},
+
+	"de_train": {
+		"radarImageTransparentBackgrond": true,
+		"radarImageUrl": "/hud/img/radars/ingame/de_train_lower.png",
+
+		"pos_x": -2308,
+		"pos_y": 2078,
+		"scale": 4.082077,
+
+		"verticalsections": {
+			"upper": {
+				"AltitudeMax": 20000,
+				"AltitudeMin": -50
+			},
+
+			"default": {
+				"AltitudeMax": -50,
+				"AltitudeMin": -5000
+			}
+		}
+	},
+
+	"de_vertigo": {
+		"radarImageTransparentBackgrond": true,
+		"pos_x": "-3168",
+		"pos_y": 1762,
+		"scale": 4,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMax": 20000,
+				"AltitudeMin": 11700
+			},
+
+			"lower": {
+				"AltitudeMax": 11700,
+				"AltitudeMin": -10000
+			}
+		}
+	},
+
+	"de_whistle": {
+		"radarImageTransparentBackgrond": true,
+		"radarImageUrl": "/hud/img/radars/ingame-transparent/de_whistle.png",
+
+		"pos_x": -1825.6,
+		"pos_y": 1104.82,
+		"scale": 2.8
+	},
+
+	"de_cache": {
+		"radarImageTransparentBackgrond": true,
+		"radarImageUrl": "/hud/img/radars/simpleradar/de_cache.webp",
+
+		"pos_x": -2000,
+		"pos_y": 3250,
+		"scale": 5.5
+	},
+
+
+
+
+	"ar_dizzy": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/ar_dizzy.webp",
+		"pos_x": -2512,
+		"pos_y": 1536,
+		"scale": 3
+	},
+
+	"ar_lunacy": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/ar_lunacy.webp",
+		"pos_x": -1536,
+		"pos_y": 1536,
+		"scale": 3
+	},
+
+	"ar_monastery": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/ar_monastery.webp",
+		"pos_x": -1687,
+		"pos_y": 1640,
+		"scale": 3
+	},
+
+	"chalice": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/chalice.webp",
+		"pos_x": -1501,
+		"pos_y": 1570,
+		"scale": 3
+	},
+
+	"coop_autumn": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/coop_autumn.webp",
+		"pos_x": -5160,
+		"pos_y": 5859,
+		"scale": 12
+	},
+
+	"coop_cementplant": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/coop_cementplant.webp",
+		"pos_x": -5160,
+		"pos_y": 5859,
+		"scale": 12
+	},
+
+	"coop_fall": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/coop_fall.webp",
+		"pos_x": -5160,
+		"pos_y": 5859,
+		"scale": 12
+	},
+
+	"coop_kasbah": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/coop_kasbah.webp",
+		"pos_x": -5160,
+		"pos_y": 5859,
+		"scale": 12
+	},
+
+	"cs_agency": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_agency.webp",
+		"pos_x": -2947,
+		"pos_y": 2492,
+		"scale": 5
+	},
+
+	"cs_apollo": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_apollo.webp",
+		"pos_x": -1998,
+		"pos_y": -1604,
+		"scale": 5.03
+	},
+
+	"cs_assault": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_assault.webp",
+		"pos_x": 4041,
+		"pos_y": 7838,
+		"scale": 4.6
+	},
+
+	"cs_backalley": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_backalley.webp",
+		"pos_x": -2485,
+		"pos_y": 3200,
+		"scale": 3.5
+	},
+
+	"cs_climb": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_climb.webp",
+		"pos_x": -858.5,
+		"pos_y": 4241,
+		"scale": 4.29,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMax": 10000,
+				"AltitudeMin": 175.957993
+			},
+
+			"layer1": {
+				"AltitudeMax": 175.957993,
+				"AltitudeMin": -10000
+			}
+		}
+	},
+
+	"cs_cruise": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_cruise.webp",
+		"pos_x": -3507,
+		"pos_y": 2498,
+		"scale": 5
+	},
+
+	"cs_insertion2": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_insertion2.webp",
+		"pos_x": -5129,
+		"pos_y": 3136,
+		"scale": 9,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMax": 6000,
+				"AltitudeMin": -700
+			},
+
+			"lower": {
+				"AltitudeMax": -700,
+				"AltitudeMin": -10000
+			}
+		}
+	},
+
+	"cs_insertion": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_insertion.webp",
+		"pos_x": -4888,
+		"pos_y": 4884,
+		"scale": 10
+	},
+
+	"cs_militia": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_militia.webp",
+		"pos_x": -1474,
+		"pos_y": 2296,
+		"scale": 4.5,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMax": 20000,
+				"AltitudeMin": -25
+			},
+
+			"lower": {
+				"AltitudeMax": -25,
+				"AltitudeMin": -10000
+			}
+		}
+	},
+
+	"cs_rush": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_rush.webp",
+		"pos_x": -2950,
+		"pos_y": 3350,
+		"scale": 5.2
+	},
+
+	"cs_siege": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_siege.webp",
+		"pos_x": -1193,
+		"pos_y": 3515,
+		"scale": 6.5
+	},
+
+	"cs_workout": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/cs_workout.webp",
+		"pos_x": -2176,
+		"pos_y": 3165,
+		"scale": 6.06
+	},
+
+	"de_abbey": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_abbey.webp",
+		"pos_x": -6204,
+		"pos_y": 5111,
+		"scale": 6.5
+	},
+
+	"de_ali": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_ali.webp",
+		"pos_x": -2064,
+		"pos_y": 2920,
+		"scale": 5
+	},
+
+	"de_austria": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_austria.webp",
+		"pos_x": -2877,
+		"pos_y": 2930,
+		"scale": 5.8
+	},
+
+	"de_aztec": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_aztec.webp",
+		"pos_x": -3200,
+		"pos_y": 2841,
+		"scale": 6
+	},
+
+	"de_bank": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_bank.webp",
+		"pos_x": -2000,
+		"pos_y": 1493,
+		"scale": 4
+	},
+
+	"de_bazaar": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_bazaar.webp",
+		"pos_x": -2434,
+		"pos_y": 2179,
+		"scale": 5
+	},
+
+	"de_biome": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_biome.webp",
+		"pos_x": -2129,
+		"pos_y": 2368,
+		"scale": 5
+	},
+
+	"de_blackgold": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_blackgold.webp",
+		"pos_x": -1100,
+		"pos_y": 1425,
+		"scale": 5.3
+	},
+
+	"de_blagai": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_blagai.webp",
+		"pos_x": -1742,
+		"pos_y": 710,
+		"scale": 3.15
+	},
+
+	"de_boyard": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_boyard.webp",
+		"pos_x": -2352,
+		"pos_y": -640,
+		"scale": 2.98
+	},
+
+	"de_breach": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_breach.webp",
+		"pos_x": -2950,
+		"pos_y": 2886,
+		"scale": 5.5
+	},
+
+	"de_calavera": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_calavera.webp",
+		"pos_x": -490.015015,
+		"pos_y": 326,
+		"scale": 2.82
+	},
+
+	"de_canals": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_canals.webp",
+		"pos_x": -2496,
+		"pos_y": 1792,
+		"scale": 4
+	},
+
+	"de_castle": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_castle.webp",
+		"pos_x": -3378,
+		"pos_y": 2756,
+		"scale": 5.5
+	},
+
+	"de_cbble": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_cbble.webp",
+		"pos_x": -3840,
+		"pos_y": 3072,
+		"scale": 6
+	},
+
+	"de_chinatown": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_chinatown.webp",
+		"pos_x": -1735,
+		"pos_y": 3232,
+		"scale": 4
+	},
+
+	"de_chlorine": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_chlorine.webp",
+		"pos_x": 2076,
+		"pos_y": 1272,
+		"scale": 5.25
+	},
+
+	"de_coast": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_coast.webp",
+		"pos_x": -3028,
+		"pos_y": 4122,
+		"scale": 5.5
+	},
+
+	"de_crete": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_crete.webp",
+		"pos_x": -2240,
+		"pos_y": 1408,
+		"scale": 3.31
+	},
+
+	"de_dust": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_dust.webp",
+		"pos_x": -2850,
+		"pos_y": 4073,
+		"scale": 6
+	},
+
+	"de_elysion": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_elysion.webp",
+		"pos_x": -1192,
+		"pos_y": 1096,
+		"scale": 2.59
+	},
+
+	"de_empire": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_empire.webp",
+		"pos_x": -2165,
+		"pos_y": 2000,
+		"scale": 4.5
+	},
+
+	"de_engage": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_engage.webp",
+		"pos_x": -3530,
+		"pos_y": 2976,
+		"scale": 5.77
+	},
+
+	"de_extraction": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_extraction.webp",
+		"pos_x": -1808,
+		"pos_y": 1888,
+		"scale": 3.56
+	},
+
+	"de_facade": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_facade.webp",
+		"pos_x": -90,
+		"pos_y": 5659,
+		"scale": 6
+	},
+
+	"de_grind": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_grind.webp",
+		"pos_x": -3723,
+		"pos_y": 3026,
+		"scale": 5
+	},
+
+	"de_guard": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_guard.webp",
+		"pos_x": -1768,
+		"pos_y": 1648,
+		"scale": 4.02
+	},
+
+	"de_gwalior": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_gwalior.webp",
+		"pos_x": -1145,
+		"pos_y": 2688,
+		"scale": 5
+	},
+
+	"de_hive": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_hive.webp",
+		"pos_x": -538,
+		"pos_y": 2608,
+		"scale": 4.01
+	},
+
+	"de_iris": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_iris.webp",
+		"pos_x": -2288,
+		"pos_y": 2341,
+		"scale": 4.5
+	},
+
+	"de_lake": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_lake.webp",
+		"pos_x": 1200,
+		"pos_y": -700,
+		"scale": 5.2
+	},
+
+	"de_lite": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_lite.webp",
+		"pos_x": -2012,
+		"pos_y": 2928,
+		"scale": 5
+	},
+
+	"de_log": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_log.webp",
+		"pos_x": -411,
+		"pos_y": 759,
+		"scale": 6.5
+	},
+
+	"de_marquis": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_marquis.webp",
+		"pos_x": -1877,
+		"pos_y": 3199,
+		"scale": 5
+	},
+
+	"de_mikla": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_mikla.webp",
+		"pos_x": 711,
+		"pos_y": 2383,
+		"scale": 4.1
+	},
+
+	"de_mist": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_mist.webp",
+		"pos_x": -5150,
+		"pos_y": 2080,
+		"scale": 4.8
+	},
+
+	"de_mocha": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_mocha.webp",
+		"pos_x": -265,
+		"pos_y": 3210,
+		"scale": 4.93
+	},
+
+	"de_mutiny": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_mutiny.webp",
+		"pos_x": -8299,
+		"pos_y": -1312,
+		"scale": 4.93
+	},
+
+	"de_overgrown": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_overgrown.webp",
+		"pos_x": -3376,
+		"pos_y": 5563,
+		"scale": 7
+	},
+
+	"de_pitstop": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_pitstop.webp",
+		"pos_x": -1472,
+		"pos_y": 2432,
+		"scale": 3.88,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMax": 164,
+				"AltitudeMin": -10000
+			},
+
+			"layer1": {
+				"AltitudeMax": 10000,
+				"AltitudeMin": 164
+			}
+		}
+	},
+
+	"de_prime": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_prime.webp",
+		"pos_x": -4580,
+		"pos_y": 1553,
+		"scale": 4
+	},
+
+	"de_rails": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_rails.webp",
+		"pos_x": -2199,
+		"pos_y": 2874,
+		"scale": 4.5
+	},
+
+	"de_ravine": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_ravine.webp",
+		"pos_x": 677.5,
+		"pos_y": 624,
+		"scale": 2.95
+	},
+
+	"de_resort": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_resort.webp",
+		"pos_x": -506,
+		"pos_y": 2713,
+		"scale": 5.5
+	},
+
+	"de_royal": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_royal.webp",
+		"pos_x": -2343,
+		"pos_y": 2644,
+		"scale": 4
+	},
+
+	"de_ruby": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_ruby.webp",
+		"pos_x": -1079,
+		"pos_y": 3093,
+		"scale": 4.5
+	},
+
+	"de_ruins": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_ruins.webp",
+		"pos_x": -2443,
+		"pos_y": 2485,
+		"scale": 6.25
+	},
+
+	"de_safehouse": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_safehouse.webp",
+		"pos_x": -240,
+		"pos_y": 2650,
+		"scale": 4.52
+	},
+
+	"de_santorini": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_santorini.webp",
+		"pos_x": -2135,
+		"pos_y": 1400,
+		"scale": 4
+	},
+
+	"de_seaside": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_seaside.webp",
+		"pos_x": -4161,
+		"pos_y": 3680,
+		"scale": 7
+	},
+
+	"de_season": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_season.webp",
+		"pos_x": -1003,
+		"pos_y": 2521,
+		"scale": 5
+	},
+
+	"de_shipped": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_shipped.webp",
+		"pos_x": -2432,
+		"pos_y": 2663,
+		"scale": 5.8
+	},
+
+	"de_shortdust": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_shortdust.webp",
+		"pos_x": -2318,
+		"pos_y": 2337,
+		"scale": 3.6
+	},
+
+	"de_shortnuke": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_shortnuke.webp",
+		"pos_x": -3453,
+		"pos_y": 2887,
+		"scale": 7
+	},
+
+	"de_shorttrain": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_shorttrain.webp",
+		"pos_x": -2477,
+		"pos_y": 2392,
+		"scale": 4.7
+	},
+
+	"de_stmarc": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_stmarc.webp",
+		"pos_x": -9383,
+		"pos_y": 9099,
+		"scale": 4
+	},
+
+	"de_studio": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_studio.webp",
+		"pos_x": -3248,
+		"pos_y": 2968,
+		"scale": 6.17
+	},
+
+	"de_subzero": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_subzero.webp",
+		"pos_x": -2438,
+		"pos_y": 3690,
+		"scale": 5
+	},
+
+	"de_sugarcane": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_sugarcane.webp",
+		"pos_x": -4015,
+		"pos_y": 2000,
+		"scale": 4.25
+	},
+
+	"de_swamp": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_swamp.webp",
+		"pos_x": -2600,
+		"pos_y": 3906,
+		"scale": 6
+	},
+
+	"de_thrill": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_thrill.webp",
+		"pos_x": -3276,
+		"pos_y": 2973,
+		"scale": 5.5
+	},
+
+	"de_tulip": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_tulip.webp",
+		"pos_x": 3402,
+		"pos_y": 5583,
+		"scale": 5.5
+	},
+
+	"de_tuscan": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_tuscan.webp",
+		"pos_x": -5141,
+		"pos_y": 1088,
+		"scale": 4.85,
+
+		"verticalsections": {
+			"default": {
+				"AltitudeMax": 10000,
+				"AltitudeMin": -248
+			},
+
+			"layer1": {
+				"AltitudeMax": -248,
+				"AltitudeMin": -10000
+			}
+		}
+	},
+
+	"de_zoo": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/de_zoo.webp",
+
+		"pos_x": -2435,
+		"pos_y": 6116,
+		"scale": 7
+	},
+
+	"dz_blacksite": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/dz_blacksite.webp",
+		"pos_x": -8604,
+		"pos_y": 8804,
+		"scale": 17
+	},
+
+	"dz_county": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/dz_county.webp",
+		"pos_x": -10240,
+		"pos_y": 10240,
+		"scale": 20
+	},
+
+	"dz_frostbite": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/dz_frostbite.webp",
+		"pos_x": -8574,
+		"pos_y": 8787,
+		"scale": 17
+	},
+
+	"dz_junglety": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/dz_junglety.webp",
+		"pos_x": -8504,
+		"pos_y": 8741,
+		"scale": 17
+	},
+
+	"dz_sirocco": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/dz_sirocco.webp",
+		"pos_x": -8604,
+		"pos_y": 8804,
+		"scale": 17
+	},
+
+	"dz_vineyard": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/dz_vineyard.webp",
+		"pos_x": -8192,
+		"pos_y": 8192,
+		"scale": 16
+	},
+
+	"gd_bank": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/gd_bank.webp",
+		"pos_x": -2000,
+		"pos_y": 1493,
+		"scale": 4
+	},
+
+	"gd_cbble": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/gd_cbble.webp",
+		"pos_x": -3840,
+		"pos_y": 3072,
+		"scale": 6
+	},
+
+	"gd_crashsite": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/gd_crashsite.webp",
+		"pos_x": -2212,
+		"pos_y": 1437,
+		"scale": 3.5
+	},
+
+	"gd_lake": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/gd_lake.webp",
+		"pos_x": 1200,
+		"pos_y": -700,
+		"scale": 5.2
+	},
+
+	"gd_lunacy": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/gd_lunacy.webp",
+		"pos_x": -1536,
+		"pos_y": 1536,
+		"scale": 3
+	},
+
+	"gd_rialto": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/gd_rialto.webp",
+		"pos_x": -1260,
+		"pos_y": 1836,
+		"scale": 3
+	},
+
+	"training1": {
+		"radarImageUrl": "/hud/img/radars/ingame-legacy/training1.webp",
+		"pos_x": -2510,
+		"pos_y": 2000,
+		"scale": 5
+	}
+}
