@@ -25,8 +25,8 @@
                         x:CompileBindings="False">
             <ItemsControl.Styles>
               <Style Selector="ContentPresenter">
-                <Setter Property="Canvas.Left" Value="{Binding CanvasX}" />
-                <Setter Property="Canvas.Top" Value="{Binding CanvasY}" />
+                <Setter Property="Canvas.Left" Value="{Binding ScaledCanvasX}" />
+                <Setter Property="Canvas.Top" Value="{Binding ScaledCanvasY}" />
               </Style>
             </ItemsControl.Styles>
             <ItemsControl.ItemsPanel>
@@ -36,7 +36,13 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:RadarPlayerViewModel">
-                <Canvas Width="36" Height="36">
+                <Canvas Width="36"
+                        Height="36"
+                        RenderTransformOrigin="0.5,0.5">
+                  <Canvas.RenderTransform>
+                    <ScaleTransform ScaleX="{Binding DataContext.MarkerScale, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    ScaleY="{Binding DataContext.MarkerScale, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                  </Canvas.RenderTransform>
                   <Path Data="M 18,4 Q 12,10 8,22 A 10,10 0 0 0 28,22 Q 24,10 18,4 Z"
                         Fill="{Binding Fill}"
                         Stroke="{Binding ActualBorder}"

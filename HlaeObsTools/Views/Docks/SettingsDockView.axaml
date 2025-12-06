@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             x:Class="HlaeObsTools.Views.Docks.SettingsDockView"
+             x:DataType="vm:SettingsDockViewModel">
+    <Border Background="#1E1E1E" Padding="10" Focusable="True">
+        <TabControl>
+            <TabItem Header="General">
+                <StackPanel Margin="10" Spacing="8">
+                    <TextBlock Text="General settings will live here."
+                               Foreground="#CCCCCC"/>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Radar Settings">
+                <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Marker size"
+                               Foreground="#CCCCCC"
+                               FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Slider Minimum="0.5"
+                                Maximum="2.5"
+                                SmallChange="0.05"
+                                LargeChange="0.25"
+                                Width="200"
+                                Value="{Binding MarkerScale, Mode=TwoWay}"/>
+                        <TextBlock Text="{Binding MarkerScale, StringFormat={}{0:F2}}"
+                                   Width="50"
+                                   Foreground="#E6E6E6"/>
+                    </StackPanel>
+                    <TextBlock Text="Adjusts player marker size on the radar."
+                               Foreground="#888888"
+                               FontSize="12"/>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+    </Border>
+</UserControl>

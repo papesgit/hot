@@ -26,5 +26,11 @@
         <DataTemplate DataType="vm:RadarDockViewModel">
             <views:RadarDockView/>
         </DataTemplate>
+        <DataTemplate DataType="vm:BrowserSourceDockViewModel">
+            <views:BrowserSourceDockView/>
+        </DataTemplate>
+        <DataTemplate DataType="vm:SettingsDockViewModel">
+            <views:SettingsDockView/>
+        </DataTemplate>
     </Application.DataTemplates>
 </Application>

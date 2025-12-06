@@ -13,11 +13,6 @@
         MinHeight="600">
 
     <Window.DataTemplates>
-        <!-- Data template for PlaceholderDockViewModel -->
-        <DataTemplate DataType="vmd:PlaceholderDockViewModel">
-            <vd:PlaceholderDockView />
-        </DataTemplate>
-
         <!-- Data template for VideoDisplayDockViewModel -->
         <DataTemplate DataType="vmd:VideoDisplayDockViewModel">
             <vd:VideoDisplayDockView />
@@ -26,6 +21,16 @@
         <!-- Data template for RadarDockViewModel -->
         <DataTemplate DataType="vmd:RadarDockViewModel">
             <vd:RadarDockView />
+        </DataTemplate>
+
+        <!-- Data template for BrowserSourceDockViewModel -->
+        <DataTemplate DataType="vmd:BrowserSourceDockViewModel">
+            <vd:BrowserSourceDockView />
+        </DataTemplate>
+
+        <!-- Data template for SettingsDockViewModel -->
+        <DataTemplate DataType="vmd:SettingsDockViewModel">
+            <vd:SettingsDockView />
         </DataTemplate>
 
         <!-- Data template for CampathsDockViewModel -->

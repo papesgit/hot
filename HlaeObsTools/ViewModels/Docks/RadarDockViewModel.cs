@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.ComponentModel;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -22,6 +23,7 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     private string _level = "default";
     private double _canvasX;
     private double _canvasY;
+    private double _markerScale = 1.0;
 
     public RadarPlayerViewModel(string id, string name, string team, int slot, IBrush fill, IBrush border)
     {
@@ -102,13 +104,46 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     public double CanvasX
     {
         get => _canvasX;
-        set => SetProperty(ref _canvasX, value);
+        set
+        {
+            if (SetProperty(ref _canvasX, value))
+            {
+                OnPropertyChanged(nameof(ScaledCanvasX));
+            }
+        }
     }
 
     public double CanvasY
     {
         get => _canvasY;
-        set => SetProperty(ref _canvasY, value);
+        set
+        {
+            if (SetProperty(ref _canvasY, value))
+            {
+                OnPropertyChanged(nameof(ScaledCanvasY));
+            }
+        }
+    }
+
+    public double MarkerScale
+    {
+        get => _markerScale;
+        private set
+        {
+            if (SetProperty(ref _markerScale, value))
+            {
+                OnPropertyChanged(nameof(ScaledCanvasX));
+                OnPropertyChanged(nameof(ScaledCanvasY));
+            }
+        }
+    }
+
+    public double ScaledCanvasX => CanvasX - 18.0 * (MarkerScale - 1.0);
+    public double ScaledCanvasY => CanvasY - 22.0 * (MarkerScale - 1.0);
+
+    public void SetMarkerScale(double scale)
+    {
+        MarkerScale = scale;
     }
 }
 
@@ -183,6 +218,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private readonly RadarConfigProvider _configProvider;
     private readonly RadarProjector _projector;
     private readonly Dictionary<int, SmokeTracker> _smokeTrackers = new();
+    private readonly RadarSettings _settings;
 
     private Bitmap? _radarImage;
     private string? _currentMap;
@@ -208,10 +244,13 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         private set => SetProperty(ref _hasRadar, value);
     }
 
-    public RadarDockViewModel(GsiServer gsiServer, RadarConfigProvider configProvider)
+    public double MarkerScale => _settings.MarkerScale;
+
+    public RadarDockViewModel(GsiServer gsiServer, RadarConfigProvider configProvider, RadarSettings settings)
     {
         _gsiServer = gsiServer;
         _configProvider = configProvider;
+        _settings = settings;
         _projector = new RadarProjector(configProvider);
 
         Title = "Radar";
@@ -221,6 +260,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
         _gsiServer.Start(); // fire and forget
+
+        _settings.PropertyChanged += OnSettingsChanged;
     }
 
     private void OnGameStateUpdated(object? sender, GsiGameState state)
@@ -275,6 +316,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 IsFocused = p.SteamId == state.FocusedPlayerSteamId,
                 Level = level
             };
+            vm.SetMarkerScale(_settings.MarkerScale);
 
             Players.Add(vm);
         }
@@ -467,6 +509,19 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     public void Dispose()
     {
         _gsiServer.GameStateUpdated -= OnGameStateUpdated;
+        _settings.PropertyChanged -= OnSettingsChanged;
         RadarImage?.Dispose();
+    }
+
+    private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(RadarSettings.MarkerScale))
+        {
+            OnPropertyChanged(nameof(MarkerScale));
+            foreach (var player in Players)
+            {
+                player.SetMarkerScale(_settings.MarkerScale);
+            }
+        }
     }
 }

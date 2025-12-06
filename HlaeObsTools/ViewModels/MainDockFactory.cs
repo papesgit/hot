@@ -9,6 +9,7 @@ using HlaeObsTools.Services.Input;
 using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.ViewModels.Docks;
 using HlaeObsTools.Services.Gsi;
+using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -61,11 +62,15 @@ public class MainDockFactory : Factory
 
     public override IRootDock CreateLayout()
     {
+        // Shared settings for radar customization
+        var radarSettings = new RadarSettings();
+
         // Create the 5 docks (top-right hosts the CS2 console)
-        var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider) { Id = "TopLeft", Title = "Radar" };
+        var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings) { Id = "TopLeft", Title = "Radar" };
+        var browserSource = new BrowserSourceDockViewModel { Id = "BrowserSource" };
         var topCenter = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
         var topRight = new NetConsoleDockViewModel { Id = "TopRight", Title = "Console" };
-        var bottomLeft = new PlaceholderDockViewModel { Id = "BottomLeft", Title = "Events" };
+        var bottomLeft = new SettingsDockViewModel(radarSettings) { Id = "BottomLeft", Title = "Settings" };
         var bottomRight = new CampathsDockViewModel { Id = "BottomRight", Title = "Campaths" };
 
         // Inject WebSocket and UDP services into video display
@@ -80,7 +85,7 @@ public class MainDockFactory : Factory
             Id = "TopLeftDock",
             Proportion = 0.3,
             ActiveDockable = topLeft,
-            VisibleDockables = CreateList<IDockable>(topLeft)
+            VisibleDockables = CreateList<IDockable>(topLeft, browserSource)
         };
 
         // Top-center: Video Stream - 16:9 aspect ratio
