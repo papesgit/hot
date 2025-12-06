@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:webview="clr-namespace:WebViewControl;assembly=WebViewControl.Avalonia"
              x:Class="HlaeObsTools.Views.Docks.VideoDisplayDockView"
              x:DataType="vm:VideoDisplayDockViewModel">
     <Grid>
@@ -10,27 +11,35 @@
         </Grid.RowDefinitions>
 
         <!-- Video display area -->
-        <Border Grid.Row="0" Background="Black" ClipToBounds="True" Focusable="True"
-                x:Name="VideoContainer"
-                PointerPressed="VideoContainer_PointerPressed"
-                PointerReleased="VideoContainer_PointerReleased"
-                PointerMoved="VideoContainer_PointerMoved">
-            <Grid>
-                <Viewbox Stretch="Uniform">
-                    <Image Source="{Binding CurrentFrame}"
-                           RenderOptions.BitmapInterpolationMode="LowQuality"
-                           Stretch="None"/>
-                </Viewbox>
+        <Grid Grid.Row="0" ClipToBounds="True">
+            <Border Background="Black" Focusable="True"
+                    x:Name="VideoContainer"
+                    PointerPressed="VideoContainer_PointerPressed"
+                    PointerReleased="VideoContainer_PointerReleased"
+                    PointerMoved="VideoContainer_PointerMoved">
+                <Grid>
+                    <Viewbox Stretch="Uniform">
+                        <Image Source="{Binding CurrentFrame}"
+                               RenderOptions.BitmapInterpolationMode="LowQuality"
+                               Stretch="None"/>
+                    </Viewbox>
 
-                <!-- Freecam active indicator -->
-                <Border BorderBrush="Red"
-                        BorderThickness="4"
-                        IsVisible="{Binding IsFreecamActive}"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        IsHitTestVisible="False"/>
-            </Grid>
-        </Border>
+                    <!-- Freecam active indicator -->
+                    <Border BorderBrush="Red"
+                            BorderThickness="4"
+                            IsVisible="{Binding IsFreecamActive}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            IsHitTestVisible="False"/>
+                </Grid>
+            </Border>
+
+            <!-- HUD overlay webview -->
+            <webview:WebView x:Name="HudWebView"
+                             Address="{Binding HudAddress}"
+                             IsHitTestVisible="False"
+                             IsVisible="{Binding IsHudEnabled}"/>
+        </Grid>
 
         <!-- No signal overlay -->
         <Border Grid.Row="0"

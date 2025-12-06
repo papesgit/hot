@@ -18,6 +18,65 @@
                  Width="1024"
                  Height="1024" />
 
+          <!-- Campath paths -->
+          <ItemsControl ItemsSource="{Binding CampathPaths}"
+                        Width="1024"
+                        Height="1024"
+                        IsHitTestVisible="False"
+                        x:CompileBindings="False">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CampathPathViewModel">
+                <Polyline Points="{Binding Points}"
+                          Stroke="Yellow"
+                          StrokeThickness="2"
+                          IsVisible="{Binding IsHighlighted}"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Campath start camera icons -->
+          <ItemsControl ItemsSource="{Binding CampathPaths}"
+                        Width="1024"
+                        Height="1024"
+                        x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding IconX}" />
+                <Setter Property="Canvas.Top" Value="{Binding IconY}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CampathPathViewModel">
+                <Path Data="M488.3,142.5v203.1c0,15.7-17,25.5-30.6,17.7l-84.6-48.8v13.9c0,41.8-33.9,75.7-75.7,75.7H75.7C33.9,404.1,0,370.2,0,328.4 V159.9c0-41.8,33.9-75.7,75.7-75.7h221.8c41.8,0,75.7,33.9,75.7,75.7v13.9l84.6-48.8C471.3,117,488.3,126.9,488.3,142.5z"
+                      Fill="White"
+                      Width="24"
+                      Height="24"
+                      Stretch="Uniform"
+                      Stroke="Black"
+                      StrokeThickness="2"
+                      PointerEntered="CampathIcon_PointerEntered"
+                      PointerExited="CampathIcon_PointerExited"
+                      PointerPressed="CampathCamera_PointerPressed"
+                      Cursor="Hand">
+                  <Path.RenderTransform>
+                    <RotateTransform Angle="{Binding Rotation}"
+                                      CenterX="0"
+                                      CenterY="0" />
+                  </Path.RenderTransform>
+                </Path>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
           <ItemsControl ItemsSource="{Binding Players}"
                         Width="1024"
                         Height="1024"

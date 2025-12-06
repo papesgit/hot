@@ -32,6 +32,38 @@
                                FontSize="12"/>
                 </StackPanel>
             </TabItem>
+            <TabItem Header="Browser Sources">
+                <StackPanel Margin="10" Spacing="10">
+                    <TextBlock Text="Video HUD Overlay"
+                               Foreground="#CCCCCC"
+                               FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <ToggleSwitch IsChecked="{Binding IsHudEnabled, Mode=TwoWay}"
+                                      Content="Enable HUD overlay (Video Display)"
+                                      Foreground="#E6E6E6"/>
+                    </StackPanel>
+                    <TextBox Text="{Binding HudUrl, Mode=TwoWay}"
+                             Watermark="HUD URL"
+                             Foreground="#E6E6E6"
+                             Background="#2A2A2A"
+                             BorderBrush="#444"
+                             SelectionBrush="#555"
+                             Width="320"
+                             HorizontalAlignment="Left"/>
+                    <TextBlock Text="Browser Source Window"
+                               Foreground="#CCCCCC"
+                               FontWeight="SemiBold"
+                               Margin="0,12,0,0"/>
+                    <TextBox Text="{Binding BrowserSourceUrl, Mode=TwoWay}"
+                             Watermark="Browser source URL"
+                             Foreground="#E6E6E6"
+                             Background="#2A2A2A"
+                             BorderBrush="#444"
+                             SelectionBrush="#555"
+                             Width="320"
+                             HorizontalAlignment="Left"/>
+                </StackPanel>
+            </TabItem>
         </TabControl>
     </Border>
 </UserControl>

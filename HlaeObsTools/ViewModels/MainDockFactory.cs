@@ -64,18 +64,20 @@ public class MainDockFactory : Factory
     {
         // Shared settings for radar customization
         var radarSettings = new RadarSettings();
+        var browserSourcesSettings = new BrowserSourcesSettings();
 
         // Create the 5 docks (top-right hosts the CS2 console)
-        var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings) { Id = "TopLeft", Title = "Radar" };
-        var browserSource = new BrowserSourceDockViewModel { Id = "BrowserSource" };
+        var bottomRight = new CampathsDockViewModel { Id = "BottomRight", Title = "Campaths" };
+        var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings, bottomRight, _webSocketClient) { Id = "TopLeft", Title = "Radar" };
+        var browserSource = new BrowserSourceDockViewModel(browserSourcesSettings) { Id = "BrowserSource" };
         var topCenter = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
         var topRight = new NetConsoleDockViewModel { Id = "TopRight", Title = "Console" };
-        var bottomLeft = new SettingsDockViewModel(radarSettings) { Id = "BottomLeft", Title = "Settings" };
-        var bottomRight = new CampathsDockViewModel { Id = "BottomRight", Title = "Campaths" };
+        var bottomLeft = new SettingsDockViewModel(radarSettings, browserSourcesSettings) { Id = "BottomLeft", Title = "Settings" };
 
         // Inject WebSocket and UDP services into video display
         topCenter.SetWebSocketClient(_webSocketClient);
         topCenter.SetInputSender(_inputSender);
+        topCenter.SetBrowserSourcesSettings(browserSourcesSettings);
         bottomRight.SetWebSocketClient(_webSocketClient);
 
         // Wrap tools in ToolDocks for proper docking behavior

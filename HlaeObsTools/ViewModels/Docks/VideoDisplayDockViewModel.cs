@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using System.ComponentModel;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -36,6 +37,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private bool _isFreecamActive;
     private HlaeWebSocketClient? _webSocketClient;
     private HlaeInputSender? _inputSender;
+    private BrowserSourcesSettings? _browserSettings;
 
     public WriteableBitmap? CurrentFrame
     {
@@ -111,6 +113,26 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     {
         _inputSender = sender;
     }
+
+    /// <summary>
+    /// Configure HUD/browser source settings.
+    /// </summary>
+    public void SetBrowserSourcesSettings(BrowserSourcesSettings settings)
+    {
+        if (_browserSettings != null)
+        {
+            _browserSettings.PropertyChanged -= OnBrowserSettingsChanged;
+        }
+
+        _browserSettings = settings;
+        _browserSettings.PropertyChanged += OnBrowserSettingsChanged;
+
+        OnPropertyChanged(nameof(HudAddress));
+        OnPropertyChanged(nameof(IsHudEnabled));
+    }
+
+    public string HudAddress => _browserSettings?.HudUrl ?? BrowserSourcesSettings.DefaultHudUrl;
+    public bool IsHudEnabled => _browserSettings?.IsHudEnabled ?? false;
 
     /// <summary>
     /// Activate freecam (called when right mouse button pressed)
@@ -305,5 +327,17 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public void Dispose()
     {
         StopStream();
+    }
+
+    private void OnBrowserSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BrowserSourcesSettings.HudUrl))
+        {
+            OnPropertyChanged(nameof(HudAddress));
+        }
+        else if (e.PropertyName == nameof(BrowserSourcesSettings.IsHudEnabled))
+        {
+            OnPropertyChanged(nameof(IsHudEnabled));
+        }
     }
 }

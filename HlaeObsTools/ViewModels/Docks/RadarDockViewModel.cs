@@ -1,14 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.ComponentModel;
+using System.IO;
+using Avalonia;
+using Avalonia.Collections;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Gsi;
+using HlaeObsTools.Services.Campaths;
+using HlaeObsTools.Services.WebSocket;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -218,7 +224,10 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private readonly RadarConfigProvider _configProvider;
     private readonly RadarProjector _projector;
     private readonly Dictionary<int, SmokeTracker> _smokeTrackers = new();
+    private readonly CampathsDockViewModel? _campathsVm;
+    private readonly HlaeWebSocketClient? _webSocketClient;
     private readonly RadarSettings _settings;
+    private CampathProfileViewModel? _attachedProfile;
 
     private Bitmap? _radarImage;
     private string? _currentMap;
@@ -231,6 +240,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     public ObservableCollection<RadarPlayerViewModel> Players { get; } = new();
     public ObservableCollection<RadarGrenadeViewModel> Grenades { get; } = new();
     public ObservableCollection<FlameViewModel> Flames { get; } = new();
+    public ObservableCollection<CampathPathViewModel> CampathPaths { get; } = new();
 
     public Bitmap? RadarImage
     {
@@ -246,11 +256,13 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
     public double MarkerScale => _settings.MarkerScale;
 
-    public RadarDockViewModel(GsiServer gsiServer, RadarConfigProvider configProvider, RadarSettings settings)
+    public RadarDockViewModel(GsiServer gsiServer, RadarConfigProvider configProvider, RadarSettings settings, CampathsDockViewModel? campathsVm, HlaeWebSocketClient? webSocketClient)
     {
         _gsiServer = gsiServer;
         _configProvider = configProvider;
         _settings = settings;
+        _campathsVm = campathsVm;
+        _webSocketClient = webSocketClient;
         _projector = new RadarProjector(configProvider);
 
         Title = "Radar";
@@ -262,6 +274,12 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         _gsiServer.Start(); // fire and forget
 
         _settings.PropertyChanged += OnSettingsChanged;
+
+        if (_campathsVm != null)
+        {
+            _campathsVm.PropertyChanged += OnCampathsPropertyChanged;
+            AttachProfile(_campathsVm.SelectedProfile);
+        }
     }
 
     private void OnGameStateUpdated(object? sender, GsiGameState state)
@@ -274,16 +292,20 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         if (string.IsNullOrWhiteSpace(state.MapName))
             return;
 
+        bool mapChanged = false;
+
         if (!string.Equals(_currentMap, state.MapName, StringComparison.OrdinalIgnoreCase))
         {
             _currentMap = state.MapName;
             LoadRadarResources(state.MapName);
+            mapChanged = true;
         }
 
         if (!_projector.TryProject(state.MapName, default, out _, out _, out _))
         {
             HasRadar = false;
             Players.Clear();
+            CampathPaths.Clear();
             return;
         }
 
@@ -449,6 +471,11 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 Grenades.Add(grenadeVm);
             }
         }
+
+        if (mapChanged)
+        {
+            RefreshCampathOverlay();
+        }
     }
 
     private static double NormalizeDegrees(double degrees)
@@ -510,6 +537,11 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     {
         _gsiServer.GameStateUpdated -= OnGameStateUpdated;
         _settings.PropertyChanged -= OnSettingsChanged;
+        if (_campathsVm != null)
+        {
+            _campathsVm.PropertyChanged -= OnCampathsPropertyChanged;
+            DetachProfile(_campathsVm.SelectedProfile);
+        }
         RadarImage?.Dispose();
     }
 
@@ -523,5 +555,190 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 player.SetMarkerScale(_settings.MarkerScale);
             }
         }
+    }
+
+    private void OnCampathsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CampathsDockViewModel.SelectedProfile))
+        {
+            DetachProfile(null);
+            AttachProfile(_campathsVm?.SelectedProfile);
+            RefreshCampathOverlay();
+        }
+    }
+
+    private void OnCampathItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CampathItemViewModel.FilePath) || e.PropertyName == nameof(CampathItemViewModel.Name))
+        {
+            RefreshCampathOverlay();
+        }
+    }
+
+    private void OnCampathCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+        {
+            foreach (var item in e.OldItems.OfType<CampathItemViewModel>())
+            {
+                item.PropertyChanged -= OnCampathItemChanged;
+            }
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (var item in e.NewItems.OfType<CampathItemViewModel>())
+            {
+                item.PropertyChanged += OnCampathItemChanged;
+            }
+        }
+
+        RefreshCampathOverlay();
+    }
+
+    private void AttachProfile(CampathProfileViewModel? profile)
+    {
+        if (profile == null)
+            return;
+
+        profile.Campaths.CollectionChanged += OnCampathCollectionChanged;
+        foreach (var item in profile.Campaths)
+        {
+            item.PropertyChanged += OnCampathItemChanged;
+        }
+
+        _attachedProfile = profile;
+    }
+
+    private void DetachProfile(CampathProfileViewModel? profile)
+    {
+        var target = profile ?? _attachedProfile;
+        if (target == null)
+            return;
+
+        target.Campaths.CollectionChanged -= OnCampathCollectionChanged;
+        foreach (var item in target.Campaths)
+        {
+            item.PropertyChanged -= OnCampathItemChanged;
+        }
+
+        if (ReferenceEquals(_attachedProfile, target))
+        {
+            _attachedProfile = null;
+        }
+    }
+
+    private void RefreshCampathOverlay()
+    {
+        CampathPaths.Clear();
+
+        if (_campathsVm?.SelectedProfile == null || string.IsNullOrWhiteSpace(_currentMap) || !HasRadar)
+            return;
+
+        foreach (var campath in _campathsVm.SelectedProfile.Campaths)
+        {
+            if (string.IsNullOrWhiteSpace(campath.FilePath) || !File.Exists(campath.FilePath))
+                continue;
+
+            var parsed = CampathFileParser.Parse(campath.FilePath);
+            if (parsed?.Points == null || parsed.Points.Count == 0)
+                continue;
+
+            var points = BuildCampathPolyline(parsed);
+            if (points.Count == 0)
+                continue;
+
+            var forward = parsed.Points[0].Forward;
+            var angle = NormalizeDegrees(Math.Atan2(forward.X, forward.Y) * 180.0 / Math.PI) - 90;
+            var iconX = points[0].X - 12.0; // center 24px icon
+            var iconY = points[0].Y - 12.0;
+
+            CampathPaths.Add(new CampathPathViewModel(campath.Id, campath.Name, campath.FilePath, points, iconX, iconY, angle));
+        }
+    }
+
+    public async void PlayCampath(CampathPathViewModel? path)
+    {
+        if (path == null || string.IsNullOrWhiteSpace(path.FilePath) || _webSocketClient == null)
+            return;
+
+        await _webSocketClient.SendCampathPlayAsync(path.FilePath);
+    }
+
+    public void SetCampathHighlight(CampathPathViewModel? target, bool isHighlighted)
+    {
+        if (isHighlighted)
+        {
+            foreach (var p in CampathPaths)
+            {
+                p.IsHighlighted = ReferenceEquals(p, target);
+            }
+        }
+        else if (target != null)
+        {
+            target.IsHighlighted = false;
+        }
+    }
+
+    private AvaloniaList<Point> BuildCampathPolyline(CampathFile parsed)
+    {
+        var result = new AvaloniaList<Point>();
+        if (parsed.Points.Count == 0 || string.IsNullOrWhiteSpace(_currentMap))
+            return result;
+
+        bool useLinear = parsed.IsLinearPosition || parsed.Points.Count < 3;
+
+        void AddProjected(Vec3 pos)
+        {
+            if (_projector.TryProject(_currentMap!, pos, out var px, out var py, out _))
+            {
+                var pt = new Point(px * 1024.0, py * 1024.0);
+                if (result.Count == 0 || result[^1] != pt)
+                {
+                    result.Add(pt);
+                }
+            }
+        }
+
+        if (useLinear)
+        {
+            foreach (var p in parsed.Points)
+            {
+                AddProjected(p.Position);
+            }
+            return result;
+        }
+
+        int count = parsed.Points.Count;
+        int stepsPerSegment = 16;
+
+        for (int i = 0; i < count - 1; i++)
+        {
+            var p0 = parsed.Points[Math.Max(i - 1, 0)].Position;
+            var p1 = parsed.Points[i].Position;
+            var p2 = parsed.Points[i + 1].Position;
+            var p3 = parsed.Points[Math.Min(i + 2, count - 1)].Position;
+
+            for (int s = 0; s <= stepsPerSegment; s++)
+            {
+                double t = s / (double)stepsPerSegment;
+                var pos = CatmullRom(p0, p1, p2, p3, t);
+                AddProjected(pos);
+            }
+        }
+
+        return result;
+    }
+
+    private static Vec3 CatmullRom(in Vec3 p0, in Vec3 p1, in Vec3 p2, in Vec3 p3, double t)
+    {
+        double t2 = t * t;
+        double t3 = t2 * t;
+
+        double x = 0.5 * ((2 * p1.X) + (-p0.X + p2.X) * t + (2 * p0.X - 5 * p1.X + 4 * p2.X - p3.X) * t2 + (-p0.X + 3 * p1.X - 3 * p2.X + p3.X) * t3);
+        double y = 0.5 * ((2 * p1.Y) + (-p0.Y + p2.Y) * t + (2 * p0.Y - 5 * p1.Y + 4 * p2.Y - p3.Y) * t2 + (-p0.Y + 3 * p1.Y - 3 * p2.Y + p3.Y) * t3);
+        double z = 0.5 * ((2 * p1.Z) + (-p0.Z + p2.Z) * t + (2 * p0.Z - 5 * p1.Z + 4 * p2.Z - p3.Z) * t2 + (-p0.Z + 3 * p1.Z - 3 * p2.Z + p3.Z) * t3);
+
+        return new Vec3(x, y, z);
     }
 }
