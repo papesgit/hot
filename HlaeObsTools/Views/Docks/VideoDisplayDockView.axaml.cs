@@ -18,6 +18,7 @@ public partial class VideoDisplayDockView : UserControl
     private Point? _lastMousePosition;
     private DispatcherTimer? _hudCssTimer;
     private INotifyPropertyChanged? _currentVmNotifier;
+    private bool _cursorHidden;
 
     public VideoDisplayDockView()
     {
@@ -30,6 +31,18 @@ public partial class VideoDisplayDockView : UserControl
             HudWebView.DetachedFromVisualTree += (_, _) => StopHudCssTimer();
         }
 
+        if (VideoContainer != null)
+        {
+            VideoContainer.SizeChanged += (_, _) => UpdateSharedTextureAspectSize();
+        }
+        this.AttachedToVisualTree += (_, _) => UpdateSharedTextureAspectSize();
+
+        if (SharedTextureHost != null)
+        {
+            SharedTextureHost.RightButtonDown += SharedTextureHost_RightButtonDown;
+            SharedTextureHost.RightButtonUp += SharedTextureHost_RightButtonUp;
+        }
+
         DataContextChanged += OnDataContextChanged;
     }
 
@@ -37,7 +50,14 @@ public partial class VideoDisplayDockView : UserControl
     {
         if (DataContext is VideoDisplayDockViewModel vm)
         {
-            vm.StartRtpStream();
+            if (vm.UseD3DHost)
+            {
+                SharedTextureHost?.StartRenderer();
+            }
+            else
+            {
+                vm.StartStream();
+            }
         }
     }
 
@@ -46,6 +66,7 @@ public partial class VideoDisplayDockView : UserControl
         if (DataContext is VideoDisplayDockViewModel vm)
         {
             vm.StopStream();
+            SharedTextureHost?.StopRenderer();
         }
     }
 
@@ -67,34 +88,8 @@ public partial class VideoDisplayDockView : UserControl
             _isRightButtonDown = true;
             (sender as IInputElement)?.Focus();
 
-            if (DataContext is VideoDisplayDockViewModel vm && VideoContainer != null)
-            {
-                // Activate freecam
-                vm.ActivateFreecam();
-
-                // Calculate center of video container in screen coordinates
-                var containerBounds = VideoContainer.Bounds;
-                var centerPoint = new Point(containerBounds.Width / 2, containerBounds.Height / 2);
-                var screenCenterPixel = VideoContainer.PointToScreen(centerPoint);
-                var screenCenter = new Point(screenCenterPixel.X, screenCenterPixel.Y);
-
-                _lockedCursorCenter = screenCenter;
-                _lastMousePosition = screenCenter; // Initialize last position
-
-                // Set cursor to center
-                if (_lockedCursorCenter.HasValue)
-                {
-                    SetCursorPosition((int)_lockedCursorCenter.Value.X, (int)_lockedCursorCenter.Value.Y);
-                }
-
-                // Hide cursor
-                Cursor = new Cursor(StandardCursorType.None);
-
-                // Focus for keyboard input
-                this.Focus();
-
-                e.Handled = true;
-            }
+            BeginFreecam();
+            e.Handled = true;
         }
     }
 
@@ -107,19 +102,8 @@ public partial class VideoDisplayDockView : UserControl
         {
             _isRightButtonDown = false;
 
-            if (DataContext is VideoDisplayDockViewModel vm)
-            {
-                // Deactivate freecam
-                vm.DeactivateFreecam();
-
-                // Show cursor
-                Cursor = Cursor.Default;
-
-                _lockedCursorCenter = null;
-                _lastMousePosition = null;
-
-                e.Handled = true;
-            }
+            EndFreecam();
+            e.Handled = true;
         }
     }
 
@@ -153,9 +137,139 @@ public partial class VideoDisplayDockView : UserControl
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool SetCursorPos(int X, int Y);
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ClipCursor(ref RECT lpRect);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ClipCursor(IntPtr lpRect);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern int ShowCursor(bool bShow);
+
+    private struct RECT
+    {
+        public int left;
+        public int top;
+        public int right;
+        public int bottom;
+    }
+
     private void SetCursorPosition(int x, int y)
     {
         SetCursorPos(x, y);
+    }
+
+    // Forwarders for the shared texture overlay to reuse the existing freecam handling.
+    private void SharedTextureOverlay_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        VideoContainer_PointerPressed(VideoContainer, e);
+    }
+
+    private void SharedTextureOverlay_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        VideoContainer_PointerReleased(VideoContainer, e);
+    }
+
+    private void SharedTextureOverlay_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        VideoContainer_PointerMoved(VideoContainer, e);
+    }
+
+    private void SharedTextureHost_RightButtonDown(object? sender, EventArgs e)
+    {
+        // Mirror the freecam activation when clicking on the shared texture host.
+        if (_isRightButtonDown) return;
+
+        _isRightButtonDown = true;
+        BeginFreecam();
+    }
+
+    private void SharedTextureHost_RightButtonUp(object? sender, EventArgs e)
+    {
+        if (!_isRightButtonDown) return;
+
+        _isRightButtonDown = false;
+        EndFreecam();
+    }
+
+    private void UpdateSharedTextureAspectSize()
+    {
+        if (SharedTextureAspect == null || VideoContainer == null) return;
+
+        var bounds = VideoContainer.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+
+        const double aspect = 16.0 / 9.0;
+        double targetW = bounds.Width;
+        double targetH = targetW / aspect;
+        if (targetH > bounds.Height)
+        {
+            targetH = bounds.Height;
+            targetW = targetH * aspect;
+        }
+
+        SharedTextureAspect.Width = targetW;
+        SharedTextureAspect.Height = targetH;
+    }
+
+    private void BeginFreecam()
+    {
+        if (DataContext is not VideoDisplayDockViewModel vm || VideoContainer == null)
+            return;
+
+        vm.ActivateFreecam();
+
+        var containerBounds = VideoContainer.Bounds;
+        var centerPoint = new Point(containerBounds.Width / 2, containerBounds.Height / 2);
+        var screenCenterPixel = VideoContainer.PointToScreen(centerPoint);
+        var screenCenter = new Point(screenCenterPixel.X, screenCenterPixel.Y);
+
+        _lockedCursorCenter = screenCenter;
+        _lastMousePosition = screenCenter;
+
+        if (_lockedCursorCenter.HasValue)
+        {
+            SetCursorPosition((int)_lockedCursorCenter.Value.X, (int)_lockedCursorCenter.Value.Y);
+            LockCursorToPoint(_lockedCursorCenter.Value);
+        }
+
+        Cursor = new Cursor(StandardCursorType.None);
+        this.Focus();
+    }
+
+    private void EndFreecam()
+    {
+        if (DataContext is VideoDisplayDockViewModel vm)
+        {
+            vm.DeactivateFreecam();
+        }
+        Cursor = Cursor.Default;
+        UnlockCursor();
+        _lockedCursorCenter = null;
+        _lastMousePosition = null;
+    }
+
+    private void LockCursorToPoint(Point screenPoint)
+    {
+        int cx = (int)screenPoint.X;
+        int cy = (int)screenPoint.Y;
+        var rect = new RECT { left = cx, top = cy, right = cx + 1, bottom = cy + 1 };
+        ClipCursor(ref rect);
+        if (!_cursorHidden)
+        {
+            ShowCursor(false);
+            _cursorHidden = true;
+        }
+    }
+
+    private void UnlockCursor()
+    {
+        ClipCursor(IntPtr.Zero);
+        if (_cursorHidden)
+        {
+            ShowCursor(true);
+            _cursorHidden = false;
+        }
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -173,6 +287,18 @@ public partial class VideoDisplayDockView : UserControl
         }
 
         SyncHudState();
+
+        if (DataContext is VideoDisplayDockViewModel vm)
+        {
+            if (vm.UseD3DHost)
+            {
+                SharedTextureHost?.StartRenderer();
+            }
+            else if (vm.UseSharedTextureCpu)
+            {
+                vm.StartStream();
+            }
+        }
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -181,6 +307,35 @@ public partial class VideoDisplayDockView : UserControl
             e.PropertyName == nameof(VideoDisplayDockViewModel.HudAddress))
         {
             SyncHudState();
+        }
+        else if (e.PropertyName == nameof(VideoDisplayDockViewModel.UseD3DHost))
+        {
+            if (DataContext is VideoDisplayDockViewModel vm)
+            {
+                if (vm.UseD3DHost)
+                {
+                    SharedTextureHost?.StartRenderer();
+                    if (vm.IsStreaming) vm.StopStream();
+                }
+                else
+                {
+                    SharedTextureHost?.StopRenderer();
+                }
+            }
+        }
+        else if (e.PropertyName == nameof(VideoDisplayDockViewModel.UseSharedTextureCpu))
+        {
+            if (DataContext is VideoDisplayDockViewModel vm)
+            {
+                if (vm.UseSharedTextureCpu)
+                {
+                    vm.StartStream();
+                }
+                else if (vm.IsStreaming)
+                {
+                    vm.StopStream();
+                }
+            }
         }
     }
 

@@ -10,6 +10,7 @@ using Avalonia;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using System.ComponentModel;
+using HlaeObsTools.Services.Video.Shared;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -38,6 +39,12 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private HlaeWebSocketClient? _webSocketClient;
     private HlaeInputSender? _inputSender;
     private BrowserSourcesSettings? _browserSettings;
+    private bool _useSharedTextureCpu;
+    private bool _useD3DHost;
+
+    public bool ShowNoSignal => !_isStreaming && !_useSharedTextureCpu && !_useD3DHost;
+    public bool CanStart => !_isStreaming && !_useSharedTextureCpu && !_useD3DHost;
+    public bool CanStop => _isStreaming && !_useSharedTextureCpu && !_useD3DHost;
 
     public WriteableBitmap? CurrentFrame
     {
@@ -56,6 +63,9 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         {
             _isStreaming = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowNoSignal));
+            OnPropertyChanged(nameof(CanStart));
+            OnPropertyChanged(nameof(CanStop));
         }
     }
 
@@ -134,6 +144,44 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public string HudAddress => _browserSettings?.HudUrl ?? BrowserSourcesSettings.DefaultHudUrl;
     public bool IsHudEnabled => _browserSettings?.IsHudEnabled ?? false;
 
+    public bool UseSharedTextureCpu
+    {
+        get => _useSharedTextureCpu;
+        set
+        {
+            if (_useSharedTextureCpu == value) return;
+            _useSharedTextureCpu = value;
+            if (value && _useD3DHost)
+            {
+                _useD3DHost = false;
+                OnPropertyChanged(nameof(UseD3DHost));
+            }
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowNoSignal));
+            OnPropertyChanged(nameof(CanStart));
+            OnPropertyChanged(nameof(CanStop));
+        }
+    }
+
+    public bool UseD3DHost
+    {
+        get => _useD3DHost;
+        set
+        {
+            if (_useD3DHost == value) return;
+            _useD3DHost = value;
+            if (value && _useSharedTextureCpu)
+            {
+                _useSharedTextureCpu = false;
+                OnPropertyChanged(nameof(UseSharedTextureCpu));
+            }
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowNoSignal));
+            OnPropertyChanged(nameof(CanStart));
+            OnPropertyChanged(nameof(CanStop));
+        }
+    }
+
     /// <summary>
     /// Activate freecam (called when right mouse button pressed)
     /// </summary>
@@ -181,28 +229,33 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         Console.WriteLine("Spectator bindings refresh requested");
     }
 
-    public void StartRtpStream(RtpReceiverConfig? config = null)
+    public void StartStream(RtpReceiverConfig? config = null)
     {
         StopStream();
 
         try
         {
-            var receiver = new RtpVideoReceiver(config);
-            receiver.FrameReceived += OnFrameReceived;
-            receiver.Start();
-
-            _videoSource = receiver;
-            IsStreaming = true;
-            StatusText = $"Connected - {config?.Address ?? "127.0.0.1"}:{config?.Port ?? 5000}";
-            _lastFrameTime = DateTime.Now;
-            _frameCount = 0;
+            if (UseSharedTextureCpu)
+            {
+                StartSharedTexture();
+            }
+            else
+            {
+                StartRtpInternal(config);
+            }
         }
         catch (Exception ex)
         {
             StatusText = $"Error: {ex.Message}";
             IsStreaming = false;
-            Console.WriteLine($"Failed to start RTP stream: {ex}");
+            Console.WriteLine($"Failed to start video source: {ex}");
         }
+    }
+
+    public void StartRtpStream(RtpReceiverConfig? config = null)
+    {
+        UseSharedTextureCpu = false;
+        StartStream(config);
     }
 
     public void StopStream()
@@ -212,6 +265,10 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             if (_videoSource is RtpVideoReceiver receiver)
             {
                 receiver.FrameReceived -= OnFrameReceived;
+            }
+            else if (_videoSource is SharedTextureVideoSource shared)
+            {
+                shared.FrameReceived -= OnFrameReceived;
             }
 
             _videoSource.Stop();
@@ -339,5 +396,31 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         {
             OnPropertyChanged(nameof(IsHudEnabled));
         }
+    }
+
+    private void StartRtpInternal(RtpReceiverConfig? config = null)
+    {
+        var receiver = new RtpVideoReceiver(config);
+        receiver.FrameReceived += OnFrameReceived;
+        receiver.Start();
+
+        _videoSource = receiver;
+        IsStreaming = true;
+        StatusText = $"Connected - {config?.Address ?? "127.0.0.1"}:{config?.Port ?? 5000}";
+        _lastFrameTime = DateTime.Now;
+        _frameCount = 0;
+    }
+
+    private void StartSharedTexture()
+    {
+        var receiver = new SharedTextureVideoSource();
+        receiver.FrameReceived += OnFrameReceived;
+        receiver.Start();
+
+        _videoSource = receiver;
+        IsStreaming = true;
+        StatusText = $"Shared texture ({receiver.Dimensions.Width}x{receiver.Dimensions.Height})";
+        _lastFrameTime = DateTime.Now;
+        _frameCount = 0;
     }
 }

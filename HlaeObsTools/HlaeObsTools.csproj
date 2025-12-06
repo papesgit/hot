@@ -27,6 +27,7 @@
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.8" />
     <PackageReference Include="Dock.Model.Mvvm" Version="11.3.8" />
     <PackageReference Include="FFmpeg.AutoGen" Version="8.0.0" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.6.2" />
   </ItemGroup>
 
   <ItemGroup>

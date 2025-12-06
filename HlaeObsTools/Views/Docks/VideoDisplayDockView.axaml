@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:ctrls="using:HlaeObsTools.Controls"
              xmlns:webview="clr-namespace:WebViewControl;assembly=WebViewControl.Avalonia"
              x:Class="HlaeObsTools.Views.Docks.VideoDisplayDockView"
              x:DataType="vm:VideoDisplayDockViewModel">
@@ -18,11 +19,32 @@
                     PointerReleased="VideoContainer_PointerReleased"
                     PointerMoved="VideoContainer_PointerMoved">
                 <Grid>
-                    <Viewbox Stretch="Uniform">
+                    <Viewbox Stretch="Uniform" IsVisible="{Binding !UseD3DHost}">
                         <Image Source="{Binding CurrentFrame}"
                                RenderOptions.BitmapInterpolationMode="LowQuality"
                                Stretch="None"/>
                     </Viewbox>
+
+                    <!-- GPU shared texture host in an aspect-correct container (handled in code-behind) -->
+                    <Grid x:Name="SharedTextureWrapper"
+                          IsVisible="{Binding UseD3DHost}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                        <Grid x:Name="SharedTextureAspect"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                            <ctrls:D3DSharedTextureHost x:Name="SharedTextureHost"
+                                                        IsHitTestVisible="False"
+                                                        HorizontalAlignment="Stretch"
+                                                        VerticalAlignment="Stretch"
+                                                        Focusable="True"/>
+                            <!-- Invisible overlay to capture freecam right-click -->
+                            <Border Background="Transparent"
+                                    PointerPressed="SharedTextureOverlay_PointerPressed"
+                                    PointerReleased="SharedTextureOverlay_PointerReleased"
+                                    PointerMoved="SharedTextureOverlay_PointerMoved"/>
+                        </Grid>
+                    </Grid>
 
                     <!-- Freecam active indicator -->
                     <Border BorderBrush="Red"
@@ -44,7 +66,7 @@
         <!-- No signal overlay -->
         <Border Grid.Row="0"
                 Background="#1A1A1A"
-                IsVisible="{Binding !IsStreaming}">
+                IsVisible="{Binding ShowNoSignal}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="No Signal"
                            FontSize="24"
@@ -52,7 +74,7 @@
                            Foreground="#666666"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,10"/>
-                <TextBlock Text="Start RTP stream to display video"
+                <TextBlock Text="Start RTP/shared-texture (CPU) or enable D3D Host to display video"
                            FontSize="14"
                            Foreground="#888888"
                            HorizontalAlignment="Center"/>
@@ -64,6 +86,7 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
@@ -81,14 +104,29 @@
                     <Run Text="{Binding FrameRate, StringFormat={}{0:F1}}"/>
                 </TextBlock>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <CheckBox Content="D3D Host"
+                              IsChecked="{Binding UseD3DHost}"
+                              IsEnabled="{Binding !UseSharedTextureCpu}"
+                              ToolTip.Tip="Render shared texture directly on GPU (no CPU copy)"
+                              Focusable="False"/>
+                    <CheckBox Content="Shared Texture (CPU)"
+                              Margin="10,0,15,0"
+                              IsChecked="{Binding UseSharedTextureCpu}"
+                              IsEnabled="{Binding !UseD3DHost}"
+                              ToolTip.Tip="Use CPU copy from shared texture instead of the RTP stream"
+                              Focusable="False"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="5">
+                    <TextBlock Text="RTP Stream:" VerticalAlignment="Center" Foreground="#CCCCCC"/>
                     <Button Content="Start"
                             Click="StartButton_Click"
-                            IsEnabled="{Binding !IsStreaming}"
+                            IsEnabled="{Binding CanStart}"
                             Padding="10,5"/>
                     <Button Content="Stop"
                             Click="StopButton_Click"
-                            IsEnabled="{Binding IsStreaming}"
+                            IsEnabled="{Binding CanStop}"
                             Padding="10,5"/>
                     <Button Content="Refresh Binds"
                             Click="RefreshBindsButton_Click"
