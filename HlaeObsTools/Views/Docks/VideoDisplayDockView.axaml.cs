@@ -45,12 +45,6 @@ public partial class VideoDisplayDockView : UserControl
             SpeedScaleCanvas.SizeChanged += (_, _) => UpdateSpeedScale();
         }
 
-        if (SharedTextureHost != null)
-        {
-            SharedTextureHost.RightButtonDown += SharedTextureHost_RightButtonDown;
-            SharedTextureHost.RightButtonUp += SharedTextureHost_RightButtonUp;
-        }
-
         KeyDown += OnKeyDown;
         KeyUp += OnKeyUp;
 
@@ -63,7 +57,7 @@ public partial class VideoDisplayDockView : UserControl
         {
             if (vm.UseD3DHost)
             {
-                SharedTextureHost?.StartRenderer();
+                SharedTextureControl?.StartRenderer();
             }
             else
             {
@@ -77,7 +71,7 @@ public partial class VideoDisplayDockView : UserControl
         if (DataContext is VideoDisplayDockViewModel vm)
         {
             vm.StopStream();
-            SharedTextureHost?.StopRenderer();
+            SharedTextureControl?.StopRenderer();
         }
     }
 
@@ -184,23 +178,6 @@ public partial class VideoDisplayDockView : UserControl
     private void SharedTextureOverlay_PointerMoved(object? sender, PointerEventArgs e)
     {
         VideoContainer_PointerMoved(VideoContainer, e);
-    }
-
-    private void SharedTextureHost_RightButtonDown(object? sender, EventArgs e)
-    {
-        // Mirror the freecam activation when clicking on the shared texture host.
-        if (_isRightButtonDown) return;
-
-        _isRightButtonDown = true;
-        BeginFreecam();
-    }
-
-    private void SharedTextureHost_RightButtonUp(object? sender, EventArgs e)
-    {
-        if (!_isRightButtonDown) return;
-
-        _isRightButtonDown = false;
-        EndFreecam();
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -339,11 +316,7 @@ public partial class VideoDisplayDockView : UserControl
         {
             if (vm.UseD3DHost)
             {
-                SharedTextureHost?.StartRenderer();
-            }
-            else if (vm.UseSharedTextureCpu)
-            {
-                vm.StartStream();
+                SharedTextureControl?.StartRenderer();
             }
         }
     }
@@ -361,26 +334,12 @@ public partial class VideoDisplayDockView : UserControl
             {
                 if (vm.UseD3DHost)
                 {
-                    SharedTextureHost?.StartRenderer();
+                    SharedTextureControl?.StartRenderer();
                     if (vm.IsStreaming) vm.StopStream();
                 }
                 else
                 {
-                    SharedTextureHost?.StopRenderer();
-                }
-            }
-        }
-        else if (e.PropertyName == nameof(VideoDisplayDockViewModel.UseSharedTextureCpu))
-        {
-            if (DataContext is VideoDisplayDockViewModel vm)
-            {
-                if (vm.UseSharedTextureCpu)
-                {
-                    vm.StartStream();
-                }
-                else if (vm.IsStreaming)
-                {
-                    vm.StopStream();
+                    SharedTextureControl?.StopRenderer();
                 }
             }
         }

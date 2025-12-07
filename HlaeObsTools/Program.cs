@@ -18,7 +18,8 @@ class Program
 
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
-            .UsePlatformDetect()
+            .UseWin32()
+            .UseSkia()  // Use Skia with DirectX interop
             .WithInterFont()
             .LogToTrace();
 }

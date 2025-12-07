@@ -10,7 +10,6 @@ using Avalonia;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using System.ComponentModel;
-using HlaeObsTools.Services.Video.Shared;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -41,16 +40,15 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private HlaeWebSocketClient? _webSocketClient;
     private HlaeInputSender? _inputSender;
     private BrowserSourcesSettings? _browserSettings;
-    private bool _useSharedTextureCpu;
     private bool _useD3DHost;
     private double _freecamSpeed;
     private HlaeWebSocketClient? _speedWebSocketClient;
     private readonly IReadOnlyList<double> _speedTicks;
     private double _speedMultiplier = 1.0;
 
-    public bool ShowNoSignal => !_isStreaming && !_useSharedTextureCpu && !_useD3DHost;
-    public bool CanStart => !_isStreaming && !_useSharedTextureCpu && !_useD3DHost;
-    public bool CanStop => _isStreaming && !_useSharedTextureCpu && !_useD3DHost;
+    public bool ShowNoSignal => !_isStreaming && !_useD3DHost;
+    public bool CanStart => !_isStreaming && !_useD3DHost;
+    public bool CanStop => _isStreaming && !_useD3DHost;
 
     public WriteableBitmap? CurrentFrame
     {
@@ -154,25 +152,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public string HudAddress => _browserSettings?.HudUrl ?? BrowserSourcesSettings.DefaultHudUrl;
     public bool IsHudEnabled => _browserSettings?.IsHudEnabled ?? false;
 
-    public bool UseSharedTextureCpu
-    {
-        get => _useSharedTextureCpu;
-        set
-        {
-            if (_useSharedTextureCpu == value) return;
-            _useSharedTextureCpu = value;
-            if (value && _useD3DHost)
-            {
-                _useD3DHost = false;
-                OnPropertyChanged(nameof(UseD3DHost));
-            }
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(ShowNoSignal));
-            OnPropertyChanged(nameof(CanStart));
-            OnPropertyChanged(nameof(CanStop));
-        }
-    }
-
     public bool UseD3DHost
     {
         get => _useD3DHost;
@@ -180,11 +159,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         {
             if (_useD3DHost == value) return;
             _useD3DHost = value;
-            if (value && _useSharedTextureCpu)
-            {
-                _useSharedTextureCpu = false;
-                OnPropertyChanged(nameof(UseSharedTextureCpu));
-            }
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowNoSignal));
             OnPropertyChanged(nameof(CanStart));
@@ -245,14 +219,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
         try
         {
-            if (UseSharedTextureCpu)
-            {
-                StartSharedTexture();
-            }
-            else
-            {
-                StartRtpInternal(config);
-            }
+            StartRtpInternal(config);
         }
         catch (Exception ex)
         {
@@ -262,12 +229,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         }
     }
 
-    public void StartRtpStream(RtpReceiverConfig? config = null)
-    {
-        UseSharedTextureCpu = false;
-        StartStream(config);
-    }
-
     public void StopStream()
     {
         if (_videoSource != null)
@@ -275,10 +236,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             if (_videoSource is RtpVideoReceiver receiver)
             {
                 receiver.FrameReceived -= OnFrameReceived;
-            }
-            else if (_videoSource is SharedTextureVideoSource shared)
-            {
-                shared.FrameReceived -= OnFrameReceived;
             }
 
             _videoSource.Stop();
@@ -421,19 +378,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         _videoSource = receiver;
         IsStreaming = true;
         StatusText = $"Connected - {config?.Address ?? "127.0.0.1"}:{config?.Port ?? 5000}";
-        _lastFrameTime = DateTime.Now;
-        _frameCount = 0;
-    }
-
-    private void StartSharedTexture()
-    {
-        var receiver = new SharedTextureVideoSource();
-        receiver.FrameReceived += OnFrameReceived;
-        receiver.Start();
-
-        _videoSource = receiver;
-        IsStreaming = true;
-        StatusText = $"Shared texture ({receiver.Dimensions.Width}x{receiver.Dimensions.Height})";
         _lastFrameTime = DateTime.Now;
         _frameCount = 0;
     }

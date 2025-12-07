@@ -25,7 +25,7 @@
                                Stretch="None"/>
                     </Viewbox>
 
-                    <!-- GPU shared texture host in an aspect-correct container (handled in code-behind) -->
+                    <!-- GPU shared texture (Avalonia visual - no airspace issues) -->
                     <Grid x:Name="SharedTextureWrapper"
                           IsVisible="{Binding UseD3DHost}"
                           HorizontalAlignment="Center"
@@ -33,16 +33,10 @@
                         <Grid x:Name="SharedTextureAspect"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center">
-                            <ctrls:D3DSharedTextureHost x:Name="SharedTextureHost"
-                                                        IsHitTestVisible="False"
-                                                        HorizontalAlignment="Stretch"
-                                                        VerticalAlignment="Stretch"
-                                                        Focusable="True"/>
-                            <!-- Invisible overlay to capture freecam right-click -->
-                            <Border Background="Transparent"
-                                    PointerPressed="SharedTextureOverlay_PointerPressed"
-                                    PointerReleased="SharedTextureOverlay_PointerReleased"
-                                    PointerMoved="SharedTextureOverlay_PointerMoved"/>
+                            <ctrls:D3DSharedTextureControl x:Name="SharedTextureControl"
+                                                           HorizontalAlignment="Stretch"
+                                                           VerticalAlignment="Stretch"
+                                                           Focusable="True"/>
                         </Grid>
                     </Grid>
 
@@ -115,15 +109,9 @@
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <CheckBox Content="D3D Host"
+                              Margin="0,0,15,0"
                               IsChecked="{Binding UseD3DHost}"
-                              IsEnabled="{Binding !UseSharedTextureCpu}"
                               ToolTip.Tip="Render shared texture directly on GPU (no CPU copy)"
-                              Focusable="False"/>
-                    <CheckBox Content="Shared Texture (CPU)"
-                              Margin="10,0,15,0"
-                              IsChecked="{Binding UseSharedTextureCpu}"
-                              IsEnabled="{Binding !UseD3DHost}"
-                              ToolTip.Tip="Use CPU copy from shared texture instead of the RTP stream"
                               Focusable="False"/>
                 </StackPanel>
 
