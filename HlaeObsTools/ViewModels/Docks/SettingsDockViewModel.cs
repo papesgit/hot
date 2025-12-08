@@ -19,12 +19,14 @@ namespace HlaeObsTools.ViewModels.Docks
     {
         private readonly RadarSettings _radarSettings;
         private readonly BrowserSourcesSettings _browserSettings;
+        private readonly FreecamSettings _freecamSettings;
         private readonly HlaeWebSocketClient? _ws;
 
-        public SettingsDockViewModel(RadarSettings radarSettings, BrowserSourcesSettings browserSettings, HlaeWebSocketClient wsClient)
+        public SettingsDockViewModel(RadarSettings radarSettings, BrowserSourcesSettings browserSettings, FreecamSettings freecamSettings, HlaeWebSocketClient wsClient)
         {
             _radarSettings = radarSettings;
             _browserSettings = browserSettings;
+            _freecamSettings = freecamSettings;
             _ws = wsClient;
 
             Title = "Settings";
@@ -267,6 +269,301 @@ namespace HlaeObsTools.ViewModels.Docks
             await _ws.SendExecCommandAsync(cmd);
         });
 
+
+        #endregion
+
+        #region ==== Freecam Settings ====
+
+        // Helper method to send freecam config updates
+        private async Task SendFreecamConfigAsync(object config)
+        {
+            await _ws.SendCommandAsync("freecam_config", config);
+        }
+
+        // Mouse Settings
+        public double MouseSensitivity
+        {
+            get => _freecamSettings.MouseSensitivity;
+            set
+            {
+                if (_freecamSettings.MouseSensitivity != value)
+                {
+                    _freecamSettings.MouseSensitivity = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { mouseSensitivity = (float)value });
+                }
+            }
+        }
+
+        public double MouseAcceleration
+        {
+            get => _freecamSettings.MouseAcceleration;
+            set
+            {
+                if (_freecamSettings.MouseAcceleration != value)
+                {
+                    _freecamSettings.MouseAcceleration = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { mouseAcceleration = (float)value });
+                }
+            }
+        }
+
+        public double MouseSmoothing
+        {
+            get => _freecamSettings.MouseSmoothing;
+            set
+            {
+                if (_freecamSettings.MouseSmoothing != value)
+                {
+                    _freecamSettings.MouseSmoothing = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { mouseSmoothing = (float)value });
+                }
+            }
+        }
+
+        // Movement Settings
+        public double MoveSpeed
+        {
+            get => _freecamSettings.MoveSpeed;
+            set
+            {
+                if (_freecamSettings.MoveSpeed != value)
+                {
+                    _freecamSettings.MoveSpeed = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { moveSpeed = (float)value });
+                }
+            }
+        }
+
+        public double SprintMultiplier
+        {
+            get => _freecamSettings.SprintMultiplier;
+            set
+            {
+                if (_freecamSettings.SprintMultiplier != value)
+                {
+                    _freecamSettings.SprintMultiplier = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { sprintMultiplier = (float)value });
+                }
+            }
+        }
+
+        public double VerticalSpeed
+        {
+            get => _freecamSettings.VerticalSpeed;
+            set
+            {
+                if (_freecamSettings.VerticalSpeed != value)
+                {
+                    _freecamSettings.VerticalSpeed = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { verticalSpeed = (float)value });
+                }
+            }
+        }
+
+        public double SpeedAdjustRate
+        {
+            get => _freecamSettings.SpeedAdjustRate;
+            set
+            {
+                if (_freecamSettings.SpeedAdjustRate != value)
+                {
+                    _freecamSettings.SpeedAdjustRate = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { speedAdjustRate = (float)value });
+                }
+            }
+        }
+
+        public double SpeedMinMultiplier
+        {
+            get => _freecamSettings.SpeedMinMultiplier;
+            set
+            {
+                if (_freecamSettings.SpeedMinMultiplier != value)
+                {
+                    _freecamSettings.SpeedMinMultiplier = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { speedMinMultiplier = (float)value });
+                }
+            }
+        }
+
+        public double SpeedMaxMultiplier
+        {
+            get => _freecamSettings.SpeedMaxMultiplier;
+            set
+            {
+                if (_freecamSettings.SpeedMaxMultiplier != value)
+                {
+                    _freecamSettings.SpeedMaxMultiplier = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { speedMaxMultiplier = (float)value });
+                }
+            }
+        }
+
+        // Roll Settings
+        public double RollSpeed
+        {
+            get => _freecamSettings.RollSpeed;
+            set
+            {
+                if (_freecamSettings.RollSpeed != value)
+                {
+                    _freecamSettings.RollSpeed = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { rollSpeed = (float)value });
+                }
+            }
+        }
+
+        public double RollSmoothing
+        {
+            get => _freecamSettings.RollSmoothing;
+            set
+            {
+                if (_freecamSettings.RollSmoothing != value)
+                {
+                    _freecamSettings.RollSmoothing = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { rollSmoothing = (float)value });
+                }
+            }
+        }
+
+        public double LeanStrength
+        {
+            get => _freecamSettings.LeanStrength;
+            set
+            {
+                if (_freecamSettings.LeanStrength != value)
+                {
+                    _freecamSettings.LeanStrength = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { leanStrength = (float)value });
+                }
+            }
+        }
+
+        // FOV Settings
+        public double FovMin
+        {
+            get => _freecamSettings.FovMin;
+            set
+            {
+                if (_freecamSettings.FovMin != value)
+                {
+                    _freecamSettings.FovMin = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { fovMin = (float)value });
+                }
+            }
+        }
+
+        public double FovMax
+        {
+            get => _freecamSettings.FovMax;
+            set
+            {
+                if (_freecamSettings.FovMax != value)
+                {
+                    _freecamSettings.FovMax = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { fovMax = (float)value });
+                }
+            }
+        }
+
+        public double FovStep
+        {
+            get => _freecamSettings.FovStep;
+            set
+            {
+                if (_freecamSettings.FovStep != value)
+                {
+                    _freecamSettings.FovStep = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { fovStep = (float)value });
+                }
+            }
+        }
+
+        public double DefaultFov
+        {
+            get => _freecamSettings.DefaultFov;
+            set
+            {
+                if (_freecamSettings.DefaultFov != value)
+                {
+                    _freecamSettings.DefaultFov = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { defaultFov = (float)value });
+                }
+            }
+        }
+
+        // Smoothing Settings
+        public bool SmoothEnabled
+        {
+            get => _freecamSettings.SmoothEnabled;
+            set
+            {
+                if (_freecamSettings.SmoothEnabled != value)
+                {
+                    _freecamSettings.SmoothEnabled = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { smoothEnabled = value });
+                }
+            }
+        }
+
+        public double HalfVec
+        {
+            get => _freecamSettings.HalfVec;
+            set
+            {
+                if (_freecamSettings.HalfVec != value)
+                {
+                    _freecamSettings.HalfVec = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { halfVec = (float)value });
+                }
+            }
+        }
+
+        public double HalfRot
+        {
+            get => _freecamSettings.HalfRot;
+            set
+            {
+                if (_freecamSettings.HalfRot != value)
+                {
+                    _freecamSettings.HalfRot = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { halfRot = (float)value });
+                }
+            }
+        }
+
+        public double HalfFov
+        {
+            get => _freecamSettings.HalfFov;
+            set
+            {
+                if (_freecamSettings.HalfFov != value)
+                {
+                    _freecamSettings.HalfFov = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { halfFov = (float)value });
+                }
+            }
+        }
 
         #endregion
 

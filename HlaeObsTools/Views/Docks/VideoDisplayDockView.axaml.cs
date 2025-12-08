@@ -376,7 +376,7 @@ public partial class VideoDisplayDockView : UserControl
         SpeedScaleCanvas.Width = canvasWidth;
 
         // Calculate target position
-        double speedMultiplier = _isShiftPressed ? 2.0 : 1.0;
+        double speedMultiplier = _isShiftPressed ? vm.SprintMultiplier : 1.0;
         var effectiveSpeed = vm.FreecamSpeed * speedMultiplier;
         var clampedSpeed = Math.Clamp(effectiveSpeed, vm.SpeedMin, vm.SpeedMax);
         double currentNorm = (clampedSpeed - vm.SpeedMin) / (vm.SpeedMax - vm.SpeedMin);

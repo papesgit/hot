@@ -44,6 +44,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private HlaeWebSocketClient? _webSocketClient;
     private HlaeInputSender? _inputSender;
     private BrowserSourcesSettings? _browserSettings;
+    private FreecamSettings? _freecamSettings;
     private bool _useD3DHost;
     private double _freecamSpeed;
     private HlaeWebSocketClient? _speedWebSocketClient;
@@ -181,6 +182,14 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
         OnPropertyChanged(nameof(IsHudEnabled));
         OnPropertyChanged(nameof(ShowNativeHud));
+    }
+
+    /// <summary>
+    /// Configure freecam settings for sprint multiplier, etc.
+    /// </summary>
+    public void SetFreecamSettings(FreecamSettings settings)
+    {
+        _freecamSettings = settings;
     }
 
     /// <summary>
@@ -707,6 +716,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public double SpeedMin => 10.0;
     public double SpeedMax => 1000.0;
     public IReadOnlyList<double> SpeedTicks => _speedTicks;
+    public double SprintMultiplier => _freecamSettings?.SprintMultiplier ?? 2.5;
 
     private IReadOnlyList<double> BuildTicks()
     {
