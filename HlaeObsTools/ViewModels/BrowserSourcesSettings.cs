@@ -13,6 +13,7 @@ public sealed class BrowserSourcesSettings : ViewModelBase
     private string _hudUrl = DefaultHudUrl;
     private string _browserSourceUrl = DefaultBrowserSourceUrl;
     private bool _isHudEnabled;
+    private bool _useNativeHud;
 
     /// <summary>
     /// URL used for the HUD overlay in the video display.
@@ -39,5 +40,14 @@ public sealed class BrowserSourcesSettings : ViewModelBase
     {
         get => _isHudEnabled;
         set => SetProperty(ref _isHudEnabled, value);
+    }
+
+    /// <summary>
+    /// When true, use the built-in Avalonia HUD instead of the webview HUD.
+    /// </summary>
+    public bool UseNativeHud
+    {
+        get => _useNativeHud;
+        set => SetProperty(ref _useNativeHud, value);
     }
 }

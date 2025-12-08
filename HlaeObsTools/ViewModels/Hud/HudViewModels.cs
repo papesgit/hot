@@ -1,0 +1,459 @@
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using Avalonia.Media;
+using HlaeObsTools.ViewModels;
+
+namespace HlaeObsTools.ViewModels.Hud;
+
+public sealed class HudWeaponViewModel : ViewModelBase
+{
+    private string _name = string.Empty;
+    private string _iconPath = string.Empty;
+    private bool _isActive;
+    private bool _isPrimary;
+    private bool _isSecondary;
+    private bool _isGrenade;
+    private bool _isBomb;
+    private bool _isKnife;
+    private bool _isTaser;
+    private int _ammoClip;
+    private int _ammoReserve;
+    private IBrush _accentBrush = Brushes.White;
+
+    public string Name
+    {
+        get => _name;
+        private set => SetProperty(ref _name, value);
+    }
+
+    public string IconPath
+    {
+        get => _iconPath;
+        private set => SetProperty(ref _iconPath, value);
+    }
+
+    public bool IsActive
+    {
+        get => _isActive;
+        private set
+        {
+            if (SetProperty(ref _isActive, value))
+            {
+                OnPropertyChanged(nameof(AmmoText));
+            }
+        }
+    }
+
+    public bool IsPrimary
+    {
+        get => _isPrimary;
+        private set
+        {
+            if (SetProperty(ref _isPrimary, value))
+            {
+                OnPropertyChanged(nameof(ChipWidth));
+                OnPropertyChanged(nameof(IconSize));
+            }
+        }
+    }
+
+    public bool IsSecondary
+    {
+        get => _isSecondary;
+        private set => SetProperty(ref _isSecondary, value);
+    }
+
+    public bool IsGrenade
+    {
+        get => _isGrenade;
+        private set => SetProperty(ref _isGrenade, value);
+    }
+
+    public bool IsBomb
+    {
+        get => _isBomb;
+        private set => SetProperty(ref _isBomb, value);
+    }
+
+    public bool IsKnife
+    {
+        get => _isKnife;
+        private set => SetProperty(ref _isKnife, value);
+    }
+
+    public bool IsTaser
+    {
+        get => _isTaser;
+        private set => SetProperty(ref _isTaser, value);
+    }
+
+    public int AmmoClip
+    {
+        get => _ammoClip;
+        private set
+        {
+            if (SetProperty(ref _ammoClip, value))
+            {
+                OnPropertyChanged(nameof(AmmoText));
+            }
+        }
+    }
+
+    public int AmmoReserve
+    {
+        get => _ammoReserve;
+        private set
+        {
+            if (SetProperty(ref _ammoReserve, value))
+            {
+                OnPropertyChanged(nameof(AmmoText));
+            }
+        }
+    }
+
+    public IBrush AccentBrush
+    {
+        get => _accentBrush;
+        private set => SetProperty(ref _accentBrush, value);
+    }
+
+    public double ChipWidth => IsPrimary ? 48 : 28;
+    public double IconSize => IsPrimary ? 40 : 20;
+
+    public string AmmoText => AmmoClip > 0 || AmmoReserve > 0
+        ? $"{AmmoClip}/{AmmoReserve}"
+        : string.Empty;
+
+    public void Update(string name, string iconPath, bool isActive, bool isPrimary, bool isSecondary, bool isGrenade, bool isBomb, bool isKnife, bool isTaser, int ammoClip, int ammoReserve, IBrush accentBrush)
+    {
+        Name = name;
+        IconPath = iconPath;
+        IsActive = isActive;
+        IsPrimary = isPrimary;
+        IsSecondary = isSecondary;
+        IsGrenade = isGrenade;
+        IsBomb = isBomb;
+        IsKnife = isKnife;
+        IsTaser = isTaser;
+        AmmoClip = ammoClip;
+        AmmoReserve = ammoReserve;
+        AccentBrush = accentBrush;
+    }
+}
+
+public sealed class HudPlayerCardViewModel : ViewModelBase
+{
+    private string _steamId = string.Empty;
+    private string _name = string.Empty;
+    private string _team = string.Empty;
+    private int _observerSlot;
+    private int _health;
+    private int _armor;
+    private bool _hasHelmet;
+    private bool _hasDefuseKit;
+    private bool _isAlive;
+    private HudWeaponViewModel? _primary;
+    private HudWeaponViewModel? _secondary;
+    private HudWeaponViewModel? _knife;
+    private HudWeaponViewModel? _bomb;
+    private HudWeaponViewModel? _activeWeapon;
+    private IBrush _accentBrush = Brushes.White;
+    private IBrush _cardBackground = Brushes.Black;
+
+    public HudPlayerCardViewModel(string steamId)
+    {
+        _steamId = steamId;
+    }
+
+    public string SteamId
+    {
+        get => _steamId;
+        private set => SetProperty(ref _steamId, value);
+    }
+
+    public string Name
+    {
+        get => _name;
+        private set => SetProperty(ref _name, value);
+    }
+
+    public string Team
+    {
+        get => _team;
+        private set => SetProperty(ref _team, value);
+    }
+
+    public int ObserverSlot
+    {
+        get => _observerSlot;
+        private set
+        {
+            if (SetProperty(ref _observerSlot, value))
+            {
+                OnPropertyChanged(nameof(DisplaySlot));
+            }
+        }
+    }
+
+    public int Health
+    {
+        get => _health;
+        private set => SetProperty(ref _health, value);
+    }
+
+    public int Armor
+    {
+        get => _armor;
+        private set => SetProperty(ref _armor, value);
+    }
+
+    public bool HasHelmet
+    {
+        get => _hasHelmet;
+        private set
+        {
+            if (SetProperty(ref _hasHelmet, value))
+            {
+                OnPropertyChanged(nameof(ArmorIconPath));
+            }
+        }
+    }
+
+    public bool HasDefuseKit
+    {
+        get => _hasDefuseKit;
+        private set => SetProperty(ref _hasDefuseKit, value);
+    }
+
+    public bool IsAlive
+    {
+        get => _isAlive;
+        private set => SetProperty(ref _isAlive, value);
+    }
+
+    public HudWeaponViewModel? Primary
+    {
+        get => _primary;
+        private set => SetProperty(ref _primary, value);
+    }
+
+    public HudWeaponViewModel? Secondary
+    {
+        get => _secondary;
+        private set => SetProperty(ref _secondary, value);
+    }
+
+    public HudWeaponViewModel? Knife
+    {
+        get => _knife;
+        private set => SetProperty(ref _knife, value);
+    }
+
+    public HudWeaponViewModel? Bomb
+    {
+        get => _bomb;
+        private set => SetProperty(ref _bomb, value);
+    }
+
+    public ObservableCollection<HudWeaponViewModel> Grenades { get; } = new();
+
+    public HudWeaponViewModel? ActiveWeapon
+    {
+        get => _activeWeapon;
+        private set
+        {
+            if (SetProperty(ref _activeWeapon, value))
+            {
+                OnPropertyChanged(nameof(ActiveAmmoText));
+            }
+        }
+    }
+
+    public ObservableCollection<HudWeaponViewModel> WeaponsRow { get; } = new();
+    public ObservableCollection<HudWeaponViewModel> WeaponsAndGrenades { get; } = new();
+
+    public IBrush AccentBrush
+    {
+        get => _accentBrush;
+        private set => SetProperty(ref _accentBrush, value);
+    }
+
+    public IBrush CardBackground
+    {
+        get => _cardBackground;
+        private set => SetProperty(ref _cardBackground, value);
+    }
+
+    public string DisplaySlot => ObserverSlot >= 0 && ObserverSlot <= 9
+        ? ((ObserverSlot + 1) % 10).ToString()
+        : string.Empty;
+
+    public string ArmorIconPath => HasHelmet
+        ? "avares://HlaeObsTools/Assets/hud/icons/armor-helmet.svg"
+        : "avares://HlaeObsTools/Assets/hud/icons/armor.svg";
+
+    public string HealthIconPath => "avares://HlaeObsTools/Assets/hud/icons/health.svg";
+
+    public string ActiveAmmoText => ActiveWeapon != null && (ActiveWeapon.AmmoClip > 0 || ActiveWeapon.AmmoReserve > 0)
+        ? $"{ActiveWeapon.AmmoClip}/{ActiveWeapon.AmmoReserve}"
+        : string.Empty;
+
+    public bool HasArmor => Armor > 0;
+
+    public void Update(
+        string name,
+        string team,
+        int observerSlot,
+        int health,
+        int armor,
+        bool hasHelmet,
+        bool hasDefuseKit,
+        bool isAlive,
+        HudWeaponViewModel? primary,
+        HudWeaponViewModel? secondary,
+        HudWeaponViewModel? knife,
+        HudWeaponViewModel? bomb,
+        IEnumerable<HudWeaponViewModel> grenades,
+        HudWeaponViewModel? activeWeapon,
+        IBrush accentBrush,
+        IBrush cardBackground)
+    {
+        Name = name;
+        Team = team;
+        ObserverSlot = observerSlot;
+        Health = health;
+        Armor = armor;
+        HasHelmet = hasHelmet;
+        HasDefuseKit = hasDefuseKit;
+        IsAlive = isAlive;
+        Primary = primary;
+        Secondary = secondary;
+        Knife = knife;
+        Bomb = bomb;
+        ActiveWeapon = activeWeapon;
+        AccentBrush = accentBrush;
+        CardBackground = cardBackground;
+
+        var row = BuildRow(primary, secondary, knife, bomb).ToList();
+        var grenadesList = grenades.ToList();
+
+        SyncCollection(WeaponsRow, row);
+        SyncCollection(Grenades, grenadesList);
+        SyncCollection(WeaponsAndGrenades, row.Concat(grenadesList));
+    }
+
+    private static IEnumerable<HudWeaponViewModel> BuildRow(params HudWeaponViewModel?[] items)
+    {
+        foreach (var item in items)
+        {
+            if (item != null) yield return item;
+        }
+    }
+
+    private static void SyncCollection<T>(ObservableCollection<T> target, IEnumerable<T> desired)
+    {
+        var desiredList = desired.ToList();
+
+        for (int i = target.Count - 1; i >= 0; i--)
+        {
+            if (!desiredList.Contains(target[i]))
+            {
+                target.RemoveAt(i);
+            }
+        }
+
+        for (int i = 0; i < desiredList.Count; i++)
+        {
+            var item = desiredList[i];
+            if (i < target.Count)
+            {
+                if (!EqualityComparer<T>.Default.Equals(target[i], item))
+                {
+                    if (target.Contains(item))
+                    {
+                        target.Remove(item);
+                    }
+                    target.Insert(i, item);
+                }
+            }
+            else
+            {
+                target.Add(item);
+            }
+        }
+    }
+}
+
+public sealed class HudTeamViewModel : ViewModelBase
+{
+    public HudTeamViewModel(string side)
+    {
+        Side = side;
+    }
+
+    private string _name = string.Empty;
+    private int _score;
+    private int _timeoutsRemaining;
+
+    public string Side { get; }
+
+    public string Name
+    {
+        get => _name;
+        set => SetProperty(ref _name, value);
+    }
+
+    public int Score
+    {
+        get => _score;
+        set => SetProperty(ref _score, value);
+    }
+
+    public int TimeoutsRemaining
+    {
+        get => _timeoutsRemaining;
+        set => SetProperty(ref _timeoutsRemaining, value);
+    }
+
+    public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Side : Name;
+
+    public ObservableCollection<HudPlayerCardViewModel> Players { get; } = new();
+
+    public bool HasPlayers => Players.Count > 0;
+
+    public void SetPlayers(IEnumerable<HudPlayerCardViewModel> players)
+    {
+        var desired = players.ToList();
+
+        for (int i = Players.Count - 1; i >= 0; i--)
+        {
+            if (!desired.Contains(Players[i]))
+            {
+                Players.RemoveAt(i);
+            }
+        }
+
+        for (int i = 0; i < desired.Count; i++)
+        {
+            var p = desired[i];
+            if (i < Players.Count)
+            {
+                if (!ReferenceEquals(Players[i], p))
+                {
+                    if (Players.Contains(p))
+                    {
+                        Players.Remove(p);
+                    }
+                    Players.Insert(i, p);
+                }
+            }
+            else
+            {
+                Players.Add(p);
+            }
+        }
+
+        OnPropertyChanged(nameof(HasPlayers));
+    }
+}

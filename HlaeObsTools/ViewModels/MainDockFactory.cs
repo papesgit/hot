@@ -72,12 +72,13 @@ public class MainDockFactory : Factory
         var browserSource = new BrowserSourceDockViewModel(browserSourcesSettings) { Id = "BrowserSource" };
         var topCenter = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
         var topRight = new NetConsoleDockViewModel { Id = "TopRight", Title = "Console" };
-        var bottomLeft = new SettingsDockViewModel(radarSettings, browserSourcesSettings) { Id = "BottomLeft", Title = "Settings" };
+        var bottomLeft = new SettingsDockViewModel(radarSettings, browserSourcesSettings, _webSocketClient) { Id = "BottomLeft", Title = "Settings" };
 
         // Inject WebSocket and UDP services into video display
         topCenter.SetWebSocketClient(_webSocketClient);
         topCenter.SetInputSender(_inputSender);
         topCenter.SetBrowserSourcesSettings(browserSourcesSettings);
+        topCenter.SetGsiServer(_gsiServer);
         bottomRight.SetWebSocketClient(_webSocketClient);
 
         // Wrap tools in ToolDocks for proper docking behavior

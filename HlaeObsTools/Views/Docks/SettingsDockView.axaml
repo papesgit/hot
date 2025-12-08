@@ -5,12 +5,52 @@
              x:DataType="vm:SettingsDockViewModel">
     <Border Background="#1E1E1E" Padding="10" Focusable="True">
         <TabControl>
+
             <TabItem Header="General">
                 <StackPanel Margin="10" Spacing="8">
                     <TextBlock Text="General settings will live here."
                                Foreground="#CCCCCC"/>
                 </StackPanel>
             </TabItem>
+
+            <TabItem Header="Create">
+                <StackPanel Margin="10" Spacing="8">
+
+                    <ToggleSwitch IsChecked="{Binding IsCameraPathPreviewEnabled, Mode=TwoWay}"
+                                  Content="Enable camera path preview"
+                                  Foreground="#E6E6E6"
+                                  HorizontalAlignment="Left"/>
+
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="6"
+                                Margin="0,8,0,0"
+                                VerticalAlignment="Center">
+                        <ToggleSwitch IsChecked="{Binding IsCampathEnabled, Mode=TwoWay}"
+                                      Content="Campath enabled"
+                                      Foreground="#E6E6E6"/>
+                        <Button Content="Add point"
+                                Command="{Binding AddPointCommand}"/>
+                        <Button Content="Clear"
+                                Command="{Binding ClearCampathCommand}"/>
+                        <Button Content="Goto Start"
+                                Command="{Binding GotoStartCommand}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="6"
+                                Margin="0,4,0,0"
+                                VerticalAlignment="Center">
+                        <Button Content="{Binding InterpLabel}"
+                                Command="{Binding ToggleInterpModeCommand}"/>
+                        <Button Content="Load Campath"
+                                Command="{Binding LoadCampathCommand}"/>
+                        <Button Content="Save Campath"
+                                Command="{Binding SaveCampathCommand}"/>
+                    </StackPanel>
+
+                </StackPanel>
+            </TabItem>
+
             <TabItem Header="Radar Settings">
                 <StackPanel Margin="10" Spacing="10">
                     <TextBlock Text="Marker size"
@@ -32,7 +72,8 @@
                                FontSize="12"/>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Browser Sources">
+
+            <TabItem Header="HUD">
                 <StackPanel Margin="10" Spacing="10">
                     <TextBlock Text="Video HUD Overlay"
                                Foreground="#CCCCCC"
@@ -42,14 +83,24 @@
                                       Content="Enable HUD overlay (Video Display)"
                                       Foreground="#E6E6E6"/>
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <ToggleSwitch IsChecked="{Binding UseNativeHud, Mode=TwoWay}"
+                                      Content="Use native HUD (instead of webview)"
+                                      Foreground="#E6E6E6"/>
+                    </StackPanel>
                     <TextBox Text="{Binding HudUrl, Mode=TwoWay}"
-                             Watermark="HUD URL"
+                             Watermark="HUD URL (webview)"
                              Foreground="#E6E6E6"
                              Background="#2A2A2A"
                              BorderBrush="#444"
                              SelectionBrush="#555"
                              Width="320"
                              HorizontalAlignment="Left"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Browser Sources">
+                <StackPanel Margin="10" Spacing="10">
                     <TextBlock Text="Browser Source Window"
                                Foreground="#CCCCCC"
                                FontWeight="SemiBold"
@@ -64,6 +115,7 @@
                              HorizontalAlignment="Left"/>
                 </StackPanel>
             </TabItem>
+
         </TabControl>
     </Border>
 </UserControl>

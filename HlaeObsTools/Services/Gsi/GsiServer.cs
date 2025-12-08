@@ -137,9 +137,58 @@ public sealed class GsiServer : IDisposable
             using var doc = JsonDocument.Parse(body);
             var root = doc.RootElement;
 
+            GsiTeam? teamCt = null;
+            GsiTeam? teamT = null;
+            int roundNumber = 0;
+            string? roundPhase = null;
+            double? phaseEndsIn = null;
             var mapName = root.TryGetProperty("map", out var mapElem) && mapElem.TryGetProperty("name", out var nameElem)
                 ? nameElem.GetString() ?? string.Empty
                 : string.Empty;
+
+            if (root.TryGetProperty("map", out mapElem))
+            {
+                if (mapElem.TryGetProperty("round", out var roundElem))
+                {
+                    // map.round is zero-based; display as 1-based
+                    roundNumber = roundElem.GetInt32() + 1;
+                }
+
+                if (mapElem.TryGetProperty("team_ct", out var ctElem))
+                {
+                    teamCt = ParseTeam(ctElem, "CT");
+                }
+
+                if (mapElem.TryGetProperty("team_t", out var tElem))
+                {
+                    teamT = ParseTeam(tElem, "T");
+                }
+            }
+
+            if (root.TryGetProperty("phase_countdowns", out var phaseElem))
+            {
+                if (phaseElem.TryGetProperty("phase", out var phaseProp))
+                {
+                    roundPhase = phaseProp.GetString();
+                }
+
+                if (phaseElem.TryGetProperty("phase_ends_in", out var endsProp))
+                {
+                    if (endsProp.ValueKind == System.Text.Json.JsonValueKind.Number && endsProp.TryGetDouble(out var endsNumeric))
+                    {
+                        phaseEndsIn = endsNumeric;
+                    }
+                    else if (double.TryParse(endsProp.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var endsIn))
+                    {
+                        phaseEndsIn = endsIn;
+                    }
+                }
+            }
+
+            if (root.TryGetProperty("round", out var roundObj) && roundObj.TryGetProperty("phase", out var roundPhaseElem))
+            {
+                roundPhase ??= roundPhaseElem.GetString();
+            }
 
             var players = new List<GsiPlayer>();
             if (root.TryGetProperty("allplayers", out var playersElem))
@@ -152,22 +201,70 @@ public sealed class GsiServer : IDisposable
                     string steamId = playerProp.Name;
                     var pos = playerElem.TryGetProperty("position", out var posElem) ? Vec3.Parse(posElem.GetString()) : default;
                     var forward = playerElem.TryGetProperty("forward", out var fwdElem) ? Vec3.Parse(fwdElem.GetString()) : default;
-                    bool alive = playerElem.TryGetProperty("state", out var stateElem)
-                        && stateElem.TryGetProperty("health", out var hpElem)
-                        && hpElem.GetInt32() > 0;
+                    int health = 0;
+                    int armor = 0;
+                    bool hasHelmet = false;
+                    bool hasDefuseKit = false;
+                    int money = 0;
+                    int equipmentValue = 0;
+                    int roundKills = 0;
+                    int roundKillHs = 0;
+                    int kills = 0;
+                    int deaths = 0;
+                    int assists = 0;
+                    int mvps = 0;
+                    int score = 0;
+
+                    if (playerElem.TryGetProperty("state", out var stateElem))
+                    {
+                        if (stateElem.TryGetProperty("health", out var hpElem)) health = hpElem.GetInt32();
+                        if (stateElem.TryGetProperty("armor", out var armorElem)) armor = armorElem.GetInt32();
+                        if (stateElem.TryGetProperty("helmet", out var helmetElem)) hasHelmet = helmetElem.GetBoolean();
+                        if (stateElem.TryGetProperty("defusekit", out var kitElem)) hasDefuseKit = kitElem.GetBoolean();
+                        if (stateElem.TryGetProperty("money", out var moneyElem)) money = moneyElem.GetInt32();
+                        if (stateElem.TryGetProperty("equip_value", out var equipElem)) equipmentValue = equipElem.GetInt32();
+                        if (stateElem.TryGetProperty("round_kills", out var rkElem)) roundKills = rkElem.GetInt32();
+                        if (stateElem.TryGetProperty("round_killhs", out var rkhElem)) roundKillHs = rkhElem.GetInt32();
+                    }
+
+                    if (playerElem.TryGetProperty("match_stats", out var statsElem))
+                    {
+                        if (statsElem.TryGetProperty("kills", out var killsElem)) kills = killsElem.GetInt32();
+                        if (statsElem.TryGetProperty("assists", out var assistsElem)) assists = assistsElem.GetInt32();
+                        if (statsElem.TryGetProperty("deaths", out var deathsElem)) deaths = deathsElem.GetInt32();
+                        if (statsElem.TryGetProperty("mvps", out var mvpsElem)) mvps = mvpsElem.GetInt32();
+                        if (statsElem.TryGetProperty("score", out var scoreElem)) score = scoreElem.GetInt32();
+                    }
+
                     bool hasBomb = false;
+                    var weapons = new List<GsiWeapon>();
                     if (playerElem.TryGetProperty("weapons", out var weaponsElem))
                     {
                         foreach (var weaponProp in weaponsElem.EnumerateObject())
                         {
                             var weapon = weaponProp.Value;
-                            if (weapon.TryGetProperty("type", out var typeElem))
+                            var weaponName = weapon.TryGetProperty("name", out var weaponNameElem) ? weaponNameElem.GetString() ?? string.Empty : string.Empty;
+                            var weaponType = weapon.TryGetProperty("type", out var typeElem) ? typeElem.GetString() ?? string.Empty : string.Empty;
+                            var weaponState = weapon.TryGetProperty("state", out var stateProp) ? stateProp.GetString() ?? string.Empty : string.Empty;
+                            int ammoClip = weapon.TryGetProperty("ammo_clip", out var ammoElem) ? ammoElem.GetInt32() : 0;
+                            int ammoClipMax = weapon.TryGetProperty("ammo_clip_max", out var ammoMaxElem) ? ammoMaxElem.GetInt32() : 0;
+                            int ammoReserve = weapon.TryGetProperty("ammo_reserve", out var ammoReserveElem) ? ammoReserveElem.GetInt32() : 0;
+
+                            weapons.Add(new GsiWeapon
                             {
-                                var type = typeElem.GetString();
-                                if (string.Equals(type, "C4", StringComparison.OrdinalIgnoreCase))
+                                Name = weaponName,
+                                Type = weaponType,
+                                State = weaponState,
+                                AmmoClip = ammoClip,
+                                AmmoClipMax = ammoClipMax,
+                                AmmoReserve = ammoReserve
+                            });
+
+                            if (!string.IsNullOrWhiteSpace(weaponType))
+                            {
+                                if (string.Equals(weaponType, "C4", StringComparison.OrdinalIgnoreCase))
                                 {
                                     hasBomb = true;
-                                    break;
                                 }
                             }
                         }
@@ -182,9 +279,23 @@ public sealed class GsiServer : IDisposable
                         Team = team,
                         Position = pos,
                         Forward = forward,
-                        IsAlive = alive,
+                        IsAlive = health > 0,
                         HasBomb = hasBomb,
-                        Slot = playerSlot
+                        Slot = playerSlot,
+                        Health = health,
+                        Armor = armor,
+                        HasHelmet = hasHelmet,
+                        HasDefuseKit = hasDefuseKit,
+                        Money = money,
+                        EquipmentValue = equipmentValue,
+                        RoundKills = roundKills,
+                        RoundKillHs = roundKillHs,
+                        Kills = kills,
+                        Assists = assists,
+                        Deaths = deaths,
+                        Mvps = mvps,
+                        Score = score,
+                        Weapons = weapons
                     });
                 }
             }
@@ -257,7 +368,12 @@ public sealed class GsiServer : IDisposable
                 Grenades = grenades,
                 Bomb = bombState,
                 FocusedPlayerSteamId = focusedPlayerSteamId,
-                Heartbeat = heartbeat
+                Heartbeat = heartbeat,
+                TeamCt = teamCt,
+                TeamT = teamT,
+                RoundNumber = roundNumber,
+                RoundPhase = roundPhase,
+                PhaseEndsIn = phaseEndsIn
             };
         }
         catch (Exception ex)
@@ -265,6 +381,19 @@ public sealed class GsiServer : IDisposable
             Console.WriteLine($"Failed to parse GSI payload: {ex.Message}");
             return null;
         }
+    }
+
+    private static GsiTeam ParseTeam(System.Text.Json.JsonElement teamElem, string side)
+    {
+        return new GsiTeam
+        {
+            Side = side,
+            Name = teamElem.TryGetProperty("name", out var n) ? n.GetString() ?? string.Empty : side,
+            Score = teamElem.TryGetProperty("score", out var s) ? s.GetInt32() : 0,
+            ConsecutiveRoundLosses = teamElem.TryGetProperty("consecutive_round_losses", out var crl) ? crl.GetInt32() : 0,
+            TimeoutsRemaining = teamElem.TryGetProperty("timeouts_remaining", out var to) ? to.GetInt32() : 0,
+            MatchesWonThisSeries = teamElem.TryGetProperty("matches_won_this_series", out var m) ? m.GetInt32() : 0
+        };
     }
 
     public void Dispose()

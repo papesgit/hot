@@ -324,7 +324,8 @@ public partial class VideoDisplayDockView : UserControl
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(VideoDisplayDockViewModel.IsHudEnabled) ||
-            e.PropertyName == nameof(VideoDisplayDockViewModel.HudAddress))
+            e.PropertyName == nameof(VideoDisplayDockViewModel.HudAddress) ||
+            e.PropertyName == nameof(VideoDisplayDockViewModel.UseNativeHud))
         {
             SyncHudState();
         }
@@ -354,7 +355,7 @@ public partial class VideoDisplayDockView : UserControl
         if (HudWebView == null || DataContext is not VideoDisplayDockViewModel vm)
             return;
 
-        if (vm.IsHudEnabled)
+        if (vm.ShowWebHud)
         {
             InjectHudOverlayStyles();
             HudWebView.InvalidateMeasure();
@@ -369,7 +370,7 @@ public partial class VideoDisplayDockView : UserControl
 
     private void StartHudCssTimer()
     {
-        if (HudWebView == null || DataContext is not VideoDisplayDockViewModel vm || !vm.IsHudEnabled)
+        if (HudWebView == null || DataContext is not VideoDisplayDockViewModel vm || !vm.ShowWebHud)
             return;
 
         _hudCssTimer ??= new DispatcherTimer

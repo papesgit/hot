@@ -12,6 +12,10 @@ using Avalonia.Threading;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Text.Json;
+using HlaeObsTools.Services.Gsi;
+using HlaeObsTools.ViewModels.Hud;
+using Avalonia.Media;
+using System.Linq;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -45,6 +49,34 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private HlaeWebSocketClient? _speedWebSocketClient;
     private readonly IReadOnlyList<double> _speedTicks;
     private double _speedMultiplier = 1.0;
+    private GsiServer? _gsiServer;
+    private readonly HudTeamViewModel _teamCt = new("CT");
+    private readonly HudTeamViewModel _teamT = new("T");
+    private HudPlayerCardViewModel? _focusedHudPlayer;
+    private string _roundTimerText = "--:--";
+    private string _roundPhase = "LIVE";
+    private int _roundNumber;
+    private string _mapName = string.Empty;
+    private readonly Dictionary<string, HudWeaponViewModel> _weaponCache = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, HudPlayerCardViewModel> _hudPlayerCache = new(StringComparer.Ordinal);
+    private static readonly HashSet<string> PrimaryWeaponTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Machine Gun",
+        "Rifle",
+        "Shotgun",
+        "SniperRifle",
+        "Submachine Gun"
+    };
+
+    private static readonly Dictionary<string, int> GrenadeOrder = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["molotov"] = 0,
+        ["incgrenade"] = 1,
+        ["decoy"] = 2,
+        ["smokegrenade"] = 3,
+        ["flashbang"] = 4,
+        ["hegrenade"] = 5
+    };
 
     public bool ShowNoSignal => !_isStreaming && !_useD3DHost;
     public bool CanStart => !_isStreaming && !_useD3DHost;
@@ -111,6 +143,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         CanFloat = true;
         CanPin = true;
         _speedTicks = BuildTicks();
+        _teamCt.Players.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasHudData));
+        _teamT.Players.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasHudData));
     }
 
     /// <summary>
@@ -147,10 +181,87 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
         OnPropertyChanged(nameof(HudAddress));
         OnPropertyChanged(nameof(IsHudEnabled));
+        OnPropertyChanged(nameof(UseNativeHud));
+        OnPropertyChanged(nameof(ShowNativeHud));
+        OnPropertyChanged(nameof(ShowWebHud));
+    }
+
+    /// <summary>
+    /// Wire GSI updates for HUD overlay rendering.
+    /// </summary>
+    public void SetGsiServer(GsiServer server)
+    {
+        if (_gsiServer != null)
+        {
+            _gsiServer.GameStateUpdated -= OnHudGameStateUpdated;
+        }
+
+        _gsiServer = server;
+        _gsiServer.GameStateUpdated += OnHudGameStateUpdated;
     }
 
     public string HudAddress => _browserSettings?.HudUrl ?? BrowserSourcesSettings.DefaultHudUrl;
     public bool IsHudEnabled => _browserSettings?.IsHudEnabled ?? false;
+    public bool UseNativeHud => _browserSettings?.UseNativeHud ?? false;
+    public bool ShowNativeHud => IsHudEnabled && UseNativeHud;
+    public bool ShowWebHud => IsHudEnabled && !UseNativeHud;
+
+    public HudTeamViewModel TeamCt => _teamCt;
+    public HudTeamViewModel TeamT => _teamT;
+
+    public HudPlayerCardViewModel? FocusedHudPlayer
+    {
+        get => _focusedHudPlayer;
+        private set
+        {
+            _focusedHudPlayer = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasFocusedHudPlayer));
+        }
+    }
+
+    public bool HasFocusedHudPlayer => _focusedHudPlayer != null;
+    public bool HasHudData => _teamCt.HasPlayers || _teamT.HasPlayers;
+
+    public string RoundTimerText
+    {
+        get => _roundTimerText;
+        private set
+        {
+            _roundTimerText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string RoundPhase
+    {
+        get => _roundPhase;
+        private set
+        {
+            _roundPhase = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public int RoundNumber
+    {
+        get => _roundNumber;
+        private set
+        {
+            _roundNumber = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string MapName
+    {
+        get => _mapName;
+        private set
+        {
+            _mapName = value;
+            OnPropertyChanged();
+        }
+    }
 
     public bool UseD3DHost
     {
@@ -348,11 +459,217 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         }
     }
 
+    private void OnHudGameStateUpdated(object? sender, GsiGameState state)
+    {
+        Dispatcher.UIThread.Post(() => ApplyHudState(state));
+    }
+
+    private void ApplyHudState(GsiGameState state)
+    {
+        TeamCt.Name = state.TeamCt?.Name ?? "CT";
+        TeamCt.Score = state.TeamCt?.Score ?? 0;
+        TeamCt.TimeoutsRemaining = state.TeamCt?.TimeoutsRemaining ?? 0;
+
+        TeamT.Name = state.TeamT?.Name ?? "T";
+        TeamT.Score = state.TeamT?.Score ?? 0;
+        TeamT.TimeoutsRemaining = state.TeamT?.TimeoutsRemaining ?? 0;
+
+        RoundNumber = state.RoundNumber;
+        RoundPhase = (state.RoundPhase ?? "LIVE").ToUpperInvariant();
+        RoundTimerText = FormatPhaseTimer(state.PhaseEndsIn);
+        MapName = state.MapName ?? string.Empty;
+
+        TeamCt.SetPlayers(BuildTeamPlayers(state.Players, "CT"));
+        TeamT.SetPlayers(BuildTeamPlayers(state.Players, "T"));
+
+        FocusedHudPlayer = FindFocusedPlayer(state.FocusedPlayerSteamId);
+
+        OnPropertyChanged(nameof(HasHudData));
+    }
+
+    private IEnumerable<HudPlayerCardViewModel> BuildTeamPlayers(IEnumerable<GsiPlayer> players, string team)
+    {
+        var ordered = players
+            .Where(p => string.Equals(p.Team, team, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(p => p.Slot switch
+            {
+                < 0 => int.MaxValue,
+                _ => p.Slot
+            })
+            .ToList();
+
+        var result = new List<HudPlayerCardViewModel>();
+        foreach (var player in ordered)
+        {
+            result.Add(BuildHudPlayer(player));
+        }
+
+        return result;
+    }
+
+    private HudPlayerCardViewModel BuildHudPlayer(GsiPlayer player)
+    {
+        var accent = CreateAccent(player.Team);
+        var background = CreateCardBackground(player.Team);
+
+        var weaponVms = player.Weapons?
+            .Select(w => BuildWeapon(player.SteamId, w, accent))
+            .ToList() ?? new List<HudWeaponViewModel>();
+
+        var primary = weaponVms.FirstOrDefault(w => w.IsPrimary);
+        var secondary = weaponVms.FirstOrDefault(w => w.IsSecondary);
+        var knife = weaponVms.FirstOrDefault(w => w.IsKnife);
+        var bomb = weaponVms.FirstOrDefault(w => w.IsBomb);
+        var active = weaponVms.FirstOrDefault(w => w.IsActive) ?? primary ?? secondary ?? knife ?? weaponVms.FirstOrDefault();
+        var grenades = BuildGrenadeList(weaponVms.Where(w => w.IsGrenade));
+
+        if (!_hudPlayerCache.TryGetValue(player.SteamId, out var vm))
+        {
+            vm = new HudPlayerCardViewModel(player.SteamId);
+            _hudPlayerCache[player.SteamId] = vm;
+        }
+
+        vm.Update(
+            player.Name,
+            player.Team,
+            player.Slot,
+            player.Health,
+            player.Armor,
+            player.HasHelmet,
+            player.HasDefuseKit,
+            player.IsAlive,
+            primary,
+            secondary,
+            knife,
+            bomb,
+            grenades,
+            active,
+            accent,
+            background);
+
+        return vm;
+    }
+
+    private HudWeaponViewModel BuildWeapon(string steamId, GsiWeapon weapon, IBrush accent)
+    {
+        var normalizedName = NormalizeWeaponName(weapon.Name);
+        var icon = GetWeaponIconPath(normalizedName);
+
+        var isGrenade = string.Equals(weapon.Type, "Grenade", StringComparison.OrdinalIgnoreCase) ||
+                        normalizedName.Contains("grenade", StringComparison.OrdinalIgnoreCase);
+
+        var isBomb = normalizedName.Contains("c4", StringComparison.OrdinalIgnoreCase);
+        var isKnife = string.Equals(weapon.Type, "Knife", StringComparison.OrdinalIgnoreCase) || normalizedName.Contains("knife", StringComparison.OrdinalIgnoreCase);
+        var isTaser = normalizedName.Contains("taser", StringComparison.OrdinalIgnoreCase);
+        var isPrimary = PrimaryWeaponTypes.Contains(weapon.Type);
+        var isSecondary = string.Equals(weapon.Type, "Pistol", StringComparison.OrdinalIgnoreCase);
+        var isActive = string.Equals(weapon.State, "active", StringComparison.OrdinalIgnoreCase);
+
+        var cacheKey = $"{steamId}:{normalizedName}";
+        if (!_weaponCache.TryGetValue(cacheKey, out var vm))
+        {
+            vm = new HudWeaponViewModel();
+            _weaponCache[cacheKey] = vm;
+        }
+
+        vm.Update(
+            weapon.Name,
+            icon,
+            isActive,
+            isPrimary,
+            isSecondary,
+            isGrenade,
+            isBomb,
+            isKnife,
+            isTaser,
+            weapon.AmmoClip,
+            weapon.AmmoReserve,
+            accent);
+
+        return vm;
+    }
+
+    private IReadOnlyList<HudWeaponViewModel> BuildGrenadeList(IEnumerable<HudWeaponViewModel> grenades)
+    {
+        var list = new List<HudWeaponViewModel>();
+        foreach (var grenade in grenades)
+        {
+            var count = Math.Max(1, grenade.AmmoReserve > 0 ? grenade.AmmoReserve : 1);
+            for (int i = 0; i < count; i++)
+            {
+                list.Add(grenade);
+            }
+        }
+
+        return list
+            .OrderBy(g => GrenadeOrder.TryGetValue(NormalizeWeaponName(g.Name), out var idx) ? idx : 99)
+            .ThenBy(g => g.Name)
+            .ToList();
+    }
+
+    private HudPlayerCardViewModel? FindFocusedPlayer(string? steamId)
+    {
+        if (string.IsNullOrWhiteSpace(steamId))
+            return null;
+
+        return TeamCt.Players.FirstOrDefault(p => string.Equals(p.SteamId, steamId, StringComparison.Ordinal))
+               ?? TeamT.Players.FirstOrDefault(p => string.Equals(p.SteamId, steamId, StringComparison.Ordinal));
+    }
+
+    private static string FormatPhaseTimer(double? seconds)
+    {
+        if (seconds == null || double.IsNaN(seconds.Value))
+            return "--:--";
+
+        var clamped = Math.Max(0, seconds.Value);
+        var span = TimeSpan.FromSeconds(clamped);
+        return $"{(int)span.TotalMinutes:00}:{span.Seconds:00}";
+    }
+
+    private static string NormalizeWeaponName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "knife";
+
+        var normalized = name.StartsWith("weapon_", StringComparison.OrdinalIgnoreCase)
+            ? name.Substring("weapon_".Length)
+            : name;
+
+        return normalized.ToLowerInvariant();
+    }
+
+    private static string GetWeaponIconPath(string weaponName)
+    {
+        var sanitized = NormalizeWeaponName(weaponName);
+        if (string.IsNullOrWhiteSpace(sanitized))
+            sanitized = "knife";
+
+        return $"avares://HlaeObsTools/Assets/hud/weapons/{sanitized}.svg";
+    }
+
+    private static SolidColorBrush CreateAccent(string team)
+    {
+        return string.Equals(team, "CT", StringComparison.OrdinalIgnoreCase)
+            ? new SolidColorBrush(Color.Parse("#6EB4FF"))
+            : new SolidColorBrush(Color.Parse("#FF9B4A"));
+    }
+
+    private static SolidColorBrush CreateCardBackground(string team)
+    {
+        return string.Equals(team, "CT", StringComparison.OrdinalIgnoreCase)
+            ? new SolidColorBrush(Color.Parse("#192434"))
+            : new SolidColorBrush(Color.Parse("#2E1E15"));
+    }
+
     public void Dispose()
     {
         if (_speedWebSocketClient != null)
         {
             _speedWebSocketClient.MessageReceived -= OnWebSocketMessage;
+        }
+        if (_gsiServer != null)
+        {
+            _gsiServer.GameStateUpdated -= OnHudGameStateUpdated;
         }
         StopStream();
     }
@@ -366,6 +683,14 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         else if (e.PropertyName == nameof(BrowserSourcesSettings.IsHudEnabled))
         {
             OnPropertyChanged(nameof(IsHudEnabled));
+            OnPropertyChanged(nameof(ShowNativeHud));
+            OnPropertyChanged(nameof(ShowWebHud));
+        }
+        else if (e.PropertyName == nameof(BrowserSourcesSettings.UseNativeHud))
+        {
+            OnPropertyChanged(nameof(UseNativeHud));
+            OnPropertyChanged(nameof(ShowNativeHud));
+            OnPropertyChanged(nameof(ShowWebHud));
         }
     }
 

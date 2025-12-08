@@ -18,6 +18,16 @@ public record struct Vec3(double X, double Y, double Z)
     }
 }
 
+public sealed class GsiWeapon
+{
+    public string Name { get; init; } = string.Empty;
+    public string Type { get; init; } = string.Empty;
+    public string State { get; init; } = string.Empty;
+    public int AmmoClip { get; init; }
+    public int AmmoClipMax { get; init; }
+    public int AmmoReserve { get; init; }
+}
+
 public sealed class GsiPlayer
 {
     public string SteamId { get; init; } = string.Empty;
@@ -28,6 +38,20 @@ public sealed class GsiPlayer
     public bool IsAlive { get; init; }
     public bool HasBomb { get; init; }
     public int Slot { get; init; }
+    public int Health { get; init; }
+    public int Armor { get; init; }
+    public bool HasHelmet { get; init; }
+    public bool HasDefuseKit { get; init; }
+    public int Money { get; init; }
+    public int EquipmentValue { get; init; }
+    public int RoundKills { get; init; }
+    public int RoundKillHs { get; init; }
+    public int Kills { get; init; }
+    public int Assists { get; init; }
+    public int Deaths { get; init; }
+    public int Mvps { get; init; }
+    public int Score { get; init; }
+    public IReadOnlyList<GsiWeapon> Weapons { get; init; } = Array.Empty<GsiWeapon>();
 }
 
 public sealed class GsiBombState
@@ -48,6 +72,16 @@ public sealed class GsiGrenade
     public IReadOnlyList<Vec3>? Flames { get; init; } // for inferno
 }
 
+public sealed class GsiTeam
+{
+    public string Side { get; init; } = string.Empty; // CT or T
+    public string Name { get; init; } = string.Empty;
+    public int Score { get; init; }
+    public int ConsecutiveRoundLosses { get; init; }
+    public int TimeoutsRemaining { get; init; }
+    public int MatchesWonThisSeries { get; init; }
+}
+
 public sealed class GsiGameState
 {
     public string MapName { get; init; } = string.Empty;
@@ -56,4 +90,9 @@ public sealed class GsiGameState
     public GsiBombState? Bomb { get; init; }
     public string? FocusedPlayerSteamId { get; init; }
     public long Heartbeat { get; init; }
+    public GsiTeam? TeamCt { get; init; }
+    public GsiTeam? TeamT { get; init; }
+    public int RoundNumber { get; init; }
+    public string? RoundPhase { get; init; }
+    public double? PhaseEndsIn { get; init; }
 }

@@ -3,8 +3,115 @@
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:ctrls="using:HlaeObsTools.Controls"
              xmlns:webview="clr-namespace:WebViewControl;assembly=WebViewControl.Avalonia"
+             xmlns:svg="using:Avalonia.Svg.Skia"
+             xmlns:hud="using:HlaeObsTools.ViewModels.Hud"
+             xmlns:conv="using:HlaeObsTools.Converters"
+             xmlns:ac="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
              x:Class="HlaeObsTools.Views.Docks.VideoDisplayDockView"
              x:DataType="vm:VideoDisplayDockViewModel">
+    <UserControl.Resources>
+        <conv:BooleanToOpacityConverter x:Key="ActiveOpacityConverter"
+                                        TrueOpacity="1"
+                                        FalseOpacity="0.55" />
+        <conv:BooleanToOpacityConverter x:Key="AliveOpacityConverter"
+                                        TrueOpacity="1"
+                                        FalseOpacity="0.35" />
+        <conv:HudScaleConverter x:Key="HudScaleConverter"
+                                BaseWidth="1600"
+                                BaseHeight="900"
+                                MinScale="0"
+                                MaxScale="1" />
+
+        <DataTemplate x:Key="WeaponChipTemplate" x:DataType="hud:HudWeaponViewModel">
+            <Border Padding="4"
+                    CornerRadius="4"
+                    BorderThickness="1"
+                    BorderBrush="{Binding AccentBrush}"
+                    Background="#32000000"
+                    Opacity="{Binding IsActive, Converter={StaticResource ActiveOpacityConverter}}"
+                    Margin="2"
+                    Width="{Binding ChipWidth}"
+                    Height="28">
+                <svg:Svg Path="{Binding IconPath}"
+                         Width="{Binding IconSize}"
+                         Height="{Binding IconSize}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center" />
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="PlayerCardTemplate" x:DataType="hud:HudPlayerCardViewModel">
+            <Border Background="{Binding CardBackground}"
+                    CornerRadius="8"
+                    Padding="8"
+                    Margin="0,6"
+                    BorderBrush="#33FFFFFF"
+                    BorderThickness="1"
+                    Width="306"
+                    Opacity="{Binding IsAlive, Converter={StaticResource AliveOpacityConverter}}">
+                <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                        <Border Background="{Binding AccentBrush}"
+                                Padding="6,3"
+                                CornerRadius="4"
+                                Width="32"
+                                HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding DisplaySlot}"
+                                       HorizontalAlignment="Center"
+                                       FontWeight="Bold"
+                                       Foreground="#0D1015" />
+                        </Border>
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Name}"
+                                   FontWeight="SemiBold"
+                                   Foreground="#E6E6E6"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding ActiveAmmoText}"
+                                   Foreground="{Binding AccentBrush}"
+                                   FontWeight="Bold"
+                                   FontSize="12"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+
+                        <StackPanel Grid.Column="3"
+                                    Orientation="Horizontal"
+                                    Spacing="8"
+                                    VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <svg:Svg Path="{Binding HealthIconPath}" Width="16" Height="16" />
+                                <TextBlock Text="{Binding Health}" Foreground="#E6E6E6" FontWeight="Bold" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <svg:Svg Path="{Binding ArmorIconPath}" Width="16" Height="16" />
+                                <TextBlock Text="{Binding Armor}" Foreground="#E6E6E6" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <ProgressBar Minimum="0"
+                                 Maximum="100"
+                                 Value="{Binding Health}"
+                                 Height="6"
+                                 Foreground="{Binding AccentBrush}"
+                                 Background="#303540"
+                                 IsHitTestVisible="False" />
+
+                    <ItemsControl ItemsSource="{Binding WeaponsAndGrenades}"
+                                  ItemTemplate="{StaticResource WeaponChipTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -51,11 +158,12 @@
                     <!-- Freecam speed scale overlay -->
                     <Canvas x:Name="SpeedScaleCanvas"
                             HorizontalAlignment="Right"
-                            VerticalAlignment="Stretch"
+                            VerticalAlignment="Top"
                             Width="90"
-                            Margin="0,16,16,16"
+                            Height="220"
+                            Margin="0,12,16,0"
                             IsHitTestVisible="False"
-                            Panel.ZIndex="5"/>
+                            ac:Panel.ZIndex="5"/>
                 </Grid>
             </Border>
 
@@ -63,7 +171,204 @@
             <webview:WebView x:Name="HudWebView"
                              Address="{Binding HudAddress}"
                              IsHitTestVisible="False"
-                             IsVisible="{Binding IsHudEnabled}"/>
+                             IsVisible="{Binding ShowWebHud}"/>
+
+            <!-- Built-in HUD overlay -->
+            <Grid x:Name="HudOverlayHost"
+                  Margin="8"
+                  IsVisible="{Binding ShowNativeHud}"
+                  IsHitTestVisible="False"
+                  ClipToBounds="True"
+                  ac:Panel.ZIndex="10">
+                <ac:LayoutTransformControl HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False">
+                    <ac:LayoutTransformControl.LayoutTransform>
+                        <ScaleTransform>
+                            <ScaleTransform.ScaleX>
+                                <MultiBinding Converter="{StaticResource HudScaleConverter}">
+                                    <Binding ElementName="HudOverlayHost" Path="Bounds.Width" />
+                                    <Binding ElementName="HudOverlayHost" Path="Bounds.Height" />
+                                </MultiBinding>
+                            </ScaleTransform.ScaleX>
+                            <ScaleTransform.ScaleY>
+                                <MultiBinding Converter="{StaticResource HudScaleConverter}">
+                                    <Binding ElementName="HudOverlayHost" Path="Bounds.Width" />
+                                    <Binding ElementName="HudOverlayHost" Path="Bounds.Height" />
+                                </MultiBinding>
+                            </ScaleTransform.ScaleY>
+                        </ScaleTransform>
+                    </ac:LayoutTransformControl.LayoutTransform>
+
+                    <Grid Width="1600" Height="900">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Top bar -->
+                        <Border Grid.Row="0"
+                                Grid.ColumnSpan="3"
+                                Background="Transparent"
+                                CornerRadius="8"
+                                Padding="8,6"
+                                Margin="0,0,0,8"
+                                Width="250"
+                                MaxWidth="1350"
+                                HorizontalAlignment="Center">
+                            <Grid ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding TeamCt.DisplayName}"
+                                               Foreground="#A9D6FF"
+                                               FontSize="22"
+                                               FontWeight="Bold" >
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect   
+                                                Color="Black"
+                                                BlurRadius="5"
+                                                OffsetX="2"
+                                                OffsetY="2"
+                                                Opacity="0.5"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                    <Border Background="#22364A"
+                                            CornerRadius="6"
+                                            Padding="7,2">
+                                        <TextBlock Text="{Binding TeamCt.Score}"
+                                                   FontSize="18"
+                                                   FontWeight="Bold"
+                                                   Foreground="#E6E6E6" />
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Vertical"
+                                            Spacing="2"
+                                            HorizontalAlignment="Center">
+                                    <TextBlock Text="{Binding RoundPhase}"
+                                               Foreground="#E6E6E6"
+                                               FontWeight="SemiBold"
+                                               FontSize="12"
+                                               HorizontalAlignment="Center" >
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect   
+                                                Color="Black"
+                                                BlurRadius="5"
+                                                OffsetX="2"
+                                                OffsetY="2"
+                                                Opacity="0.5"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding RoundNumber, StringFormat=Round {0}}"
+                                               Foreground="#E0E0E0"
+                                               FontSize="11"
+                                               HorizontalAlignment="Center" >
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect   
+                                                Color="Black"
+                                                BlurRadius="5"
+                                                OffsetX="2"
+                                                OffsetY="2"
+                                                Opacity="0.5"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding RoundTimerText}"
+                                               Foreground="#FFFFFF"
+                                               FontSize="26"
+                                               FontWeight="Black"
+                                               HorizontalAlignment="Center" >
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect   
+                                                Color="Black"
+                                                BlurRadius="5"
+                                                OffsetX="2"
+                                                OffsetY="2"
+                                                Opacity="0.5"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2"
+                                            Orientation="Horizontal"
+                                            Spacing="8"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center">
+                                    <Border Background="#332514"
+                                            CornerRadius="6"
+                                            Padding="7,2">
+                                        <TextBlock Text="{Binding TeamT.Score}"
+                                                   FontSize="18"
+                                                   FontWeight="Bold"
+                                                   Foreground="#E6E6E6" />
+                                    </Border>
+                                    <TextBlock Text="{Binding TeamT.DisplayName}"
+                                               Foreground="#FFB271"
+                                               FontSize="22"
+                                               FontWeight="Bold" >
+                                        <TextBlock.Effect>
+                                            <DropShadowEffect   
+                                                Color="Black"
+                                                BlurRadius="5"
+                                                OffsetX="2"
+                                                OffsetY="2"
+                                                Opacity="0.5"/>
+                                        </TextBlock.Effect>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Player sidebars -->
+                        <ItemsControl Grid.Row="1"
+                                      Grid.Column="0"
+                                      ItemsSource="{Binding TeamCt.Players}"
+                                      ItemTemplate="{StaticResource PlayerCardTemplate}"
+                                      Margin="0,4,16,12">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+
+                        <ItemsControl Grid.Row="1"
+                                      Grid.Column="2"
+                                      ItemsSource="{Binding TeamT.Players}"
+                                      ItemTemplate="{StaticResource PlayerCardTemplate}"
+                                      Margin="16,4,0,12">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+
+                        <TextBlock Grid.Row="1"
+                                   Grid.Column="1"
+                                   Text="Waiting for HUD data..."
+                                   Foreground="#9AA4B5"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   IsVisible="{Binding HasHudData, Converter={StaticResource BooleanNegationConverter}}" />
+
+                        <!-- Focused player overlay (doesn't reduce sidebars height) -->
+                        <ContentControl Grid.Row="1"
+                                        Grid.ColumnSpan="3"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Bottom"
+                                        Margin="0,0,0,8"
+                                        Width="520"
+                                        IsVisible="{Binding HasFocusedHudPlayer}"
+                                        Content="{Binding FocusedHudPlayer}"
+                                        ContentTemplate="{StaticResource PlayerCardTemplate}" />
+                    </Grid>
+                </ac:LayoutTransformControl>
+            </Grid>
         </Grid>
 
         <!-- No signal overlay -->
@@ -77,7 +382,7 @@
                            Foreground="#666666"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,10"/>
-                <TextBlock Text="Start RTP/shared-texture (CPU) or enable D3D Host to display video"
+                <TextBlock Text="Start RTP/Local Mode to display video"
                            FontSize="14"
                            Foreground="#888888"
                            HorizontalAlignment="Center"/>
@@ -108,7 +413,7 @@
                 </TextBlock>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <CheckBox Content="D3D Host"
+                    <CheckBox Content="Local Mode"
                               Margin="0,0,15,0"
                               IsChecked="{Binding UseD3DHost}"
                               ToolTip.Tip="Render shared texture directly on GPU (no CPU copy)"
