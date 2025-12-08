@@ -8,8 +8,19 @@
 
             <TabItem Header="General">
                 <StackPanel Margin="10" Spacing="8">
-                    <TextBlock Text="General settings will live here."
-                               Foreground="#CCCCCC"/>
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="6"
+                                Margin="0,8,0,0"
+                                VerticalAlignment="Center">
+                        <ToggleSwitch IsChecked="{Binding IsDrawHudEnabled, Mode=TwoWay}"
+                                      Content="Hide HUD"
+                                      Foreground="#E6E6E6"/>
+                        <ToggleSwitch IsChecked="{Binding IsOnlyDeathnotesEnabled, Mode=TwoWay}"
+                                      Content="Only Deathnotices"
+                                      Foreground="#E6E6E6"/>
+                        <Button Content="DemoUI"
+                                Command="{Binding ToggleDemouiCommand}"/>
+                    </StackPanel>
                 </StackPanel>
             </TabItem>
 
@@ -78,24 +89,13 @@
                     <TextBlock Text="Video HUD Overlay"
                                Foreground="#CCCCCC"
                                FontWeight="SemiBold"/>
-                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                        <ToggleSwitch IsChecked="{Binding IsHudEnabled, Mode=TwoWay}"
-                                      Content="Enable HUD overlay (Video Display)"
-                                      Foreground="#E6E6E6"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                        <ToggleSwitch IsChecked="{Binding UseNativeHud, Mode=TwoWay}"
-                                      Content="Use native HUD (instead of webview)"
-                                      Foreground="#E6E6E6"/>
-                    </StackPanel>
-                    <TextBox Text="{Binding HudUrl, Mode=TwoWay}"
-                             Watermark="HUD URL (webview)"
-                             Foreground="#E6E6E6"
-                             Background="#2A2A2A"
-                             BorderBrush="#444"
-                             SelectionBrush="#555"
-                             Width="320"
-                             HorizontalAlignment="Left"/>
+                    <ToggleSwitch IsChecked="{Binding IsHudEnabled, Mode=TwoWay}"
+                                  Content="Enable HUD"
+                                  Foreground="#E6E6E6"/>
+                    <TextBlock Text="Shows player cards, scores, and round information overlay."
+                               Foreground="#888888"
+                               FontSize="12"
+                               Margin="0,4,0,0"/>
                 </StackPanel>
             </TabItem>
 

@@ -179,11 +179,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         _browserSettings = settings;
         _browserSettings.PropertyChanged += OnBrowserSettingsChanged;
 
-        OnPropertyChanged(nameof(HudAddress));
         OnPropertyChanged(nameof(IsHudEnabled));
-        OnPropertyChanged(nameof(UseNativeHud));
         OnPropertyChanged(nameof(ShowNativeHud));
-        OnPropertyChanged(nameof(ShowWebHud));
     }
 
     /// <summary>
@@ -200,11 +197,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         _gsiServer.GameStateUpdated += OnHudGameStateUpdated;
     }
 
-    public string HudAddress => _browserSettings?.HudUrl ?? BrowserSourcesSettings.DefaultHudUrl;
     public bool IsHudEnabled => _browserSettings?.IsHudEnabled ?? false;
-    public bool UseNativeHud => _browserSettings?.UseNativeHud ?? false;
-    public bool ShowNativeHud => IsHudEnabled && UseNativeHud;
-    public bool ShowWebHud => IsHudEnabled && !UseNativeHud;
+    public bool ShowNativeHud => IsHudEnabled;
 
     public HudTeamViewModel TeamCt => _teamCt;
     public HudTeamViewModel TeamT => _teamT;
@@ -676,21 +670,10 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     private void OnBrowserSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(BrowserSourcesSettings.HudUrl))
-        {
-            OnPropertyChanged(nameof(HudAddress));
-        }
-        else if (e.PropertyName == nameof(BrowserSourcesSettings.IsHudEnabled))
+        if (e.PropertyName == nameof(BrowserSourcesSettings.IsHudEnabled))
         {
             OnPropertyChanged(nameof(IsHudEnabled));
             OnPropertyChanged(nameof(ShowNativeHud));
-            OnPropertyChanged(nameof(ShowWebHud));
-        }
-        else if (e.PropertyName == nameof(BrowserSourcesSettings.UseNativeHud))
-        {
-            OnPropertyChanged(nameof(UseNativeHud));
-            OnPropertyChanged(nameof(ShowNativeHud));
-            OnPropertyChanged(nameof(ShowWebHud));
         }
     }
 

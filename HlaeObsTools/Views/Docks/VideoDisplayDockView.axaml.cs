@@ -5,12 +5,15 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using HlaeObsTools.ViewModels.Docks;
 using System;
-using WebViewControl;
 using System.ComponentModel;
 using Avalonia.Threading;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using System.Linq;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace HlaeObsTools.Views.Docks;
 
@@ -19,27 +22,35 @@ public partial class VideoDisplayDockView : UserControl
     private Point? _lockedCursorCenter;
     private bool _isRightButtonDown;
     private Point? _lastMousePosition;
-    private DispatcherTimer? _hudCssTimer;
     private INotifyPropertyChanged? _currentVmNotifier;
     private bool _cursorHidden;
     private bool _isShiftPressed;
+    private double _currentArrowY;
+    private Polygon? _speedArrow;
+    private TextBlock? _speedLabel;
+    private bool _isFirstSpeedUpdate = true;
+    private CancellationTokenSource? _animationCts;
+    private double _lastFreecamSpeed;
+    private double _lastCanvasHeight;
+    private bool _lastShiftPressed;
 
     public VideoDisplayDockView()
     {
         InitializeComponent();
 
-        if (HudWebView != null)
-        {
-            HudWebView.Loaded += (_, _) => InjectHudOverlayStyles();
-            HudWebView.AttachedToVisualTree += (_, _) => StartHudCssTimer();
-            HudWebView.DetachedFromVisualTree += (_, _) => StopHudCssTimer();
-        }
-
         if (VideoContainer != null)
         {
-            VideoContainer.SizeChanged += (_, _) => UpdateSharedTextureAspectSize();
+            VideoContainer.SizeChanged += (_, _) =>
+            {
+                UpdateSharedTextureAspectSize();
+                UpdateSpeedScaleRegionSize();
+            };
         }
-        this.AttachedToVisualTree += (_, _) => UpdateSharedTextureAspectSize();
+        this.AttachedToVisualTree += (_, _) =>
+        {
+            UpdateSharedTextureAspectSize();
+            UpdateSpeedScaleRegionSize();
+        };
         if (SpeedScaleCanvas != null)
         {
             SpeedScaleCanvas.SizeChanged += (_, _) => UpdateSpeedScale();
@@ -188,11 +199,6 @@ public partial class VideoDisplayDockView : UserControl
             {
                 _isShiftPressed = true;
                 UpdateSpeedScale();
-
-                if (DataContext is VideoDisplayDockViewModel vm)
-                {
-                    vm.ApplySpeedMultiplier(2.0);
-                }
             }
         }
     }
@@ -205,11 +211,6 @@ public partial class VideoDisplayDockView : UserControl
             {
                 _isShiftPressed = false;
                 UpdateSpeedScale();
-
-                if (DataContext is VideoDisplayDockViewModel vm)
-                {
-                    vm.ApplySpeedMultiplier(1.0);
-                }
             }
         }
     }
@@ -232,6 +233,18 @@ public partial class VideoDisplayDockView : UserControl
 
         SharedTextureAspect.Width = targetW;
         SharedTextureAspect.Height = targetH;
+    }
+
+    private void UpdateSpeedScaleRegionSize()
+    {
+        if (SpeedScaleRegion == null || VideoContainer == null) return;
+
+        var bounds = VideoContainer.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0) return;
+
+        // Set region to 30% width and 40% height
+        SpeedScaleRegion.Width = bounds.Width * 0.3;
+        SpeedScaleRegion.Height = bounds.Height * 0.4;
     }
 
     private void BeginFreecam()
@@ -310,8 +323,6 @@ public partial class VideoDisplayDockView : UserControl
 
         UpdateSpeedScale();
 
-        SyncHudState();
-
         if (DataContext is VideoDisplayDockViewModel vm)
         {
             if (vm.UseD3DHost)
@@ -323,13 +334,7 @@ public partial class VideoDisplayDockView : UserControl
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(VideoDisplayDockViewModel.IsHudEnabled) ||
-            e.PropertyName == nameof(VideoDisplayDockViewModel.HudAddress) ||
-            e.PropertyName == nameof(VideoDisplayDockViewModel.UseNativeHud))
-        {
-            SyncHudState();
-        }
-        else if (e.PropertyName == nameof(VideoDisplayDockViewModel.UseD3DHost))
+        if (e.PropertyName == nameof(VideoDisplayDockViewModel.UseD3DHost))
         {
             if (DataContext is VideoDisplayDockViewModel vm)
             {
@@ -350,97 +355,6 @@ public partial class VideoDisplayDockView : UserControl
         }
     }
 
-    private void SyncHudState()
-    {
-        if (HudWebView == null || DataContext is not VideoDisplayDockViewModel vm)
-            return;
-
-        if (vm.ShowWebHud)
-        {
-            InjectHudOverlayStyles();
-            HudWebView.InvalidateMeasure();
-            HudWebView.InvalidateVisual();
-            StartHudCssTimer();
-        }
-        else
-        {
-            StopHudCssTimer();
-        }
-    }
-
-    private void StartHudCssTimer()
-    {
-        if (HudWebView == null || DataContext is not VideoDisplayDockViewModel vm || !vm.ShowWebHud)
-            return;
-
-        _hudCssTimer ??= new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(1.5)
-        };
-        _hudCssTimer.Tick -= HudCssTimerOnTick;
-        _hudCssTimer.Tick += HudCssTimerOnTick;
-        if (!_hudCssTimer.IsEnabled)
-        {
-            _hudCssTimer.Start();
-        }
-    }
-
-    private void StopHudCssTimer()
-    {
-        if (_hudCssTimer != null && _hudCssTimer.IsEnabled)
-        {
-            _hudCssTimer.Stop();
-        }
-    }
-
-    private void HudCssTimerOnTick(object? sender, EventArgs e)
-    {
-        InjectHudOverlayStyles();
-    }
-
-    private void InjectHudOverlayStyles()
-    {
-        const string script = """
-(() => {
-    try {
-        const apply = () => {
-            const style = document.createElement('style');
-            style.innerHTML = `
-                html, body { margin:0; padding:0; overflow:hidden; background:transparent !important; }
-                ::-webkit-scrollbar { width:0px; height:0px; display:none; }
-            `;
-            document.head.appendChild(style);
-            if (document.documentElement) {
-                document.documentElement.style.background = 'transparent';
-                document.documentElement.style.overflow = 'hidden';
-            }
-            if (document.body) {
-                document.body.style.background = 'transparent';
-                document.body.style.overflow = 'hidden';
-            }
-        };
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', apply, { once: true });
-        } else {
-            apply();
-        }
-    } catch (err) {
-        console.error('HUD style injection failed', err);
-    }
-})();
-""";
-
-        try
-        {
-            _ = HudWebView?.EvaluateScript<object>(script);
-        }
-        catch
-        {
-            // ignore injection errors
-        }
-    }
-
     private void UpdateSpeedScale()
     {
         if (SpeedScaleCanvas == null || DataContext is not VideoDisplayDockViewModel vm)
@@ -450,14 +364,46 @@ public partial class VideoDisplayDockView : UserControl
         if (height <= 0 || vm.SpeedTicks == null || vm.SpeedTicks.Count == 0)
             return;
 
-        SpeedScaleCanvas.Children.Clear();
-
         const double marginTop = 12;
         const double marginBottom = 12;
         const double lineX = 12;
         const double tickLong = 14;
         const double tickShort = 10;
+        const double canvasWidth = 90;
         double usableHeight = Math.Max(0, height - marginTop - marginBottom);
+
+        // Set canvas width
+        SpeedScaleCanvas.Width = canvasWidth;
+
+        // Calculate target position
+        double speedMultiplier = _isShiftPressed ? 2.0 : 1.0;
+        var effectiveSpeed = vm.FreecamSpeed * speedMultiplier;
+        var clampedSpeed = Math.Clamp(effectiveSpeed, vm.SpeedMin, vm.SpeedMax);
+        double currentNorm = (clampedSpeed - vm.SpeedMin) / (vm.SpeedMax - vm.SpeedMin);
+        double targetArrowY = marginTop + usableHeight * (1 - currentNorm);
+
+        // Detect if speed changed vs. just a resize
+        bool speedChanged = Math.Abs(vm.FreecamSpeed - _lastFreecamSpeed) > 0.001;
+        bool shiftStateChanged = _isShiftPressed != _lastShiftPressed;
+        bool heightChanged = Math.Abs(height - _lastCanvasHeight) > 0.5;
+
+        // Initialize on first update
+        if (_isFirstSpeedUpdate)
+        {
+            _currentArrowY = targetArrowY;
+            _lastFreecamSpeed = vm.FreecamSpeed;
+            _lastCanvasHeight = height;
+            _lastShiftPressed = _isShiftPressed;
+            _isFirstSpeedUpdate = false;
+        }
+
+        // Update tracked values
+        _lastFreecamSpeed = vm.FreecamSpeed;
+        _lastCanvasHeight = height;
+        _lastShiftPressed = _isShiftPressed;
+
+        // Clear and rebuild static elements
+        SpeedScaleCanvas.Children.Clear();
 
         // Main ruler line
         var spine = new Line
@@ -496,36 +442,120 @@ public partial class VideoDisplayDockView : UserControl
         SpeedScaleCanvas.Children.Add(topLabel);
         SpeedScaleCanvas.Children.Add(bottomLabel);
 
-        // Current speed indicator
-        double speedMultiplier = _isShiftPressed ? 2.0 : 1.0;
-        var effectiveSpeed = vm.FreecamSpeed * speedMultiplier;
-        var clampedSpeed = Math.Clamp(effectiveSpeed, vm.SpeedMin, vm.SpeedMax);
-        double currentNorm = (clampedSpeed - vm.SpeedMin) / (vm.SpeedMax - vm.SpeedMin);
-        double arrowY = marginTop + usableHeight * (1 - currentNorm);
-
-        var arrow = new Polygon
+        // Create or update arrow and label
+        if (_speedArrow == null)
         {
-            Fill = _isShiftPressed ? Brushes.Yellow : Brushes.White,
-            Points = new Points(new[]
-            {
-                new Point(lineX + tickLong + 8, arrowY),
-                new Point(lineX + tickLong + 36, arrowY - 7),
-                new Point(lineX + tickLong + 36, arrowY + 7)
-            })
-        };
-        SpeedScaleCanvas.Children.Add(arrow);
-
-        var speedText = _isShiftPressed ? $"{effectiveSpeed:F1}" : vm.FreecamSpeedText;
-        var speedLabel = CreateLabel(speedText, 0, 0, 14, FontWeight.Bold);
-        if (_isShiftPressed)
-        {
-            speedLabel.Foreground = Brushes.Yellow;
+            _speedArrow = new Polygon();
+            _speedLabel = new TextBlock { FontSize = 14, FontWeight = FontWeight.Bold };
         }
-        speedLabel.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var labelSize = speedLabel.DesiredSize;
-        Canvas.SetLeft(speedLabel, lineX + tickLong + 8 - labelSize.Width - 8);
-        Canvas.SetTop(speedLabel, arrowY - labelSize.Height / 2);
-        SpeedScaleCanvas.Children.Add(speedLabel);
+
+        // Update arrow appearance
+        _speedArrow.Fill = _isShiftPressed ? Brushes.Yellow : Brushes.White;
+        _speedArrow.Points = new Points(new[]
+        {
+            new Point(lineX + tickLong + 8, 0),
+            new Point(lineX + tickLong + 36, -7),
+            new Point(lineX + tickLong + 36, 7)
+        });
+
+        // Update label text and appearance
+        var speedText = _isShiftPressed ? $"{effectiveSpeed:F1}" : vm.FreecamSpeedText;
+        _speedLabel!.Text = speedText;
+        _speedLabel.Foreground = _isShiftPressed ? Brushes.Yellow : Brushes.White;
+
+        SpeedScaleCanvas.Children.Add(_speedArrow);
+        SpeedScaleCanvas.Children.Add(_speedLabel);
+
+        // Decide whether to animate or snap
+        if (heightChanged && !speedChanged && !shiftStateChanged)
+        {
+            // Window resize: recalculate position proportionally without animation
+            _currentArrowY = targetArrowY;
+            UpdateArrowPosition(lineX, tickLong);
+        }
+        else if (shiftStateChanged && _isShiftPressed)
+        {
+            // Shift pressed: snap immediately to doubled position
+            _currentArrowY = targetArrowY;
+            UpdateArrowPosition(lineX, tickLong);
+        }
+        else if (shiftStateChanged && !_isShiftPressed)
+        {
+            // Shift released: snap back to original position
+            _currentArrowY = targetArrowY;
+            UpdateArrowPosition(lineX, tickLong);
+        }
+        else if (Math.Abs(targetArrowY - _currentArrowY) < 0.5)
+        {
+            // Very small changes: instant update
+            _currentArrowY = targetArrowY;
+            UpdateArrowPosition(lineX, tickLong);
+        }
+        else if (speedChanged)
+        {
+            // Speed changed: animate to new position
+            AnimateArrowPosition(targetArrowY, lineX, tickLong);
+        }
+        else
+        {
+            // No change: just update position
+            UpdateArrowPosition(lineX, tickLong);
+        }
+    }
+
+    private void UpdateArrowPosition(double lineX, double tickLong)
+    {
+        if (_speedArrow == null || _speedLabel == null) return;
+
+        _speedArrow.RenderTransform = new TranslateTransform(0, _currentArrowY);
+
+        _speedLabel.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var labelSize = _speedLabel.DesiredSize;
+        Canvas.SetLeft(_speedLabel, lineX + tickLong + 8 - labelSize.Width - 8);
+        Canvas.SetTop(_speedLabel, _currentArrowY - labelSize.Height / 2);
+    }
+
+    private async void AnimateArrowPosition(double targetY, double lineX, double tickLong)
+    {
+        if (_speedArrow == null || _speedLabel == null) return;
+
+        // Cancel any ongoing animation
+        _animationCts?.Cancel();
+        _animationCts = new CancellationTokenSource();
+        var token = _animationCts.Token;
+
+        var startY = _currentArrowY;
+        var duration = TimeSpan.FromMilliseconds(300);
+        var easing = new CubicEaseOut();
+        var startTime = DateTime.Now;
+
+        try
+        {
+            while (true)
+            {
+                if (token.IsCancellationRequested)
+                    return;
+
+                var elapsed = DateTime.Now - startTime;
+                if (elapsed >= duration)
+                {
+                    _currentArrowY = targetY;
+                    UpdateArrowPosition(lineX, tickLong);
+                    break;
+                }
+
+                var progress = elapsed.TotalMilliseconds / duration.TotalMilliseconds;
+                var easedProgress = easing.Ease(progress);
+                _currentArrowY = startY + (targetY - startY) * easedProgress;
+                UpdateArrowPosition(lineX, tickLong);
+
+                await Task.Delay(16, token); // ~60fps
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Animation was cancelled, which is expected
+        }
     }
 
     private TextBlock CreateLabel(string text, double left, double top, double fontSize, FontWeight weight)

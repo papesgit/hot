@@ -33,6 +33,46 @@ namespace HlaeObsTools.ViewModels.Docks
             CanPin = true;
         }
 
+        #region === General Settings ===
+        private bool _IsDrawHudEnabled;
+        public bool IsDrawHudEnabled
+        {
+            get => _IsDrawHudEnabled;
+            set
+            {
+                if (_IsDrawHudEnabled != value)
+                {
+                    _IsDrawHudEnabled = value;
+                    OnPropertyChanged();
+
+                    var cmd = value
+                        ? "cl_drawhud 0"
+                        : "cl_drawhud 1";
+                    _ws.SendExecCommandAsync(cmd);
+                }
+            }
+        }
+        private bool _IsOnlyDeathnotesEnabled;
+        public bool IsOnlyDeathnotesEnabled
+        {
+            get => _IsOnlyDeathnotesEnabled;
+            set
+            {
+                if (_IsOnlyDeathnotesEnabled != value)
+                {
+                    _IsOnlyDeathnotesEnabled = value;
+                    OnPropertyChanged();
+
+                    var cmd = value
+                        ? "cl_draw_only_deathnotices 1"
+                        : "cl_draw_only_deathnotices 0";
+                    _ws.SendExecCommandAsync(cmd);
+                }
+            }
+        }
+        public ICommand ToggleDemouiCommand => new AsyncRelay(() => _ws.SendExecCommandAsync("demoui"));
+        #endregion
+
         #region ==== Radar Settings ====
 
         public double MarkerScale
@@ -53,19 +93,6 @@ namespace HlaeObsTools.ViewModels.Docks
         #endregion
 
         #region ==== Browser / HUD ====
-
-        public string HudUrl
-        {
-            get => _browserSettings.HudUrl;
-            set
-            {
-                if (_browserSettings.HudUrl != value)
-                {
-                    _browserSettings.HudUrl = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
 
         public string BrowserSourceUrl
         {
@@ -88,19 +115,6 @@ namespace HlaeObsTools.ViewModels.Docks
                 if (_browserSettings.IsHudEnabled != value)
                 {
                     _browserSettings.IsHudEnabled = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public bool UseNativeHud
-        {
-            get => _browserSettings.UseNativeHud;
-            set
-            {
-                if (_browserSettings.UseNativeHud != value)
-                {
-                    _browserSettings.UseNativeHud = value;
                     OnPropertyChanged();
                 }
             }
