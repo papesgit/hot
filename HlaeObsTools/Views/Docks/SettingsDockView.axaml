@@ -148,34 +148,6 @@
                                                Width="50"
                                                Foreground="#E6E6E6"/>
                                 </StackPanel>
-
-                                <TextBlock Text="Mouse Acceleration"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="1.0"
-                                            Maximum="100.0"
-                                            SmallChange="1.0"
-                                            LargeChange="10.0"
-                                            Width="200"
-                                            Value="{Binding MouseAcceleration, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding MouseAcceleration, StringFormat={}{0:F1}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-
-                                <TextBlock Text="Mouse Smoothing"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="0.0"
-                                            Maximum="1.0"
-                                            SmallChange="0.05"
-                                            LargeChange="0.1"
-                                            Width="200"
-                                            Value="{Binding MouseSmoothing, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding MouseSmoothing, StringFormat={}{0:F2}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
                             </StackPanel>
 
                             <!-- Movement Settings -->
@@ -269,6 +241,60 @@
                                                Foreground="#E6E6E6"/>
                                 </StackPanel>
                             </StackPanel>
+                            
+                        <!-- Smoothing Settings -->
+                        <TextBlock Text="Smoothing Settings"
+                                   Foreground="#CCCCCC"
+                                   FontWeight="SemiBold"
+                                   Margin="0,8,0,0"/>
+
+                        <StackPanel Spacing="8">
+                            <ToggleSwitch IsChecked="{Binding SmoothEnabled, Mode=TwoWay}"
+                                          Content="Enable Smoothing"
+                                          Foreground="#E6E6E6"/>
+
+                            <TextBlock Text="Position Smoothing Half-time (seconds)"
+                                       Foreground="#CCCCCC"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Slider Minimum="0.05"
+                                        Maximum="2.0"
+                                        SmallChange="0.05"
+                                        LargeChange="0.1"
+                                        Width="200"
+                                        Value="{Binding HalfVec, Mode=TwoWay}"/>
+                                <TextBlock Text="{Binding HalfVec, StringFormat={}{0:F2}}"
+                                           Width="50"
+                                           Foreground="#E6E6E6"/>
+                            </StackPanel>
+
+                            <TextBlock Text="Rotation Smoothing Half-time (seconds)"
+                                       Foreground="#CCCCCC"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Slider Minimum="0.05"
+                                        Maximum="2.0"
+                                        SmallChange="0.05"
+                                        LargeChange="0.1"
+                                        Width="200"
+                                        Value="{Binding HalfRot, Mode=TwoWay}"/>
+                                <TextBlock Text="{Binding HalfRot, StringFormat={}{0:F2}}"
+                                           Width="50"
+                                           Foreground="#E6E6E6"/>
+                            </StackPanel>
+
+                            <TextBlock Text="FOV Smoothing Half-time (seconds)"
+                                       Foreground="#CCCCCC"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Slider Minimum="0.05"
+                                        Maximum="2.0"
+                                        SmallChange="0.05"
+                                        LargeChange="0.1"
+                                        Width="200"
+                                        Value="{Binding HalfFov, Mode=TwoWay}"/>
+                                <TextBlock Text="{Binding HalfFov, StringFormat={}{0:F2}}"
+                                           Width="50"
+                                           Foreground="#E6E6E6"/>
+                            </StackPanel>
+                        </StackPanel>
 
                         </StackPanel>
 
@@ -388,61 +414,6 @@
                                            Foreground="#E6E6E6"/>
                             </StackPanel>
                         </StackPanel>
-
-                        <!-- Smoothing Settings -->
-                        <TextBlock Text="Smoothing Settings"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"
-                                   Margin="0,8,0,0"/>
-
-                        <StackPanel Spacing="8">
-                            <ToggleSwitch IsChecked="{Binding SmoothEnabled, Mode=TwoWay}"
-                                          Content="Enable Smoothing"
-                                          Foreground="#E6E6E6"/>
-
-                            <TextBlock Text="Position Smoothing Half-time (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.05"
-                                        Maximum="2.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding HalfVec, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding HalfVec, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Rotation Smoothing Half-time (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.05"
-                                        Maximum="2.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding HalfRot, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding HalfRot, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="FOV Smoothing Half-time (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.05"
-                                        Maximum="2.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding HalfFov, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding HalfFov, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-                        </StackPanel>
-
                         </StackPanel>
                     </Grid>
                 </ScrollViewer>

@@ -10,8 +10,6 @@ public sealed class FreecamSettings : ViewModelBase
 {
     // Mouse settings
     private double _mouseSensitivity = 0.12;
-    private double _mouseAcceleration = 30.0;
-    private double _mouseSmoothing = 0.7;
 
     // Movement settings
     private double _moveSpeed = 200.0;
@@ -47,24 +45,6 @@ public sealed class FreecamSettings : ViewModelBase
     {
         get => _mouseSensitivity;
         set => SetProperty(ref _mouseSensitivity, value);
-    }
-
-    /// <summary>
-    /// Mouse acceleration factor.
-    /// </summary>
-    public double MouseAcceleration
-    {
-        get => _mouseAcceleration;
-        set => SetProperty(ref _mouseAcceleration, value);
-    }
-
-    /// <summary>
-    /// Mouse smoothing factor (0-1).
-    /// </summary>
-    public double MouseSmoothing
-    {
-        get => _mouseSmoothing;
-        set => SetProperty(ref _mouseSmoothing, value);
     }
 
     #endregion

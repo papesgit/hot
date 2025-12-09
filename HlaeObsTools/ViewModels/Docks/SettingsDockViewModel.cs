@@ -295,34 +295,6 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
-        public double MouseAcceleration
-        {
-            get => _freecamSettings.MouseAcceleration;
-            set
-            {
-                if (_freecamSettings.MouseAcceleration != value)
-                {
-                    _freecamSettings.MouseAcceleration = value;
-                    OnPropertyChanged();
-                    SendFreecamConfigAsync(new { mouseAcceleration = (float)value });
-                }
-            }
-        }
-
-        public double MouseSmoothing
-        {
-            get => _freecamSettings.MouseSmoothing;
-            set
-            {
-                if (_freecamSettings.MouseSmoothing != value)
-                {
-                    _freecamSettings.MouseSmoothing = value;
-                    OnPropertyChanged();
-                    SendFreecamConfigAsync(new { mouseSmoothing = (float)value });
-                }
-            }
-        }
-
         // Movement Settings
         public double MoveSpeed
         {
