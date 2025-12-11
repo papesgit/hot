@@ -99,23 +99,6 @@
                 </StackPanel>
             </TabItem>
 
-            <TabItem Header="Browser Sources">
-                <StackPanel Margin="10" Spacing="10">
-                    <TextBlock Text="Browser Source Window"
-                               Foreground="#CCCCCC"
-                               FontWeight="SemiBold"
-                               Margin="0,12,0,0"/>
-                    <TextBox Text="{Binding BrowserSourceUrl, Mode=TwoWay}"
-                             Watermark="Browser source URL"
-                             Foreground="#E6E6E6"
-                             Background="#2A2A2A"
-                             BorderBrush="#444"
-                             SelectionBrush="#555"
-                             Width="320"
-                             HorizontalAlignment="Left"/>
-                </StackPanel>
-            </TabItem>
-
             <TabItem Header="Freecam">
                 <ScrollViewer>
                     <Grid Margin="10">

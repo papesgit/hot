@@ -44,7 +44,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private bool _isFreecamActive;
     private HlaeWebSocketClient? _webSocketClient;
     private HlaeInputSender? _inputSender;
-    private BrowserSourcesSettings? _browserSettings;
+    private HudSettings? _hudSettings;
     private FreecamSettings? _freecamSettings;
     private bool _useD3DHost;
     private double _freecamSpeed;
@@ -170,17 +170,17 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     }
 
     /// <summary>
-    /// Configure HUD/browser source settings.
+    /// Configure HUD settings.
     /// </summary>
-    public void SetBrowserSourcesSettings(BrowserSourcesSettings settings)
+    public void SetHudSettings(HudSettings settings)
     {
-        if (_browserSettings != null)
+        if (_hudSettings != null)
         {
-            _browserSettings.PropertyChanged -= OnBrowserSettingsChanged;
+            _hudSettings.PropertyChanged -= OnHudSettingsChanged;
         }
 
-        _browserSettings = settings;
-        _browserSettings.PropertyChanged += OnBrowserSettingsChanged;
+        _hudSettings = settings;
+        _hudSettings.PropertyChanged += OnHudSettingsChanged;
 
         OnPropertyChanged(nameof(IsHudEnabled));
         OnPropertyChanged(nameof(ShowNativeHud));
@@ -208,7 +208,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         _gsiServer.GameStateUpdated += OnHudGameStateUpdated;
     }
 
-    public bool IsHudEnabled => _browserSettings?.IsHudEnabled ?? false;
+    public bool IsHudEnabled => _hudSettings?.IsHudEnabled ?? false;
     public bool ShowNativeHud => IsHudEnabled;
 
     public HudTeamViewModel TeamCt => _teamCt;
@@ -789,9 +789,9 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         StopStream();
     }
 
-    private void OnBrowserSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnHudSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(BrowserSourcesSettings.IsHudEnabled))
+        if (e.PropertyName == nameof(HudSettings.IsHudEnabled))
         {
             OnPropertyChanged(nameof(IsHudEnabled));
             OnPropertyChanged(nameof(ShowNativeHud));

@@ -26,11 +26,6 @@
             <vd:RadarDockView />
         </DataTemplate>
 
-        <!-- Data template for BrowserSourceDockViewModel -->
-        <DataTemplate DataType="vmd:BrowserSourceDockViewModel">
-            <vd:BrowserSourceDockView />
-        </DataTemplate>
-
         <!-- Data template for SettingsDockViewModel -->
         <DataTemplate DataType="vmd:SettingsDockViewModel">
             <vd:SettingsDockView />
@@ -68,7 +63,6 @@
                     <MenuItem Header="View" Padding="12,6">
                         <MenuItem Header="Video Display" />
                         <MenuItem Header="Radar" />
-                        <MenuItem Header="Browser Source" />
                         <MenuItem Header="Settings" />
                         <MenuItem Header="Campaths" />
                         <MenuItem Header="Net Console" />

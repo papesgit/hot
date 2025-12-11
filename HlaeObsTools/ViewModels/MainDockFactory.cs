@@ -64,22 +64,21 @@ public class MainDockFactory : Factory
     {
         // Shared settings for radar customization
         var radarSettings = new RadarSettings();
-        var browserSourcesSettings = new BrowserSourcesSettings();
+        var hudSettings = new HudSettings();
         var freecamSettings = new FreecamSettings();
 
         // Create the 5 docks (top-right hosts the CS2 console)
         var bottomRight = new CampathsDockViewModel { Id = "BottomRight", Title = "Campaths" };
         var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings, bottomRight, _webSocketClient) { Id = "TopLeft", Title = "Radar" };
-        var browserSource = new BrowserSourceDockViewModel(browserSourcesSettings) { Id = "BrowserSource" };
         var topCenter = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
         var topRight = new NetConsoleDockViewModel { Id = "TopRight", Title = "Console" };
-        var bottomLeft = new SettingsDockViewModel(radarSettings, browserSourcesSettings, freecamSettings, _webSocketClient) { Id = "BottomLeft", Title = "Settings" };
+        var bottomLeft = new SettingsDockViewModel(radarSettings, hudSettings, freecamSettings, _webSocketClient) { Id = "BottomLeft", Title = "Settings" };
 
         // Inject WebSocket and UDP services into video display
         topCenter.SetWebSocketClient(_webSocketClient);
         topCenter.SetInputSender(_inputSender);
-        topCenter.SetBrowserSourcesSettings(browserSourcesSettings);
         topCenter.SetFreecamSettings(freecamSettings);
+        topCenter.SetHudSettings(hudSettings);
         topCenter.SetGsiServer(_gsiServer);
         bottomRight.SetWebSocketClient(_webSocketClient);
 
@@ -90,7 +89,7 @@ public class MainDockFactory : Factory
             Id = "TopLeftDock",
             Proportion = 0.3,
             ActiveDockable = topLeft,
-            VisibleDockables = CreateList<IDockable>(topLeft, browserSource)
+            VisibleDockables = CreateList<IDockable>(topLeft)
         };
 
         // Top-center: Video Stream - 16:9 aspect ratio

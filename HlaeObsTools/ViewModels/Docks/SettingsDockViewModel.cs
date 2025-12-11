@@ -18,14 +18,14 @@ namespace HlaeObsTools.ViewModels.Docks
     public class SettingsDockViewModel : Tool
     {
         private readonly RadarSettings _radarSettings;
-        private readonly BrowserSourcesSettings _browserSettings;
+        private readonly HudSettings _hudSettings;
         private readonly FreecamSettings _freecamSettings;
         private readonly HlaeWebSocketClient? _ws;
 
-        public SettingsDockViewModel(RadarSettings radarSettings, BrowserSourcesSettings browserSettings, FreecamSettings freecamSettings, HlaeWebSocketClient wsClient)
+        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, HlaeWebSocketClient wsClient)
         {
             _radarSettings = radarSettings;
-            _browserSettings = browserSettings;
+            _hudSettings = hudSettings;
             _freecamSettings = freecamSettings;
             _ws = wsClient;
 
@@ -94,29 +94,17 @@ namespace HlaeObsTools.ViewModels.Docks
 
         #endregion
 
-        #region ==== Browser / HUD ====
+        #region ==== HUD ====
 
-        public string BrowserSourceUrl
-        {
-            get => _browserSettings.BrowserSourceUrl;
-            set
-            {
-                if (_browserSettings.BrowserSourceUrl != value)
-                {
-                    _browserSettings.BrowserSourceUrl = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
 
         public bool IsHudEnabled
         {
-            get => _browserSettings.IsHudEnabled;
+            get => _hudSettings.IsHudEnabled;
             set
             {
-                if (_browserSettings.IsHudEnabled != value)
+                if (_hudSettings.IsHudEnabled != value)
                 {
-                    _browserSettings.IsHudEnabled = value;
+                    _hudSettings.IsHudEnabled = value;
                     OnPropertyChanged();
                 }
             }
