@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Layout;
 using System.Threading.Tasks;
@@ -34,7 +35,9 @@ public partial class CampathsDockView : UserControl
         if (DataContext is CampathsDockViewModel vm)
         {
             vm.PromptAsync = PromptAsync;
+            vm.SelectPopulateSourceAsync = SelectPopulateSourceAsync;
             vm.BrowseFileAsync = BrowseFileAsync;
+            vm.BrowseFilesAsync = BrowseFilesAsync;
             vm.BrowseFolderAsync = BrowseFolderAsync;
             vm.ViewGroupRequested += OnViewGroupRequested;
         }
@@ -104,6 +107,74 @@ public partial class CampathsDockView : UserControl
         if (host == null)
             return null;
         return await dlg.ShowAsync(host);
+    }
+
+    private async Task<IEnumerable<string>?> BrowseFilesAsync(string title)
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title = title,
+            AllowMultiple = true
+        };
+        var host = TopLevel.GetTopLevel(this) as Window;
+        if (host == null)
+            return null;
+        return await dlg.ShowAsync(host);
+    }
+
+    private async Task<CampathPopulateSource?> SelectPopulateSourceAsync()
+    {
+        var host = TopLevel.GetTopLevel(this) as Window;
+        if (host == null)
+            return null;
+
+        var dialog = new Window
+        {
+            Title = "Populate campaths",
+            Width = 360,
+            Height = 100,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+
+        CampathPopulateSource? choice = null;
+
+        var infoText = new TextBlock { Text = "How do you want to add campaths?" };
+        var folderButton = new Button { Content = "Select folder", Width = 120 };
+        ToolTip.SetTip(folderButton, "Selects file types: .xml, .cam, .path, .campath, notype");
+        ToolTip.SetShowDelay(folderButton, 100);
+        var filesButton = new Button { Content = "Select files", Width = 120 };
+        var cancelButton = new Button { Content = "Cancel", Width = 80, IsCancel = true };
+
+        folderButton.Click += (_, _) =>
+        {
+            choice = CampathPopulateSource.Folder;
+            dialog.Close(true);
+        };
+        filesButton.Click += (_, _) =>
+        {
+            choice = CampathPopulateSource.Files;
+            dialog.Close(true);
+        };
+        cancelButton.Click += (_, _) => dialog.Close(false);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        buttons.Children.Add(folderButton);
+        buttons.Children.Add(filesButton);
+        buttons.Children.Add(cancelButton);
+
+        var panel = new StackPanel { Margin = new Thickness(16), Spacing = 12 };
+        panel.Children.Add(infoText);
+        panel.Children.Add(buttons);
+
+        dialog.Content = panel;
+
+        await dialog.ShowDialog<bool?>(host);
+        return choice;
     }
 
     private void OnViewGroupRequested(object? sender, CampathGroupViewModel? group)

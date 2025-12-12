@@ -14,31 +14,38 @@
                                 VerticalAlignment="Center">
                         <ToggleSwitch IsChecked="{Binding IsDrawHudEnabled, Mode=TwoWay}"
                                       Content="Hide HUD"
-                                      Foreground="#E6E6E6"/>
+                                      Foreground="#E6E6E6"
+                                      Margin="0,0,10,0"/>
                         <ToggleSwitch IsChecked="{Binding IsOnlyDeathnotesEnabled, Mode=TwoWay}"
                                       Content="Only Deathnotices"
                                       Foreground="#E6E6E6"/>
-                        <Button Content="DemoUI"
-                                Command="{Binding ToggleDemouiCommand}"/>
                     </StackPanel>
+                    <Button Content="DemoUI"
+                            Command="{Binding ToggleDemouiCommand}"/>
                 </StackPanel>
             </TabItem>
 
             <TabItem Header="Create">
                 <StackPanel Margin="10" Spacing="8">
 
-                    <ToggleSwitch IsChecked="{Binding IsCameraPathPreviewEnabled, Mode=TwoWay}"
-                                  Content="Enable camera path preview"
-                                  Foreground="#E6E6E6"
-                                  HorizontalAlignment="Left"/>
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="6"
+                                Margin="0,8,0,0"
+                                VerticalAlignment="Center">
+                        <ToggleSwitch IsChecked="{Binding IsCameraPathPreviewEnabled, Mode=TwoWay}"
+                                    Content="Enable path preview"
+                                    Foreground="#E6E6E6"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,10,0"/>
+                        <ToggleSwitch IsChecked="{Binding IsCampathEnabled, Mode=TwoWay}"
+                                        Content="Campath enabled"
+                                        Foreground="#E6E6E6"/>
+                    </StackPanel>
 
                     <StackPanel Orientation="Horizontal"
                                 Spacing="6"
                                 Margin="0,8,0,0"
                                 VerticalAlignment="Center">
-                        <ToggleSwitch IsChecked="{Binding IsCampathEnabled, Mode=TwoWay}"
-                                      Content="Campath enabled"
-                                      Foreground="#E6E6E6"/>
                         <Button Content="Add point"
                                 Command="{Binding AddPointCommand}"/>
                         <Button Content="Clear"

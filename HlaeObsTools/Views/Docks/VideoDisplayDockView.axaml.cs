@@ -26,6 +26,7 @@ public partial class VideoDisplayDockView : UserControl
     private VideoDisplayDockViewModel? _currentViewModel;
     private bool _cursorHidden;
     private bool _isShiftPressed;
+    private bool _isDemoPaused;
     private double _currentArrowY;
     private Polygon? _speedArrow;
     private TextBlock? _speedLabel;
@@ -208,6 +209,25 @@ public partial class VideoDisplayDockView : UserControl
         if (DataContext is VideoDisplayDockViewModel vm)
         {
             vm.RefreshSpectatorBindings();
+        }
+    }
+
+    private async void PlayPauseButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VideoDisplayDockViewModel vm || IconPath == null)
+            return;
+
+        if (_isDemoPaused)
+        {
+            await vm.ResumeDemoAsync();
+            IconPath.Data = Geometry.Parse("M6 5 H10 V19 H6 Z M14 5 H18 V19 H14 Z");
+            _isDemoPaused = false;
+        }
+        else
+        {
+            await vm.PauseDemoAsync();
+            IconPath.Data = Geometry.Parse("M8 5 L8 19 L19 12 Z");
+            _isDemoPaused = true;
         }
     }
 

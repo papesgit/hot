@@ -11,6 +11,12 @@ using HlaeObsTools.Services.WebSocket;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
+public enum CampathPopulateSource
+{
+    Folder,
+    Files
+}
+
 public class CampathsDockViewModel : Tool
 {
     private readonly CampathStorage _storage = new();
@@ -151,11 +157,28 @@ public class CampathsDockViewModel : Tool
         if (SelectedProfile == null)
             return;
 
-        var folder = await BrowseFolderAsync("Select folder containing campath files");
-        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        var source = await SelectPopulateSourceAsync();
+        if (source == null)
             return;
 
-        var files = Directory.GetFiles(folder, "*.campath", SearchOption.TopDirectoryOnly);
+        string[] files;
+        if (source == CampathPopulateSource.Folder)
+        {
+            var folder = await BrowseFolderAsync("Select folder containing campath files");
+            if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+                return;
+
+            files = GetCampathFilesFromFolder(folder);
+        }
+        else
+        {
+            var selectedFiles = await BrowseFilesAsync("Select campath files");
+            files = selectedFiles?.Where(IsSupportedCampathFile).ToArray() ?? Array.Empty<string>();
+        }
+
+        if (files.Length == 0)
+            return;
+
         foreach (var file in files)
         {
             var name = Path.GetFileNameWithoutExtension(file);
@@ -163,6 +186,30 @@ public class CampathsDockViewModel : Tool
         }
 
         Save();
+    }
+
+    private static string[] GetCampathFilesFromFolder(string folder)
+    {
+        return Directory
+            .EnumerateFiles(folder, "*", SearchOption.TopDirectoryOnly)
+            .Where(IsSupportedCampathFile)
+            .ToArray();
+    }
+
+    private static bool IsSupportedCampathFile(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        var extension = Path.GetExtension(path);
+        if (string.IsNullOrWhiteSpace(extension))
+            return true;
+
+        return extension.Equals(".campath", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".txt", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".cam", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".path", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".xml", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task AddGroupAsync()
@@ -202,7 +249,9 @@ public class CampathsDockViewModel : Tool
 
     // The view wires these to actual UI dialogs to avoid viewmodel knowing about UI
     public Func<string, string, Task<string?>> PromptAsync { get; set; } = (_, _) => Task.FromResult<string?>(null);
+    public Func<Task<CampathPopulateSource?>> SelectPopulateSourceAsync { get; set; } = () => Task.FromResult<CampathPopulateSource?>(CampathPopulateSource.Folder);
     public Func<string, Task<string?>> BrowseFileAsync { get; set; } = _ => Task.FromResult<string?>(null);
+    public Func<string, Task<IEnumerable<string>?>> BrowseFilesAsync { get; set; } = _ => Task.FromResult<IEnumerable<string>?>(null);
     public Func<string, Task<string?>> BrowseFolderAsync { get; set; } = _ => Task.FromResult<string?>(null);
 
     public event EventHandler<CampathGroupViewModel?>? ViewGroupRequested;

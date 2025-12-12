@@ -165,14 +165,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 new FilePickerOpenOptions
                 {
                     Title = "Load Campath",
-                    AllowMultiple = false,
-                    FileTypeFilter = new[]
-                    {
-                        new FilePickerFileType("Campath files")
-                        {
-                            Patterns = new[] { "*.txt", "*.campath", "*.*" }
-                        }
-                    }
+                    AllowMultiple = false
                 });
 
             if (result is { Count: > 0 })
@@ -193,15 +186,7 @@ namespace HlaeObsTools.ViewModels.Docks
             var result = await window.StorageProvider.SaveFilePickerAsync(
                 new FilePickerSaveOptions
                 {
-                    Title = "Save Campath",
-                    SuggestedFileName = "camera_path",
-                    FileTypeChoices = new[]
-                    {
-                        new FilePickerFileType("Campath files")
-                        {
-                            Patterns = new[] { "*.txt", "*.campath" }
-                        }
-                    }
+                    Title = "Save Campath"
                 });
 
             return result?.Path.LocalPath;
@@ -226,8 +211,8 @@ namespace HlaeObsTools.ViewModels.Docks
             OnPropertyChanged(nameof(InterpLabel));
 
             var cmd = _useCubic
-                ? "mirv_campath edit interp position cubic"
-                : "mirv_campath edit interp position linear";
+                ? "mirv_campath edit interp position cubic; mirv_campath edit interp rotation cubic; mirv_campath edit interp fov cubic"
+                : "mirv_campath edit interp position linear; mirv_campath edit interp rotation sLinear; mirv_campath edit interp fov linear";
             _ws.SendExecCommandAsync(cmd);
         });
 

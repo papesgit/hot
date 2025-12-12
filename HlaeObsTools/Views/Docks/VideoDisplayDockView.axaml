@@ -81,9 +81,8 @@
         <Border Grid.Row="1" Background="#2D2D30" Padding="8,4">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
@@ -92,7 +91,27 @@
                            Foreground="#CCCCCC"
                            VerticalAlignment="Center"/>
 
-                <TextBlock Grid.Column="1"
+                <Button x:Name="PlayPauseButton"
+                        Grid.Column="1"
+                        Width="48"
+                        Height="48"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Click="PlayPauseButton_Click">
+
+                    <Path x:Name="IconPath"
+                        Fill="White"
+                        Stretch="Uniform"
+                        Width="24"
+                        Height="24"
+                        Data="M6 5 H10 V19 H6 Z M14 5 H18 V19 H14 Z"/>
+                </Button>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+
+                <TextBlock Grid.Column="2"
                            Foreground="#CCCCCC"
                            VerticalAlignment="Center"
                            Margin="10,0">
@@ -100,28 +119,25 @@
                     <Run Text="{Binding FrameRate, StringFormat={}{0:F1}}"/>
                 </TextBlock>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <CheckBox Content="Local Mode"
-                              Margin="0,0,15,0"
-                              IsChecked="{Binding UseD3DHost}"
-                              ToolTip.Tip="Render shared texture directly on GPU (no CPU copy)"
-                              Focusable="False"/>
-                </StackPanel>
+                <CheckBox Content="Local Mode"
+                            Margin="0,0,15,0"
+                            IsChecked="{Binding UseD3DHost}"
+                            ToolTip.Tip="Render shared texture directly on GPU (no CPU copy)"
+                            Focusable="False"/>
 
-                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="RTP Stream:" VerticalAlignment="Center" Foreground="#CCCCCC"/>
-                    <Button Content="Start"
-                            Click="StartButton_Click"
-                            IsEnabled="{Binding CanStart}"
-                            Padding="10,5"/>
-                    <Button Content="Stop"
-                            Click="StopButton_Click"
-                            IsEnabled="{Binding CanStop}"
-                            Padding="10,5"/>
-                    <Button Content="Refresh Binds"
-                            Click="RefreshBindsButton_Click"
-                            Padding="10,5"
-                            ToolTip.Tip="Refresh spectator bindings (1-5: CT, 6-0: T)"/>
+                <TextBlock Text="RTP Stream:" VerticalAlignment="Center" Foreground="#CCCCCC"/>
+                <Button Content="Start"
+                        Click="StartButton_Click"
+                        IsEnabled="{Binding CanStart}"
+                        Padding="10,5"/>
+                <Button Content="Stop"
+                        Click="StopButton_Click"
+                        IsEnabled="{Binding CanStop}"
+                        Padding="10,5"/>
+                <Button Content="Refresh Binds"
+                        Click="RefreshBindsButton_Click"
+                        Padding="10,5"
+                        ToolTip.Tip="Refresh spectator bindings (1-5: CT, 6-0: T)"/>
                 </StackPanel>
             </Grid>
         </Border>

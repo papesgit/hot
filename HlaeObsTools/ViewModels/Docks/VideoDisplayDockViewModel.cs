@@ -17,6 +17,7 @@ using HlaeObsTools.ViewModels.Hud;
 using Avalonia.Media;
 using System.Linq;
 using HlaeObsTools.Views;
+using System.Threading.Tasks;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -327,6 +328,22 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         await _webSocketClient.SendCommandAsync("refresh_binds");
 
         Console.WriteLine("Spectator bindings refresh requested");
+    }
+
+    public Task PauseDemoAsync()
+    {
+        if (_webSocketClient == null)
+            return Task.CompletedTask;
+
+        return _webSocketClient.SendExecCommandAsync("demo_pause");
+    }
+
+    public Task ResumeDemoAsync()
+    {
+        if (_webSocketClient == null)
+            return Task.CompletedTask;
+
+        return _webSocketClient.SendExecCommandAsync("demo_resume");
     }
 
     public void StartStream(RtpReceiverConfig? config = null)
