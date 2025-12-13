@@ -4,6 +4,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Media;
 using HlaeObsTools.ViewModels;
+using System;
 
 namespace HlaeObsTools.ViewModels.Hud;
 
@@ -162,6 +163,10 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     private IBrush _accentBrush = Brushes.White;
     private IBrush _cardBackground = Brushes.Black;
     private bool _isFocused;
+    private bool _isRadialMenuOpen;
+    private HudPlayerActionOption? _hoveredRadialAction;
+    private bool _isRadialCenterHighlighted;
+    private IBrush _radialCenterBrush = new SolidColorBrush(Color.FromArgb(150, 25, 25, 30));
 
     public HudPlayerCardViewModel(string steamId)
     {
@@ -274,6 +279,7 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
 
     public ObservableCollection<HudWeaponViewModel> WeaponsRow { get; } = new();
     public ObservableCollection<HudWeaponViewModel> WeaponsAndGrenades { get; } = new();
+    public ObservableCollection<HudPlayerActionOption> RadialActions { get; } = new();
 
     public IBrush AccentBrush
     {
@@ -300,6 +306,38 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
             }
         }
     }
+
+    public bool IsRadialMenuOpen
+    {
+        get => _isRadialMenuOpen;
+        private set => SetProperty(ref _isRadialMenuOpen, value);
+    }
+
+    public HudPlayerActionOption? HoveredRadialAction
+    {
+        get => _hoveredRadialAction;
+        private set => SetProperty(ref _hoveredRadialAction, value);
+    }
+
+    public bool IsRadialCenterHighlighted
+    {
+        get => _isRadialCenterHighlighted;
+        private set
+        {
+            if (SetProperty(ref _isRadialCenterHighlighted, value))
+            {
+                UpdateRadialCenterBrush();
+            }
+        }
+    }
+
+    public IBrush RadialCenterBrush
+    {
+        get => _radialCenterBrush;
+        private set => SetProperty(ref _radialCenterBrush, value);
+    }
+
+    public event EventHandler<HudPlayerActionRequestedEventArgs>? PlayerActionRequested;
 
     public IBrush DisplayBorderBrush => IsFocused
         ? new SolidColorBrush(Color.FromArgb(255, 255, 255, 255))
@@ -337,6 +375,39 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         : string.Empty;
 
     public bool HasArmor => Armor > 0;
+
+    public void OpenRadialMenu()
+    {
+        IsRadialMenuOpen = true;
+    }
+
+    public void CloseRadialMenu()
+    {
+        IsRadialMenuOpen = false;
+        HighlightRadialAction(null, false);
+    }
+
+    public void HighlightRadialAction(HudPlayerActionOption? action, bool highlightCenter)
+    {
+        HoveredRadialAction = action;
+        foreach (var option in RadialActions)
+        {
+            option.SetHighlighted(ReferenceEquals(option, action));
+        }
+
+        IsRadialCenterHighlighted = highlightCenter;
+    }
+
+    public void RequestPlayerAction(HudPlayerActionOption? option)
+    {
+        PlayerActionRequested?.Invoke(this, new HudPlayerActionRequestedEventArgs(this, option));
+    }
+
+    public void SetRadialActions(IEnumerable<HudPlayerActionOption> actions)
+    {
+        SyncCollection(RadialActions, actions);
+        ApplyAccentToRadialActions(AccentBrush);
+    }
 
     public void Update(
         string name,
@@ -380,6 +451,23 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         SyncCollection(WeaponsRow, row);
         SyncCollection(Grenades, grenadesList);
         SyncCollection(WeaponsAndGrenades, row.Concat(grenadesList));
+    }
+
+    private void ApplyAccentToRadialActions(IBrush accent)
+    {
+        foreach (var option in RadialActions)
+        {
+            option.SetAccentBrush(accent);
+        }
+
+        UpdateRadialCenterBrush();
+    }
+
+    private void UpdateRadialCenterBrush()
+    {
+        var accentColor = (AccentBrush as ISolidColorBrush)?.Color ?? Colors.White;
+        var alpha = IsRadialCenterHighlighted ? (byte)200 : (byte)140;
+        RadialCenterBrush = new SolidColorBrush(Color.FromArgb(alpha, accentColor.R, accentColor.G, accentColor.B));
     }
 
     private static IEnumerable<HudWeaponViewModel> BuildRow(params HudWeaponViewModel?[] items)

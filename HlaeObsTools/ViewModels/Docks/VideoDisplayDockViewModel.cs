@@ -81,6 +81,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         ["flashbang"] = 4,
         ["hegrenade"] = 5
     };
+    private const int DefaultPlayerActionCount = 5;
 
     public bool ShowNoSignal => !_isStreaming && !_useD3DHost;
     public bool CanStart => !_isStreaming && !_useD3DHost;
@@ -510,6 +511,27 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         OnPropertyChanged(nameof(HasHudData));
     }
 
+    private static IEnumerable<HudPlayerActionOption> CreateDefaultPlayerActions()
+    {
+        return Enumerable.Range(0, DefaultPlayerActionCount)
+            .Select(i => new HudPlayerActionOption($"player_action_{i + 1}", $"Action {i + 1}", i));
+    }
+
+    private void ConfigurePlayerRadialActions(HudPlayerCardViewModel player)
+    {
+        if (player.RadialActions.Count == 0)
+        {
+            player.SetRadialActions(CreateDefaultPlayerActions());
+        }
+        else
+        {
+            player.SetRadialActions(player.RadialActions); // Ensure accent propagation
+        }
+
+        player.PlayerActionRequested -= OnPlayerActionRequested;
+        player.PlayerActionRequested += OnPlayerActionRequested;
+    }
+
     private IEnumerable<HudPlayerCardViewModel> BuildTeamPlayers(IEnumerable<GsiPlayer> players, string team, string? focusedSteamId)
     {
         var ordered = players
@@ -572,6 +594,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             accent,
             background,
             isFocused);
+
+        ConfigurePlayerRadialActions(vm);
 
         return vm;
     }
@@ -861,6 +885,17 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             ticks.Add(SpeedMax - i * step);
         }
         return ticks;
+    }
+
+    private void OnPlayerActionRequested(object? sender, HudPlayerActionRequestedEventArgs e)
+    {
+        HandlePlayerActionRequest(e.Player, e.Option);
+    }
+
+    private void HandlePlayerActionRequest(HudPlayerCardViewModel player, HudPlayerActionOption? option)
+    {
+        // Placeholder for wiring backend actions (e.g., WebSocket commands) per observer slot.
+        // This keeps the hook ready for when we map radial menu actions to concrete behavior.
     }
 
     private void OnWebSocketMessage(object? sender, string message)

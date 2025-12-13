@@ -4,6 +4,7 @@
              xmlns:svg="using:Avalonia.Svg.Skia"
              xmlns:hud="using:HlaeObsTools.ViewModels.Hud"
              xmlns:conv="using:HlaeObsTools.Converters"
+             xmlns:controls="using:HlaeObsTools.Views.Controls"
              xmlns:ac="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
              x:Class="HlaeObsTools.Views.HudOverlayContent"
              x:DataType="vm:VideoDisplayDockViewModel">
@@ -42,103 +43,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="PlayerCardTemplate" x:DataType="hud:HudPlayerCardViewModel">
-            <Border Background="{Binding CardBackground}"
-                    CornerRadius="8"
-                    Padding="8"
-                    Margin="{Binding DisplayMargin}"
-                    BorderBrush="{Binding DisplayBorderBrush}"
-                    BorderThickness="{Binding DisplayBorderThickness}"
-                    Width="330"
-                    Opacity="{Binding IsAlive, Converter={StaticResource AliveOpacityConverter}}">
-                <Border.Effect>
-                    <DropShadowEffect
-                        Color="#FFFFFFFF"
-                        BlurRadius="18"
-                        OffsetX="0"
-                        OffsetY="0"
-                        Opacity="{Binding IsFocused, Converter={StaticResource FocusedGlowOpacityConverter}}"/>
-                </Border.Effect>
-                <StackPanel Spacing="6">
-                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
-                        <Border Background="{Binding AccentBrush}"
-                                Padding="6,3"
-                                CornerRadius="4"
-                                Width="32"
-                                HorizontalAlignment="Left">
-                            <TextBlock Text="{Binding DisplaySlot}"
-                                       HorizontalAlignment="Center"
-                                       FontWeight="Bold"
-                                       Foreground="#0D1015" />
-                        </Border>
-
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding Name}"
-                                   FontWeight="SemiBold"
-                                   Foreground="#E6E6E6"
-                                   TextTrimming="CharacterEllipsis"
-                                   VerticalAlignment="Center" />
-
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding ActiveAmmoText}"
-                                   Foreground="{Binding AccentBrush}"
-                                   FontWeight="Bold"
-                                   FontSize="12"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center" />
-
-                        <StackPanel Grid.Column="3"
-                                    Orientation="Horizontal"
-                                    Spacing="8"
-                                    VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <svg:Svg Path="{Binding HealthIconPath}" Width="16" Height="16" />
-                                <TextBlock Text="{Binding Health}" Foreground="#E6E6E6" FontWeight="Bold" />
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <svg:Svg Path="{Binding ArmorIconPath}" Width="16" Height="16" />
-                                <TextBlock Text="{Binding Armor}" Foreground="#E6E6E6" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Grid>
-
-                    <ProgressBar Minimum="0"
-                                 Maximum="100"
-                                 Value="{Binding Health}"
-                                 Height="6"
-                                 Foreground="{Binding AccentBrush}"
-                                 Background="#303540"
-                                 IsHitTestVisible="False" />
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <ItemsControl Grid.Column="0"
-                                      ItemsSource="{Binding WeaponsAndGrenades}"
-                                      ItemTemplate="{StaticResource WeaponChipTemplate}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-
-                        <Border Grid.Column="1"
-                                Padding="4"
-                                CornerRadius="4"
-                                BorderThickness="1"
-                                BorderBrush="{Binding AccentBrush}"
-                                Background="#32000000"
-                                Margin="2"
-                                Width="28"
-                                Height="28"
-                                IsVisible="{Binding HasDefuseKit}">
-                            <svg:Svg Path="{Binding DefuseKitIconPath}"
-                                     Width="20"
-                                     Height="20"
-                                     HorizontalAlignment="Center"
-                                     VerticalAlignment="Center" />
-                        </Border>
-                    </Grid>
-                </StackPanel>
-            </Border>
+            <controls:HudPlayerCardControl />
         </DataTemplate>
 
         <DataTemplate x:Key="FocusedPlayerCardTemplate" x:DataType="hud:HudPlayerCardViewModel">
@@ -234,7 +139,7 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <Grid IsHitTestVisible="False">
+    <Grid>
         <!-- Freecam active indicator -->
         <Border BorderBrush="Red"
                 BorderThickness="4"
@@ -268,12 +173,10 @@
 
         <!-- HUD content -->
         <Grid x:Name="HudOverlayHost"
-              IsHitTestVisible="False"
               ClipToBounds="True"
               ZIndex="10">
             <ac:LayoutTransformControl HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   IsHitTestVisible="False">
+                                   VerticalAlignment="Center">
             <ac:LayoutTransformControl.LayoutTransform>
                 <ScaleTransform>
                     <ScaleTransform.ScaleX>

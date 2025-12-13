@@ -1,0 +1,177 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hud="using:HlaeObsTools.ViewModels.Hud"
+             xmlns:svg="using:Avalonia.Svg.Skia"
+             xmlns:conv="using:HlaeObsTools.Converters"
+             xmlns:ac="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
+             xmlns:primitives="clr-namespace:Avalonia.Controls.Primitives;assembly=Avalonia.Controls"
+             x:Class="HlaeObsTools.Views.Controls.HudPlayerCardControl"
+             x:DataType="hud:HudPlayerCardViewModel"
+             x:Name="RootControl">
+    <UserControl.Resources>
+        <conv:BooleanToOpacityConverter x:Key="AliveOpacityConverter"
+                                        TrueOpacity="1"
+                                        FalseOpacity="0.35" />
+        <conv:BooleanToOpacityConverter x:Key="FocusedGlowOpacityConverter"
+                                        TrueOpacity="0.9"
+                                        FalseOpacity="0" />
+    </UserControl.Resources>
+    <Grid>
+        <Border x:Name="CardBorder"
+                Background="{Binding CardBackground}"
+                CornerRadius="8"
+                Padding="8"
+                Margin="{Binding DisplayMargin}"
+                BorderBrush="{Binding DisplayBorderBrush}"
+                BorderThickness="{Binding DisplayBorderThickness}"
+                Width="330"
+                Opacity="{Binding IsAlive, Converter={StaticResource AliveOpacityConverter}}">
+            <Border.Effect>
+                <DropShadowEffect
+                    Color="#FFFFFFFF"
+                    BlurRadius="18"
+                    OffsetX="0"
+                    OffsetY="0"
+                    Opacity="{Binding IsFocused, Converter={StaticResource FocusedGlowOpacityConverter}}"/>
+            </Border.Effect>
+
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                    <Border Background="{Binding AccentBrush}"
+                            Padding="6,3"
+                            CornerRadius="4"
+                            Width="32"
+                            HorizontalAlignment="Left">
+                        <TextBlock Text="{Binding DisplaySlot}"
+                                   HorizontalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Foreground="#0D1015" />
+                    </Border>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Name}"
+                               FontWeight="SemiBold"
+                               Foreground="#E6E6E6"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
+
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding ActiveAmmoText}"
+                               Foreground="{Binding AccentBrush}"
+                               FontWeight="Bold"
+                               FontSize="12"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+
+                    <StackPanel Grid.Column="3"
+                                Orientation="Horizontal"
+                                Spacing="8"
+                                VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <svg:Svg Path="{Binding HealthIconPath}" Width="16" Height="16" />
+                            <TextBlock Text="{Binding Health}" Foreground="#E6E6E6" FontWeight="Bold" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <svg:Svg Path="{Binding ArmorIconPath}" Width="16" Height="16" />
+                            <TextBlock Text="{Binding Armor}" Foreground="#E6E6E6" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+
+                <ProgressBar Minimum="0"
+                             Maximum="100"
+                             Value="{Binding Health}"
+                             Height="6"
+                             Foreground="{Binding AccentBrush}"
+                             Background="#303540"
+                             IsHitTestVisible="False" />
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <ItemsControl Grid.Column="0"
+                                  ItemsSource="{Binding WeaponsAndGrenades}"
+                                  ItemTemplate="{StaticResource WeaponChipTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <Border Grid.Column="1"
+                            Padding="4"
+                            CornerRadius="4"
+                            BorderThickness="1"
+                            BorderBrush="{Binding AccentBrush}"
+                            Background="#32000000"
+                            Margin="2"
+                            Width="28"
+                            Height="28"
+                            IsVisible="{Binding HasDefuseKit}">
+                        <svg:Svg Path="{Binding DefuseKitIconPath}"
+                                 Width="20"
+                                 Height="20"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <primitives:Popup x:Name="RadialPopup"
+                          IsLightDismissEnabled="False"
+                          IsHitTestVisible="False"
+                          PlacementTarget="{Binding #RootControl}">
+            <Grid IsHitTestVisible="False">
+                <Canvas x:Name="RadialMenuCanvas">
+                    <ItemsControl x:Name="RadialItems"
+                                  ItemsSource="{Binding RadialActions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="hud:HudPlayerActionOption">
+                                <Canvas>
+                                    <Path Data="{Binding SliceGeometry}"
+                                          Fill="{Binding FillBrush}"
+                                          Stroke="#AAFFFFFF"
+                                          StrokeThickness="1.2"
+                                          Opacity="0.95" />
+                                    <Border Width="90"
+                                            Height="24"
+                                            Canvas.Left="{Binding LabelPosition.X}"
+                                            Canvas.Top="{Binding LabelPosition.Y}"
+                                            Background="#AA000000"
+                                            CornerRadius="4">
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   Foreground="#F0F0F0"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   TextAlignment="Center" />
+                                    </Border>
+                                </Canvas>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Ellipse x:Name="RadialCenter"
+                             Width="70"
+                             Height="70"
+                             Stroke="#BBFFFFFF"
+                             StrokeThickness="1.6"
+                             Fill="{Binding RadialCenterBrush}" />
+
+                    <TextBlock x:Name="RadialCenterLabel"
+                               Text="Cancel"
+                               Foreground="#E6E6E6"
+                               FontWeight="SemiBold"
+                               FontSize="12"
+                               Margin="9,2,0,0" />
+                </Canvas>
+            </Grid>
+        </primitives:Popup>
+    </Grid>
+</UserControl>
