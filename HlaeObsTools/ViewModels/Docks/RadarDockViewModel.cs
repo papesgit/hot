@@ -30,6 +30,8 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     private double _canvasX;
     private double _canvasY;
     private double _markerScale = 1.0;
+    private bool _isShooting;
+    private DateTime _shootingExpiryTime;
 
     public RadarPlayerViewModel(string id, string name, string team, int slot, IBrush fill, IBrush border)
     {
@@ -147,9 +149,35 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     public double ScaledCanvasX => CanvasX - 18.0 * (MarkerScale - 1.0);
     public double ScaledCanvasY => CanvasY - 22.0 * (MarkerScale - 1.0);
 
+    public bool IsShooting
+    {
+        get => _isShooting;
+        set => SetProperty(ref _isShooting, value);
+    }
+
+    public DateTime ShootingExpiryTime
+    {
+        get => _shootingExpiryTime;
+        set => SetProperty(ref _shootingExpiryTime, value);
+    }
+
     public void SetMarkerScale(double scale)
     {
         MarkerScale = scale;
+    }
+
+    public void TriggerShootingFlash(int durationMs = 100)
+    {
+        IsShooting = true;
+        ShootingExpiryTime = DateTime.UtcNow.AddMilliseconds(durationMs);
+    }
+
+    public void UpdateShootingState()
+    {
+        if (IsShooting && DateTime.UtcNow >= ShootingExpiryTime)
+        {
+            IsShooting = false;
+        }
     }
 }
 
@@ -177,6 +205,12 @@ internal sealed class SmokeTracker
     public Vec3 LastPosition { get; set; }
     public int StationaryUpdates { get; set; }
     public bool IsDetonated { get; set; }
+}
+
+internal sealed class PlayerWeaponState
+{
+    public string ActiveWeaponName { get; set; } = string.Empty;
+    public int LastAmmoClip { get; set; }
 }
 
 public sealed class RadarGrenadeViewModel : ViewModelBase
@@ -255,10 +289,12 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private readonly RadarConfigProvider _configProvider;
     private readonly RadarProjector _projector;
     private readonly Dictionary<int, SmokeTracker> _smokeTrackers = new();
+    private readonly Dictionary<string, PlayerWeaponState> _playerWeaponStates = new();
     private readonly CampathsDockViewModel? _campathsVm;
     private readonly HlaeWebSocketClient? _webSocketClient;
     private readonly RadarSettings _settings;
     private CampathProfileViewModel? _attachedProfile;
+    private DispatcherTimer? _flashCleanupTimer;
 
     private Bitmap? _radarImage;
     private string? _currentMap;
@@ -307,6 +343,14 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
         _settings.PropertyChanged += OnSettingsChanged;
 
+        // Initialize flash cleanup timer
+        _flashCleanupTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(50) // Check every 50ms
+        };
+        _flashCleanupTimer.Tick += OnFlashCleanupTick;
+        _flashCleanupTimer.Start();
+
         if (_campathsVm != null)
         {
             _campathsVm.PropertyChanged += OnCampathsPropertyChanged;
@@ -347,6 +391,17 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         var border = new SolidColorBrush(Color.Parse("#0D1015"));
         var bombColor = new SolidColorBrush(Color.Parse("#FF5353"));
         Players.Clear();
+
+        // Clean up weapon states for disconnected players
+        var currentPlayerIds = new HashSet<string>(state.Players.Select(p => p.SteamId));
+        var stateKeysToRemove = _playerWeaponStates.Keys
+            .Where(id => !currentPlayerIds.Contains(id))
+            .ToList();
+        foreach (var key in stateKeysToRemove)
+        {
+            _playerWeaponStates.Remove(key);
+        }
+
         foreach (var p in state.Players)
         {
             if (!p.IsAlive)
@@ -373,6 +428,43 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             vm.SetMarkerScale(_settings.MarkerScale);
 
             Players.Add(vm);
+
+            // Track weapon state and detect shots
+            if (!_playerWeaponStates.TryGetValue(p.SteamId, out var weaponState))
+            {
+                weaponState = new PlayerWeaponState();
+                _playerWeaponStates[p.SteamId] = weaponState;
+            }
+
+            // Find active weapon
+            var activeWeapon = p.Weapons.FirstOrDefault(w =>
+                w.State.Equals("active", StringComparison.OrdinalIgnoreCase));
+
+            if (activeWeapon != null)
+            {
+                // Check if this is the same weapon as before
+                bool isSameWeapon = weaponState.ActiveWeaponName == activeWeapon.Name;
+
+                if (isSameWeapon)
+                {
+                    // Detect shot: ammo decreased
+                    if (activeWeapon.AmmoClip < weaponState.LastAmmoClip)
+                    {
+                        // Trigger shooting flash on player marker
+                        vm.TriggerShootingFlash(100);
+                    }
+                }
+
+                // Update state
+                weaponState.ActiveWeaponName = activeWeapon.Name;
+                weaponState.LastAmmoClip = activeWeapon.AmmoClip;
+            }
+            else
+            {
+                // No active weapon, reset state
+                weaponState.ActiveWeaponName = string.Empty;
+                weaponState.LastAmmoClip = 0;
+            }
         }
 
         // Process grenades
@@ -527,6 +619,15 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         }
     }
 
+    private void OnFlashCleanupTick(object? sender, EventArgs e)
+    {
+        // Update shooting state for all players
+        foreach (var player in Players)
+        {
+            player.UpdateShootingState();
+        }
+    }
+
     private static double NormalizeDegrees(double degrees)
     {
         degrees %= 360.0;
@@ -591,6 +692,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             _campathsVm.PropertyChanged -= OnCampathsPropertyChanged;
             DetachProfile(_campathsVm.SelectedProfile);
         }
+        _flashCleanupTimer?.Stop();
+        _flashCleanupTimer = null;
         RadarImage?.Dispose();
     }
 
