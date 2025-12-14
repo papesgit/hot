@@ -215,6 +215,37 @@ public sealed class RadarGrenadeViewModel : ViewModelBase
     }
 }
 
+public sealed class RadarBombViewModel : ViewModelBase
+{
+    private double _canvasX;
+    private double _canvasY;
+
+    public RadarBombViewModel(string state, Vec3 position)
+    {
+        State = state;
+        Position = position;
+    }
+
+    public string State { get; }
+    public Vec3 Position { get; }
+
+    public bool IsDropped => State == "dropped";
+    public bool IsPlanted => State == "planted" || State == "defusing";
+    public bool IsDefused => State == "defused";
+
+    public double CanvasX
+    {
+        get => _canvasX;
+        set => SetProperty(ref _canvasX, value);
+    }
+
+    public double CanvasY
+    {
+        get => _canvasY;
+        set => SetProperty(ref _canvasY, value);
+    }
+}
+
 /// <summary>
 /// Radar dock view model showing CS2 positions from GSI.
 /// </summary>
@@ -240,6 +271,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     public ObservableCollection<RadarPlayerViewModel> Players { get; } = new();
     public ObservableCollection<RadarGrenadeViewModel> Grenades { get; } = new();
     public ObservableCollection<FlameViewModel> Flames { get; } = new();
+    public ObservableCollection<RadarBombViewModel> Bombs { get; } = new();
     public ObservableCollection<CampathPathViewModel> CampathPaths { get; } = new();
 
     public Bitmap? RadarImage
@@ -469,6 +501,23 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 };
 
                 Grenades.Add(grenadeVm);
+            }
+        }
+
+        // Process bomb
+        Bombs.Clear();
+        if (state.Bomb != null &&
+            !string.IsNullOrEmpty(state.Bomb.State) &&
+            (state.Bomb.State == "dropped" || state.Bomb.State == "planted" || state.Bomb.State == "defusing" || state.Bomb.State == "defused"))
+        {
+            if (_projector.TryProject(state.MapName, state.Bomb.Position, out var bombX, out var bombY, out _))
+            {
+                var bombVm = new RadarBombViewModel(state.Bomb.State, state.Bomb.Position)
+                {
+                    CanvasX = bombX * 1024.0 - 12.0, // center the 24px icon
+                    CanvasY = bombY * 1024.0 - 12.0
+                };
+                Bombs.Add(bombVm);
             }
         }
 

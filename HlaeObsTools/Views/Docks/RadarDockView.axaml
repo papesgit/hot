@@ -195,6 +195,78 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+
+          <!-- Bomb Visualization -->
+          <ItemsControl ItemsSource="{Binding Bombs}"
+                        Width="1024"
+                        Height="1024"
+                        IsHitTestVisible="False"
+                        x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding CanvasX}" />
+                <Setter Property="Canvas.Top" Value="{Binding CanvasY}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RadarBombViewModel">
+                <Canvas>
+                  <!-- Dropped bomb icon (red) -->
+                  <Border Width="24"
+                          Height="24"
+                          Background="#FF5353"
+                          IsVisible="{Binding IsDropped}">
+                    <Border.OpacityMask>
+                      <VisualBrush Stretch="Uniform">
+                        <VisualBrush.Visual>
+                          <svg:Svg Path="avares://HlaeObsTools/Assets/hud/icons/radar/dropped-bomb.svg"
+                                   Width="24"
+                                   Height="24" />
+                        </VisualBrush.Visual>
+                      </VisualBrush>
+                    </Border.OpacityMask>
+                  </Border>
+
+                  <!-- Planted/Defusing bomb icon (red) -->
+                  <Border Width="24"
+                          Height="24"
+                          Background="#FF5353"
+                          IsVisible="{Binding IsPlanted}">
+                    <Border.OpacityMask>
+                      <VisualBrush Stretch="Uniform">
+                        <VisualBrush.Visual>
+                          <svg:Svg Path="avares://HlaeObsTools/Assets/hud/icons/radar/planted-bomb.svg"
+                                   Width="24"
+                                   Height="24" />
+                        </VisualBrush.Visual>
+                      </VisualBrush>
+                    </Border.OpacityMask>
+                  </Border>
+
+                  <!-- Defused bomb icon (green) -->
+                  <Border Width="24"
+                          Height="24"
+                          Background="#5FD35F"
+                          IsVisible="{Binding IsDefused}">
+                    <Border.OpacityMask>
+                      <VisualBrush Stretch="Uniform">
+                        <VisualBrush.Visual>
+                          <svg:Svg Path="avares://HlaeObsTools/Assets/hud/icons/radar/planted-bomb.svg"
+                                   Width="24"
+                                   Height="24" />
+                        </VisualBrush.Visual>
+                      </VisualBrush>
+                    </Border.OpacityMask>
+                  </Border>
+                </Canvas>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </Grid>
       </Viewbox>
 
