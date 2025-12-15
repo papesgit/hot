@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -92,17 +93,23 @@ public partial class HudPlayerCardControl : UserControl
 
     private void BuildRadialLayout(HudPlayerCardViewModel viewModel)
     {
-        if (!viewModel.RadialActions.Any())
+        BuildRadialLayoutForOptions(viewModel.RadialActions);
+        BuildRadialLayoutForOptions(viewModel.AttachSubMenuOptions);
+    }
+
+    private void BuildRadialLayoutForOptions(IReadOnlyList<HudPlayerActionOption> options)
+    {
+        if (!options.Any())
             return;
 
-        var sliceCount = viewModel.RadialActions.Count;
+        var sliceCount = options.Count;
         var sweep = 360.0 / sliceCount;
         var center = _radialSize / 2;
         var labelRadius = RadialInnerRadius + (RadialOuterRadius - RadialInnerRadius) * 0.65;
 
-        for (int i = 0; i < viewModel.RadialActions.Count; i++)
+        for (int i = 0; i < options.Count; i++)
         {
-            var option = viewModel.RadialActions[i];
+            var option = options[i];
             var startAngle = -90 + i * sweep;
             var geometry = CreateSliceGeometry(center, center, RadialInnerRadius, RadialOuterRadius, startAngle, sweep);
             var labelCenter = PointOnCircle(center, center, labelRadius, startAngle + sweep / 2);
@@ -145,6 +152,31 @@ public partial class HudPlayerCardControl : UserControl
         if (_currentViewModel == null)
             return;
 
+        // In submenu: single click selects preset or closes.
+        if (_currentViewModel.IsInAttachSubMenu && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            var (hovered, highlightCenter) = GetHoverTarget(e);
+
+            if (highlightCenter)
+            {
+                CloseRadialMenu();
+                e.Handled = true;
+                return;
+            }
+
+            if (hovered != null)
+            {
+                _currentViewModel.RequestPlayerAction(hovered);
+                CloseRadialMenu();
+                e.Handled = true;
+                return;
+            }
+
+            CloseRadialMenu();
+            e.Handled = true;
+            return;
+        }
+
         var point = e.GetCurrentPoint(this);
         if (!point.Properties.IsLeftButtonPressed)
             return;
@@ -177,7 +209,21 @@ public partial class HudPlayerCardControl : UserControl
         }
 
         UpdateHoveredAction(e);
-        _currentViewModel.RequestPlayerAction(_currentViewModel.HoveredRadialAction);
+        var action = _currentViewModel.IsInAttachSubMenu
+            ? _currentViewModel.HoveredAttachOption
+            : _currentViewModel.HoveredRadialAction;
+
+        _currentViewModel.RequestPlayerAction(action);
+
+        if (_currentViewModel.IsInAttachSubMenu)
+        {
+            _pointerCaptured = true;
+            e.Pointer.Capture(this);
+            BuildRadialLayout(_currentViewModel);
+            e.Handled = true;
+            return;
+        }
+
         e.Pointer.Capture(null);
         CloseRadialMenu();
         e.Handled = true;
@@ -185,6 +231,13 @@ public partial class HudPlayerCardControl : UserControl
 
     private void OnCardPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
+        if (_currentViewModel != null && _currentViewModel.IsInAttachSubMenu)
+        {
+            // Keep radial open while in submenu; user will close via selection or center click.
+            _pointerCaptured = true;
+            return;
+        }
+
         CloseRadialMenu();
     }
 
@@ -225,9 +278,18 @@ public partial class HudPlayerCardControl : UserControl
         if (_currentViewModel == null)
             return;
 
+        var (hovered, highlightCenter) = GetHoverTarget(e);
+        _currentViewModel.HighlightRadialAction(hovered, highlightCenter);
+    }
+
+    private (HudPlayerActionOption? hovered, bool highlightCenter) GetHoverTarget(PointerEventArgs e)
+    {
+        if (_currentViewModel == null)
+            return (null, false);
+
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel == null)
-            return;
+            return (null, false);
 
         var positionRoot = e.GetPosition(topLevel);
         var dx = positionRoot.X - _radialCenterRoot.X;
@@ -236,7 +298,11 @@ public partial class HudPlayerCardControl : UserControl
         var highlightCenter = distance <= RadialInnerRadius;
 
         HudPlayerActionOption? hovered = null;
-        if (!highlightCenter && distance <= RadialOuterRadius + RadialMargin && _currentViewModel.RadialActions.Any())
+        IReadOnlyList<HudPlayerActionOption> collection = _currentViewModel.IsInAttachSubMenu
+            ? (IReadOnlyList<HudPlayerActionOption>)_currentViewModel.AttachSubMenuOptions
+            : _currentViewModel.RadialActions;
+
+        if (!highlightCenter && distance <= RadialOuterRadius + RadialMargin && collection.Any())
         {
             var angle = Math.Atan2(dy, dx) * 180 / Math.PI + 90;
             if (angle < 0)
@@ -244,11 +310,11 @@ public partial class HudPlayerCardControl : UserControl
                 angle += 360;
             }
 
-            var sliceSize = 360.0 / _currentViewModel.RadialActions.Count;
-            var index = Math.Clamp((int)Math.Floor(angle / sliceSize), 0, _currentViewModel.RadialActions.Count - 1);
-            hovered = _currentViewModel.RadialActions.ElementAtOrDefault(index);
+            var sliceSize = 360.0 / collection.Count;
+            var index = Math.Clamp((int)Math.Floor(angle / sliceSize), 0, collection.Count - 1);
+            hovered = collection.ElementAtOrDefault(index);
         }
 
-        _currentViewModel.HighlightRadialAction(hovered, highlightCenter);
+        return (hovered, highlightCenter);
     }
 }

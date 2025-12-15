@@ -118,13 +118,14 @@
         </Border>
 
         <primitives:Popup x:Name="RadialPopup"
-                          IsLightDismissEnabled="False"
-                          IsHitTestVisible="False"
+                          IsLightDismissEnabled="True"
+                          IsHitTestVisible="True"
                           PlacementTarget="{Binding #RootControl}">
-            <Grid IsHitTestVisible="False">
+            <Grid>
                 <Canvas x:Name="RadialMenuCanvas">
                     <ItemsControl x:Name="RadialItems"
-                                  ItemsSource="{Binding RadialActions}">
+                                  ItemsSource="{Binding CurrentRadialItems}"
+                                  IsHitTestVisible="True">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <Canvas />

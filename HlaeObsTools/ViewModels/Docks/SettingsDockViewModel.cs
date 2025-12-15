@@ -1,6 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -33,6 +36,8 @@ namespace HlaeObsTools.ViewModels.Docks
             CanClose = false;
             CanFloat = true;
             CanPin = true;
+
+            LoadAttachPresets();
         }
 
         #region === General Settings ===
@@ -108,6 +113,34 @@ namespace HlaeObsTools.ViewModels.Docks
                     OnPropertyChanged();
                 }
             }
+        }
+
+        #endregion
+
+        #region ==== Actions / Attach Presets ====
+
+        public ObservableCollection<AttachPresetViewModel> AttachPresets { get; }
+            = new ObservableCollection<AttachPresetViewModel>(
+                Enumerable.Range(0, 5).Select(i => new AttachPresetViewModel($"Preset {i + 1}")));
+
+        private void LoadAttachPresets()
+        {
+            var presets = _hudSettings.AttachPresets;
+            for (int i = 0; i < AttachPresets.Count && i < presets.Count; i++)
+            {
+                AttachPresets[i].LoadFrom(presets[i]);
+                AttachPresets[i].PropertyChanged -= OnPresetChanged;
+                AttachPresets[i].PropertyChanged += OnPresetChanged;
+            }
+        }
+
+        private void OnPresetChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            var vm = sender as AttachPresetViewModel;
+            if (vm == null) return;
+            var index = AttachPresets.IndexOf(vm);
+            if (index < 0 || index >= _hudSettings.AttachPresets.Count) return;
+            _hudSettings.AttachPresets[index] = vm.ToModel();
         }
 
         #endregion

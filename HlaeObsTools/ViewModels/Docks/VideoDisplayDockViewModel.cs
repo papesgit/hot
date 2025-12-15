@@ -82,6 +82,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         ["hegrenade"] = 5
     };
     private const int DefaultPlayerActionCount = 5;
+    private const string AttachActionId = "player_action_attach";
 
     public bool ShowNoSignal => !_isStreaming && !_useD3DHost;
     public bool CanStart => !_isStreaming && !_useD3DHost;
@@ -513,8 +514,17 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     private static IEnumerable<HudPlayerActionOption> CreateDefaultPlayerActions()
     {
-        return Enumerable.Range(0, DefaultPlayerActionCount)
-            .Select(i => new HudPlayerActionOption($"player_action_{i + 1}", $"Action {i + 1}", i));
+        var options = new List<HudPlayerActionOption>
+        {
+            new HudPlayerActionOption(AttachActionId, "Attach", 0, hasSubMenu: true)
+        };
+
+        options.AddRange(
+            Enumerable.Range(1, DefaultPlayerActionCount - 1)
+                .Select(i => new HudPlayerActionOption($"player_action_{i + 1}", $"Action {i + 1}", i))
+        );
+
+        return options;
     }
 
     private void ConfigurePlayerRadialActions(HudPlayerCardViewModel player)
@@ -894,8 +904,35 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     private void HandlePlayerActionRequest(HudPlayerCardViewModel player, HudPlayerActionOption? option)
     {
-        // Placeholder for wiring backend actions (e.g., WebSocket commands) per observer slot.
-        // This keeps the hook ready for when we map radial menu actions to concrete behavior.
+        if (_webSocketClient == null || option == null)
+            return;
+
+        // Attach action opens submenu; presets execute immediately.
+        if (option.Id == AttachActionId)
+        {
+            player.OpenAttachSubMenu(_hudSettings.AttachPresets);
+            return;
+        }
+
+        if (player.IsInAttachSubMenu)
+        {
+            var presetIndex = option.Index;
+            var preset = _hudSettings.AttachPresets.ElementAtOrDefault(presetIndex);
+            if (preset == null) return;
+
+            var args = new
+            {
+                observer_slot = player.ObserverSlot,
+                attachment = preset.AttachmentName,
+                offset_pos = new { x = preset.OffsetPosX, y = preset.OffsetPosY, z = preset.OffsetPosZ },
+                offset_angles = new { pitch = preset.OffsetPitch, yaw = preset.OffsetYaw, roll = preset.OffsetRoll },
+                fov = preset.Fov
+            };
+
+            _ = _webSocketClient.SendCommandAsync("attach_camera", args);
+            player.CloseAttachSubMenu();
+            return;
+        }
     }
 
     private void OnWebSocketMessage(object? sender, string message)

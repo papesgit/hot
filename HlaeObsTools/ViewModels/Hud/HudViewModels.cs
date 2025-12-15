@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Media;
 using HlaeObsTools.ViewModels;
@@ -167,10 +168,18 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     private HudPlayerActionOption? _hoveredRadialAction;
     private bool _isRadialCenterHighlighted;
     private IBrush _radialCenterBrush = new SolidColorBrush(Color.FromArgb(150, 25, 25, 30));
+    private bool _isInAttachSubMenu;
+    private readonly ObservableCollection<HudPlayerActionOption> _attachSubMenuOptions = new();
+    private readonly ReadOnlyObservableCollection<HudPlayerActionOption> _attachSubMenuOptionsReadonly;
+    private HudPlayerActionOption? _hoveredAttachOption;
 
     public HudPlayerCardViewModel(string steamId)
     {
         _steamId = steamId;
+        _attachSubMenuOptionsReadonly = new ReadOnlyObservableCollection<HudPlayerActionOption>(_attachSubMenuOptions);
+        AttachSubMenuOptions = _attachSubMenuOptionsReadonly;
+        RadialActions.CollectionChanged += OnRadialActionsChanged;
+        _attachSubMenuOptions.CollectionChanged += OnAttachSubMenuChanged;
     }
 
     public string SteamId
@@ -280,6 +289,8 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     public ObservableCollection<HudWeaponViewModel> WeaponsRow { get; } = new();
     public ObservableCollection<HudWeaponViewModel> WeaponsAndGrenades { get; } = new();
     public ObservableCollection<HudPlayerActionOption> RadialActions { get; } = new();
+    public ReadOnlyObservableCollection<HudPlayerActionOption> AttachSubMenuOptions { get; }
+    public IEnumerable<HudPlayerActionOption> CurrentRadialItems => IsInAttachSubMenu ? AttachSubMenuOptions : RadialActions;
 
     public IBrush AccentBrush
     {
@@ -319,6 +330,12 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         private set => SetProperty(ref _hoveredRadialAction, value);
     }
 
+    public HudPlayerActionOption? HoveredAttachOption
+    {
+        get => _hoveredAttachOption;
+        private set => SetProperty(ref _hoveredAttachOption, value);
+    }
+
     public bool IsRadialCenterHighlighted
     {
         get => _isRadialCenterHighlighted;
@@ -327,6 +344,18 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
             if (SetProperty(ref _isRadialCenterHighlighted, value))
             {
                 UpdateRadialCenterBrush();
+            }
+        }
+    }
+
+    public bool IsInAttachSubMenu
+    {
+        get => _isInAttachSubMenu;
+        private set
+        {
+            if (SetProperty(ref _isInAttachSubMenu, value))
+            {
+                OnPropertyChanged(nameof(CurrentRadialItems));
             }
         }
     }
@@ -385,17 +414,30 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     {
         IsRadialMenuOpen = false;
         HighlightRadialAction(null, false);
+        CloseAttachSubMenu();
     }
 
     public void HighlightRadialAction(HudPlayerActionOption? action, bool highlightCenter)
     {
-        HoveredRadialAction = action;
-        foreach (var option in RadialActions)
+        if (IsInAttachSubMenu)
         {
-            option.SetHighlighted(ReferenceEquals(option, action));
+            HoveredAttachOption = action;
+            foreach (var option in _attachSubMenuOptions)
+            {
+                option.SetHighlighted(ReferenceEquals(option, action));
+            }
+            IsRadialCenterHighlighted = highlightCenter;
         }
+        else
+        {
+            HoveredRadialAction = action;
+            foreach (var option in RadialActions)
+            {
+                option.SetHighlighted(ReferenceEquals(option, action));
+            }
 
-        IsRadialCenterHighlighted = highlightCenter;
+            IsRadialCenterHighlighted = highlightCenter;
+        }
     }
 
     public void RequestPlayerAction(HudPlayerActionOption? option)
@@ -403,10 +445,28 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         PlayerActionRequested?.Invoke(this, new HudPlayerActionRequestedEventArgs(this, option));
     }
 
+    public void OpenAttachSubMenu(IEnumerable<HlaeObsTools.ViewModels.HudSettings.AttachmentPreset> presets)
+    {
+        var options = presets
+            .Select((preset, i) => new HudPlayerActionOption($"attach_preset_{i + 1}", $"Preset {i + 1}", i))
+            .ToList();
+        SyncCollection(_attachSubMenuOptions, options);
+        IsInAttachSubMenu = true;
+        OnPropertyChanged(nameof(CurrentRadialItems));
+    }
+
+    public void CloseAttachSubMenu()
+    {
+        IsInAttachSubMenu = false;
+        _attachSubMenuOptions.Clear();
+        OnPropertyChanged(nameof(CurrentRadialItems));
+    }
+
     public void SetRadialActions(IEnumerable<HudPlayerActionOption> actions)
     {
         SyncCollection(RadialActions, actions);
         ApplyAccentToRadialActions(AccentBrush);
+        OnPropertyChanged(nameof(CurrentRadialItems));
     }
 
     public void Update(
@@ -509,6 +569,16 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
                 target.Add(item);
             }
         }
+    }
+
+    private void OnRadialActionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(CurrentRadialItems));
+    }
+
+    private void OnAttachSubMenuChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(CurrentRadialItems));
     }
 }
 

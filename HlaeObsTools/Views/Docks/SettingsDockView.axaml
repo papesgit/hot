@@ -106,6 +106,75 @@
                 </StackPanel>
             </TabItem>
 
+            <TabItem Header="Actions">
+                <TabControl Margin="10">
+                    <TabItem Header="Attach">
+                        <ScrollViewer>
+                            <StackPanel Margin="10" Spacing="12">
+                                <TextBlock Text="Attach Presets"
+                                           Foreground="#CCCCCC"
+                                           FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding AttachPresets}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,8">
+                                                <StackPanel Spacing="6">
+                                                    <TextBlock Text="{Binding Title}" Foreground="#E6E6E6" FontWeight="SemiBold"/>
+                                                    <TextBox Watermark="Attachment name"
+                                                             Text="{Binding AttachmentName, Mode=TwoWay}"
+                                                             Foreground="#E6E6E6"
+                                                             Background="#1E1E1E"
+                                                             Width="300"
+                                                             HorizontalAlignment="Left"/>
+
+                                                    <TextBlock Text="Position Offset" Foreground="#AAAAAA" FontSize="12"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBox Width="80" Watermark="X" Text="{Binding OffsetPosX, Mode=TwoWay}" />
+                                                        <TextBox Width="80" Watermark="Y" Text="{Binding OffsetPosY, Mode=TwoWay}" />
+                                                        <TextBox Width="80" Watermark="Z" Text="{Binding OffsetPosZ, Mode=TwoWay}" />
+                                                    </StackPanel>
+
+                                                    <TextBlock Text="Rotation Offset (deg)" Foreground="#AAAAAA" FontSize="12"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBox Width="80" Watermark="Pitch" Text="{Binding OffsetPitch, Mode=TwoWay}" />
+                                                        <TextBox Width="80" Watermark="Yaw" Text="{Binding OffsetYaw, Mode=TwoWay}" />
+                                                        <TextBox Width="80" Watermark="Roll" Text="{Binding OffsetRoll, Mode=TwoWay}" />
+                                                    </StackPanel>
+
+                                                    <TextBlock Text="FOV" Foreground="#AAAAAA" FontSize="12"/>
+                                                    <TextBox Width="100" Watermark="90" HorizontalAlignment="Left" Text="{Binding Fov, Mode=TwoWay}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Action 2">
+                        <StackPanel Margin="10">
+                            <TextBlock Text="Placeholder for Action 2" Foreground="#888888"/>
+                        </StackPanel>
+                    </TabItem>
+                    <TabItem Header="Action 3">
+                        <StackPanel Margin="10">
+                            <TextBlock Text="Placeholder for Action 3" Foreground="#888888"/>
+                        </StackPanel>
+                    </TabItem>
+                    <TabItem Header="Action 4">
+                        <StackPanel Margin="10">
+                            <TextBlock Text="Placeholder for Action 4" Foreground="#888888"/>
+                        </StackPanel>
+                    </TabItem>
+                    <TabItem Header="Action 5">
+                        <StackPanel Margin="10">
+                            <TextBlock Text="Placeholder for Action 5" Foreground="#888888"/>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
+            </TabItem>
+
             <TabItem Header="Freecam">
                 <ScrollViewer>
                     <Grid Margin="10">
