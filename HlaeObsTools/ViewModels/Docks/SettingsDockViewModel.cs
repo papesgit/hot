@@ -96,6 +96,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 {
                     _radarSettings.MarkerScale = value;
                     OnPropertyChanged();
+                    SaveSettings();
                 }
             }
         }
@@ -135,7 +136,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 AttachPresets[i].PropertyChanged -= OnPresetChanged;
                 AttachPresets[i].PropertyChanged += OnPresetChanged;
             }
-            SaveAttachPresets();
+            SaveSettings();
         }
 
         private void OnPresetChanged(object? sender, PropertyChangedEventArgs e)
@@ -145,14 +146,15 @@ namespace HlaeObsTools.ViewModels.Docks
             var index = AttachPresets.IndexOf(vm);
             if (index < 0 || index >= _hudSettings.AttachPresets.Count) return;
             _hudSettings.AttachPresets[index] = vm.ToModel();
-            SaveAttachPresets();
+            SaveSettings();
         }
 
-        private void SaveAttachPresets()
+        private void SaveSettings()
         {
             var data = new AppSettingsData
             {
-                AttachPresets = _hudSettings.ToAttachPresetData().ToList()
+                AttachPresets = _hudSettings.ToAttachPresetData().ToList(),
+                MarkerScale = _radarSettings.MarkerScale
             };
             _settingsStorage.Save(data);
         }

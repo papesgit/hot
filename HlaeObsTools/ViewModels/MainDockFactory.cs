@@ -67,7 +67,7 @@ public class MainDockFactory : Factory
         var settingsStorage = new SettingsStorage();
         var storedSettings = settingsStorage.Load();
 
-        var radarSettings = new RadarSettings();
+        var radarSettings = new RadarSettings { MarkerScale = storedSettings.MarkerScale };
         var hudSettings = new HudSettings();
         hudSettings.ApplyAttachPresets(storedSettings.AttachPresets);
         var freecamSettings = new FreecamSettings();
