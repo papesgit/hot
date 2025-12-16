@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using HlaeObsTools.ViewModels;
+using System;
 
 namespace HlaeObsTools.Views;
 
@@ -44,5 +45,16 @@ public partial class MainWindow : Window
     private void CloseWindow(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Close();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+
+        // Ensure background services are torn down when the main window closes
+        if (DataContext is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
     }
 }

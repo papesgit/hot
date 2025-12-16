@@ -15,7 +15,7 @@ using HlaeObsTools.Services.Settings;
 
 namespace HlaeObsTools.ViewModels;
 
-public class MainDockFactory : Factory
+public class MainDockFactory : Factory, IDisposable
 {
     private readonly object _context;
     private readonly HlaeWebSocketClient _webSocketClient;
@@ -27,6 +27,7 @@ public class MainDockFactory : Factory
     private readonly SettingsStorage _settingsStorage;
     private readonly AppSettingsData _storedSettings;
     private VideoDisplayDockViewModel? _videoDisplayVm;
+    private bool _disposed;
 
     public MainDockFactory(object context)
     {
@@ -263,5 +264,33 @@ public class MainDockFactory : Factory
         };
 
         base.InitLayout(layout);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        // Stop periodic flushing before disposing input resources
+        try
+        {
+            _inputFlushTimer.Change(Timeout.Infinite, Timeout.Infinite);
+        }
+        catch
+        {
+            // Ignore if timer is already disposed or invalid
+        }
+        _inputFlushTimer.Dispose();
+
+        _rawInputHandler.Dispose();
+        _inputSender.Dispose();
+
+        _gsiServer.Dispose();
+        _webSocketClient.MessageReceived -= OnHlaeMessage;
+        _webSocketClient.Dispose();
+
+        _videoDisplayVm?.Dispose();
+
+        _disposed = true;
     }
 }

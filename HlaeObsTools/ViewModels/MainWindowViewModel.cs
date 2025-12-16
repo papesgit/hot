@@ -1,9 +1,11 @@
 using Dock.Model.Core;
+using System;
 
 namespace HlaeObsTools.ViewModels;
 
-public class MainWindowViewModel : ViewModelBase
+public class MainWindowViewModel : ViewModelBase, IDisposable
 {
+    private readonly MainDockFactory _factory;
     private IDock? _layout;
 
     public IDock? Layout
@@ -14,8 +16,13 @@ public class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
-        var factory = new MainDockFactory(this);
-        Layout = factory.CreateLayout();
-        factory.InitLayout(Layout);
+        _factory = new MainDockFactory(this);
+        Layout = _factory.CreateLayout();
+        _factory.InitLayout(Layout);
+    }
+
+    public void Dispose()
+    {
+        _factory.Dispose();
     }
 }
