@@ -1,5 +1,6 @@
 using Dock.Model.Core;
 using System;
+using System.Reflection;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -7,6 +8,21 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly MainDockFactory _factory;
     private IDock? _layout;
+    public string Title =>
+        $"HLAE Observer Tools v{GetVersion()}";
+
+    private static string GetVersion()
+    {
+        var info =
+            Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion
+            ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+            ?? "unknown";
+
+        // Strip SemVer build metadata (e.g. "+git.abcdef")
+        return info.Split('+')[0];
+    }
 
     public IDock? Layout
     {

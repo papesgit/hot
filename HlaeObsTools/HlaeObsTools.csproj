@@ -8,6 +8,10 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseWindowsForms>true</UseWindowsForms>
+    <Version>0.1.0</Version>
+    <FileVersion>$(Version).0</FileVersion>
+    <AssemblyInformationalVersion>$(Version)</AssemblyInformationalVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

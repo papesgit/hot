@@ -75,7 +75,7 @@
 
                 <!-- Window Title -->
                 <TextBlock Grid.Column="1"
-                           Text="HLAE Observer Tools"
+                           Text="{Binding Title}"
                            Foreground="#E0E0E0"
                            FontSize="13"
                            VerticalAlignment="Center"
