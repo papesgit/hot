@@ -41,7 +41,7 @@ public class MainDockFactory : Factory
         _ = _webSocketClient.ConnectAsync(); // Fire and forget
 
         // Initialize UDP input sender (send at 240Hz to HLAE)
-        _inputSender = new HlaeInputSender(_storedSettings.UdpHost, _storedSettings.UdpPort);
+        _inputSender = new HlaeInputSender(_storedSettings.WebSocketHost, _storedSettings.UdpPort);
         _inputSender.SendRate = 240; // Hz
         _inputSender.Start();
 
@@ -67,24 +67,21 @@ public class MainDockFactory : Factory
     {
         _storedSettings.WebSocketHost = data.WebSocketHost;
         _storedSettings.WebSocketPort = data.WebSocketPort;
-        _storedSettings.UdpHost = data.UdpHost;
         _storedSettings.UdpPort = data.UdpPort;
-        _storedSettings.RtpHost = data.RtpHost;
         _storedSettings.RtpPort = data.RtpPort;
-        _storedSettings.GsiHost = data.GsiHost;
         _storedSettings.GsiPort = data.GsiPort;
         _settingsStorage.Save(_storedSettings);
 
         _webSocketClient.ConfigureEndpoint(data.WebSocketHost, data.WebSocketPort);
         await _webSocketClient.ReconnectAsync();
 
-        _inputSender.ConfigureEndpoint(data.UdpHost, data.UdpPort, restartIfActive: true);
+        _inputSender.ConfigureEndpoint(data.WebSocketHost, data.UdpPort, restartIfActive: true);
 
         if (_videoDisplayVm != null)
         {
             _videoDisplayVm.SetRtpConfig(new Services.Video.RTP.RtpReceiverConfig
             {
-                Address = data.RtpHost,
+                Address = "0.0.0.0",
                 Port = data.RtpPort
             });
 
@@ -97,7 +94,7 @@ public class MainDockFactory : Factory
 
         // Restart GSI listener with new endpoint
         _gsiServer.Stop();
-        _gsiServer.Start(data.GsiPort, "/gsi/", data.GsiHost);
+        _gsiServer.Start(data.GsiPort, "/gsi/", "0.0.0.0");
     }
 
     public override IDocumentDock CreateDocumentDock() => new DocumentDock();
@@ -136,11 +133,11 @@ public class MainDockFactory : Factory
         _videoDisplayVm.SetGsiServer(_gsiServer);
         _videoDisplayVm.SetRtpConfig(new Services.Video.RTP.RtpReceiverConfig
         {
-            Address = _storedSettings.RtpHost,
+            Address = "0.0.0.0",
             Port = _storedSettings.RtpPort
         });
-        // Start GSI listener with configured host/port (host currently informational; listener binds to prefixes)
-        _gsiServer.Start(_storedSettings.GsiPort, "/gsi/", _storedSettings.GsiHost);
+        // Start GSI listener on all interfaces with configured port
+        _gsiServer.Start(_storedSettings.GsiPort, "/gsi/", "0.0.0.0");
         bottomRight.SetWebSocketClient(_webSocketClient);
 
         // Wrap tools in ToolDocks for proper docking behavior

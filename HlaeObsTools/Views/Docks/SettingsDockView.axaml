@@ -30,28 +30,21 @@
                                 FontWeight="SemiBold"/>
 
                         <Grid ColumnDefinitions="Auto,*,Auto,*"
-                            RowDefinitions="Auto,Auto,Auto,Auto"
+                            RowDefinitions="Auto,Auto,Auto"
                             ColumnSpacing="8"
                             RowSpacing="6">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="WebSocket Host" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding WebSocketHost, Mode=TwoWay}" />
-                            <TextBlock Grid.Row="0" Grid.Column="2" Text="Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding WebSocketPort, Mode=TwoWay}" />
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="WS/UDP Host" Foreground="#AAAAAA"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding WebSocketHost, Mode=TwoWay}" />
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="UDP Host" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding UdpHost, Mode=TwoWay}" />
-                            <TextBlock Grid.Row="1" Grid.Column="2" Text="Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding UdpPort, Mode=TwoWay}" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="WS Port" Foreground="#AAAAAA"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding WebSocketPort, Mode=TwoWay}" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="UDP Port" Foreground="#AAAAAA"/>
+                            <TextBox Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="3" Text="{Binding UdpPort, Mode=TwoWay}" />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="RTP Host" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding RtpHost, Mode=TwoWay}" />
-                            <TextBlock Grid.Row="2" Grid.Column="2" Text="Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding RtpPort, Mode=TwoWay}" />
-
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="GSI Host" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding GsiHost, Mode=TwoWay}" />
-                            <TextBlock Grid.Row="3" Grid.Column="2" Text="Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding GsiPort, Mode=TwoWay}" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="RTP Port" Foreground="#AAAAAA"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding RtpPort, Mode=TwoWay}" />
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="GSI Port" Foreground="#AAAAAA"/>
+                            <TextBox Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="3" Text="{Binding GsiPort, Mode=TwoWay}" />
                         </Grid>
 
                         <Button Content="Apply / Reconnect"

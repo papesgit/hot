@@ -28,7 +28,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly HlaeWebSocketClient? _ws;
         private readonly Func<NetworkSettingsData, Task>? _applyNetworkSettingsAsync;
 
-        public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, string UdpHost, int UdpPort, string RtpHost, int RtpPort, string GsiHost, int GsiPort);
+        public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int UdpPort, int RtpPort, int GsiPort);
 
         public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null)
         {
@@ -48,11 +48,8 @@ namespace HlaeObsTools.ViewModels.Docks
             var settings = storedSettings ?? new AppSettingsData();
             _webSocketHost = settings.WebSocketHost;
             _webSocketPort = settings.WebSocketPort;
-            _udpHost = settings.UdpHost;
             _udpPort = settings.UdpPort;
-            _rtpHost = settings.RtpHost;
             _rtpPort = settings.RtpPort;
-            _gsiHost = settings.GsiHost;
             _gsiPort = settings.GsiPort;
 
             LoadAttachPresets();
@@ -87,20 +84,6 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
-        private string _udpHost = "127.0.0.1";
-        public string UdpHost
-        {
-            get => _udpHost;
-            set
-            {
-                if (_udpHost != value)
-                {
-                    _udpHost = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
         private int _udpPort = 31339;
         public int UdpPort
         {
@@ -115,20 +98,6 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
-        private string _rtpHost = "127.0.0.1";
-        public string RtpHost
-        {
-            get => _rtpHost;
-            set
-            {
-                if (_rtpHost != value)
-                {
-                    _rtpHost = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
         private int _rtpPort = 5000;
         public int RtpPort
         {
@@ -138,20 +107,6 @@ namespace HlaeObsTools.ViewModels.Docks
                 if (_rtpPort != value)
                 {
                     _rtpPort = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        private string _gsiHost = "127.0.0.1";
-        public string GsiHost
-        {
-            get => _gsiHost;
-            set
-            {
-                if (_gsiHost != value)
-                {
-                    _gsiHost = value;
                     OnPropertyChanged();
                 }
             }
@@ -178,7 +133,7 @@ namespace HlaeObsTools.ViewModels.Docks
             SaveSettings();
             if (_applyNetworkSettingsAsync != null)
             {
-                var payload = new NetworkSettingsData(WebSocketHost, WebSocketPort, UdpHost, UdpPort, RtpHost, RtpPort, GsiHost, GsiPort);
+                var payload = new NetworkSettingsData(WebSocketHost, WebSocketPort, UdpPort, RtpPort, GsiPort);
                 await _applyNetworkSettingsAsync(payload);
             }
         }
@@ -298,9 +253,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 MarkerScale = _radarSettings.MarkerScale,
                 WebSocketHost = WebSocketHost,
                 WebSocketPort = WebSocketPort,
-                UdpHost = UdpHost,
                 UdpPort = UdpPort,
-                RtpHost = RtpHost,
                 RtpPort = RtpPort
             };
             _settingsStorage.Save(data);

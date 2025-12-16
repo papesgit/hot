@@ -63,11 +63,8 @@ public class AppSettingsData
     public double MarkerScale { get; set; } = 1.0;
     public string WebSocketHost { get; set; } = "127.0.0.1";
     public int WebSocketPort { get; set; } = 31338;
-    public string UdpHost { get; set; } = "127.0.0.1";
     public int UdpPort { get; set; } = 31339;
-    public string RtpHost { get; set; } = "127.0.0.1";
     public int RtpPort { get; set; } = 5000;
-    public string GsiHost { get; set; } = "127.0.0.1";
     public int GsiPort { get; set; } = 31337;
 }
 

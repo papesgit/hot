@@ -13,7 +13,7 @@ namespace HlaeObsTools.Services.Video.RTP;
 /// </summary>
 public class RtpReceiverConfig
 {
-    public string Address { get; set; } = "127.0.0.1";
+    public string Address { get; set; } = "0.0.0.0";
     public int Port { get; set; } = 5000;
     public byte PayloadType { get; set; } = 96;
 }

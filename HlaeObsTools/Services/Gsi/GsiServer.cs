@@ -23,7 +23,7 @@ public sealed class GsiServer : IDisposable
 
     public bool IsRunning => _listener != null && _listener.IsListening;
 
-    public void Start(int port = 31337, string path = "/gsi/", string host = "127.0.0.1")
+    public void Start(int port = 31337, string path = "/gsi/", string host = "0.0.0.0")
     {
         Stop();
 
@@ -32,6 +32,8 @@ public sealed class GsiServer : IDisposable
 
         bool started = false;
         string requestedHost = host;
+        bool useWildcard = string.Equals(requestedHost, "0.0.0.0", StringComparison.OrdinalIgnoreCase) || requestedHost == "*";
+        string prefixHost = useWildcard ? "+" : requestedHost;
 
         _listener = new HttpListener();
 
@@ -39,8 +41,8 @@ public sealed class GsiServer : IDisposable
         try
         {
             _listener.Prefixes.Clear();
-            _listener.Prefixes.Add($"http://{requestedHost}:{port}{normalizedPath}");
-            _listener.Prefixes.Add($"http://{requestedHost}:{port}/");
+            _listener.Prefixes.Add($"http://{prefixHost}:{port}{normalizedPath}");
+            _listener.Prefixes.Add($"http://{prefixHost}:{port}/");
             _listener.Start();
             started = true;
         }
