@@ -171,6 +171,24 @@
                         Click="RefreshBindsButton_Click"
                         Padding="10,5"
                         ToolTip.Tip="Refresh spectator bindings (1-5: CT, 6-0: T)"/>
+
+                <Border Width="24"
+                        Height="24"
+                        Grid.Column="0"
+                        Background="White"
+                        BorderBrush="#D0D0D0"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        ToolTip.Tip="Controls:&#10;Hold RMB = Activate&#10;WASD = Move Camera&#10;Space/Ctrl = Move Up/Down&#10;Shift = Sprint&#10;Scroll = FOV&#10;Alt+Scroll or Mouse4/5 = Adjust Speed&#10;V = Lock on Player"
+                        ToolTip.Placement="Pointer">
+
+                    <TextBlock Text="i"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Foreground="#333"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"/>
+                </Border>
                 </StackPanel>
             </Grid>
         </Border>
