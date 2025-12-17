@@ -106,8 +106,15 @@ public class MainDockFactory : Factory, IDisposable
     public override IRootDock CreateLayout()
     {
         // Shared settings for radar customization
-        var radarSettings = new RadarSettings { MarkerScale = _storedSettings.MarkerScale };
-        var hudSettings = new HudSettings();
+        var radarSettings = new RadarSettings
+        {
+            MarkerScale = _storedSettings.MarkerScale,
+            UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds
+        };
+        var hudSettings = new HudSettings
+        {
+            UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds
+        };
         hudSettings.ApplyAttachPresets(_storedSettings.AttachPresets);
         var freecamSettings = new FreecamSettings();
 

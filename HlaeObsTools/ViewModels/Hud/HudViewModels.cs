@@ -169,9 +169,11 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     private bool _isRadialCenterHighlighted;
     private IBrush _radialCenterBrush = new SolidColorBrush(Color.FromArgb(150, 25, 25, 30));
     private bool _isInAttachSubMenu;
+    private bool _useAltBindings;
     private readonly ObservableCollection<HudPlayerActionOption> _attachSubMenuOptions = new();
     private readonly ReadOnlyObservableCollection<HudPlayerActionOption> _attachSubMenuOptionsReadonly;
     private HudPlayerActionOption? _hoveredAttachOption;
+    private static readonly string[] AltBindLabels = { "Q", "E", "R", "T", "Z" };
 
     public HudPlayerCardViewModel(string steamId)
     {
@@ -360,6 +362,18 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         }
     }
 
+    public bool UseAltBindings
+    {
+        get => _useAltBindings;
+        set
+        {
+            if (SetProperty(ref _useAltBindings, value))
+            {
+                OnPropertyChanged(nameof(DisplaySlot));
+            }
+        }
+    }
+
     public IBrush RadialCenterBrush
     {
         get => _radialCenterBrush;
@@ -387,9 +401,23 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         }
     }
 
-    public string DisplaySlot => ObserverSlot >= 0 && ObserverSlot <= 9
-        ? ((ObserverSlot + 1) % 10).ToString()
-        : string.Empty;
+    public string DisplaySlot
+    {
+        get
+        {
+            if (ObserverSlot < 0 || ObserverSlot > 9)
+            {
+                return string.Empty;
+            }
+
+            if (UseAltBindings && ObserverSlot >= 5)
+            {
+                return AltBindLabels[ObserverSlot - 5];
+            }
+
+            return ((ObserverSlot + 1) % 10).ToString();
+        }
+    }
 
     public string ArmorIconPath => HasHelmet
         ? "avares://HlaeObsTools/Assets/hud/icons/armor-helmet.svg"

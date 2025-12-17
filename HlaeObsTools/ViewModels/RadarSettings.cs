@@ -9,6 +9,7 @@ namespace HlaeObsTools.ViewModels;
 public sealed class RadarSettings : ViewModelBase
 {
     private double _markerScale = 1.0;
+    private bool _useAltPlayerBinds;
 
     /// <summary>
     /// Scale factor for player markers on the radar.
@@ -17,5 +18,14 @@ public sealed class RadarSettings : ViewModelBase
     {
         get => _markerScale;
         set => SetProperty(ref _markerScale, value);
+    }
+
+    /// <summary>
+    /// Whether to use alternative player bind labels for slots 6-0.
+    /// </summary>
+    public bool UseAltPlayerBinds
+    {
+        get => _useAltPlayerBinds;
+        set => SetProperty(ref _useAltPlayerBinds, value);
     }
 }

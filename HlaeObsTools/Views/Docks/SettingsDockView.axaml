@@ -21,6 +21,9 @@
                                         Content="Only Deathnotices"
                                         Foreground="#E6E6E6"/>
                         </StackPanel>
+                        <ToggleSwitch IsChecked="{Binding UseAltPlayerBinds, Mode=TwoWay}"
+                                      Content="Use alt player binds"
+                                      Foreground="#E6E6E6"/>
                         <Button Content="DemoUI"
                                 Command="{Binding ToggleDemouiCommand}"/>
 

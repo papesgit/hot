@@ -51,8 +51,17 @@ namespace HlaeObsTools.ViewModels.Docks
             _udpPort = settings.UdpPort;
             _rtpPort = settings.RtpPort;
             _gsiPort = settings.GsiPort;
+            _useAltPlayerBinds = settings.UseAltPlayerBinds;
+            _radarSettings.UseAltPlayerBinds = _useAltPlayerBinds;
+            _hudSettings.UseAltPlayerBinds = _useAltPlayerBinds;
+
+            if (_ws != null)
+            {
+                _ws.Connected += OnWebSocketConnected;
+            }
 
             LoadAttachPresets();
+            SendAltPlayerBindsMode();
         }
 
         #region === Network Settings ===
@@ -140,6 +149,25 @@ namespace HlaeObsTools.ViewModels.Docks
         #endregion
 
         #region === General Settings ===
+        private bool _useAltPlayerBinds;
+        public bool UseAltPlayerBinds
+        {
+            get => _useAltPlayerBinds;
+            set
+            {
+                if (_useAltPlayerBinds != value)
+                {
+                    _useAltPlayerBinds = value;
+                    OnPropertyChanged();
+
+                    _radarSettings.UseAltPlayerBinds = value;
+                    _hudSettings.UseAltPlayerBinds = value;
+                    SaveSettings();
+                    SendAltPlayerBindsMode();
+                }
+            }
+        }
+
         private bool _IsDrawHudEnabled;
         public bool IsDrawHudEnabled
         {
@@ -177,6 +205,17 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
         public ICommand ToggleDemouiCommand => new AsyncRelay(() => _ws.SendExecCommandAsync("demoui"));
+
+        private void OnWebSocketConnected(object? sender, EventArgs e)
+        {
+            SendAltPlayerBindsMode();
+        }
+
+        private void SendAltPlayerBindsMode()
+        {
+            if (_ws == null) return;
+            _ = _ws.SendCommandAsync("spectator_bindings_mode", new { useAlt = _useAltPlayerBinds });
+        }
         #endregion
 
         #region ==== Radar Settings ====
@@ -251,6 +290,7 @@ namespace HlaeObsTools.ViewModels.Docks
             {
                 AttachPresets = _hudSettings.ToAttachPresetData().ToList(),
                 MarkerScale = _radarSettings.MarkerScale,
+                UseAltPlayerBinds = _useAltPlayerBinds,
                 WebSocketHost = WebSocketHost,
                 WebSocketPort = WebSocketPort,
                 UdpPort = UdpPort,

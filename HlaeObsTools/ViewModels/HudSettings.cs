@@ -23,6 +23,7 @@ public sealed class HudSettings : ViewModelBase
     }
 
     private bool _isHudEnabled;
+    private bool _useAltPlayerBinds;
 
     /// <summary>
     /// Whether the native HUD overlay in the video display is shown.
@@ -31,6 +32,15 @@ public sealed class HudSettings : ViewModelBase
     {
         get => _isHudEnabled;
         set => SetProperty(ref _isHudEnabled, value);
+    }
+
+    /// <summary>
+    /// Whether to use alternative player bind labels for slots 6-0.
+    /// </summary>
+    public bool UseAltPlayerBinds
+    {
+        get => _useAltPlayerBinds;
+        set => SetProperty(ref _useAltPlayerBinds, value);
     }
 
     /// <summary>

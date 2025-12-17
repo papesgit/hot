@@ -691,6 +691,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             background,
             isFocused);
 
+        vm.UseAltBindings = _hudSettings?.UseAltPlayerBinds ?? false;
+
         ConfigurePlayerRadialActions(vm);
 
         return vm;
@@ -936,6 +938,14 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         {
             OnPropertyChanged(nameof(IsHudEnabled));
             OnPropertyChanged(nameof(ShowNativeHud));
+        }
+        else if (e.PropertyName == nameof(HudSettings.UseAltPlayerBinds))
+        {
+            var useAlt = _hudSettings?.UseAltPlayerBinds ?? false;
+            foreach (var vm in _hudPlayerCache.Values)
+            {
+                vm.UseAltBindings = useAlt;
+            }
         }
     }
 

@@ -32,6 +32,8 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     private double _markerScale = 1.0;
     private bool _isShooting;
     private DateTime _shootingExpiryTime;
+    private bool _useAltBindings;
+    private static readonly string[] AltBindLabels = { "Q", "E", "R", "T", "Z" };
 
     public RadarPlayerViewModel(string id, string name, string team, int slot, IBrush fill, IBrush border)
     {
@@ -54,7 +56,35 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     /// Gets the display number for the hotkey binding.
     /// Slot 0 -> "1", Slot 1 -> "2", ..., Slot 9 -> "0", Slot -1 -> "" (no slot)
     /// </summary>
-    public string DisplayNumber => Slot >= 0 && Slot <= 9 ? ((Slot + 1) % 10).ToString() : string.Empty;
+    public string DisplayNumber
+    {
+        get
+        {
+            if (Slot < 0 || Slot > 9)
+            {
+                return string.Empty;
+            }
+
+            if (UseAltBindings && Slot >= 5)
+            {
+                return AltBindLabels[Slot - 5];
+            }
+
+            return ((Slot + 1) % 10).ToString();
+        }
+    }
+
+    public bool UseAltBindings
+    {
+        get => _useAltBindings;
+        set
+        {
+            if (SetProperty(ref _useAltBindings, value))
+            {
+                OnPropertyChanged(nameof(DisplayNumber));
+            }
+        }
+    }
 
     /// <summary>
     /// Gets the actual border color - white when focused, default border otherwise
@@ -423,7 +453,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 IsAlive = p.IsAlive,
                 HasBomb = p.HasBomb,
                 IsFocused = p.SteamId == state.FocusedPlayerSteamId,
-                Level = level
+                Level = level,
+                UseAltBindings = _settings.UseAltPlayerBinds
             };
             vm.SetMarkerScale(_settings.MarkerScale);
 
@@ -705,6 +736,13 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             foreach (var player in Players)
             {
                 player.SetMarkerScale(_settings.MarkerScale);
+            }
+        }
+        else if (e.PropertyName == nameof(RadarSettings.UseAltPlayerBinds))
+        {
+            foreach (var player in Players)
+            {
+                player.UseAltBindings = _settings.UseAltPlayerBinds;
             }
         }
     }
