@@ -35,6 +35,11 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private int _frameCount;
     private VideoFrame? _pendingFrame;
     private bool _updateScheduled;
+    private bool _useRtpSwapchain;
+    private RtpSwapchainViewer? _rtpViewer;
+    private DateTime _lastLatencyLog = DateTime.MinValue;
+    private IntPtr _rtpParentHwnd;
+    private double _rtpFrameAspect;
 
     // Double-buffering: alternate between two bitmaps to force reference change
     private WriteableBitmap? _bitmap0;
@@ -143,12 +148,25 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     }
 
     public event EventHandler<bool>? FreecamStateChanged;
+    public event EventHandler<IntPtr>? RtpViewerWindowChanged;
+    public double RtpFrameAspect
+    {
+        get => _rtpFrameAspect;
+        private set
+        {
+            if (Math.Abs(_rtpFrameAspect - value) < 0.0001)
+                return;
+            _rtpFrameAspect = value;
+            OnPropertyChanged();
+        }
+    }
 
     public VideoDisplayDockViewModel()
     {
         CanClose = false;
         CanFloat = true;
         CanPin = true;
+        UseRtpSwapchain = true;
         _speedTicks = BuildTicks();
         _teamCt.Players.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasHudData));
         _teamT.Players.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasHudData));
@@ -215,6 +233,16 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public void SetRtpConfig(RtpReceiverConfig config)
     {
         _rtpConfig = config;
+    }
+
+    public void SetRtpParentWindowHandle(IntPtr hwnd)
+    {
+        _rtpParentHwnd = hwnd;
+    }
+
+    public void UpdateRtpViewerBounds(int x, int y, int width, int height)
+    {
+        _rtpViewer?.SetHostedBounds(x, y, width, height);
     }
 
     public bool IsHudEnabled => _hudSettings?.IsHudEnabled ?? false;
@@ -288,6 +316,17 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             OnPropertyChanged(nameof(ShowNoSignal));
             OnPropertyChanged(nameof(CanStart));
             OnPropertyChanged(nameof(CanStop));
+        }
+    }
+
+    public bool UseRtpSwapchain
+    {
+        get => _useRtpSwapchain;
+        set
+        {
+            if (_useRtpSwapchain == value) return;
+            _useRtpSwapchain = value;
+            OnPropertyChanged();
         }
     }
 
@@ -384,6 +423,11 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             _videoSource = null;
         }
 
+        _rtpViewer?.Stop();
+        _rtpViewer?.Dispose();
+        _rtpViewer = null;
+        RtpViewerWindowChanged?.Invoke(this, IntPtr.Zero);
+
         IsStreaming = false;
         StatusText = "Not Connected";
         CurrentFrame = null;
@@ -405,6 +449,13 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             _lastFrameTime = now;
         }
 
+        if (_useRtpSwapchain && _rtpViewer != null)
+        {
+            UpdateRtpFrameAspect(frame.Width, frame.Height);
+            _rtpViewer.PresentFrame(frame);
+            return;
+        }
+
         // Always store the latest frame (drop old pending frames for low latency)
         _pendingFrame = frame;
 
@@ -423,6 +474,18 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
                 }
             }, DispatcherPriority.MaxValue);
         }
+    }
+
+    private void UpdateRtpFrameAspect(int width, int height)
+    {
+        if (width <= 0 || height <= 0)
+            return;
+
+        double aspect = width / (double)height;
+        if (Math.Abs(aspect - _rtpFrameAspect) < 0.0001)
+            return;
+
+        Dispatcher.UIThread.Post(() => RtpFrameAspect = aspect, DispatcherPriority.Background);
     }
 
     private void UpdateBitmap(VideoFrame frame)
@@ -482,6 +545,23 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
             // Set the newly updated bitmap - different reference from last frame
             CurrentFrame = targetBitmap;
+
+            if (frame.SourceTimestampUs > 0)
+            {
+                const long unixEpochTicks = 621355968000000000L; // DateTime ticks at Unix epoch
+                var nowUs = (DateTime.UtcNow.Ticks - unixEpochTicks) / 10; // microseconds since Unix epoch
+                var presentLatencyMs = Math.Max(0, (nowUs - frame.SourceTimestampUs) / 1000.0);
+                var captureToReceiveMs = frame.ReceivedTimestampUs > 0
+                    ? Math.Max(0, (frame.ReceivedTimestampUs - frame.SourceTimestampUs) / 1000.0)
+                    : double.NaN;
+
+                var now = DateTime.UtcNow;
+                if ((now - _lastLatencyLog).TotalSeconds >= 1.0)
+                {
+                    Console.WriteLine($"Present latency: {presentLatencyMs:F2} ms (capture->receive: {captureToReceiveMs:F2} ms)");
+                    _lastLatencyLog = now;
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -861,6 +941,22 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     private void StartRtpInternal(RtpReceiverConfig? config = null)
     {
+        if (_useRtpSwapchain)
+        {
+            _rtpViewer?.Stop();
+            _rtpViewer?.Dispose();
+            _rtpViewer = new RtpSwapchainViewer(_rtpParentHwnd);
+            _rtpViewer.Start();
+            if (_rtpViewer.IsRunning && _rtpViewer.Hwnd != IntPtr.Zero)
+            {
+                RtpViewerWindowChanged?.Invoke(this, _rtpViewer.Hwnd);
+            }
+            else
+            {
+                RtpViewerWindowChanged?.Invoke(this, IntPtr.Zero);
+            }
+        }
+
         var receiver = new RtpVideoReceiver(config ?? _rtpConfig);
         receiver.FrameReceived += OnFrameReceived;
         receiver.Start();

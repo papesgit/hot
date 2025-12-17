@@ -18,6 +18,7 @@ public class RtpPacket
     public uint Timestamp { get; private set; }
     public uint Ssrc { get; private set; }
     public ReadOnlyMemory<byte> Payload { get; private set; }
+    public ulong? SenderTimestampUs { get; private set; }
 
     /// <summary>
     /// Parse an RTP packet from a buffer
@@ -63,11 +64,46 @@ public class RtpPacket
             if (buffer.Length < headerSize + 4)
                 return false;
 
+            ushort profile = BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(headerSize, 2));
             ushort extLength = BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(headerSize + 2, 2));
-            headerSize += 4 + (extLength * 4);
+            int extensionDataLength = extLength * 4;
+            headerSize += 4 + extensionDataLength;
 
             if (buffer.Length < headerSize)
                 return false;
+
+            // Parse one-byte header extensions (0xBEDE) for sender timestamp
+            if (profile == 0xBEDE && extensionDataLength > 0)
+            {
+                int extOffset = 0;
+                while (extOffset < extensionDataLength)
+                {
+                    byte extByte = buffer[headerSize - extensionDataLength + extOffset];
+
+                    // 0x00 is padding, skip a single byte
+                    if (extByte == 0x00)
+                    {
+                        extOffset++;
+                        continue;
+                    }
+
+                    byte extId = (byte)(extByte >> 4);
+                    byte extLen = (byte)(extByte & 0x0F); // length minus 1
+                    extOffset++;
+
+                    int dataLen = extLen + 1;
+                    if (extOffset + dataLen > extensionDataLength)
+                        break;
+
+                    if (extId == 1 && dataLen == sizeof(ulong))
+                    {
+                        var timestampSpan = buffer.Slice(headerSize - extensionDataLength + extOffset, dataLen);
+                        rtpPacket.SenderTimestampUs = BinaryPrimitives.ReadUInt64BigEndian(timestampSpan);
+                    }
+
+                    extOffset += dataLen;
+                }
+            }
         }
 
         // Extract payload

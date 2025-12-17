@@ -31,6 +31,8 @@ public class RtpVideoReceiver : IVideoSource
     private Task? _receiveTask;
     private readonly List<byte> _h264Buffer;
     private readonly List<byte[]> _accessUnitBuffer;  // Buffer for complete access unit
+    private long? _currentFrameSendTimestampUs;
+    private DateTime _lastLatencyLog = DateTime.MinValue;
     private DateTime _lastAccessUnitTime;
     private bool _disposed;
 
@@ -103,6 +105,7 @@ public class RtpVideoReceiver : IVideoSource
         _decoder.Flush();
         _h264Buffer.Clear();
         _accessUnitBuffer.Clear();
+        _currentFrameSendTimestampUs = null;
 
         Console.WriteLine("RTP receiver stopped");
     }
@@ -138,6 +141,7 @@ public class RtpVideoReceiver : IVideoSource
                             Console.WriteLine($"Access unit timeout after {elapsed:F0}ms - discarding {_accessUnitBuffer.Count} NAL units");
                             _accessUnitBuffer.Clear();
                             _depayloader.Reset();
+                            _currentFrameSendTimestampUs = null;
                         }
                     }
 
@@ -150,6 +154,11 @@ public class RtpVideoReceiver : IVideoSource
                         {
                             _accessUnitBuffer.Add(nalu);
                             _lastAccessUnitTime = DateTime.Now;
+                        }
+
+                        if (rtpPacket.SenderTimestampUs.HasValue)
+                        {
+                            _currentFrameSendTimestampUs ??= (long)rtpPacket.SenderTimestampUs.Value;
                         }
                     }
 
@@ -194,6 +203,8 @@ public class RtpVideoReceiver : IVideoSource
             // Clear the buffer for next access unit
             _accessUnitBuffer.Clear();
             _lastAccessUnitTime = DateTime.Now;
+            var sendTimestampUs = _currentFrameSendTimestampUs;
+            _currentFrameSendTimestampUs = null;
 
             // Sanity check: warn if frame seems too small for 1920x1080
             if (totalBytes < 1000)
@@ -202,9 +213,11 @@ public class RtpVideoReceiver : IVideoSource
             }
 
             // Feed complete access unit to decoder
-            var frame = _decoder.DecodeFrame(_h264Buffer.ToArray());
+            var receiveCompleteUs = NowMicros();
+            var frame = _decoder.DecodeFrame(_h264Buffer.ToArray(), sendTimestampUs ?? 0, receiveCompleteUs);
             if (frame != null)
             {
+                LogLatencyIfAvailable(frame);
                 // Raise frame event
                 FrameReceived?.Invoke(this, frame);
             }
@@ -212,6 +225,33 @@ public class RtpVideoReceiver : IVideoSource
         catch (Exception ex)
         {
             Console.WriteLine($"Error decoding access unit: {ex.Message}");
+        }
+    }
+
+    private static readonly long UnixEpochTicks = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+
+    private static long NowMicros()
+    {
+        // High-resolution microseconds since Unix epoch
+        return (DateTime.UtcNow.Ticks - UnixEpochTicks) / 10;
+    }
+
+    private void LogLatencyIfAvailable(VideoFrame frame)
+    {
+        if (frame.SourceTimestampUs <= 0)
+            return;
+
+        var nowUs = NowMicros();
+        var e2eMs = Math.Max(0, (nowUs - frame.SourceTimestampUs) / 1000.0);
+        var captureToReceiveMs = frame.ReceivedTimestampUs > 0
+            ? Math.Max(0, (frame.ReceivedTimestampUs - frame.SourceTimestampUs) / 1000.0)
+            : double.NaN;
+
+        var now = DateTime.UtcNow;
+        if ((now - _lastLatencyLog).TotalSeconds >= 1.0)
+        {
+            Console.WriteLine($"Video latency: {e2eMs:F2} ms (capture->receive: {captureToReceiveMs:F2} ms)");
+            _lastLatencyLog = now;
         }
     }
 

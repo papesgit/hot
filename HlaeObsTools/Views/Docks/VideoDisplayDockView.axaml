@@ -22,11 +22,43 @@
                     PointerReleased="VideoContainer_PointerReleased"
                     PointerMoved="VideoContainer_PointerMoved">
                 <Grid>
-                    <Viewbox Stretch="Uniform" IsVisible="{Binding !UseD3DHost}">
+                    <Viewbox Stretch="Uniform">
+                        <Viewbox.IsVisible>
+                            <MultiBinding>
+                                <MultiBinding.Converter>
+                                    <conv:BooleanAndConverter/>
+                                </MultiBinding.Converter>
+                                <Binding Path="!UseD3DHost"/>
+                                <Binding Path="!UseRtpSwapchain"/>
+                            </MultiBinding>
+                        </Viewbox.IsVisible>
                         <Image Source="{Binding CurrentFrame}"
                                RenderOptions.BitmapInterpolationMode="LowQuality"
                                Stretch="None"/>
                     </Viewbox>
+
+                    <!-- Native RTP swapchain child window -->
+                    <Grid x:Name="RtpSwapchainWrapper"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch">
+                        <Grid.IsVisible>
+                            <MultiBinding>
+                                <MultiBinding.Converter>
+                                    <conv:BooleanAndConverter/>
+                                </MultiBinding.Converter>
+                                <Binding Path="UseRtpSwapchain"/>
+                                <Binding Path="!UseD3DHost"/>
+                                <Binding Path="IsStreaming"/>
+                            </MultiBinding>
+                        </Grid.IsVisible>
+                        <Grid x:Name="RtpSwapchainAspect"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                            <ctrls:RtpSwapchainHost x:Name="RtpSwapchainHost"
+                                                    HorizontalAlignment="Stretch"
+                                                    VerticalAlignment="Stretch"/>
+                        </Grid>
+                    </Grid>
 
                     <!-- Native HWND shared texture (uses overlay window for HUD) -->
                     <Grid x:Name="SharedTextureWrapper"
@@ -54,6 +86,7 @@
                         </MultiBinding.Converter>
                         <Binding Path="ShowNativeHud"/>
                         <Binding Path="!UseD3DHost"/>
+                        <Binding Path="!UseRtpSwapchain"/>
                     </MultiBinding>
                 </views:HudOverlayContent.IsVisible>
             </views:HudOverlayContent>

@@ -11,7 +11,12 @@ public class VideoFrame
     public required int Width { get; init; }
     public required int Height { get; init; }
     public required int Stride { get; init; }
-    public long Timestamp { get; init; }
+    // Timestamp provided by the source in microseconds since Unix epoch (for latency measurements)
+    public long SourceTimestampUs { get; init; }
+    // Timestamp when the receiver finished assembling the access unit (also microseconds since Unix epoch)
+    public long ReceivedTimestampUs { get; init; }
+    // Decoder PTS (if available) - kept for compatibility
+    public long Timestamp { get; set; }
 }
 
 /// <summary>

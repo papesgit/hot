@@ -14,6 +14,7 @@ using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Rendering;
 
 namespace HlaeObsTools.Views.Docks;
 
@@ -46,15 +47,19 @@ public partial class VideoDisplayDockView : UserControl
             VideoContainer.SizeChanged += (_, _) =>
             {
                 UpdateSharedTextureAspectSize();
+                UpdateRtpSwapchainAspectSize();
                 UpdateSpeedScaleRegionSize();
                 UpdateHudOverlayPosition();
+                UpdateRtpSwapchainBounds();
             };
         }
         this.AttachedToVisualTree += (_, _) =>
         {
             UpdateSharedTextureAspectSize();
+            UpdateRtpSwapchainAspectSize();
             UpdateSpeedScaleRegionSize();
             UpdateHudOverlayPosition();
+            UpdateRtpSwapchainBounds();
             SubscribeToWindowEvents();
         };
         this.DetachedFromVisualTree += (_, _) =>
@@ -69,6 +74,16 @@ public partial class VideoDisplayDockView : UserControl
         if (SharedTextureAspect != null)
         {
             SharedTextureAspect.SizeChanged += (_, _) => UpdateHudOverlayPosition();
+        }
+        if (RtpSwapchainAspect != null)
+        {
+            RtpSwapchainAspect.SizeChanged += (_, _) => UpdateRtpSwapchainBounds();
+        }
+        if (RtpSwapchainHost != null)
+        {
+            RtpSwapchainHost.ContainerHandleChanged += OnRtpContainerHandleChanged;
+            RtpSwapchainHost.AttachedToVisualTree += (_, _) => UpdateRtpSwapchainBounds();
+            RtpSwapchainHost.DetachedFromVisualTree += (_, _) => UpdateRtpSwapchainBounds();
         }
 
         KeyDown += OnKeyDown;
@@ -104,6 +119,14 @@ public partial class VideoDisplayDockView : UserControl
         {
             // Ignore positioning errors during initialization
         }
+    }
+
+    private void OnRtpContainerHandleChanged(object? sender, IntPtr hwnd)
+    {
+        if (DataContext is not VideoDisplayDockViewModel vm)
+            return;
+
+        vm.SetRtpParentWindowHandle(hwnd);
     }
 
     private void SubscribeToWindowEvents()
@@ -142,9 +165,19 @@ public partial class VideoDisplayDockView : UserControl
         vm.OverlayShiftKeyChanged -= OnOverlayShiftKeyChanged;
     }
 
+    private void OnRtpViewerWindowChanged(object? sender, IntPtr hwnd)
+    {
+        if (RtpSwapchainHost != null)
+        {
+            RtpSwapchainHost.SetChildHwnd(hwnd);
+            RtpSwapchainHost.UpdateChildBounds();
+        }
+        UpdateRtpSwapchainBounds();
+    }
+
     private void OnOverlayRightButtonDown(object? sender, EventArgs e)
     {
-        if (DataContext is VideoDisplayDockViewModel vm && vm.UseD3DHost)
+        if (DataContext is VideoDisplayDockViewModel vm && (vm.UseD3DHost || (vm.UseRtpSwapchain && !vm.UseD3DHost)))
         {
             _isRightButtonDown = true;
             BeginFreecam();
@@ -168,7 +201,14 @@ public partial class VideoDisplayDockView : UserControl
 
     private void OnParentWindowPositionChanged(object? sender, PixelPointEventArgs e)
     {
-        UpdateHudOverlayPosition();
+        if (DataContext is VideoDisplayDockViewModel vm && vm.UseRtpSwapchain && !vm.UseD3DHost)
+        {
+            UpdateRtpSwapchainBounds();
+        }
+        else
+        {
+            UpdateHudOverlayPosition();
+        }
     }
 
     private void OnParentWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -176,7 +216,17 @@ public partial class VideoDisplayDockView : UserControl
         if (e.Property.Name == nameof(Window.WindowState))
         {
             // Delay update slightly to allow window to finish state transition
-            Dispatcher.UIThread.Post(UpdateHudOverlayPosition, DispatcherPriority.Background);
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (DataContext is VideoDisplayDockViewModel vm && vm.UseRtpSwapchain && !vm.UseD3DHost)
+                {
+                    UpdateRtpSwapchainBounds();
+                }
+                else
+                {
+                    UpdateHudOverlayPosition();
+                }
+            }, DispatcherPriority.Background);
         }
     }
 
@@ -385,6 +435,67 @@ public partial class VideoDisplayDockView : UserControl
         speedScaleRegion.Height = bounds.Height * 0.4;
     }
 
+    private void UpdateRtpSwapchainAspectSize()
+    {
+        if (RtpSwapchainAspect == null || VideoContainer == null || DataContext is not VideoDisplayDockViewModel vm)
+            return;
+        if (!vm.UseRtpSwapchain || vm.UseD3DHost)
+            return;
+
+        var bounds = VideoContainer.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+            return;
+
+        double aspect = vm.RtpFrameAspect > 0 ? vm.RtpFrameAspect : 16.0 / 9.0;
+        double targetW = bounds.Width;
+        double targetH = targetW / aspect;
+        if (targetH > bounds.Height)
+        {
+            targetH = bounds.Height;
+            targetW = targetH * aspect;
+        }
+
+        RtpSwapchainAspect.Width = targetW;
+        RtpSwapchainAspect.Height = targetH;
+    }
+
+    private void UpdateRtpSwapchainBounds()
+    {
+        if (RtpSwapchainHost == null || DataContext is not VideoDisplayDockViewModel vm)
+            return;
+        if (!vm.UseRtpSwapchain || vm.UseD3DHost)
+            return;
+
+        var targetControl = (Control?)RtpSwapchainAspect ?? RtpSwapchainHost;
+        var b = targetControl.Bounds;
+        if (b.Width <= 0 || b.Height <= 0)
+            return;
+
+        double scale = (this.VisualRoot as IRenderRoot)?.RenderScaling ?? 1.0;
+        int w = (int)Math.Round(b.Width * scale);
+        int h = (int)Math.Round(b.Height * scale);
+
+        vm.UpdateRtpViewerBounds(0, 0, w, h);
+        RtpSwapchainHost.SetContainerLayout(0, 0, w, h);
+        RtpSwapchainHost.SetChildLayout(0, 0, w, h);
+        RtpSwapchainHost.UpdateChildBounds();
+
+        if (vm.ShowNativeHud && vm.UseRtpSwapchain && !vm.UseD3DHost)
+        {
+            try
+            {
+                var screenTopLeft = targetControl.PointToScreen(new Point(0, 0));
+                var position = new PixelPoint((int)screenTopLeft.X, (int)screenTopLeft.Y);
+                var size = new PixelSize((int)Math.Round(b.Width), (int)Math.Round(b.Height));
+                vm.UpdateHudOverlayBounds(position, size);
+            }
+            catch
+            {
+                // ignore overlay positioning failures during layout
+            }
+        }
+    }
+
     private void BeginFreecam()
     {
         if (DataContext is not VideoDisplayDockViewModel vm)
@@ -397,6 +508,10 @@ public partial class VideoDisplayDockView : UserControl
         if (vm.UseD3DHost && SharedTextureAspect != null)
         {
             targetControl = SharedTextureAspect;
+        }
+        else if (vm.UseRtpSwapchain && !vm.UseD3DHost && RtpSwapchainHost != null)
+        {
+            targetControl = RtpSwapchainHost;
         }
         else if (VideoContainer != null)
         {
@@ -471,6 +586,7 @@ public partial class VideoDisplayDockView : UserControl
         if (_currentViewModel != null)
         {
             UnsubscribeFromOverlayEvents(_currentViewModel);
+            _currentViewModel.RtpViewerWindowChanged -= OnRtpViewerWindowChanged;
             _currentViewModel = null;
         }
 
@@ -485,12 +601,29 @@ public partial class VideoDisplayDockView : UserControl
         {
             _currentViewModel = vm;
             SubscribeToOverlayEvents(vm);
+            vm.RtpViewerWindowChanged += OnRtpViewerWindowChanged;
+            if (RtpSwapchainHost != null && RtpSwapchainHost.ContainerHwnd != IntPtr.Zero)
+            {
+                vm.SetRtpParentWindowHandle(RtpSwapchainHost.ContainerHwnd);
+            }
+            UpdateRtpSwapchainBounds();
 
             if (vm.UseD3DHost)
             {
                 SharedTextureHost?.StartRenderer();
-                vm.ShowHudOverlay();
-                UpdateHudOverlayPosition();
+                if (vm.ShowNativeHud)
+                {
+                    vm.ShowHudOverlay();
+                    UpdateHudOverlayPosition();
+                }
+            }
+            else if (vm.UseRtpSwapchain)
+            {
+                if (vm.ShowNativeHud)
+                {
+                    vm.ShowHudOverlay();
+                    UpdateRtpSwapchainBounds();
+                }
             }
         }
 
@@ -507,8 +640,11 @@ public partial class VideoDisplayDockView : UserControl
                 {
                     SharedTextureHost?.StartRenderer();
                     if (vm.IsStreaming) vm.StopStream();
-                    vm.ShowHudOverlay();
-                    UpdateHudOverlayPosition();
+                    if (vm.ShowNativeHud)
+                    {
+                        vm.ShowHudOverlay();
+                        UpdateHudOverlayPosition();
+                    }
                 }
                 else
                 {
@@ -519,21 +655,49 @@ public partial class VideoDisplayDockView : UserControl
         }
         else if (e.PropertyName == nameof(VideoDisplayDockViewModel.ShowNativeHud))
         {
-            if (DataContext is VideoDisplayDockViewModel vm && vm.UseD3DHost && vm.ShowNativeHud)
+            if (DataContext is VideoDisplayDockViewModel vm && vm.ShowNativeHud && (vm.UseD3DHost || (vm.UseRtpSwapchain && !vm.UseD3DHost)))
             {
                 vm.ShowHudOverlay();
-                UpdateHudOverlayPosition();
+                if (vm.UseD3DHost)
+                    UpdateHudOverlayPosition();
+                else
+                    UpdateRtpSwapchainBounds();
+            }
+            else if (DataContext is VideoDisplayDockViewModel vmHidden)
+            {
+                vmHidden.HideHudOverlay();
+            }
+        }
+        else if (e.PropertyName == nameof(VideoDisplayDockViewModel.UseRtpSwapchain))
+        {
+            if (DataContext is VideoDisplayDockViewModel vm)
+            {
+                UpdateRtpSwapchainAspectSize();
+                UpdateRtpSwapchainBounds();
+                if (vm.UseRtpSwapchain && !vm.UseD3DHost && vm.ShowNativeHud)
+                {
+                    vm.ShowHudOverlay();
+                }
+                else if (!vm.UseRtpSwapchain || vm.UseD3DHost)
+                {
+                    vm.HideHudOverlay();
+                }
             }
         }
         else if (e.PropertyName == nameof(VideoDisplayDockViewModel.FreecamSpeed))
         {
             UpdateSpeedScale();
         }
+        else if (e.PropertyName == nameof(VideoDisplayDockViewModel.RtpFrameAspect))
+        {
+            UpdateRtpSwapchainAspectSize();
+            UpdateRtpSwapchainBounds();
+        }
     }
 
     private Canvas? GetActiveSpeedScaleCanvas()
     {
-        if (DataContext is VideoDisplayDockViewModel vm && vm.UseD3DHost)
+        if (DataContext is VideoDisplayDockViewModel vm && (vm.UseD3DHost || (vm.UseRtpSwapchain && !vm.UseD3DHost)))
         {
             // Get canvas from overlay window when using D3DHost
             return vm.GetOverlaySpeedScaleCanvas();
