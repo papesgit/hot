@@ -108,6 +108,11 @@ public sealed class OpenTkViewport : OpenGlControlBase
     private float _pitch = MathHelper.DegreesToRadians(30f);
     private float _minDistance = 0.5f;
     private float _maxDistance = 1000f;
+    private Vector3 _orbitTargetBeforeFreecam;
+    private float _orbitYawBeforeFreecam;
+    private float _orbitPitchBeforeFreecam;
+    private float _orbitDistanceBeforeFreecam;
+    private bool _orbitStateSaved;
 
     private bool _dragging;
     private bool _panning;
@@ -118,6 +123,7 @@ public sealed class OpenTkViewport : OpenGlControlBase
     private bool _freecamActive;
     private bool _freecamInputEnabled;
     private bool _freecamInitialized;
+    private bool _freecamIgnoreNextDelta;
     private float _freecamSpeedScalar = 1.0f;
     private bool _lastMouseButton4;
     private bool _lastMouseButton5;
@@ -423,8 +429,11 @@ public sealed class OpenTkViewport : OpenGlControlBase
             return;
         }
 
-        if (!middlePressed || _freecamActive)
+        if (!middlePressed)
             return;
+
+        if (_freecamActive)
+            DisableFreecam();
 
         _dragging = true;
         _panning = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
@@ -474,6 +483,16 @@ public sealed class OpenTkViewport : OpenGlControlBase
 
         if (_freecamActive && _freecamInputEnabled)
         {
+            if (_freecamIgnoreNextDelta)
+            {
+                _freecamIgnoreNextDelta = false;
+                CenterFreecamCursor();
+                UpdateInputStatus("Input: freecam");
+                RequestNextFrameRendering();
+                e.Handled = true;
+                return;
+            }
+
             if (TryGetScreenPoint(point.Position, out var screenPoint))
             {
                 var dx = screenPoint.X - _freecamCenterScreen.X;
@@ -1056,6 +1075,12 @@ public sealed class OpenTkViewport : OpenGlControlBase
     {
         if (!_freecamActive)
         {
+            _orbitTargetBeforeFreecam = _target;
+            _orbitYawBeforeFreecam = _yaw;
+            _orbitPitchBeforeFreecam = _pitch;
+            _orbitDistanceBeforeFreecam = _distance;
+            _orbitStateSaved = true;
+
             if (!_freecamInitialized)
                 InitializeFreecamFromOrbit();
             else
@@ -1064,6 +1089,7 @@ public sealed class OpenTkViewport : OpenGlControlBase
         }
 
         _freecamInputEnabled = true;
+        _freecamIgnoreNextDelta = true;
         _freecamMouseDelta = Vector2.Zero;
         _freecamWheelDelta = 0f;
         _freecamLastUpdate = DateTime.UtcNow;
@@ -1083,7 +1109,7 @@ public sealed class OpenTkViewport : OpenGlControlBase
         _freecamInputEnabled = false;
         _freecamActive = false;
         UnlockFreecamCursor();
-        SyncOrbitFromFreecam();
+        RestoreOrbitState();
     }
 
     private void InitializeFreecamFromOrbit()
@@ -1124,13 +1150,16 @@ public sealed class OpenTkViewport : OpenGlControlBase
         _freecamCurrentRoll = 0.0f;
     }
 
-    private void SyncOrbitFromFreecam()
+    private void RestoreOrbitState()
     {
-        var forward = GetForwardVector(_freecamTransform.Pitch, _freecamTransform.Yaw);
-        _yaw = MathHelper.DegreesToRadians(_freecamTransform.Yaw);
-        _pitch = MathHelper.DegreesToRadians(_freecamTransform.Pitch);
-        _target = _freecamTransform.Position + forward * _distance;
-        _pitch = Math.Clamp(_pitch, -1.55f, 1.55f);
+        if (!_orbitStateSaved)
+            return;
+
+        _target = _orbitTargetBeforeFreecam;
+        _yaw = _orbitYawBeforeFreecam;
+        _pitch = _orbitPitchBeforeFreecam;
+        _distance = _orbitDistanceBeforeFreecam;
+        _orbitStateSaved = false;
     }
 
     private void UpdateFreecam(float deltaTime)
