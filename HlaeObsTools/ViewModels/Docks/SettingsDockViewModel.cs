@@ -55,9 +55,40 @@ namespace HlaeObsTools.ViewModels.Docks
             _gsiPort = settings.GsiPort;
             _useAltPlayerBinds = settings.UseAltPlayerBinds;
             _mapObjPath = settings.MapObjPath ?? string.Empty;
+            _pinScale = (float)settings.PinScale;
+            _worldScale = (float)settings.WorldScale;
+            _worldYaw = (float)settings.WorldYaw;
+            _worldPitch = (float)settings.WorldPitch;
+            _worldRoll = (float)settings.WorldRoll;
+            _worldOffsetX = (float)settings.WorldOffsetX;
+            _worldOffsetY = (float)settings.WorldOffsetY;
+            _worldOffsetZ = (float)settings.WorldOffsetZ;
+            _mapScale = (float)settings.MapScale;
+            _mapYaw = (float)settings.MapYaw;
+            _mapPitch = (float)settings.MapPitch;
+            _mapRoll = (float)settings.MapRoll;
+            _mapOffsetX = (float)settings.MapOffsetX;
+            _mapOffsetY = (float)settings.MapOffsetY;
+            _mapOffsetZ = (float)settings.MapOffsetZ;
             _radarSettings.UseAltPlayerBinds = _useAltPlayerBinds;
             _hudSettings.UseAltPlayerBinds = _useAltPlayerBinds;
+            _viewport3DSettings.UseAltPlayerBinds = _useAltPlayerBinds;
             _viewport3DSettings.MapObjPath = _mapObjPath;
+            _viewport3DSettings.PinScale = _pinScale;
+            _viewport3DSettings.WorldScale = _worldScale;
+            _viewport3DSettings.WorldYaw = _worldYaw;
+            _viewport3DSettings.WorldPitch = _worldPitch;
+            _viewport3DSettings.WorldRoll = _worldRoll;
+            _viewport3DSettings.WorldOffsetX = _worldOffsetX;
+            _viewport3DSettings.WorldOffsetY = _worldOffsetY;
+            _viewport3DSettings.WorldOffsetZ = _worldOffsetZ;
+            _viewport3DSettings.MapScale = _mapScale;
+            _viewport3DSettings.MapYaw = _mapYaw;
+            _viewport3DSettings.MapPitch = _mapPitch;
+            _viewport3DSettings.MapRoll = _mapRoll;
+            _viewport3DSettings.MapOffsetX = _mapOffsetX;
+            _viewport3DSettings.MapOffsetY = _mapOffsetY;
+            _viewport3DSettings.MapOffsetZ = _mapOffsetZ;
 
             if (_ws != null)
             {
@@ -170,6 +201,246 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
+        private float _pinScale = 1.0f;
+        public float PinScale
+        {
+            get => _pinScale;
+            set
+            {
+                if (Math.Abs(_pinScale - value) > 0.0001f)
+                {
+                    _pinScale = value;
+                    _viewport3DSettings.PinScale = _pinScale;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _worldScale = 1.0f;
+        public float WorldScale
+        {
+            get => _worldScale;
+            set
+            {
+                if (Math.Abs(_worldScale - value) > 0.0001f)
+                {
+                    _worldScale = value;
+                    _viewport3DSettings.WorldScale = _worldScale;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _worldYaw;
+        public float WorldYaw
+        {
+            get => _worldYaw;
+            set
+            {
+                if (Math.Abs(_worldYaw - value) > 0.0001f)
+                {
+                    _worldYaw = value;
+                    _viewport3DSettings.WorldYaw = _worldYaw;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _worldPitch;
+        public float WorldPitch
+        {
+            get => _worldPitch;
+            set
+            {
+                if (Math.Abs(_worldPitch - value) > 0.0001f)
+                {
+                    _worldPitch = value;
+                    _viewport3DSettings.WorldPitch = _worldPitch;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _worldRoll;
+        public float WorldRoll
+        {
+            get => _worldRoll;
+            set
+            {
+                if (Math.Abs(_worldRoll - value) > 0.0001f)
+                {
+                    _worldRoll = value;
+                    _viewport3DSettings.WorldRoll = _worldRoll;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _worldOffsetX;
+        public float WorldOffsetX
+        {
+            get => _worldOffsetX;
+            set
+            {
+                if (Math.Abs(_worldOffsetX - value) > 0.0001f)
+                {
+                    _worldOffsetX = value;
+                    _viewport3DSettings.WorldOffsetX = _worldOffsetX;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _worldOffsetY;
+        public float WorldOffsetY
+        {
+            get => _worldOffsetY;
+            set
+            {
+                if (Math.Abs(_worldOffsetY - value) > 0.0001f)
+                {
+                    _worldOffsetY = value;
+                    _viewport3DSettings.WorldOffsetY = _worldOffsetY;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _worldOffsetZ;
+        public float WorldOffsetZ
+        {
+            get => _worldOffsetZ;
+            set
+            {
+                if (Math.Abs(_worldOffsetZ - value) > 0.0001f)
+                {
+                    _worldOffsetZ = value;
+                    _viewport3DSettings.WorldOffsetZ = _worldOffsetZ;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _mapScale = 1.0f;
+        public float MapScale
+        {
+            get => _mapScale;
+            set
+            {
+                if (Math.Abs(_mapScale - value) > 0.0001f)
+                {
+                    _mapScale = value;
+                    _viewport3DSettings.MapScale = _mapScale;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _mapYaw;
+        public float MapYaw
+        {
+            get => _mapYaw;
+            set
+            {
+                if (Math.Abs(_mapYaw - value) > 0.0001f)
+                {
+                    _mapYaw = value;
+                    _viewport3DSettings.MapYaw = _mapYaw;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _mapPitch;
+        public float MapPitch
+        {
+            get => _mapPitch;
+            set
+            {
+                if (Math.Abs(_mapPitch - value) > 0.0001f)
+                {
+                    _mapPitch = value;
+                    _viewport3DSettings.MapPitch = _mapPitch;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _mapRoll;
+        public float MapRoll
+        {
+            get => _mapRoll;
+            set
+            {
+                if (Math.Abs(_mapRoll - value) > 0.0001f)
+                {
+                    _mapRoll = value;
+                    _viewport3DSettings.MapRoll = _mapRoll;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _mapOffsetX;
+        public float MapOffsetX
+        {
+            get => _mapOffsetX;
+            set
+            {
+                if (Math.Abs(_mapOffsetX - value) > 0.0001f)
+                {
+                    _mapOffsetX = value;
+                    _viewport3DSettings.MapOffsetX = _mapOffsetX;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _mapOffsetY;
+        public float MapOffsetY
+        {
+            get => _mapOffsetY;
+            set
+            {
+                if (Math.Abs(_mapOffsetY - value) > 0.0001f)
+                {
+                    _mapOffsetY = value;
+                    _viewport3DSettings.MapOffsetY = _mapOffsetY;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
+        private float _mapOffsetZ;
+        public float MapOffsetZ
+        {
+            get => _mapOffsetZ;
+            set
+            {
+                if (Math.Abs(_mapOffsetZ - value) > 0.0001f)
+                {
+                    _mapOffsetZ = value;
+                    _viewport3DSettings.MapOffsetZ = _mapOffsetZ;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
         public ICommand BrowseMapObjCommand => new AsyncRelay(BrowseMapObjAsync);
         public ICommand ClearMapObjCommand => new Relay(() =>
         {
@@ -230,6 +501,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
                     _radarSettings.UseAltPlayerBinds = value;
                     _hudSettings.UseAltPlayerBinds = value;
+                    _viewport3DSettings.UseAltPlayerBinds = value;
                     SaveSettings();
                     SendAltPlayerBindsMode();
                 }
@@ -363,7 +635,22 @@ namespace HlaeObsTools.ViewModels.Docks
                 WebSocketPort = WebSocketPort,
                 UdpPort = UdpPort,
                 RtpPort = RtpPort,
-                MapObjPath = _mapObjPath
+                MapObjPath = _mapObjPath,
+                PinScale = _pinScale,
+                WorldScale = _worldScale,
+                WorldYaw = _worldYaw,
+                WorldPitch = _worldPitch,
+                WorldRoll = _worldRoll,
+                WorldOffsetX = _worldOffsetX,
+                WorldOffsetY = _worldOffsetY,
+                WorldOffsetZ = _worldOffsetZ,
+                MapScale = _mapScale,
+                MapYaw = _mapYaw,
+                MapPitch = _mapPitch,
+                MapRoll = _mapRoll,
+                MapOffsetX = _mapOffsetX,
+                MapOffsetY = _mapOffsetY,
+                MapOffsetZ = _mapOffsetZ
             };
             _settingsStorage.Save(data);
         }

@@ -6,7 +6,41 @@
              x:DataType="vm:Viewport3DDockViewModel">
     <Border Background="#151515" Padding="4">
         <Grid>
-            <controls:OpenTkViewport x:Name="Viewport" MapPath="{Binding MapObjPath}" />
+            <controls:OpenTkViewport x:Name="Viewport"
+                                     MapPath="{Binding MapObjPath}"
+                                     PinScale="{Binding PinScale}"
+                                     WorldScale="{Binding WorldScale}"
+                                     WorldYaw="{Binding WorldYaw}"
+                                     WorldPitch="{Binding WorldPitch}"
+                                     WorldRoll="{Binding WorldRoll}"
+                                     WorldOffsetX="{Binding WorldOffsetX}"
+                                     WorldOffsetY="{Binding WorldOffsetY}"
+                                     WorldOffsetZ="{Binding WorldOffsetZ}"
+                                     MapScale="{Binding MapScale}"
+                                     MapYaw="{Binding MapYaw}"
+                                     MapPitch="{Binding MapPitch}"
+                                     MapRoll="{Binding MapRoll}"
+                                     MapOffsetX="{Binding MapOffsetX}"
+                                     MapOffsetY="{Binding MapOffsetY}"
+                                     MapOffsetZ="{Binding MapOffsetZ}" />
+            <ItemsControl ItemsSource="{Binding #Viewport.Labels}"
+                          IsHitTestVisible="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Text}"
+                                   Foreground="#FFFFFF"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Canvas.Left="{Binding Screen.X}"
+                                   Canvas.Top="{Binding Screen.Y}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <TextBlock Text="{Binding #Viewport.StatusText}"
                        Foreground="#D0D0D0"
                        FontSize="11"

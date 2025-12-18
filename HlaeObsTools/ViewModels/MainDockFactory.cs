@@ -119,7 +119,23 @@ public class MainDockFactory : Factory, IDisposable
         var freecamSettings = new FreecamSettings();
         var viewport3DSettings = new Viewport3DSettings
         {
-            MapObjPath = _storedSettings.MapObjPath ?? string.Empty
+            MapObjPath = _storedSettings.MapObjPath ?? string.Empty,
+            UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds,
+            PinScale = (float)_storedSettings.PinScale,
+            WorldScale = (float)_storedSettings.WorldScale,
+            WorldYaw = (float)_storedSettings.WorldYaw,
+            WorldPitch = (float)_storedSettings.WorldPitch,
+            WorldRoll = (float)_storedSettings.WorldRoll,
+            WorldOffsetX = (float)_storedSettings.WorldOffsetX,
+            WorldOffsetY = (float)_storedSettings.WorldOffsetY,
+            WorldOffsetZ = (float)_storedSettings.WorldOffsetZ,
+            MapScale = (float)_storedSettings.MapScale,
+            MapYaw = (float)_storedSettings.MapYaw,
+            MapPitch = (float)_storedSettings.MapPitch,
+            MapRoll = (float)_storedSettings.MapRoll,
+            MapOffsetX = (float)_storedSettings.MapOffsetX,
+            MapOffsetY = (float)_storedSettings.MapOffsetY,
+            MapOffsetZ = (float)_storedSettings.MapOffsetZ
         };
 
         // Create the docks (top-right hosts the CS2 console)
@@ -137,7 +153,7 @@ public class MainDockFactory : Factory, IDisposable
             ApplyNetworkSettingsAsync,
             _storedSettings)
         { Id = "BottomLeft", Title = "Settings" };
-        var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings) { Id = "BottomCenter", Title = "3D Viewport" };
+        var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, _gsiServer) { Id = "BottomCenter", Title = "3D Viewport" };
 
         // Inject WebSocket and UDP services into video display
         _videoDisplayVm.SetWebSocketClient(_webSocketClient);

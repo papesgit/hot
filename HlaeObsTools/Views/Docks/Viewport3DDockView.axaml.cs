@@ -1,6 +1,9 @@
+using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using HlaeObsTools.ViewModels;
+using HlaeObsTools.ViewModels.Docks;
 
 namespace HlaeObsTools.Views.Docks;
 
@@ -14,6 +17,9 @@ public partial class Viewport3DDockView : UserControl
         AddHandler(PointerReleasedEvent, OnViewportPointerReleased, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         AddHandler(PointerMovedEvent, OnViewportPointerMoved, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         AddHandler(PointerWheelChangedEvent, OnViewportPointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
+
+        this.DataContextChanged += (_, _) => WirePins();
+        WirePins();
     }
 
     private void OnViewportPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -38,5 +44,22 @@ public partial class Viewport3DDockView : UserControl
     {
         if (Viewport != null)
             Viewport.ForwardPointerWheel(e);
+    }
+
+    private void WirePins()
+    {
+        if (DataContext is Viewport3DDockViewModel vm)
+        {
+            vm.PinsUpdated -= OnPinsUpdated;
+            vm.PinsUpdated += OnPinsUpdated;
+        }
+    }
+
+    private void OnPinsUpdated(IReadOnlyList<ViewportPin> pins)
+    {
+        if (Viewport != null)
+        {
+            Viewport.SetPins(pins);
+        }
     }
 }

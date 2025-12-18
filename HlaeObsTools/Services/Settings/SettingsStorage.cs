@@ -68,6 +68,21 @@ public class AppSettingsData
     public int RtpPort { get; set; } = 5000;
     public int GsiPort { get; set; } = 31337;
     public string MapObjPath { get; set; } = string.Empty;
+    public double PinScale { get; set; } = 1.0;
+    public double WorldScale { get; set; } = 1.0;
+    public double WorldYaw { get; set; }
+    public double WorldPitch { get; set; }
+    public double WorldRoll { get; set; }
+    public double WorldOffsetX { get; set; }
+    public double WorldOffsetY { get; set; }
+    public double WorldOffsetZ { get; set; }
+    public double MapScale { get; set; } = 1.0;
+    public double MapYaw { get; set; }
+    public double MapPitch { get; set; }
+    public double MapRoll { get; set; }
+    public double MapOffsetX { get; set; }
+    public double MapOffsetY { get; set; }
+    public double MapOffsetZ { get; set; }
 }
 
 public class AttachmentPresetData
