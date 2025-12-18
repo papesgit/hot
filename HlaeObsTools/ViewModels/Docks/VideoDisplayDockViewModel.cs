@@ -149,6 +149,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     public event EventHandler<bool>? FreecamStateChanged;
     public event EventHandler<IntPtr>? RtpViewerWindowChanged;
+    public event EventHandler? FreecamInputLockRequested;
     public double RtpFrameAspect
     {
         get => _rtpFrameAspect;
@@ -238,6 +239,11 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public void SetRtpParentWindowHandle(IntPtr hwnd)
     {
         _rtpParentHwnd = hwnd;
+    }
+
+    public void RequestFreecamInputLock()
+    {
+        FreecamInputLockRequested?.Invoke(this, EventArgs.Empty);
     }
 
     public void UpdateRtpViewerBounds(int x, int y, int width, int height)

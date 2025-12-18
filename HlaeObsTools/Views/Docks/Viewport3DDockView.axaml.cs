@@ -18,6 +18,7 @@ public partial class Viewport3DDockView : UserControl
         AddHandler(PointerMovedEvent, OnViewportPointerMoved, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         AddHandler(PointerWheelChangedEvent, OnViewportPointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
 
+        KeyDown += OnViewportKeyDown;
         this.DataContextChanged += (_, _) => WirePins();
         WirePins();
     }
@@ -44,6 +45,25 @@ public partial class Viewport3DDockView : UserControl
     {
         if (Viewport != null)
             Viewport.ForwardPointerWheel(e);
+    }
+
+    private void OnViewportKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.B)
+            return;
+
+        if (Viewport == null || !Viewport.IsKeyboardFocusWithin)
+            return;
+
+        if (DataContext is not Viewport3DDockViewModel vm)
+            return;
+
+        if (!Viewport.TryGetFreecamState(out var state))
+            return;
+
+        vm.HandoffFreecam(state);
+        Viewport.DisableFreecamInput();
+        e.Handled = true;
     }
 
     private void WirePins()

@@ -271,6 +271,8 @@ public sealed class OpenTkViewport : OpenGlControlBase
     private readonly ObservableCollection<PinLabel> _labels = new();
     public ReadOnlyObservableCollection<PinLabel> Labels { get; }
 
+    public bool IsFreecamActive => _freecamActive;
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -340,6 +342,36 @@ public sealed class OpenTkViewport : OpenGlControlBase
     public void ForwardPointerWheel(PointerWheelEventArgs e)
     {
         HandlePointerWheel(e);
+    }
+
+    public bool TryGetFreecamState(out ViewportFreecamState state)
+    {
+        if (!_freecamActive)
+        {
+            state = default;
+            return false;
+        }
+
+        GetFreecamBasis(_freecamTransform, out var rawForward, out var rawUp);
+        GetFreecamBasis(_freecamSmoothed, out var smoothForward, out var smoothUp);
+        state = new ViewportFreecamState
+        {
+            RawPosition = _freecamTransform.Position,
+            RawForward = Vector3.Normalize(rawForward),
+            RawUp = Vector3.Normalize(rawUp),
+            RawFov = _freecamTransform.Fov,
+            SmoothedPosition = _freecamSmoothed.Position,
+            SmoothedForward = Vector3.Normalize(smoothForward),
+            SmoothedUp = Vector3.Normalize(smoothUp),
+            SmoothedFov = _freecamSmoothed.Fov,
+            SpeedScalar = _freecamSpeedScalar
+        };
+        return true;
+    }
+
+    public void DisableFreecamInput()
+    {
+        EndFreecamInput();
     }
 
     private void HandlePointerPressed(PointerPressedEventArgs e)
@@ -1301,6 +1333,21 @@ public sealed class OpenTkViewport : OpenGlControlBase
         }
 
         return Matrix4.LookAt(transform.Position, transform.Position + forward, up);
+    }
+
+    private void GetFreecamBasis(FreecamTransform transform, out Vector3 forward, out Vector3 up)
+    {
+        forward = GetForwardVector(transform.Pitch, transform.Yaw);
+        var right = GetRightVector(transform.Yaw);
+        up = GetUpVector(transform.Pitch, transform.Yaw);
+
+        if (Math.Abs(transform.Roll) > 0.001f)
+        {
+            var rollRad = MathHelper.DegreesToRadians(transform.Roll);
+            var rollMat = Matrix3.CreateFromAxisAngle(Vector3.Normalize(forward), rollRad);
+            right = Transform(right, rollMat);
+            up = Transform(up, rollMat);
+        }
     }
 
     private bool IsKeyDown(Key key) => _keysDown.Contains(key);

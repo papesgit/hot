@@ -5,6 +5,9 @@ using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.Services.Gsi;
+using HlaeObsTools.Services.Viewport3D;
+using HlaeObsTools.Services.WebSocket;
+using OpenTK.Mathematics;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -12,6 +15,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 {
     private readonly Viewport3DSettings _settings;
     private readonly FreecamSettings _freecamSettings;
+    private readonly HlaeWebSocketClient? _webSocketClient;
+    private readonly VideoDisplayDockViewModel? _videoDisplay;
     private readonly GsiServer? _gsiServer;
     private long _lastHeartbeat;
 
@@ -19,10 +24,12 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     public event Action<IReadOnlyList<ViewportPin>>? PinsUpdated;
 
-    public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, GsiServer? gsiServer = null)
+    public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, HlaeWebSocketClient? webSocketClient = null, VideoDisplayDockViewModel? videoDisplay = null, GsiServer? gsiServer = null)
     {
         _settings = settings;
         _freecamSettings = freecamSettings;
+        _webSocketClient = webSocketClient;
+        _videoDisplay = videoDisplay;
         _gsiServer = gsiServer;
         _settings.PropertyChanged += OnSettingsChanged;
         if (_gsiServer != null)
@@ -47,6 +54,84 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     }
 
     public FreecamSettings FreecamSettings => _freecamSettings;
+
+    public async void HandoffFreecam(ViewportFreecamState state)
+    {
+        if (_webSocketClient == null)
+            return;
+
+        var rotation = GetWorldRotation();
+        var invRotation = Matrix3.Transpose(rotation);
+        var scale = Math.Abs(_settings.WorldScale) < 0.0001f ? 1.0f : _settings.WorldScale;
+        var offset = new Vector3(_settings.WorldOffsetX, _settings.WorldOffsetY, _settings.WorldOffsetZ);
+
+        var raw = ToGameSpace(state.RawPosition, state.RawForward, state.RawUp, invRotation, offset, scale);
+        if (raw.Forward.LengthSquared < 0.0001f)
+            return;
+
+        var rawForward = Vector3.Normalize(raw.Forward);
+        var rawUp = Vector3.Normalize(raw.Up);
+
+        var smooth = ToGameSpace(state.SmoothedPosition, state.SmoothedForward, state.SmoothedUp, invRotation, offset, scale);
+        var smoothForward = smooth.Forward;
+        var smoothUp = smooth.Up;
+        if (smoothForward.LengthSquared < 0.0001f)
+        {
+            smooth = raw;
+            smoothForward = rawForward;
+            smoothUp = rawUp;
+        }
+        else
+        {
+            smoothForward = Vector3.Normalize(smoothForward);
+            smoothUp = Vector3.Normalize(smoothUp);
+        }
+
+        var (pitch, yaw, roll) = GetAngles(rawForward, rawUp);
+        var (smoothPitch, smoothYaw, smoothRoll) = GetAngles(smoothForward, smoothUp);
+
+        var args = new
+        {
+            posX = raw.Position.X,
+            posY = raw.Position.Y,
+            posZ = raw.Position.Z,
+            pitch,
+            yaw,
+            roll,
+            fov = state.RawFov,
+            smoothPosX = smooth.Position.X,
+            smoothPosY = smooth.Position.Y,
+            smoothPosZ = smooth.Position.Z,
+            smoothPitch,
+            smoothYaw,
+            smoothRoll,
+            smoothFov = state.SmoothedFov,
+            speedScalar = state.SpeedScalar,
+            mouseSensitivity = (float)_freecamSettings.MouseSensitivity,
+            moveSpeed = (float)_freecamSettings.MoveSpeed,
+            sprintMultiplier = (float)_freecamSettings.SprintMultiplier,
+            verticalSpeed = (float)_freecamSettings.VerticalSpeed,
+            speedAdjustRate = (float)_freecamSettings.SpeedAdjustRate,
+            speedMinMultiplier = (float)_freecamSettings.SpeedMinMultiplier,
+            speedMaxMultiplier = (float)_freecamSettings.SpeedMaxMultiplier,
+            rollSpeed = (float)_freecamSettings.RollSpeed,
+            rollSmoothing = (float)_freecamSettings.RollSmoothing,
+            leanStrength = (float)_freecamSettings.LeanStrength,
+            fovMin = (float)_freecamSettings.FovMin,
+            fovMax = (float)_freecamSettings.FovMax,
+            fovStep = (float)_freecamSettings.FovStep,
+            defaultFov = (float)_freecamSettings.DefaultFov,
+            smoothEnabled = _freecamSettings.SmoothEnabled,
+            halfVec = (float)_freecamSettings.HalfVec,
+            halfRot = (float)_freecamSettings.HalfRot,
+            lockHalfRot = (float)_freecamSettings.LockHalfRot,
+            lockHalfRotTransition = (float)_freecamSettings.LockHalfRotTransition,
+            halfFov = (float)_freecamSettings.HalfFov
+        };
+
+        await _webSocketClient.SendCommandAsync("freecam_handoff", args);
+        _videoDisplay?.RequestFreecamInputLock();
+    }
 
     public float PinScale
     {
@@ -322,5 +407,82 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             return AltBindLabels[slot - 5];
 
         return ((slot + 1) % 10).ToString();
+    }
+
+    private Matrix3 GetWorldRotation()
+    {
+        var yaw = MathHelper.DegreesToRadians(_settings.WorldYaw);
+        var pitch = MathHelper.DegreesToRadians(_settings.WorldPitch);
+        var roll = MathHelper.DegreesToRadians(_settings.WorldRoll);
+
+        var yawMat = Matrix3.CreateRotationY(yaw);
+        var pitchMat = Matrix3.CreateRotationX(pitch);
+        var rollMat = Matrix3.CreateRotationZ(roll);
+        return yawMat * pitchMat * rollMat;
+    }
+
+    private static Vector3 Transform(Vector3 value, Matrix3 matrix)
+    {
+        return new Vector3(
+            value.X * matrix.M11 + value.Y * matrix.M21 + value.Z * matrix.M31,
+            value.X * matrix.M12 + value.Y * matrix.M22 + value.Z * matrix.M32,
+            value.X * matrix.M13 + value.Y * matrix.M23 + value.Z * matrix.M33);
+    }
+
+    private static (Vector3 Position, Vector3 Forward, Vector3 Up) ToGameSpace(
+        Vector3 position,
+        Vector3 forward,
+        Vector3 up,
+        Matrix3 invRotation,
+        Vector3 offset,
+        float scale)
+    {
+        var pos = (position - offset) / scale;
+        pos = Transform(pos, invRotation);
+        return (pos, Transform(forward, invRotation), Transform(up, invRotation));
+    }
+
+    private static (float Pitch, float Yaw, float Roll) GetAngles(Vector3 forward, Vector3 up)
+    {
+        var yaw = MathHelper.RadiansToDegrees(MathF.Atan2(forward.Y, forward.X));
+        var pitch = MathHelper.RadiansToDegrees(-MathF.Asin(Math.Clamp(forward.Z, -1f, 1f)));
+        yaw = WrapAngle(yaw);
+        pitch = Math.Clamp(pitch, -89.0f, 89.0f);
+
+        var baseUp = GetUpVector(pitch, yaw);
+        var roll = GetRollFromUp(baseUp, up, forward);
+        return (pitch, yaw, roll);
+    }
+
+    private static Vector3 GetUpVector(float pitchDeg, float yawDeg)
+    {
+        var pitch = MathHelper.DegreesToRadians(pitchDeg);
+        var yaw = MathHelper.DegreesToRadians(yawDeg);
+        return new Vector3(
+            MathF.Sin(pitch) * MathF.Cos(yaw),
+            MathF.Sin(pitch) * MathF.Sin(yaw),
+            MathF.Cos(pitch));
+    }
+
+    private static float GetRollFromUp(Vector3 baseUp, Vector3 up, Vector3 forward)
+    {
+        if (baseUp.LengthSquared < 0.0001f || up.LengthSquared < 0.0001f)
+            return 0f;
+
+        baseUp = Vector3.Normalize(baseUp);
+        up = Vector3.Normalize(up);
+        forward = Vector3.Normalize(forward);
+
+        var cross = Vector3.Cross(baseUp, up);
+        var dot = Vector3.Dot(baseUp, up);
+        var rollRad = MathF.Atan2(Vector3.Dot(cross, forward), dot);
+        return MathHelper.RadiansToDegrees(rollRad);
+    }
+
+    private static float WrapAngle(float degrees)
+    {
+        while (degrees > 180f) degrees -= 360f;
+        while (degrees < -180f) degrees += 360f;
+        return degrees;
     }
 }
