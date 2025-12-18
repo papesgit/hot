@@ -8,6 +8,7 @@
         <Grid>
             <controls:OpenTkViewport x:Name="Viewport"
                                      MapPath="{Binding MapObjPath}"
+                                     FreecamSettings="{Binding FreecamSettings}"
                                      PinScale="{Binding PinScale}"
                                      WorldScale="{Binding WorldScale}"
                                      WorldYaw="{Binding WorldYaw}"

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.OpenGL;
 using Avalonia.OpenGL.Controls;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using HlaeObsTools.Services.Viewport3D;
@@ -50,6 +52,8 @@ public sealed class OpenTkViewport : OpenGlControlBase
         AvaloniaProperty.Register<OpenTkViewport, float>(nameof(WorldOffsetY), 0.0f);
     public static readonly StyledProperty<float> WorldOffsetZProperty =
         AvaloniaProperty.Register<OpenTkViewport, float>(nameof(WorldOffsetZ), 0.0f);
+    public static readonly StyledProperty<FreecamSettings?> FreecamSettingsProperty =
+        AvaloniaProperty.Register<OpenTkViewport, FreecamSettings?>(nameof(FreecamSettings));
 
     private int _vao;
     private int _vbo;
@@ -101,6 +105,30 @@ public sealed class OpenTkViewport : OpenGlControlBase
     private bool _dragging;
     private bool _panning;
     private Point _lastPointer;
+    private Point _freecamCenterLocal;
+    private bool _freecamCursorHidden;
+    private bool _freecamActive;
+    private bool _freecamInputEnabled;
+    private bool _freecamInitialized;
+    private float _freecamSpeedScalar = 1.0f;
+    private bool _lastMouseButton4;
+    private bool _lastMouseButton5;
+    private float _mouseButton4Hold;
+    private float _mouseButton5Hold;
+    private float _freecamMouseVelocityX;
+    private float _freecamMouseVelocityY;
+    private float _freecamTargetRoll;
+    private float _freecamCurrentRoll;
+    private Vector2 _freecamMouseDelta;
+    private float _freecamWheelDelta;
+    private DateTime _freecamLastUpdate;
+    private FreecamTransform _freecamTransform;
+    private FreecamTransform _freecamSmoothed;
+    private FreecamConfig _freecamConfig = FreecamConfig.Default;
+    private FreecamSettings? _freecamSettings;
+    private readonly HashSet<Key> _keysDown = new();
+    private bool _mouseButton4Down;
+    private bool _mouseButton5Down;
 
     public OpenTkViewport()
     {
@@ -129,6 +157,7 @@ public sealed class OpenTkViewport : OpenGlControlBase
         WorldOffsetXProperty.Changed.AddClassHandler<OpenTkViewport>((sender, _) => sender.OnWorldTransformChanged());
         WorldOffsetYProperty.Changed.AddClassHandler<OpenTkViewport>((sender, _) => sender.OnWorldTransformChanged());
         WorldOffsetZProperty.Changed.AddClassHandler<OpenTkViewport>((sender, _) => sender.OnWorldTransformChanged());
+        FreecamSettingsProperty.Changed.AddClassHandler<OpenTkViewport>((sender, args) => sender.OnFreecamSettingsChanged(args));
     }
 
     public string? MapPath
@@ -233,6 +262,12 @@ public sealed class OpenTkViewport : OpenGlControlBase
         set => SetValue(WorldOffsetZProperty, value);
     }
 
+    public FreecamSettings? FreecamSettings
+    {
+        get => GetValue(FreecamSettingsProperty);
+        set => SetValue(FreecamSettingsProperty, value);
+    }
+
     private readonly ObservableCollection<PinLabel> _labels = new();
     public ReadOnlyObservableCollection<PinLabel> Labels { get; }
 
@@ -247,6 +282,20 @@ public sealed class OpenTkViewport : OpenGlControlBase
         base.OnDetachedFromVisualTree(e);
         _dragging = false;
         _panning = false;
+        DisableFreecam();
+        _keysDown.Clear();
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        _keysDown.Add(e.Key);
+    }
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        base.OnKeyUp(e);
+        _keysDown.Remove(e.Key);
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -298,10 +347,22 @@ public sealed class OpenTkViewport : OpenGlControlBase
         var point = e.GetCurrentPoint(this);
         var updateKind = point.Properties.PointerUpdateKind;
         var middlePressed = point.Properties.IsMiddleButtonPressed || updateKind == PointerUpdateKind.MiddleButtonPressed;
+        var rightPressed = point.Properties.IsRightButtonPressed || updateKind == PointerUpdateKind.RightButtonPressed;
+        _mouseButton4Down = point.Properties.IsXButton1Pressed;
+        _mouseButton5Down = point.Properties.IsXButton2Pressed;
 
         UpdateInputStatus($"Input: down M:{middlePressed} Shift:{e.KeyModifiers.HasFlag(KeyModifiers.Shift)}");
 
-        if (!middlePressed)
+        if (rightPressed)
+        {
+            BeginFreecam(point.Position);
+            e.Pointer.Capture(this);
+            Focus();
+            e.Handled = true;
+            return;
+        }
+
+        if (!middlePressed || _freecamActive)
             return;
 
         _dragging = true;
@@ -314,14 +375,26 @@ public sealed class OpenTkViewport : OpenGlControlBase
 
     private void HandlePointerReleased(PointerReleasedEventArgs e)
     {
-        if (!_dragging)
-            return;
-
         var point = e.GetCurrentPoint(this);
         var updateKind = point.Properties.PointerUpdateKind;
         var middlePressed = point.Properties.IsMiddleButtonPressed;
-        var released = updateKind == PointerUpdateKind.MiddleButtonReleased
-            || (!middlePressed);
+        var rightPressed = point.Properties.IsRightButtonPressed;
+        _mouseButton4Down = point.Properties.IsXButton1Pressed;
+        _mouseButton5Down = point.Properties.IsXButton2Pressed;
+
+        var rightReleased = updateKind == PointerUpdateKind.RightButtonReleased || !rightPressed;
+        if (_freecamActive && rightReleased)
+        {
+            EndFreecamInput();
+            e.Pointer.Capture(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (!_dragging)
+            return;
+
+        var released = updateKind == PointerUpdateKind.MiddleButtonReleased || (!middlePressed);
 
         if (released)
         {
@@ -334,13 +407,27 @@ public sealed class OpenTkViewport : OpenGlControlBase
 
     private void HandlePointerMoved(PointerEventArgs e)
     {
+        var point = e.GetCurrentPoint(this);
+        _mouseButton4Down = point.Properties.IsXButton1Pressed;
+        _mouseButton5Down = point.Properties.IsXButton2Pressed;
+
+        if (_freecamActive && _freecamInputEnabled)
+        {
+            var freecamDelta = point.Position - _freecamCenterLocal;
+            _freecamMouseDelta += new Vector2((float)freecamDelta.X, (float)freecamDelta.Y);
+            CenterFreecamCursor();
+            UpdateInputStatus("Input: freecam");
+            RequestNextFrameRendering();
+            e.Handled = true;
+            return;
+        }
+
         if (!_dragging)
         {
             UpdateInputStatus("Input: move");
             return;
         }
 
-        var point = e.GetCurrentPoint(this);
         var pos = point.Position;
         var delta = pos - _lastPointer;
         _lastPointer = pos;
@@ -362,6 +449,17 @@ public sealed class OpenTkViewport : OpenGlControlBase
     private void HandlePointerWheel(PointerWheelEventArgs e)
     {
         if (Math.Abs(e.Delta.Y) < double.Epsilon)
+            return;
+
+        if (_freecamActive && _freecamInputEnabled)
+        {
+            _freecamWheelDelta += (float)e.Delta.Y;
+            UpdateInputStatus($"Input: freecam wheel {e.Delta.Y:0.##}");
+            RequestNextFrameRendering();
+            e.Handled = true;
+            return;
+        }
+        if (_freecamActive)
             return;
 
         var zoomFactor = MathF.Pow(1.1f, (float)-e.Delta.Y);
@@ -448,6 +546,16 @@ public sealed class OpenTkViewport : OpenGlControlBase
 
         GL.ClearColor(0.02f, 0.02f, 0.03f, 1f);
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+        if (_freecamActive)
+        {
+            var now = DateTime.UtcNow;
+            if (_freecamLastUpdate == default)
+                _freecamLastUpdate = now;
+            var deltaTime = (float)(now - _freecamLastUpdate).TotalSeconds;
+            _freecamLastUpdate = now;
+            UpdateFreecam(deltaTime);
+        }
 
         var viewProjection = CreateViewProjection(width, height);
 
@@ -613,6 +721,54 @@ public sealed class OpenTkViewport : OpenGlControlBase
         RequestNextFrameRendering();
     }
 
+    private void OnFreecamSettingsChanged(AvaloniaPropertyChangedEventArgs e)
+    {
+        if (_freecamSettings != null)
+            _freecamSettings.PropertyChanged -= OnFreecamSettingsPropertyChanged;
+
+        _freecamSettings = e.NewValue as FreecamSettings;
+        if (_freecamSettings != null)
+            _freecamSettings.PropertyChanged += OnFreecamSettingsPropertyChanged;
+
+        ApplyFreecamSettings();
+    }
+
+    private void OnFreecamSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ApplyFreecamSettings();
+    }
+
+    private void ApplyFreecamSettings()
+    {
+        if (_freecamSettings == null)
+        {
+            _freecamConfig = FreecamConfig.Default;
+            return;
+        }
+
+        _freecamConfig = new FreecamConfig
+        {
+            MouseSensitivity = (float)_freecamSettings.MouseSensitivity,
+            MoveSpeed = (float)_freecamSettings.MoveSpeed,
+            SprintMultiplier = (float)_freecamSettings.SprintMultiplier,
+            VerticalSpeed = (float)_freecamSettings.VerticalSpeed,
+            SpeedAdjustRate = (float)_freecamSettings.SpeedAdjustRate,
+            SpeedMinMultiplier = (float)_freecamSettings.SpeedMinMultiplier,
+            SpeedMaxMultiplier = (float)_freecamSettings.SpeedMaxMultiplier,
+            RollSpeed = (float)_freecamSettings.RollSpeed,
+            RollSmoothing = (float)_freecamSettings.RollSmoothing,
+            LeanStrength = (float)_freecamSettings.LeanStrength,
+            FovMin = (float)_freecamSettings.FovMin,
+            FovMax = (float)_freecamSettings.FovMax,
+            FovStep = (float)_freecamSettings.FovStep,
+            DefaultFov = (float)_freecamSettings.DefaultFov,
+            SmoothEnabled = _freecamSettings.SmoothEnabled,
+            HalfVec = (float)_freecamSettings.HalfVec,
+            HalfRot = (float)_freecamSettings.HalfRot,
+            HalfFov = (float)_freecamSettings.HalfFov
+        };
+    }
+
     public void SetPins(IReadOnlyList<ViewportPin> pins)
     {
         var rotation = GetWorldRotation();
@@ -768,11 +924,19 @@ public sealed class OpenTkViewport : OpenGlControlBase
     private Matrix4 CreateViewProjection(int width, int height)
     {
         var aspect = width / (float)height;
+        if (_freecamActive)
+        {
+            var fov = MathHelper.DegreesToRadians(_freecamSmoothed.Fov);
+            var projection = Matrix4.CreatePerspectiveFieldOfView(fov, aspect, 0.05f, 100000f);
+            var view = CreateFreecamView(_freecamSmoothed);
+            return view * projection;
+        }
+
         var nearPlane = Math.Max(0.05f, _distance * 0.01f);
         var farPlane = Math.Max(100f, _distance * 10f);
-        var projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(60f), aspect, nearPlane, farPlane);
-        var view = Matrix4.LookAt(GetCameraPosition(), _target, Vector3.UnitY);
-        return view * projection;
+        var projectionOrbit = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(60f), aspect, nearPlane, farPlane);
+        var viewOrbit = Matrix4.LookAt(GetCameraPosition(), _target, Vector3.UnitY);
+        return viewOrbit * projectionOrbit;
     }
 
     private void ApplyCommonUniforms(ref Matrix4 mvp, Vector3 color)
@@ -806,6 +970,466 @@ public sealed class OpenTkViewport : OpenGlControlBase
         var panScale = _distance * 0.001f;
         _target += (-right * deltaX + up * deltaY) * panScale;
     }
+
+    private void BeginFreecam(Point start)
+    {
+        if (!_freecamActive)
+        {
+            if (!_freecamInitialized)
+                InitializeFreecamFromOrbit();
+            else
+                ResetFreecamFromOrbit();
+            _freecamActive = true;
+        }
+
+        _freecamInputEnabled = true;
+        _freecamMouseDelta = Vector2.Zero;
+        _freecamWheelDelta = 0f;
+        _freecamLastUpdate = DateTime.UtcNow;
+        LockFreecamCursor();
+        UpdateInputStatus("Input: freecam");
+    }
+
+    private void EndFreecamInput()
+    {
+        _freecamInputEnabled = false;
+        UnlockFreecamCursor();
+        UpdateInputStatus("Input: idle");
+    }
+
+    private void DisableFreecam()
+    {
+        _freecamInputEnabled = false;
+        _freecamActive = false;
+        UnlockFreecamCursor();
+        SyncOrbitFromFreecam();
+    }
+
+    private void InitializeFreecamFromOrbit()
+    {
+        var cameraPos = GetCameraPosition();
+        var forward = Vector3.Normalize(_target - cameraPos);
+        var yaw = MathHelper.RadiansToDegrees(MathF.Atan2(forward.Z, forward.X));
+        var pitch = MathHelper.RadiansToDegrees(MathF.Asin(forward.Y));
+
+        _freecamTransform = new FreecamTransform
+        {
+            Position = cameraPos,
+            Yaw = yaw,
+            Pitch = pitch,
+            Roll = 0f,
+            Fov = _freecamConfig.DefaultFov
+        };
+        _freecamSmoothed = _freecamTransform;
+        ResetFreecamState();
+        _freecamInitialized = true;
+    }
+
+    private void ResetFreecamFromOrbit()
+    {
+        InitializeFreecamFromOrbit();
+    }
+
+    private void ResetFreecamState()
+    {
+        _freecamSpeedScalar = Clamp(1.0f, _freecamConfig.SpeedMinMultiplier, _freecamConfig.SpeedMaxMultiplier);
+        _lastMouseButton4 = false;
+        _lastMouseButton5 = false;
+        _mouseButton4Hold = 0.0f;
+        _mouseButton5Hold = 0.0f;
+        _freecamMouseVelocityX = 0.0f;
+        _freecamMouseVelocityY = 0.0f;
+        _freecamTargetRoll = 0.0f;
+        _freecamCurrentRoll = 0.0f;
+    }
+
+    private void SyncOrbitFromFreecam()
+    {
+        var forward = GetForwardVector(_freecamTransform.Pitch, _freecamTransform.Yaw);
+        _yaw = MathHelper.DegreesToRadians(_freecamTransform.Yaw);
+        _pitch = MathHelper.DegreesToRadians(_freecamTransform.Pitch);
+        _target = _freecamTransform.Position + forward * _distance;
+        _pitch = Math.Clamp(_pitch, -1.55f, 1.55f);
+    }
+
+    private void UpdateFreecam(float deltaTime)
+    {
+        if (!_freecamActive)
+            return;
+
+        deltaTime = MathF.Min(deltaTime, 0.1f);
+        var wheel = _freecamWheelDelta;
+        _freecamWheelDelta = 0f;
+
+        if (_freecamInputEnabled)
+        {
+            UpdateFreecamSpeed(deltaTime, wheel);
+            UpdateFreecamMouseLook(deltaTime);
+        }
+
+        if (_freecamInputEnabled)
+        {
+            UpdateFreecamMovement(deltaTime);
+            UpdateFreecamRoll(deltaTime);
+            UpdateFreecamFov(wheel);
+        }
+
+        if (_freecamConfig.SmoothEnabled)
+        {
+            ApplyFreecamSmoothing(deltaTime);
+        }
+        else
+        {
+            _freecamSmoothed = _freecamTransform;
+        }
+    }
+
+    private void UpdateFreecamMouseLook(float deltaTime)
+    {
+        if (deltaTime <= 0f)
+            return;
+
+        var deltaYaw = _freecamMouseDelta.X * _freecamConfig.MouseSensitivity;
+        var deltaPitch = -_freecamMouseDelta.Y * _freecamConfig.MouseSensitivity;
+        _freecamMouseDelta = Vector2.Zero;
+
+        _freecamTransform.Yaw += deltaYaw;
+        _freecamTransform.Pitch += deltaPitch;
+
+        _freecamMouseVelocityX = deltaYaw / deltaTime;
+        _freecamMouseVelocityY = deltaPitch / deltaTime;
+
+        _freecamTransform.Pitch = Clamp(_freecamTransform.Pitch, -89.0f, 89.0f);
+
+        while (_freecamTransform.Yaw > 180.0f) _freecamTransform.Yaw -= 360.0f;
+        while (_freecamTransform.Yaw < -180.0f) _freecamTransform.Yaw += 360.0f;
+    }
+
+    private void UpdateFreecamMovement(float deltaTime)
+    {
+        var moveSpeed = _freecamConfig.MoveSpeed * _freecamSpeedScalar;
+        var verticalSpeed = _freecamConfig.VerticalSpeed * _freecamSpeedScalar;
+
+        if (IsShiftDown())
+        {
+            moveSpeed *= _freecamConfig.SprintMultiplier;
+            verticalSpeed *= _freecamConfig.SprintMultiplier;
+        }
+
+        var forward = GetForwardVector(_freecamTransform.Pitch, _freecamTransform.Yaw);
+        var right = GetRightVector(_freecamTransform.Yaw);
+        var up = GetUpVector(_freecamTransform.Pitch, _freecamTransform.Yaw);
+
+        var desiredVel = Vector3.Zero;
+
+        if (IsKeyDown(Key.W))
+            desiredVel += forward * moveSpeed;
+        if (IsKeyDown(Key.S))
+            desiredVel -= forward * moveSpeed;
+        if (IsKeyDown(Key.A))
+            desiredVel -= right * moveSpeed;
+        if (IsKeyDown(Key.D))
+            desiredVel += right * moveSpeed;
+        if (IsKeyDown(Key.Space))
+            desiredVel += up * verticalSpeed;
+        if (IsCtrlDown())
+            desiredVel -= up * verticalSpeed;
+
+        var desiredSpeed = desiredVel.Length;
+        var maxSpeed = moveSpeed;
+        if (IsKeyDown(Key.Space) || IsCtrlDown())
+            maxSpeed = MathF.Max(verticalSpeed, moveSpeed);
+
+        if (desiredSpeed > maxSpeed && desiredSpeed > 0.001f)
+        {
+            var scale = maxSpeed / desiredSpeed;
+            desiredVel *= scale;
+        }
+
+        _freecamTransform.Position += desiredVel * deltaTime;
+        _freecamTransform.Velocity = desiredVel;
+    }
+
+    private void UpdateFreecamRoll(float deltaTime)
+    {
+        if (!_freecamConfig.SmoothEnabled)
+        {
+            if (IsKeyDown(Key.Q))
+                _freecamTargetRoll += _freecamConfig.RollSpeed * deltaTime;
+            if (IsKeyDown(Key.E))
+                _freecamTargetRoll -= _freecamConfig.RollSpeed * deltaTime;
+        }
+        else
+        {
+            _freecamTargetRoll = 0;
+        }
+
+        var dynamicRoll = 0f;
+        if (_freecamConfig.SmoothEnabled)
+        {
+            var yawRate = _freecamMouseVelocityX;
+            var right = GetRightVector(_freecamTransform.Yaw);
+            var lateralSpeed = Vector3.Dot(_freecamTransform.Velocity, right);
+            var speedMag = _freecamTransform.Velocity.Length;
+
+            const float maxLeanSpeed = 1000.0f;
+            const float maxLeanDeg = 30.0f;
+
+            var speedFactor = Clamp(speedMag / maxLeanSpeed, 0.0f, 1.0f);
+            var lateralFactor = Clamp(lateralSpeed / maxLeanSpeed, -1.0f, 1.0f);
+
+            var moveLean = lateralFactor * maxLeanDeg * speedFactor;
+            var yawLean = Clamp(yawRate * 0.04f, -maxLeanDeg, maxLeanDeg);
+
+            var combined = (moveLean + yawLean) * _freecamConfig.LeanStrength;
+            dynamicRoll = Clamp(combined, -maxLeanDeg, maxLeanDeg);
+        }
+
+        var combinedRoll = _freecamTargetRoll + dynamicRoll;
+        _freecamCurrentRoll = Lerp(_freecamCurrentRoll, combinedRoll, 1.0f - _freecamConfig.RollSmoothing);
+        _freecamTransform.Roll = _freecamCurrentRoll;
+    }
+
+    private void UpdateFreecamFov(float wheelDelta)
+    {
+        if (Math.Abs(wheelDelta) < float.Epsilon || IsAltDown())
+            return;
+
+        _freecamTransform.Fov += wheelDelta * _freecamConfig.FovStep;
+        _freecamTransform.Fov = Clamp(_freecamTransform.Fov, _freecamConfig.FovMin, _freecamConfig.FovMax);
+    }
+
+    private void UpdateFreecamSpeed(float deltaTime, float wheelDelta)
+    {
+        if (deltaTime <= 0.0f)
+            return;
+
+        const float clickWindow = 0.12f;
+        var held4 = _mouseButton4Down;
+        var held5 = _mouseButton5Down;
+
+        if (held4 && held5)
+        {
+            _mouseButton4Hold = 0.0f;
+            _mouseButton5Hold = 0.0f;
+            _lastMouseButton4 = held4;
+            _lastMouseButton5 = held5;
+            return;
+        }
+
+        var prevHold4 = _mouseButton4Hold;
+        var prevHold5 = _mouseButton5Hold;
+        _mouseButton4Hold = held4 ? _mouseButton4Hold + deltaTime : 0.0f;
+        _mouseButton5Hold = held5 ? _mouseButton5Hold + deltaTime : 0.0f;
+
+        static float ExtraTime(float prevHold, float curHold)
+        {
+            const float window = 0.12f;
+            var prevOver = prevHold > window ? prevHold - window : 0.0f;
+            var curOver = curHold > window ? curHold - window : 0.0f;
+            var deltaOver = curOver - prevOver;
+            return deltaOver > 0.0f ? deltaOver : 0.0f;
+        }
+
+        var adjustment = 0.0f;
+        if (held5)
+        {
+            if (!_lastMouseButton5)
+                adjustment += _freecamConfig.SpeedAdjustRate * clickWindow;
+            adjustment += _freecamConfig.SpeedAdjustRate * ExtraTime(prevHold5, _mouseButton5Hold);
+        }
+        else if (held4)
+        {
+            if (!_lastMouseButton4)
+                adjustment -= _freecamConfig.SpeedAdjustRate * clickWindow;
+            adjustment -= _freecamConfig.SpeedAdjustRate * ExtraTime(prevHold4, _mouseButton4Hold);
+        }
+
+        if (IsAltDown() && Math.Abs(wheelDelta) > float.Epsilon)
+            adjustment += wheelDelta * 0.05f;
+
+        _lastMouseButton4 = held4;
+        _lastMouseButton5 = held5;
+
+        if (Math.Abs(adjustment) > float.Epsilon)
+        {
+            var newScalar = _freecamSpeedScalar + adjustment;
+            newScalar = Clamp(newScalar, _freecamConfig.SpeedMinMultiplier, _freecamConfig.SpeedMaxMultiplier);
+            _freecamSpeedScalar = newScalar;
+        }
+    }
+
+    private void ApplyFreecamSmoothing(float deltaTime)
+    {
+        var posBlend = _freecamConfig.HalfVec > 0f
+            ? 1.0f - MathF.Exp((-MathF.Log(2.0f) * deltaTime) / _freecamConfig.HalfVec)
+            : 1.0f;
+
+        var rotBlend = _freecamConfig.HalfRot > 0f
+            ? 1.0f - MathF.Exp((-MathF.Log(2.0f) * deltaTime) / _freecamConfig.HalfRot)
+            : 1.0f;
+
+        var fovBlend = _freecamConfig.HalfFov > 0f
+            ? 1.0f - MathF.Exp((-MathF.Log(2.0f) * deltaTime) / _freecamConfig.HalfFov)
+            : 1.0f;
+
+        _freecamSmoothed.Position = Vector3.Lerp(_freecamSmoothed.Position, _freecamTransform.Position, posBlend);
+
+        var targetYaw = _freecamTransform.Yaw;
+        var currentYaw = _freecamSmoothed.Yaw;
+        while (targetYaw - currentYaw > 180.0f) targetYaw -= 360.0f;
+        while (targetYaw - currentYaw < -180.0f) targetYaw += 360.0f;
+
+        _freecamSmoothed.Pitch = Lerp(_freecamSmoothed.Pitch, _freecamTransform.Pitch, rotBlend);
+        _freecamSmoothed.Yaw = Lerp(currentYaw, targetYaw, rotBlend);
+        _freecamSmoothed.Roll = Lerp(_freecamSmoothed.Roll, _freecamTransform.Roll, rotBlend);
+        _freecamSmoothed.Fov = Lerp(_freecamSmoothed.Fov, _freecamTransform.Fov, fovBlend);
+    }
+
+    private Matrix4 CreateFreecamView(FreecamTransform transform)
+    {
+        var forward = GetForwardVector(transform.Pitch, transform.Yaw);
+        var right = GetRightVector(transform.Yaw);
+        var up = GetUpVector(transform.Pitch, transform.Yaw);
+
+        if (Math.Abs(transform.Roll) > 0.001f)
+        {
+            var rollRad = MathHelper.DegreesToRadians(transform.Roll);
+            var rollMat = Matrix3.CreateFromAxisAngle(Vector3.Normalize(forward), rollRad);
+            right = Transform(right, rollMat);
+            up = Transform(up, rollMat);
+        }
+
+        return Matrix4.LookAt(transform.Position, transform.Position + forward, up);
+    }
+
+    private bool IsKeyDown(Key key) => _keysDown.Contains(key);
+
+    private bool IsShiftDown()
+    {
+        return _keysDown.Contains(Key.LeftShift)
+            || _keysDown.Contains(Key.RightShift);
+    }
+
+    private bool IsCtrlDown()
+    {
+        return _keysDown.Contains(Key.LeftCtrl)
+            || _keysDown.Contains(Key.RightCtrl);
+    }
+
+    private bool IsAltDown()
+    {
+        return _keysDown.Contains(Key.LeftAlt)
+            || _keysDown.Contains(Key.RightAlt);
+    }
+
+    private void LockFreecamCursor()
+    {
+        if (Bounds.Width <= 0 || Bounds.Height <= 0)
+            return;
+
+        var centerLocal = new Point(Bounds.Width / 2.0, Bounds.Height / 2.0);
+        if (!TryGetScreenPoint(centerLocal, out var centerScreen))
+            return;
+
+        _freecamCenterLocal = centerLocal;
+        SetCursorPosition(centerScreen.X, centerScreen.Y);
+        Cursor = new Cursor(StandardCursorType.None);
+        if (!_freecamCursorHidden)
+        {
+            ShowCursor(false);
+            _freecamCursorHidden = true;
+        }
+    }
+
+    private void UnlockFreecamCursor()
+    {
+        if (_freecamCursorHidden)
+        {
+            ShowCursor(true);
+            Cursor = Cursor.Default;
+            _freecamCursorHidden = false;
+        }
+    }
+
+    private void CenterFreecamCursor()
+    {
+        if (Bounds.Width <= 0 || Bounds.Height <= 0)
+            return;
+
+        var centerLocal = new Point(Bounds.Width / 2.0, Bounds.Height / 2.0);
+        if (!TryGetScreenPoint(centerLocal, out var centerScreen))
+            return;
+
+        _freecamCenterLocal = centerLocal;
+        SetCursorPosition(centerScreen.X, centerScreen.Y);
+    }
+
+    private bool TryGetScreenPoint(Point localPoint, out PixelPoint screenPoint)
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null)
+        {
+            screenPoint = default;
+            return false;
+        }
+
+        var translated = this.TranslatePoint(localPoint, topLevel);
+        if (!translated.HasValue)
+        {
+            screenPoint = default;
+            return false;
+        }
+
+        screenPoint = topLevel.PointToScreen(translated.Value);
+        return true;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetCursorPos(int X, int Y);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern int ShowCursor(bool bShow);
+
+    private static void SetCursorPosition(int x, int y)
+    {
+        SetCursorPos(x, y);
+    }
+
+    private static Vector3 GetForwardVector(float pitchDeg, float yawDeg)
+    {
+        var pitch = MathHelper.DegreesToRadians(pitchDeg);
+        var yaw = MathHelper.DegreesToRadians(yawDeg);
+        var cosPitch = MathF.Cos(pitch);
+        return new Vector3(
+            cosPitch * MathF.Cos(yaw),
+            MathF.Sin(pitch),
+            cosPitch * MathF.Sin(yaw));
+    }
+
+    private static Vector3 GetRightVector(float yawDeg)
+    {
+        var yaw = MathHelper.DegreesToRadians(yawDeg);
+        return new Vector3(-MathF.Sin(yaw), 0f, MathF.Cos(yaw));
+    }
+
+    private static Vector3 GetUpVector(float pitchDeg, float yawDeg)
+    {
+        var forward = GetForwardVector(pitchDeg, yawDeg);
+        var right = GetRightVector(yawDeg);
+        return Vector3.Normalize(Vector3.Cross(right, forward));
+    }
+
+    private static float Clamp(float value, float min, float max)
+    {
+        if (value < min)
+            return min;
+        if (value > max)
+            return max;
+        return value;
+    }
+
+    private static float Lerp(float a, float b, float t) => a + (b - a) * t;
 
     private int CreateShaderProgram()
     {
@@ -1271,6 +1895,60 @@ public sealed class OpenTkViewport : OpenGlControlBase
         vertices.Add(normal.X);
         vertices.Add(normal.Y);
         vertices.Add(normal.Z);
+    }
+
+    private struct FreecamTransform
+    {
+        public Vector3 Position;
+        public Vector3 Velocity;
+        public float Pitch;
+        public float Yaw;
+        public float Roll;
+        public float Fov;
+    }
+
+    private readonly struct FreecamConfig
+    {
+        public static readonly FreecamConfig Default = new()
+        {
+            MouseSensitivity = 0.12f,
+            MoveSpeed = 200.0f,
+            SprintMultiplier = 2.5f,
+            VerticalSpeed = 200.0f,
+            SpeedAdjustRate = 1.1f,
+            SpeedMinMultiplier = 0.05f,
+            SpeedMaxMultiplier = 5.0f,
+            RollSpeed = 45.0f,
+            RollSmoothing = 0.8f,
+            LeanStrength = 1.0f,
+            FovMin = 10.0f,
+            FovMax = 150.0f,
+            FovStep = 2.0f,
+            DefaultFov = 90.0f,
+            SmoothEnabled = true,
+            HalfVec = 0.5f,
+            HalfRot = 0.5f,
+            HalfFov = 0.5f
+        };
+
+        public float MouseSensitivity { get; init; }
+        public float MoveSpeed { get; init; }
+        public float SprintMultiplier { get; init; }
+        public float VerticalSpeed { get; init; }
+        public float SpeedAdjustRate { get; init; }
+        public float SpeedMinMultiplier { get; init; }
+        public float SpeedMaxMultiplier { get; init; }
+        public float RollSpeed { get; init; }
+        public float RollSmoothing { get; init; }
+        public float LeanStrength { get; init; }
+        public float FovMin { get; init; }
+        public float FovMax { get; init; }
+        public float FovStep { get; init; }
+        public float DefaultFov { get; init; }
+        public bool SmoothEnabled { get; init; }
+        public float HalfVec { get; init; }
+        public float HalfRot { get; init; }
+        public float HalfFov { get; init; }
     }
 
     private sealed class PinRenderData

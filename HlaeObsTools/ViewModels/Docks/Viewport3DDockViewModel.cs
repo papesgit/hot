@@ -11,6 +11,7 @@ namespace HlaeObsTools.ViewModels.Docks;
 public sealed class Viewport3DDockViewModel : Tool, IDisposable
 {
     private readonly Viewport3DSettings _settings;
+    private readonly FreecamSettings _freecamSettings;
     private readonly GsiServer? _gsiServer;
     private long _lastHeartbeat;
 
@@ -18,9 +19,10 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     public event Action<IReadOnlyList<ViewportPin>>? PinsUpdated;
 
-    public Viewport3DDockViewModel(Viewport3DSettings settings, GsiServer? gsiServer = null)
+    public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, GsiServer? gsiServer = null)
     {
         _settings = settings;
+        _freecamSettings = freecamSettings;
         _gsiServer = gsiServer;
         _settings.PropertyChanged += OnSettingsChanged;
         if (_gsiServer != null)
@@ -43,6 +45,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             }
         }
     }
+
+    public FreecamSettings FreecamSettings => _freecamSettings;
 
     public float PinScale
     {

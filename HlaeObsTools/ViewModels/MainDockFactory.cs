@@ -153,7 +153,7 @@ public class MainDockFactory : Factory, IDisposable
             ApplyNetworkSettingsAsync,
             _storedSettings)
         { Id = "BottomLeft", Title = "Settings" };
-        var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, _gsiServer) { Id = "BottomCenter", Title = "3D Viewport" };
+        var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, _gsiServer) { Id = "BottomCenter", Title = "3D Viewport" };
 
         // Inject WebSocket and UDP services into video display
         _videoDisplayVm.SetWebSocketClient(_webSocketClient);
