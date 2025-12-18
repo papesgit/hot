@@ -2,8 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:controls="using:HlaeObsTools.Controls"
+             xmlns:conv="using:HlaeObsTools.Converters"
              x:Class="HlaeObsTools.Views.Docks.Viewport3DDockView"
              x:DataType="vm:Viewport3DDockViewModel">
+    <UserControl.Resources>
+        <conv:CenterOnPointConverter x:Key="CenterOnPointConverter" />
+    </UserControl.Resources>
     <Border Background="#151515" Padding="4">
         <Grid>
             <controls:OpenTkViewport x:Name="Viewport"
@@ -28,7 +32,30 @@
                                      MapOffsetY="{Binding MapOffsetY}"
                                      MapOffsetZ="{Binding MapOffsetZ}" />
             <ItemsControl ItemsSource="{Binding #Viewport.Labels}"
-                          IsHitTestVisible="False">
+                          IsHitTestVisible="False"
+                          Width="{Binding #Viewport.Bounds.Width}"
+                          Height="{Binding #Viewport.Bounds.Height}"
+                          x:CompileBindings="False">
+                <ItemsControl.Styles>
+                    <Style Selector="ContentPresenter">
+                        <Setter Property="Canvas.Left">
+                            <Setter.Value>
+                                <MultiBinding Converter="{StaticResource CenterOnPointConverter}">
+                                    <Binding Path="ScreenX" />
+                                    <Binding RelativeSource="{RelativeSource Self}" Path="Bounds.Width" />
+                                </MultiBinding>
+                            </Setter.Value>
+                        </Setter>
+                        <Setter Property="Canvas.Top">
+                            <Setter.Value>
+                                <MultiBinding Converter="{StaticResource CenterOnPointConverter}">
+                                    <Binding Path="ScreenY" />
+                                    <Binding RelativeSource="{RelativeSource Self}" Path="Bounds.Height" />
+                                </MultiBinding>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ItemsControl.Styles>
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Canvas />
@@ -36,12 +63,17 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Text}"
-                                   Foreground="#FFFFFF"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Canvas.Left="{Binding Screen.X}"
-                                   Canvas.Top="{Binding Screen.Y}" />
+                        <Grid>
+                            <TextBlock Text="{Binding Text}"
+                                       Foreground="#000000"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Margin="1,1,0,0" />
+                            <TextBlock Text="{Binding Text}"
+                                       Foreground="{Binding LabelBrush}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold" />
+                        </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

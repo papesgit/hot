@@ -8,6 +8,7 @@ using Avalonia.OpenGL;
 using Avalonia.OpenGL.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Avalonia.Media;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using HlaeObsTools.Services.Viewport3D;
@@ -1887,8 +1888,13 @@ public sealed class OpenTkViewport : OpenGlControlBase
             added += 3;
         }
 
-        var labelOffset = new Vector3(0, sphereRadius * 2.2f, 0);
-        labels.Add(new PinLabel { Text = pin.Label, World = pin.Position + labelOffset });
+        var labelOffset = Vector3.Zero;
+        labels.Add(new PinLabel
+        {
+            Text = pin.Label,
+            World = pin.Position + labelOffset,
+            LabelBrush = new SolidColorBrush(ToAvaloniaColor(pin.Color))
+        });
         return added;
     }
 
@@ -2068,6 +2074,9 @@ public sealed class OpenTkViewport : OpenGlControlBase
         public string Text { get; set; } = string.Empty;
         public Vector3 World { get; set; }
         public Point Screen { get; set; }
+        public double ScreenX { get; set; }
+        public double ScreenY { get; set; }
+        public IBrush? LabelBrush { get; set; }
     }
 
     private readonly record struct ShaderVariant(string Name, string VertexSource, string FragmentSource, bool BindAttribLocation);
@@ -2136,6 +2145,17 @@ public sealed class OpenTkViewport : OpenGlControlBase
             value.X * matrix.M13 + value.Y * matrix.M23 + value.Z * matrix.M33);
     }
 
+    private static Color ToAvaloniaColor(Vector3 color)
+    {
+        static byte ToByte(float value)
+        {
+            var clamped = Math.Clamp(value, 0f, 1f);
+            return (byte)MathF.Round(clamped * 255f);
+        }
+
+        return Color.FromRgb(ToByte(color.X), ToByte(color.Y), ToByte(color.Z));
+    }
+
     private void UpdateLabelOverlay(Matrix4 viewProjection, int width, int height)
     {
         if (_pinLabels.Count == 0)
@@ -2149,11 +2169,7 @@ public sealed class OpenTkViewport : OpenGlControlBase
         foreach (var label in _pinLabels)
         {
             var world = label.World;
-            var clip = new Vector4(
-                world.X * viewProjection.M11 + world.Y * viewProjection.M12 + world.Z * viewProjection.M13 + viewProjection.M14,
-                world.X * viewProjection.M21 + world.Y * viewProjection.M22 + world.Z * viewProjection.M23 + viewProjection.M24,
-                world.X * viewProjection.M31 + world.Y * viewProjection.M32 + world.Z * viewProjection.M33 + viewProjection.M34,
-                world.X * viewProjection.M41 + world.Y * viewProjection.M42 + world.Z * viewProjection.M43 + viewProjection.M44);
+            var clip = Vector4.TransformRow(new Vector4(world, 1f), viewProjection);
 
             if (Math.Abs(clip.W) < 1e-5f)
                 continue;
@@ -2167,7 +2183,10 @@ public sealed class OpenTkViewport : OpenGlControlBase
             {
                 Text = label.Text,
                 World = label.World,
-                Screen = new Point(x, y)
+                Screen = new Point(x, y),
+                ScreenX = x,
+                ScreenY = y,
+                LabelBrush = label.LabelBrush
             });
         }
 
