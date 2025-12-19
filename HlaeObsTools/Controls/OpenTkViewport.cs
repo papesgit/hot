@@ -415,10 +415,18 @@ public sealed class OpenTkViewport : OpenGlControlBase
         var updateKind = point.Properties.PointerUpdateKind;
         var middlePressed = point.Properties.IsMiddleButtonPressed || updateKind == PointerUpdateKind.MiddleButtonPressed;
         var rightPressed = point.Properties.IsRightButtonPressed || updateKind == PointerUpdateKind.RightButtonPressed;
+        var leftPressed = point.Properties.IsLeftButtonPressed || updateKind == PointerUpdateKind.LeftButtonPressed;
         _mouseButton4Down = point.Properties.IsXButton1Pressed;
         _mouseButton5Down = point.Properties.IsXButton2Pressed;
 
         UpdateInputStatus($"Input: down M:{middlePressed} Shift:{e.KeyModifiers.HasFlag(KeyModifiers.Shift)}");
+
+        if (leftPressed && TryHandlePinClick(point.Position))
+        {
+            Focus();
+            e.Handled = true;
+            return;
+        }
 
         if (rightPressed)
         {
@@ -441,6 +449,133 @@ public sealed class OpenTkViewport : OpenGlControlBase
         e.Pointer.Capture(this);
         Focus();
         e.Handled = true;
+    }
+
+    private bool TryHandlePinClick(Point position)
+    {
+        if (_pins.Count == 0)
+            return false;
+
+        if (TryFindPinFromLabelHit(position, out var labelPin))
+        {
+            ActivateFreecamAtPin(labelPin);
+            return true;
+        }
+
+        if (TryFindPinFromMarkerHit(position, out var markerPin))
+        {
+            ActivateFreecamAtPin(markerPin);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryFindPinFromLabelHit(Point position, out PinRenderData pin)
+    {
+        pin = default!;
+        if (_labels.Count == 0)
+            return false;
+
+        const double fontSize = 16.0;
+        const double fontWidthFactor = 0.6;
+        const double padding = 6.0;
+
+        foreach (var label in _labels)
+        {
+            if (string.IsNullOrEmpty(label.Text))
+                continue;
+
+            var width = Math.Max(1.0, label.Text.Length * fontSize * fontWidthFactor) + padding;
+            var height = fontSize * 1.2 + padding;
+            var halfW = width * 0.5;
+            var halfH = height * 0.5;
+
+            if (Math.Abs(position.X - label.ScreenX) <= halfW && Math.Abs(position.Y - label.ScreenY) <= halfH)
+            {
+                for (int i = 0; i < _pins.Count; i++)
+                {
+                    if (string.Equals(_pins[i].Label, label.Text, StringComparison.Ordinal))
+                    {
+                        pin = _pins[i];
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryFindPinFromMarkerHit(Point position, out PinRenderData pin)
+    {
+        pin = default!;
+        var width = Math.Max(1, (int)Bounds.Width);
+        var height = Math.Max(1, (int)Bounds.Height);
+        if (width <= 0 || height <= 0)
+            return false;
+
+        var viewProjection = CreateViewProjection(width, height);
+        const double hitRadius = 12.0;
+        var hitRadiusSq = hitRadius * hitRadius;
+        var bestDistSq = double.MaxValue;
+        var found = false;
+
+        foreach (var candidate in _pins)
+        {
+            if (!TryProjectToScreen(candidate.Position, viewProjection, width, height, out var screen))
+                continue;
+
+            var dx = position.X - screen.X;
+            var dy = position.Y - screen.Y;
+            var distSq = dx * dx + dy * dy;
+            if (distSq <= hitRadiusSq && distSq < bestDistSq)
+            {
+                bestDistSq = distSq;
+                pin = candidate;
+                found = true;
+            }
+        }
+
+        return found;
+    }
+
+    private void ActivateFreecamAtPin(PinRenderData pin)
+    {
+        var keepInputEnabled = _freecamInputEnabled;
+        if (!_freecamActive)
+        {
+            _orbitTargetBeforeFreecam = _target;
+            _orbitYawBeforeFreecam = _yaw;
+            _orbitPitchBeforeFreecam = _pitch;
+            _orbitDistanceBeforeFreecam = _distance;
+            _orbitStateSaved = true;
+        }
+
+        var forward = pin.Forward;
+        if (forward.LengthSquared < 0.0001f)
+            forward = Vector3.UnitZ;
+        forward = Vector3.Normalize(forward);
+
+        var yaw = MathHelper.RadiansToDegrees(MathF.Atan2(forward.Z, forward.X));
+        var pitch = MathHelper.RadiansToDegrees(MathF.Asin(Math.Clamp(forward.Y, -1f, 1f)));
+        var fov = _freecamActive ? _freecamTransform.Fov : _freecamConfig.DefaultFov;
+
+        _freecamTransform = new FreecamTransform
+        {
+            Position = pin.Position,
+            Yaw = yaw,
+            Pitch = pitch,
+            Roll = 0f,
+            Fov = fov
+        };
+        _freecamSmoothed = _freecamTransform;
+        _freecamActive = true;
+        _freecamInitialized = true;
+        _freecamInputEnabled = keepInputEnabled;
+        _freecamLastUpdate = DateTime.UtcNow;
+        ResetFreecamState();
+        RequestNextFrameRendering();
     }
 
     private void HandlePointerReleased(PointerReleasedEventArgs e)
@@ -2225,6 +2360,28 @@ public sealed class OpenTkViewport : OpenGlControlBase
             foreach (var label in projected)
                 _labels.Add(label);
         });
+    }
+
+    private static bool TryProjectToScreen(Vector3 world, Matrix4 viewProjection, int width, int height, out Point screen)
+    {
+        var clip = Vector4.TransformRow(new Vector4(world, 1f), viewProjection);
+        if (Math.Abs(clip.W) < 1e-5f)
+        {
+            screen = default;
+            return false;
+        }
+
+        var ndc = clip / clip.W;
+        if (ndc.Z < -1f || ndc.Z > 1f)
+        {
+            screen = default;
+            return false;
+        }
+
+        var x = (ndc.X * 0.5f + 0.5f) * width;
+        var y = (-ndc.Y * 0.5f + 0.5f) * height;
+        screen = new Point(x, y);
+        return true;
     }
 
     private const string Vertex330 = """
