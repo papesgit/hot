@@ -683,7 +683,9 @@ public sealed class OpenTkViewport : OpenGlControlBase
             return;
 
         var zoomFactor = MathF.Pow(1.1f, (float)-e.Delta.Y);
-        _distance = Math.Clamp(_distance * zoomFactor, _minDistance, _maxDistance);
+        _distance = Math.Min(_distance * zoomFactor, _maxDistance);
+        if (_distance < 0.0001f)
+            _distance = 0.0001f;
         UpdateInputStatus($"Input: wheel {e.Delta.Y:0.##}");
         RequestNextFrameRendering();
         e.Handled = true;
