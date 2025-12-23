@@ -1140,6 +1140,19 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
+        public bool HoldMovementFollowsCamera
+        {
+            get => _freecamSettings.HoldMovementFollowsCamera;
+            set
+            {
+                if (_freecamSettings.HoldMovementFollowsCamera != value)
+                {
+                    _freecamSettings.HoldMovementFollowsCamera = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         #endregion
 
         // Simple ICommand helper (no MVVM library required)

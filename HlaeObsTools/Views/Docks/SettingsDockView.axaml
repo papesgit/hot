@@ -640,6 +640,14 @@
                                            Foreground="#E6E6E6"/>
                             </StackPanel>
                         </StackPanel>
+                        <!-- Hold Settings -->
+                        <TextBlock Text="Hold Settings"
+                                    Foreground="#CCCCCC"
+                                    FontWeight="SemiBold"
+                                    Margin="0,8,0,0"/>
+                        <ToggleSwitch IsChecked="{Binding HoldMovementFollowsCamera, Mode=TwoWay}"
+                                        Content="Hold follows camera rotation"
+                                        Foreground="#E6E6E6"/>
                         </StackPanel>
                     </Grid>
                 </ScrollViewer>

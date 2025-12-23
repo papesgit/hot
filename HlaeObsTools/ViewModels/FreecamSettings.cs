@@ -38,6 +38,9 @@ public sealed class FreecamSettings : ViewModelBase
     private double _lockHalfRotTransition = 1.0;
     private double _halfFov = 0.5;
 
+    // Hold settings
+    private bool _holdMovementFollowsCamera = true;
+
     #region Mouse Settings
 
     /// <summary>
@@ -47,6 +50,19 @@ public sealed class FreecamSettings : ViewModelBase
     {
         get => _mouseSensitivity;
         set => SetProperty(ref _mouseSensitivity, value);
+    }
+
+    #endregion
+
+    #region Hold Settings
+
+    /// <summary>
+    /// When enabled, hold movement follows the camera's rotation.
+    /// </summary>
+    public bool HoldMovementFollowsCamera
+    {
+        get => _holdMovementFollowsCamera;
+        set => SetProperty(ref _holdMovementFollowsCamera, value);
     }
 
     #endregion

@@ -388,7 +388,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         if (_webSocketClient == null)
             return;
 
-        await _webSocketClient.SendCommandAsync("freecam_hold");
+        var mode = _freecamSettings?.HoldMovementFollowsCamera != false ? "camera" : "world";
+        await _webSocketClient.SendCommandAsync("freecam_hold", new { mode });
 
         Console.WriteLine("Freecam input hold requested");
     }
