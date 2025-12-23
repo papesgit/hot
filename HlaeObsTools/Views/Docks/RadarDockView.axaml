@@ -7,6 +7,7 @@
              x:DataType="vm:RadarDockViewModel">
   <UserControl.Resources>
     <conv:RelativeToCanvasConverter x:Key="RelativeToCanvasConverter" />
+    <conv:ProgressToPieGeometryConverter x:Key="ProgressToPieGeometryConverter" />
   </UserControl.Resources>
 
   <Border Background="#0D1015" Padding="10" Focusable="True">
@@ -226,12 +227,26 @@
                            Height="24"
                            IsVisible="{Binding !IsDetonated}" />
 
-                  <!-- Show smoke bloom circle for detonated smoke -->
+                  <!-- Show smoke bloom for detonated smoke -->
                   <Ellipse Width="80"
                            Height="80"
                            Canvas.Left="-32"
                            Canvas.Top="-32"
-                           Fill="#40FFFFFF"
+                           Fill="#35FFFFFF"
+                           IsVisible="{Binding IsSmoke}" />
+                  <Path Data="{Binding SmokeRemainingProgress, Converter={StaticResource ProgressToPieGeometryConverter}, ConverterParameter=40}"
+                        Width="80"
+                        Height="80"
+                        Canvas.Left="-32"
+                        Canvas.Top="-32"
+                        Fill="#45FFFFFF"
+                        IsVisible="{Binding IsSmoke}" />
+                  <Ellipse Width="80"
+                           Height="80"
+                           Canvas.Left="-32"
+                           Canvas.Top="-32"
+                           Stroke="#B0FFFFFF"
+                           StrokeThickness="2"
                            IsVisible="{Binding IsSmoke}" />
                 </Canvas>
               </DataTemplate>

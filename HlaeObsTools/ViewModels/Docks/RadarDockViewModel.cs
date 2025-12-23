@@ -314,6 +314,8 @@ internal sealed class SmokeTracker
     public Vec3 LastPosition { get; set; }
     public int StationaryUpdates { get; set; }
     public bool IsDetonated { get; set; }
+    public DateTime? DetonatedAtUtc { get; set; }
+    public bool HasDetonatedOnce { get; set; }
 }
 
 internal sealed class PlayerWeaponState
@@ -327,13 +329,14 @@ public sealed class RadarGrenadeViewModel : ViewModelBase
     private double _canvasX;
     private double _canvasY;
 
-    public RadarGrenadeViewModel(string id, string type, string iconPath, Vec3 position, bool isDetonated)
+    public RadarGrenadeViewModel(string id, string type, string iconPath, Vec3 position, bool isDetonated, double smokeProgress = 0)
     {
         Id = id;
         Type = type;
         IconPath = iconPath;
         Position = position;
         IsDetonated = isDetonated;
+        SmokeProgress = smokeProgress;
     }
 
     public string Id { get; }
@@ -341,6 +344,8 @@ public sealed class RadarGrenadeViewModel : ViewModelBase
     public string IconPath { get; }
     public Vec3 Position { get; }
     public bool IsDetonated { get; }
+    public double SmokeProgress { get; }
+    public double SmokeRemainingProgress => Math.Clamp(1.0 - SmokeProgress, 0.0, 1.0);
 
     public bool IsSmoke => Type == "smoke" && IsDetonated;
     public bool IsInferno => Type == "inferno";
@@ -414,6 +419,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
     private const double PositionThreshold = 1.0; // Units of movement to consider stationary
     private const int StationaryUpdatesRequired = 2; // Number of updates smoke must be stationary to be detonated
+    private const double SmokeDurationSeconds = 20.0;
 
     public ObservableCollection<RadarPlayerViewModel> Players { get; } = new();
     public ObservableCollection<RadarDeadPlayerViewModel> DeadPlayers { get; } = new();
@@ -634,6 +640,9 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         // Process grenades
         Grenades.Clear();
         Flames.Clear();
+        var presentSmokeKeys = new HashSet<int>(state.Grenades.Where(g => g.Type == "smoke").Select(g => GetPositionHash(g.Position)));
+
+        var nowUtc = DateTime.UtcNow;
 
         // Update smoke trackers only on heartbeat change
         if (state.Heartbeat != _lastProcessedHeartbeat)
@@ -659,7 +668,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                             Position = g.Position,
                             LastPosition = g.Position,
                             StationaryUpdates = 0,
-                            IsDetonated = false
+                            IsDetonated = false,
+                            HasDetonatedOnce = false
                         };
                         _smokeTrackers[key] = tracker;
                     }
@@ -668,7 +678,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                         // Update existing smoke on new GSI update
                         double distMoved = GetDistance(g.Position, tracker.Position);
 
-                        if (!tracker.IsDetonated)
+                        if (!tracker.IsDetonated && !tracker.HasDetonatedOnce)
                         {
                             // Only track movement before detonation
                             if (distMoved < PositionThreshold)
@@ -677,6 +687,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                                 if (tracker.StationaryUpdates >= StationaryUpdatesRequired)
                                 {
                                     tracker.IsDetonated = true;
+                                    tracker.DetonatedAtUtc ??= nowUtc;
+                                    tracker.HasDetonatedOnce = true;
                                 }
                             }
                             else
@@ -691,8 +703,20 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 }
             }
 
-            // Remove old smokes that are no longer in GSI data
-            var keysToRemove = _smokeTrackers.Keys.Where(k => !currentSmokeKeys.Contains(k)).ToList();
+            // Remove old smokes that are no longer in GSI data (unless timer is still running)
+            var keysToRemove = _smokeTrackers.Keys
+                .Where(k => !currentSmokeKeys.Contains(k))
+                .Where(k =>
+                {
+                    var tracker = _smokeTrackers[k];
+                    if (!tracker.IsDetonated || tracker.DetonatedAtUtc == null)
+                    {
+                        return true;
+                    }
+
+                    return (nowUtc - tracker.DetonatedAtUtc.Value).TotalSeconds >= SmokeDurationSeconds;
+                })
+                .ToList();
             foreach (var key in keysToRemove)
             {
                 _smokeTrackers.Remove(key);
@@ -701,22 +725,53 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
         foreach (var g in state.Grenades)
         {
-            if (!_projector.TryProject(state.MapName, g.Position, out var x, out var y, out var level))
-                continue;
-
-            // Determine if grenade is detonated
+            double smokeProgress = 0;
+            Vec3 position = g.Position;
             bool isDetonated;
+            int smokeKey = 0;
+
             if (g.Type == "smoke")
             {
-                // Use tracker for smokes
-                int key = GetPositionHash(g.Position);
-                isDetonated = _smokeTrackers.TryGetValue(key, out var tracker) && tracker.IsDetonated;
+                smokeKey = GetPositionHash(g.Position);
+                if (!_smokeTrackers.TryGetValue(smokeKey, out var tracker))
+                {
+                    tracker = new SmokeTracker
+                    {
+                        Position = g.Position,
+                        LastPosition = g.Position,
+                        StationaryUpdates = 0,
+                        IsDetonated = false
+                    };
+                    _smokeTrackers[smokeKey] = tracker;
+                }
+
+                isDetonated = tracker.IsDetonated;
+                position = tracker.Position;
+
+                if (isDetonated && tracker.DetonatedAtUtc == null)
+                {
+                    tracker.DetonatedAtUtc = nowUtc;
+                }
+
+                if (isDetonated && tracker.DetonatedAtUtc.HasValue)
+                {
+                    var elapsed = (nowUtc - tracker.DetonatedAtUtc.Value).TotalSeconds;
+                    if (elapsed >= SmokeDurationSeconds)
+                    {
+                        tracker.IsDetonated = false;
+                        continue;
+                    }
+                    smokeProgress = Math.Clamp(elapsed / SmokeDurationSeconds, 0, 1);
+                }
             }
             else
             {
                 // For other grenades, use velocity check
                 isDetonated = g.Velocity.X == 0 && g.Velocity.Y == 0 && g.Velocity.Z == 0;
             }
+
+            if (!_projector.TryProject(state.MapName, position, out var x, out var y, out var level))
+                continue;
 
             // Determine icon based on type
             string iconName = g.Type switch
@@ -747,10 +802,17 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 }
             }
 
-            // Only show projectiles that are not detonated, or infernos/smokes that are active
-            if (!isDetonated || g.Type == "inferno" || (g.Type == "smoke" && g.EffectTime > 0))
+            var shouldAdd = g.Type switch
             {
-                var grenadeVm = new RadarGrenadeViewModel(g.Id, g.Type, iconPath, g.Position, isDetonated)
+                "smoke" => _smokeTrackers.TryGetValue(smokeKey, out var tracker)
+                    && (tracker.IsDetonated || !tracker.HasDetonatedOnce),
+                "inferno" => true,
+                _ => !isDetonated
+            };
+
+            if (shouldAdd)
+            {
+                var grenadeVm = new RadarGrenadeViewModel(g.Id, g.Type, iconPath, position, isDetonated, smokeProgress)
                 {
                     CanvasX = x * 1024.0 - 12.0, // center the 24px icon
                     CanvasY = y * 1024.0 - 12.0
@@ -758,6 +820,11 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
                 Grenades.Add(grenadeVm);
             }
+        }
+        var missingSmokeKeys = _smokeTrackers.Keys.Where(k => !presentSmokeKeys.Contains(k)).ToList();
+        foreach (var key in missingSmokeKeys)
+        {
+            _smokeTrackers.Remove(key);
         }
 
         // Process bomb
