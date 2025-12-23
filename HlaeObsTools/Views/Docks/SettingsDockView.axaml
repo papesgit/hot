@@ -575,6 +575,62 @@
                                            Width="50"
                                            Foreground="#E6E6E6"/>
                             </StackPanel>
+
+                            <TextBlock Text="Lean Accel Scale"
+                                       Foreground="#CCCCCC"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Slider Minimum="0.0"
+                                        Maximum="0.1"
+                                        SmallChange="0.001"
+                                        LargeChange="0.01"
+                                        Width="200"
+                                        Value="{Binding LeanAccelScale, Mode=TwoWay}"/>
+                                <TextBlock Text="{Binding LeanAccelScale, StringFormat={}{0:F4}}"
+                                           Width="50"
+                                           Foreground="#E6E6E6"/>
+                            </StackPanel>
+
+                            <TextBlock Text="Lean Velocity Scale"
+                                       Foreground="#CCCCCC"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Slider Minimum="0.0"
+                                        Maximum="0.1"
+                                        SmallChange="0.001"
+                                        LargeChange="0.01"
+                                        Width="200"
+                                        Value="{Binding LeanVelocityScale, Mode=TwoWay}"/>
+                                <TextBlock Text="{Binding LeanVelocityScale, StringFormat={}{0:F3}}"
+                                           Width="50"
+                                           Foreground="#E6E6E6"/>
+                            </StackPanel>
+
+                            <TextBlock Text="Lean Max Angle"
+                                       Foreground="#CCCCCC"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Slider Minimum="0.0"
+                                        Maximum="45.0"
+                                        SmallChange="1.0"
+                                        LargeChange="5.0"
+                                        Width="200"
+                                        Value="{Binding LeanMaxAngle, Mode=TwoWay}"/>
+                                <TextBlock Text="{Binding LeanMaxAngle, StringFormat={}{0:F0}}"
+                                           Width="50"
+                                           Foreground="#E6E6E6"/>
+                            </StackPanel>
+
+                            <TextBlock Text="Lean Half-time (seconds)"
+                                       Foreground="#CCCCCC"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Slider Minimum="0.01"
+                                        Maximum="1.0"
+                                        SmallChange="0.01"
+                                        LargeChange="0.05"
+                                        Width="200"
+                                        Value="{Binding LeanHalfTime, Mode=TwoWay}"/>
+                                <TextBlock Text="{Binding LeanHalfTime, StringFormat={}{0:F2}}"
+                                           Width="50"
+                                           Foreground="#E6E6E6"/>
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- FOV Settings -->

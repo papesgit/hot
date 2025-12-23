@@ -23,6 +23,10 @@ public sealed class FreecamSettings : ViewModelBase
     private double _rollSpeed = 45.0;
     private double _rollSmoothing = 0.8;
     private double _leanStrength = 1.0;
+    private double _leanAccelScale = 0.0015;
+    private double _leanVelocityScale = 0.01;
+    private double _leanMaxAngle = 20.0;
+    private double _leanHalfTime = 0.18;
 
     // FOV settings
     private double _fovMin = 10.0;
@@ -152,6 +156,42 @@ public sealed class FreecamSettings : ViewModelBase
     {
         get => _leanStrength;
         set => SetProperty(ref _leanStrength, value);
+    }
+
+    /// <summary>
+    /// Lean amount per unit of lateral acceleration.
+    /// </summary>
+    public double LeanAccelScale
+    {
+        get => _leanAccelScale;
+        set => SetProperty(ref _leanAccelScale, value);
+    }
+
+    /// <summary>
+    /// Lean amount per unit of lateral velocity.
+    /// </summary>
+    public double LeanVelocityScale
+    {
+        get => _leanVelocityScale;
+        set => SetProperty(ref _leanVelocityScale, value);
+    }
+
+    /// <summary>
+    /// Maximum lean angle in degrees.
+    /// </summary>
+    public double LeanMaxAngle
+    {
+        get => _leanMaxAngle;
+        set => SetProperty(ref _leanMaxAngle, value);
+    }
+
+    /// <summary>
+    /// Lean response half-time in seconds.
+    /// </summary>
+    public double LeanHalfTime
+    {
+        get => _leanHalfTime;
+        set => SetProperty(ref _leanHalfTime, value);
     }
 
     #endregion

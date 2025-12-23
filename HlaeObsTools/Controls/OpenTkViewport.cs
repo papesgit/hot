@@ -133,6 +133,9 @@ public sealed class OpenTkViewport : OpenGlControlBase
     private float _freecamMouseVelocityY;
     private float _freecamTargetRoll;
     private float _freecamCurrentRoll;
+    private float _freecamRollVelocity;
+    private float _freecamLastLateralVelocity;
+    private Vector3 _freecamLastSmoothedPosition;
     private Vector2 _freecamMouseDelta;
     private float _freecamWheelDelta;
     private DateTime _freecamLastUpdate;
@@ -987,6 +990,10 @@ public sealed class OpenTkViewport : OpenGlControlBase
             RollSpeed = (float)_freecamSettings.RollSpeed,
             RollSmoothing = (float)_freecamSettings.RollSmoothing,
             LeanStrength = (float)_freecamSettings.LeanStrength,
+            LeanAccelScale = (float)_freecamSettings.LeanAccelScale,
+            LeanVelocityScale = (float)_freecamSettings.LeanVelocityScale,
+            LeanMaxAngle = (float)_freecamSettings.LeanMaxAngle,
+            LeanHalfTime = (float)_freecamSettings.LeanHalfTime,
             FovMin = (float)_freecamSettings.FovMin,
             FovMax = (float)_freecamSettings.FovMax,
             FovStep = (float)_freecamSettings.FovStep,
@@ -1288,6 +1295,9 @@ public sealed class OpenTkViewport : OpenGlControlBase
         _freecamMouseVelocityY = 0.0f;
         _freecamTargetRoll = 0.0f;
         _freecamCurrentRoll = 0.0f;
+        _freecamRollVelocity = 0.0f;
+        _freecamLastLateralVelocity = 0.0f;
+        _freecamLastSmoothedPosition = _freecamSmoothed.Position;
     }
 
     private void ClearFreecamInputState()
@@ -1329,9 +1339,10 @@ public sealed class OpenTkViewport : OpenGlControlBase
         if (_freecamInputEnabled)
         {
             UpdateFreecamMovement(deltaTime);
-            UpdateFreecamRoll(deltaTime);
             UpdateFreecamFov(wheel);
         }
+
+        UpdateFreecamRoll(deltaTime);
 
         if (_freecamConfig.SmoothEnabled)
         {
@@ -1426,26 +1437,56 @@ public sealed class OpenTkViewport : OpenGlControlBase
         var dynamicRoll = 0f;
         if (_freecamConfig.SmoothEnabled)
         {
-            var yawRate = _freecamMouseVelocityX;
-            var right = GetRightVector(_freecamTransform.Yaw);
-            var lateralSpeed = Vector3.Dot(_freecamTransform.Velocity, right);
-            var speedMag = _freecamTransform.Velocity.Length;
+            var view = _freecamConfig.SmoothEnabled ? _freecamSmoothed : _freecamTransform;
+            var right = GetRightVector(view.Yaw);
 
-            const float maxLeanSpeed = 1000.0f;
-            const float maxLeanDeg = 30.0f;
+            var posBlend = _freecamConfig.HalfVec > 0f
+                ? 1.0f - MathF.Exp((-MathF.Log(2.0f) * deltaTime) / _freecamConfig.HalfVec)
+                : 1.0f;
 
-            var speedFactor = Clamp(speedMag / maxLeanSpeed, 0.0f, 1.0f);
-            var lateralFactor = Clamp(lateralSpeed / maxLeanSpeed, -1.0f, 1.0f);
+            var smoothedPos = Vector3.Lerp(_freecamSmoothed.Position, _freecamTransform.Position, posBlend);
+            var smoothedVel = deltaTime > 0f
+                ? (smoothedPos - _freecamLastSmoothedPosition) / deltaTime
+                : Vector3.Zero;
+            _freecamLastSmoothedPosition = smoothedPos;
 
-            var moveLean = lateralFactor * maxLeanDeg * speedFactor;
-            var yawLean = Clamp(yawRate * 0.04f, -maxLeanDeg, maxLeanDeg);
+            var lateralVelocity = Vector3.Dot(smoothedVel, right);
+            var lateralAccel = 0f;
+            if (deltaTime > 0f)
+                lateralAccel = (lateralVelocity - _freecamLastLateralVelocity) / deltaTime;
+            _freecamLastLateralVelocity = lateralVelocity;
 
-            var combined = (moveLean + yawLean) * _freecamConfig.LeanStrength;
-            dynamicRoll = Clamp(combined, -maxLeanDeg, maxLeanDeg);
+            var rawLean = (lateralAccel * _freecamConfig.LeanAccelScale)
+                          + (lateralVelocity * _freecamConfig.LeanVelocityScale);
+            rawLean *= _freecamConfig.LeanStrength;
+
+            if (_freecamConfig.LeanMaxAngle > 0f)
+            {
+                var curved = MathF.Tanh(rawLean / _freecamConfig.LeanMaxAngle);
+                dynamicRoll = curved * _freecamConfig.LeanMaxAngle;
+            }
+        }
+        else
+        {
+            _freecamLastLateralVelocity = 0f;
+            _freecamLastSmoothedPosition = _freecamTransform.Position;
         }
 
         var combinedRoll = _freecamTargetRoll + dynamicRoll;
-        _freecamCurrentRoll = Lerp(_freecamCurrentRoll, combinedRoll, 1.0f - _freecamConfig.RollSmoothing);
+        if (_freecamConfig.SmoothEnabled && _freecamConfig.LeanHalfTime > 0f)
+        {
+            _freecamCurrentRoll = SmoothDamp(_freecamCurrentRoll, combinedRoll, ref _freecamRollVelocity, _freecamConfig.LeanHalfTime, deltaTime);
+        }
+        else if (_freecamConfig.SmoothEnabled)
+        {
+            _freecamCurrentRoll = combinedRoll;
+            _freecamRollVelocity = 0f;
+        }
+        else
+        {
+            _freecamCurrentRoll = Lerp(_freecamCurrentRoll, combinedRoll, 1.0f - _freecamConfig.RollSmoothing);
+            _freecamRollVelocity = 0f;
+        }
         _freecamTransform.Roll = _freecamCurrentRoll;
     }
 
@@ -1706,6 +1747,24 @@ public sealed class OpenTkViewport : OpenGlControlBase
     }
 
     private static float Lerp(float a, float b, float t) => a + (b - a) * t;
+
+    private static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime, float deltaTime)
+    {
+        if (smoothTime <= 0f || deltaTime <= 0f)
+        {
+            currentVelocity = 0f;
+            return target;
+        }
+
+        var omega = 2f / smoothTime;
+        var x = omega * deltaTime;
+        var exp = 1f / (1f + x + 0.48f * x * x + 0.235f * x * x * x);
+
+        var change = current - target;
+        var temp = (currentVelocity + omega * change) * deltaTime;
+        currentVelocity = (currentVelocity - omega * temp) * exp;
+        return target + (change + temp) * exp;
+    }
 
     private int CreateShaderProgram()
     {
@@ -2202,6 +2261,10 @@ public sealed class OpenTkViewport : OpenGlControlBase
             RollSpeed = 45.0f,
             RollSmoothing = 0.8f,
             LeanStrength = 1.0f,
+            LeanAccelScale = 0.0015f,
+            LeanVelocityScale = 0.01f,
+            LeanMaxAngle = 20.0f,
+            LeanHalfTime = 0.18f,
             FovMin = 10.0f,
             FovMax = 150.0f,
             FovStep = 2.0f,
@@ -2222,6 +2285,10 @@ public sealed class OpenTkViewport : OpenGlControlBase
         public float RollSpeed { get; init; }
         public float RollSmoothing { get; init; }
         public float LeanStrength { get; init; }
+        public float LeanAccelScale { get; init; }
+        public float LeanVelocityScale { get; init; }
+        public float LeanMaxAngle { get; init; }
+        public float LeanHalfTime { get; init; }
         public float FovMin { get; init; }
         public float FovMax { get; init; }
         public float FovStep { get; init; }

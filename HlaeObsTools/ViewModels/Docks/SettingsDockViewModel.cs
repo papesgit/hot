@@ -998,6 +998,62 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
+        public double LeanAccelScale
+        {
+            get => _freecamSettings.LeanAccelScale;
+            set
+            {
+                if (_freecamSettings.LeanAccelScale != value)
+                {
+                    _freecamSettings.LeanAccelScale = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { leanAccelScale = (float)value });
+                }
+            }
+        }
+
+        public double LeanVelocityScale
+        {
+            get => _freecamSettings.LeanVelocityScale;
+            set
+            {
+                if (_freecamSettings.LeanVelocityScale != value)
+                {
+                    _freecamSettings.LeanVelocityScale = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { leanVelocityScale = (float)value });
+                }
+            }
+        }
+
+        public double LeanMaxAngle
+        {
+            get => _freecamSettings.LeanMaxAngle;
+            set
+            {
+                if (_freecamSettings.LeanMaxAngle != value)
+                {
+                    _freecamSettings.LeanMaxAngle = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { leanMaxAngle = (float)value });
+                }
+            }
+        }
+
+        public double LeanHalfTime
+        {
+            get => _freecamSettings.LeanHalfTime;
+            set
+            {
+                if (_freecamSettings.LeanHalfTime != value)
+                {
+                    _freecamSettings.LeanHalfTime = value;
+                    OnPropertyChanged();
+                    SendFreecamConfigAsync(new { leanHalfTime = (float)value });
+                }
+            }
+        }
+
         // FOV Settings
         public double FovMin
         {
