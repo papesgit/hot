@@ -45,6 +45,12 @@ public sealed class FreecamSettings : ViewModelBase
     // Hold settings
     private bool _holdMovementFollowsCamera = true;
 
+    // Analog keyboard settings
+    private bool _analogKeyboardEnabled;
+    private double _analogLeftDeadzone;
+    private double _analogRightDeadzone;
+    private double _analogCurve;
+
     #region Mouse Settings
 
     /// <summary>
@@ -67,6 +73,46 @@ public sealed class FreecamSettings : ViewModelBase
     {
         get => _holdMovementFollowsCamera;
         set => SetProperty(ref _holdMovementFollowsCamera, value);
+    }
+
+    #endregion
+
+    #region Analog Keyboard Settings
+
+    /// <summary>
+    /// Enable analog keyboard mode (XInput).
+    /// </summary>
+    public bool AnalogKeyboardEnabled
+    {
+        get => _analogKeyboardEnabled;
+        set => SetProperty(ref _analogKeyboardEnabled, value);
+    }
+
+    /// <summary>
+    /// Deadzone for left stick movement (0-1).
+    /// </summary>
+    public double AnalogLeftDeadzone
+    {
+        get => _analogLeftDeadzone;
+        set => SetProperty(ref _analogLeftDeadzone, value);
+    }
+
+    /// <summary>
+    /// Deadzone for right stick movement (0-1).
+    /// </summary>
+    public double AnalogRightDeadzone
+    {
+        get => _analogRightDeadzone;
+        set => SetProperty(ref _analogRightDeadzone, value);
+    }
+
+    /// <summary>
+    /// Curve amount for analog response (0=linear).
+    /// </summary>
+    public double AnalogCurve
+    {
+        get => _analogCurve;
+        set => SetProperty(ref _analogCurve, value);
     }
 
     #endregion

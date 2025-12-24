@@ -314,399 +314,460 @@
             </TabItem>
 
             <TabItem Header="Freecam">
-                <ScrollViewer>
-                    <Grid Margin="10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="20"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                <TabControl Margin="10">
+                    <TabItem Header="Camera">
+                        <ScrollViewer>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                        <!-- Left Column: Mouse and Movement Settings -->
-                        <StackPanel Grid.Column="0" Spacing="12">
+                                <!-- Left Column: Mouse and Movement Settings -->
+                                <StackPanel Grid.Column="0" Spacing="12">
 
-                            <!-- Mouse Settings -->
-                            <TextBlock Text="Mouse Settings"
-                                       Foreground="#CCCCCC"
-                                       FontWeight="SemiBold"
-                                       Margin="0,8,0,0"/>
+                                    <!-- Mouse Settings -->
+                                    <TextBlock Text="Mouse Settings"
+                                               Foreground="#CCCCCC"
+                                               FontWeight="SemiBold"
+                                               Margin="0,8,0,0"/>
 
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="Mouse Sensitivity"
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Mouse Sensitivity"
+                                                   Foreground="#CCCCCC"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Slider Minimum="0.01"
+                                                    Maximum="1.0"
+                                                    SmallChange="0.01"
+                                                    LargeChange="0.1"
+                                                    Width="200"
+                                                    Value="{Binding MouseSensitivity, Mode=TwoWay}"/>
+                                            <TextBlock Text="{Binding MouseSensitivity, StringFormat={}{0:F3}}"
+                                                       Width="50"
+                                                       Foreground="#E6E6E6"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Movement Settings -->
+                                    <TextBlock Text="Movement Settings"
+                                               Foreground="#CCCCCC"
+                                               FontWeight="SemiBold"
+                                               Margin="0,8,0,0"/>
+
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Move Speed"
+                                                   Foreground="#CCCCCC"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Slider Minimum="10.0"
+                                                    Maximum="1000.0"
+                                                    SmallChange="10.0"
+                                                    LargeChange="50.0"
+                                                    Width="200"
+                                                    Value="{Binding MoveSpeed, Mode=TwoWay}"/>
+                                            <TextBlock Text="{Binding MoveSpeed, StringFormat={}{0:F0}}"
+                                                       Width="50"
+                                                       Foreground="#E6E6E6"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="Sprint Multiplier"
+                                                   Foreground="#CCCCCC"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Slider Minimum="1.0"
+                                                    Maximum="5.0"
+                                                    SmallChange="0.1"
+                                                    LargeChange="0.5"
+                                                    Width="200"
+                                                    Value="{Binding SprintMultiplier, Mode=TwoWay}"/>
+                                            <TextBlock Text="{Binding SprintMultiplier, StringFormat={}{0:F1}}"
+                                                       Width="50"
+                                                       Foreground="#E6E6E6"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="Vertical Speed"
+                                                   Foreground="#CCCCCC"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Slider Minimum="10.0"
+                                                    Maximum="1000.0"
+                                                    SmallChange="10.0"
+                                                    LargeChange="50.0"
+                                                    Width="200"
+                                                    Value="{Binding VerticalSpeed, Mode=TwoWay}"/>
+                                            <TextBlock Text="{Binding VerticalSpeed, StringFormat={}{0:F0}}"
+                                                       Width="50"
+                                                       Foreground="#E6E6E6"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="Speed Adjust Rate"
+                                                   Foreground="#CCCCCC"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Slider Minimum="1.0"
+                                                    Maximum="2.0"
+                                                    SmallChange="0.01"
+                                                    LargeChange="0.1"
+                                                    Width="200"
+                                                    Value="{Binding SpeedAdjustRate, Mode=TwoWay}"/>
+                                            <TextBlock Text="{Binding SpeedAdjustRate, StringFormat={}{0:F2}}"
+                                                       Width="50"
+                                                       Foreground="#E6E6E6"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="Speed Min Multiplier"
+                                                   Foreground="#CCCCCC"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Slider Minimum="0.01"
+                                                    Maximum="1.0"
+                                                    SmallChange="0.01"
+                                                    LargeChange="0.1"
+                                                    Width="200"
+                                                    Value="{Binding SpeedMinMultiplier, Mode=TwoWay}"/>
+                                            <TextBlock Text="{Binding SpeedMinMultiplier, StringFormat={}{0:F2}}"
+                                                       Width="50"
+                                                       Foreground="#E6E6E6"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="Speed Max Multiplier"
+                                                   Foreground="#CCCCCC"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Slider Minimum="1.0"
+                                                    Maximum="10.0"
+                                                    SmallChange="0.5"
+                                                    LargeChange="1.0"
+                                                    Width="200"
+                                                    Value="{Binding SpeedMaxMultiplier, Mode=TwoWay}"/>
+                                            <TextBlock Text="{Binding SpeedMaxMultiplier, StringFormat={}{0:F1}}"
+                                                       Width="50"
+                                                       Foreground="#E6E6E6"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    
+                                <!-- Smoothing Settings -->
+                                <TextBlock Text="Smoothing Settings"
+                                           Foreground="#CCCCCC"
+                                           FontWeight="SemiBold"
+                                           Margin="0,8,0,0"/>
+
+                                <StackPanel Spacing="8">
+                                    <ToggleSwitch IsChecked="{Binding SmoothEnabled, Mode=TwoWay}"
+                                                  Content="Enable Smoothing"
+                                                  Foreground="#E6E6E6"/>
+
+                                    <TextBlock Text="Position Smoothing Half-time (seconds)"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.05"
+                                                Maximum="2.0"
+                                                SmallChange="0.05"
+                                                LargeChange="0.1"
+                                                Width="200"
+                                                Value="{Binding HalfVec, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding HalfVec, StringFormat={}{0:F2}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Rotation Smoothing Half-time (seconds)"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.05"
+                                                Maximum="2.0"
+                                                SmallChange="0.05"
+                                                LargeChange="0.1"
+                                                Width="200"
+                                                Value="{Binding HalfRot, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding HalfRot, StringFormat={}{0:F2}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="FOV Smoothing Half-time (seconds)"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.05"
+                                                Maximum="2.0"
+                                                SmallChange="0.05"
+                                                LargeChange="0.1"
+                                                Width="200"
+                                                Value="{Binding HalfFov, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding HalfFov, StringFormat={}{0:F2}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Player Lock Half-time (seconds)"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.05"
+                                                Maximum="2.0"
+                                                SmallChange="0.05"
+                                                LargeChange="0.1"
+                                                Width="200"
+                                                Value="{Binding LockHalfRot, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding LockHalfRot, StringFormat={}{0:F2}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Player Lock Half-time Transition (seconds)"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.05"
+                                                Maximum="2.0"
+                                                SmallChange="0.05"
+                                                LargeChange="0.1"
+                                                Width="200"
+                                                Value="{Binding LockHalfRotTransition, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding LockHalfRotTransition, StringFormat={}{0:F2}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+                                                                
+                                </StackPanel>
+
+                                </StackPanel>
+
+                                <!-- Right Column: Roll, FOV, and Smoothing Settings -->
+                                <StackPanel Grid.Column="2" Spacing="12">
+
+                                    <!-- Roll Settings -->
+                                <TextBlock Text="Roll Settings"
+                                           Foreground="#CCCCCC"
+                                           FontWeight="SemiBold"
+                                           Margin="0,8,0,0"/>
+
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="Roll Speed"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="10.0"
+                                                Maximum="180.0"
+                                                SmallChange="5.0"
+                                                LargeChange="15.0"
+                                                Width="200"
+                                                Value="{Binding RollSpeed, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding RollSpeed, StringFormat={}{0:F0}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Roll Smoothing"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0"
+                                                Maximum="1.0"
+                                                SmallChange="0.05"
+                                                LargeChange="0.1"
+                                                Width="200"
+                                                Value="{Binding RollSmoothing, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding RollSmoothing, StringFormat={}{0:F2}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Lean Strength"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0"
+                                                Maximum="2.0"
+                                                SmallChange="0.1"
+                                                LargeChange="0.5"
+                                                Width="200"
+                                                Value="{Binding LeanStrength, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding LeanStrength, StringFormat={}{0:F1}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Lean Accel Scale"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0"
+                                                Maximum="0.1"
+                                                SmallChange="0.001"
+                                                LargeChange="0.01"
+                                                Width="200"
+                                                Value="{Binding LeanAccelScale, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding LeanAccelScale, StringFormat={}{0:F4}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Lean Velocity Scale"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0"
+                                                Maximum="0.1"
+                                                SmallChange="0.001"
+                                                LargeChange="0.01"
+                                                Width="200"
+                                                Value="{Binding LeanVelocityScale, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding LeanVelocityScale, StringFormat={}{0:F3}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Lean Max Angle"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0"
+                                                Maximum="45.0"
+                                                SmallChange="1.0"
+                                                LargeChange="5.0"
+                                                Width="200"
+                                                Value="{Binding LeanMaxAngle, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding LeanMaxAngle, StringFormat={}{0:F0}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Lean Half-time (seconds)"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.01"
+                                                Maximum="1.0"
+                                                SmallChange="0.01"
+                                                LargeChange="0.05"
+                                                Width="200"
+                                                Value="{Binding LeanHalfTime, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding LeanHalfTime, StringFormat={}{0:F2}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- FOV Settings -->
+                                <TextBlock Text="FOV Settings"
+                                           Foreground="#CCCCCC"
+                                           FontWeight="SemiBold"
+                                           Margin="0,8,0,0"/>
+
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="FOV Min"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="5.0"
+                                                Maximum="90.0"
+                                                SmallChange="1.0"
+                                                LargeChange="5.0"
+                                                Width="200"
+                                                Value="{Binding FovMin, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FovMin, StringFormat={}{0:F0}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="FOV Max"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="90.0"
+                                                Maximum="180.0"
+                                                SmallChange="5.0"
+                                                LargeChange="10.0"
+                                                Width="200"
+                                                Value="{Binding FovMax, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FovMax, StringFormat={}{0:F0}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="FOV Step"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.5"
+                                                Maximum="10.0"
+                                                SmallChange="0.5"
+                                                LargeChange="1.0"
+                                                Width="200"
+                                                Value="{Binding FovStep, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FovStep, StringFormat={}{0:F1}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Default FOV"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="60.0"
+                                                Maximum="120.0"
+                                                SmallChange="1.0"
+                                                LargeChange="5.0"
+                                                Width="200"
+                                                Value="{Binding DefaultFov, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding DefaultFov, StringFormat={}{0:F0}}"
+                                                   Width="50"
+                                                   Foreground="#E6E6E6"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <!-- Hold Settings -->
+                                <TextBlock Text="Hold Settings"
+                                            Foreground="#CCCCCC"
+                                            FontWeight="SemiBold"
+                                            Margin="0,8,0,0"/>
+                                <ToggleSwitch IsChecked="{Binding HoldMovementFollowsCamera, Mode=TwoWay}"
+                                                Content="Hold follows camera rotation"
+                                                Foreground="#E6E6E6"/>
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="Controls">
+                        <ScrollViewer>
+                            <StackPanel Margin="10" Spacing="10">
+                                <TextBlock Text="Analog Keyboard"
+                                           Foreground="#CCCCCC"
+                                           FontWeight="SemiBold"/>
+                                <ToggleSwitch IsChecked="{Binding AnalogKeyboardEnabled, Mode=TwoWay}"
+                                              Content="Enable analog keyboard mode"
+                                              Foreground="#E6E6E6"/>
+                                <TextBlock Text="Left Stick Deadzone"
                                            Foreground="#CCCCCC"/>
                                 <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="0.01"
+                                    <Slider Minimum="0.0"
+                                            Maximum="0.5"
+                                            SmallChange="0.01"
+                                            LargeChange="0.05"
+                                            Width="200"
+                                            Value="{Binding AnalogLeftDeadzone, Mode=TwoWay}"/>
+                                    <TextBlock Text="{Binding AnalogLeftDeadzone, StringFormat={}{0:F2}}"
+                                               Width="50"
+                                               Foreground="#E6E6E6"/>
+                                </StackPanel>
+
+                                <TextBlock Text="Right Stick Deadzone"
+                                           Foreground="#CCCCCC"/>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Slider Minimum="0.0"
+                                            Maximum="0.5"
+                                            SmallChange="0.01"
+                                            LargeChange="0.05"
+                                            Width="200"
+                                            Value="{Binding AnalogRightDeadzone, Mode=TwoWay}"/>
+                                    <TextBlock Text="{Binding AnalogRightDeadzone, StringFormat={}{0:F2}}"
+                                               Width="50"
+                                               Foreground="#E6E6E6"/>
+                                </StackPanel>
+
+                                <TextBlock Text="Analog Curve"
+                                           Foreground="#CCCCCC"/>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Slider Minimum="0.0"
                                             Maximum="1.0"
-                                            SmallChange="0.01"
+                                            SmallChange="0.05"
                                             LargeChange="0.1"
                                             Width="200"
-                                            Value="{Binding MouseSensitivity, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding MouseSensitivity, StringFormat={}{0:F3}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                            <!-- Movement Settings -->
-                            <TextBlock Text="Movement Settings"
-                                       Foreground="#CCCCCC"
-                                       FontWeight="SemiBold"
-                                       Margin="0,8,0,0"/>
-
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="Move Speed"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="10.0"
-                                            Maximum="1000.0"
-                                            SmallChange="10.0"
-                                            LargeChange="50.0"
-                                            Width="200"
-                                            Value="{Binding MoveSpeed, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding MoveSpeed, StringFormat={}{0:F0}}"
+                                            Value="{Binding AnalogCurve, Mode=TwoWay}"/>
+                                    <TextBlock Text="{Binding AnalogCurve, StringFormat={}{0:F2}}"
                                                Width="50"
                                                Foreground="#E6E6E6"/>
                                 </StackPanel>
 
-                                <TextBlock Text="Sprint Multiplier"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="1.0"
-                                            Maximum="5.0"
-                                            SmallChange="0.1"
-                                            LargeChange="0.5"
-                                            Width="200"
-                                            Value="{Binding SprintMultiplier, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding SprintMultiplier, StringFormat={}{0:F1}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-
-                                <TextBlock Text="Vertical Speed"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="10.0"
-                                            Maximum="1000.0"
-                                            SmallChange="10.0"
-                                            LargeChange="50.0"
-                                            Width="200"
-                                            Value="{Binding VerticalSpeed, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding VerticalSpeed, StringFormat={}{0:F0}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-
-                                <TextBlock Text="Speed Adjust Rate"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="1.0"
-                                            Maximum="2.0"
-                                            SmallChange="0.01"
-                                            LargeChange="0.1"
-                                            Width="200"
-                                            Value="{Binding SpeedAdjustRate, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding SpeedAdjustRate, StringFormat={}{0:F2}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-
-                                <TextBlock Text="Speed Min Multiplier"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="0.01"
-                                            Maximum="1.0"
-                                            SmallChange="0.01"
-                                            LargeChange="0.1"
-                                            Width="200"
-                                            Value="{Binding SpeedMinMultiplier, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding SpeedMinMultiplier, StringFormat={}{0:F2}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-
-                                <TextBlock Text="Speed Max Multiplier"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="1.0"
-                                            Maximum="10.0"
-                                            SmallChange="0.5"
-                                            LargeChange="1.0"
-                                            Width="200"
-                                            Value="{Binding SpeedMaxMultiplier, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding SpeedMaxMultiplier, StringFormat={}{0:F1}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
+                                <TextBlock Text="Sprint uses right stick X+."
+                                           Foreground="#888888"
+                                           FontSize="12"/>
                             </StackPanel>
-                            
-                        <!-- Smoothing Settings -->
-                        <TextBlock Text="Smoothing Settings"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"
-                                   Margin="0,8,0,0"/>
-
-                        <StackPanel Spacing="8">
-                            <ToggleSwitch IsChecked="{Binding SmoothEnabled, Mode=TwoWay}"
-                                          Content="Enable Smoothing"
-                                          Foreground="#E6E6E6"/>
-
-                            <TextBlock Text="Position Smoothing Half-time (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.05"
-                                        Maximum="2.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding HalfVec, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding HalfVec, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Rotation Smoothing Half-time (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.05"
-                                        Maximum="2.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding HalfRot, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding HalfRot, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="FOV Smoothing Half-time (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.05"
-                                        Maximum="2.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding HalfFov, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding HalfFov, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Player Lock Half-time (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.05"
-                                        Maximum="2.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding LockHalfRot, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding LockHalfRot, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Player Lock Half-time Transition (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.05"
-                                        Maximum="2.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding LockHalfRotTransition, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding LockHalfRotTransition, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-                                                        
-                        </StackPanel>
-
-                        </StackPanel>
-
-                        <!-- Right Column: Roll, FOV, and Smoothing Settings -->
-                        <StackPanel Grid.Column="2" Spacing="12">
-
-                            <!-- Roll Settings -->
-                        <TextBlock Text="Roll Settings"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"
-                                   Margin="0,8,0,0"/>
-
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="Roll Speed"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="10.0"
-                                        Maximum="180.0"
-                                        SmallChange="5.0"
-                                        LargeChange="15.0"
-                                        Width="200"
-                                        Value="{Binding RollSpeed, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding RollSpeed, StringFormat={}{0:F0}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Roll Smoothing"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.0"
-                                        Maximum="1.0"
-                                        SmallChange="0.05"
-                                        LargeChange="0.1"
-                                        Width="200"
-                                        Value="{Binding RollSmoothing, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding RollSmoothing, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Lean Strength"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.0"
-                                        Maximum="2.0"
-                                        SmallChange="0.1"
-                                        LargeChange="0.5"
-                                        Width="200"
-                                        Value="{Binding LeanStrength, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding LeanStrength, StringFormat={}{0:F1}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Lean Accel Scale"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.0"
-                                        Maximum="0.1"
-                                        SmallChange="0.001"
-                                        LargeChange="0.01"
-                                        Width="200"
-                                        Value="{Binding LeanAccelScale, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding LeanAccelScale, StringFormat={}{0:F4}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Lean Velocity Scale"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.0"
-                                        Maximum="0.1"
-                                        SmallChange="0.001"
-                                        LargeChange="0.01"
-                                        Width="200"
-                                        Value="{Binding LeanVelocityScale, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding LeanVelocityScale, StringFormat={}{0:F3}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Lean Max Angle"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.0"
-                                        Maximum="45.0"
-                                        SmallChange="1.0"
-                                        LargeChange="5.0"
-                                        Width="200"
-                                        Value="{Binding LeanMaxAngle, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding LeanMaxAngle, StringFormat={}{0:F0}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Lean Half-time (seconds)"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.01"
-                                        Maximum="1.0"
-                                        SmallChange="0.01"
-                                        LargeChange="0.05"
-                                        Width="200"
-                                        Value="{Binding LeanHalfTime, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding LeanHalfTime, StringFormat={}{0:F2}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- FOV Settings -->
-                        <TextBlock Text="FOV Settings"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"
-                                   Margin="0,8,0,0"/>
-
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="FOV Min"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="5.0"
-                                        Maximum="90.0"
-                                        SmallChange="1.0"
-                                        LargeChange="5.0"
-                                        Width="200"
-                                        Value="{Binding FovMin, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding FovMin, StringFormat={}{0:F0}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="FOV Max"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="90.0"
-                                        Maximum="180.0"
-                                        SmallChange="5.0"
-                                        LargeChange="10.0"
-                                        Width="200"
-                                        Value="{Binding FovMax, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding FovMax, StringFormat={}{0:F0}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="FOV Step"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="0.5"
-                                        Maximum="10.0"
-                                        SmallChange="0.5"
-                                        LargeChange="1.0"
-                                        Width="200"
-                                        Value="{Binding FovStep, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding FovStep, StringFormat={}{0:F1}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-
-                            <TextBlock Text="Default FOV"
-                                       Foreground="#CCCCCC"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Slider Minimum="60.0"
-                                        Maximum="120.0"
-                                        SmallChange="1.0"
-                                        LargeChange="5.0"
-                                        Width="200"
-                                        Value="{Binding DefaultFov, Mode=TwoWay}"/>
-                                <TextBlock Text="{Binding DefaultFov, StringFormat={}{0:F0}}"
-                                           Width="50"
-                                           Foreground="#E6E6E6"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <!-- Hold Settings -->
-                        <TextBlock Text="Hold Settings"
-                                    Foreground="#CCCCCC"
-                                    FontWeight="SemiBold"
-                                    Margin="0,8,0,0"/>
-                        <ToggleSwitch IsChecked="{Binding HoldMovementFollowsCamera, Mode=TwoWay}"
-                                        Content="Hold follows camera rotation"
-                                        Foreground="#E6E6E6"/>
-                        </StackPanel>
-                    </Grid>
-                </ScrollViewer>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
             </TabItem>
 
         </TabControl>

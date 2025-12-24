@@ -35,6 +35,11 @@ public class HlaeInputSender : IDisposable
     private bool _mouseButton4;
     private bool _mouseButton5;
     private readonly byte[] _keyBitmap = new byte[InputPacket.KeyBitmapSize];
+    private bool _analogEnabled;
+    private float _analogLX;
+    private float _analogLY;
+    private float _analogRY;
+    private float _analogRX;
 
     private readonly object _inputLock = new();
 
@@ -144,6 +149,45 @@ public class HlaeInputSender : IDisposable
         }
     }
 
+    public void SetAnalogEnabled(bool enabled)
+    {
+        lock (_inputLock)
+        {
+            _analogEnabled = enabled;
+            if (!enabled)
+            {
+                _analogLX = 0.0f;
+                _analogLY = 0.0f;
+                _analogRY = 0.0f;
+                _analogRX = 0.0f;
+            }
+        }
+    }
+
+    public void UpdateAnalog(float lx, float ly, float ry, float rx)
+    {
+        lock (_inputLock)
+        {
+            _analogLX = lx;
+            _analogLY = ly;
+            _analogRY = ry;
+            _analogRX = rx;
+        }
+    }
+
+    public bool TryGetAnalogState(out bool enabled, out float lx, out float ly, out float ry, out float rx)
+    {
+        lock (_inputLock)
+        {
+            enabled = _analogEnabled;
+            lx = _analogLX;
+            ly = _analogLY;
+            ry = _analogRY;
+            rx = _analogRX;
+        }
+        return enabled;
+    }
+
     private async Task SendLoop(CancellationToken cancellationToken)
     {
         var intervalMs = 1000.0 / SendRate;
@@ -169,27 +213,61 @@ public class HlaeInputSender : IDisposable
 
                 // Build and send packet
                 InputPacket packet;
+                InputPacketV2 packetV2;
+                bool useAnalog;
                 lock (_inputLock)
                 {
                     var keyBitmapSnapshot = new byte[InputPacket.KeyBitmapSize];
                     Array.Copy(_keyBitmap, keyBitmapSnapshot, InputPacket.KeyBitmapSize);
 
-                    packet = new InputPacket
+                    useAnalog = _analogEnabled;
+                    if (useAnalog)
                     {
-                        Sequence = _sequence++,
-                        MouseDx = (short)Math.Clamp(_mouseDx, short.MinValue, short.MaxValue),
-                        MouseDy = (short)Math.Clamp(_mouseDy, short.MinValue, short.MaxValue),
-                        MouseWheel = (sbyte)Math.Clamp(_mouseWheel, sbyte.MinValue, sbyte.MaxValue),
-                        MouseButtons = (byte)(
-                            (_mouseLeft ? 0x01 : 0x00) |
-                            (_mouseRight ? 0x02 : 0x00) |
-                            (_mouseMiddle ? 0x04 : 0x00) |
-                            (_mouseButton4 ? 0x08 : 0x00) |
-                            (_mouseButton5 ? 0x10 : 0x00)
-                        ),
-                        KeyBitmap = keyBitmapSnapshot,
-                        Timestamp = (ulong)_stopwatch.Elapsed.TotalMicroseconds
-                    };
+                        packetV2 = new InputPacketV2
+                        {
+                            Version = 2,
+                            Flags = 0x01,
+                            Reserved = 0,
+                            Sequence = _sequence++,
+                            MouseDx = (short)Math.Clamp(_mouseDx, short.MinValue, short.MaxValue),
+                            MouseDy = (short)Math.Clamp(_mouseDy, short.MinValue, short.MaxValue),
+                            MouseWheel = (sbyte)Math.Clamp(_mouseWheel, sbyte.MinValue, sbyte.MaxValue),
+                            MouseButtons = (byte)(
+                                (_mouseLeft ? 0x01 : 0x00) |
+                                (_mouseRight ? 0x02 : 0x00) |
+                                (_mouseMiddle ? 0x04 : 0x00) |
+                                (_mouseButton4 ? 0x08 : 0x00) |
+                                (_mouseButton5 ? 0x10 : 0x00)
+                            ),
+                            KeyBitmap = keyBitmapSnapshot,
+                            Timestamp = (ulong)_stopwatch.Elapsed.TotalMicroseconds,
+                            AnalogLX = _analogLX,
+                            AnalogLY = _analogLY,
+                            AnalogRY = _analogRY,
+                            AnalogRX = _analogRX
+                        };
+                        packet = default;
+                    }
+                    else
+                    {
+                        packet = new InputPacket
+                        {
+                            Sequence = _sequence++,
+                            MouseDx = (short)Math.Clamp(_mouseDx, short.MinValue, short.MaxValue),
+                            MouseDy = (short)Math.Clamp(_mouseDy, short.MinValue, short.MaxValue),
+                            MouseWheel = (sbyte)Math.Clamp(_mouseWheel, sbyte.MinValue, sbyte.MaxValue),
+                            MouseButtons = (byte)(
+                                (_mouseLeft ? 0x01 : 0x00) |
+                                (_mouseRight ? 0x02 : 0x00) |
+                                (_mouseMiddle ? 0x04 : 0x00) |
+                                (_mouseButton4 ? 0x08 : 0x00) |
+                                (_mouseButton5 ? 0x10 : 0x00)
+                            ),
+                            KeyBitmap = keyBitmapSnapshot,
+                            Timestamp = (ulong)_stopwatch.Elapsed.TotalMicroseconds
+                        };
+                        packetV2 = default;
+                    }
 
                     // Clear accumulated deltas
                     _mouseDx = 0;
@@ -198,7 +276,7 @@ public class HlaeInputSender : IDisposable
                 }
 
                 // Send packet
-                var bytes = packet.ToBytes();
+                var bytes = useAnalog ? packetV2.ToBytes() : packet.ToBytes();
                 await _udpClient.SendAsync(bytes, bytes.Length, _serverEndpoint);
             }
             catch (OperationCanceledException)

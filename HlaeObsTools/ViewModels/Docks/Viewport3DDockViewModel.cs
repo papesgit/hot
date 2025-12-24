@@ -7,6 +7,7 @@ using HlaeObsTools.ViewModels;
 using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.Viewport3D;
 using HlaeObsTools.Services.WebSocket;
+using HlaeObsTools.Services.Input;
 using OpenTK.Mathematics;
 
 namespace HlaeObsTools.ViewModels.Docks;
@@ -15,6 +16,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 {
     private readonly Viewport3DSettings _settings;
     private readonly FreecamSettings _freecamSettings;
+    private HlaeInputSender? _inputSender;
     private readonly HlaeWebSocketClient? _webSocketClient;
     private readonly VideoDisplayDockViewModel? _videoDisplay;
     private readonly GsiServer? _gsiServer;
@@ -55,6 +57,13 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     }
 
     public FreecamSettings FreecamSettings => _freecamSettings;
+    public HlaeInputSender? InputSender => _inputSender;
+
+    public void SetInputSender(HlaeInputSender sender)
+    {
+        _inputSender = sender;
+        OnPropertyChanged(nameof(InputSender));
+    }
 
     public async void HandoffFreecam(ViewportFreecamState state)
     {

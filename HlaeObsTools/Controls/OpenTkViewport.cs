@@ -12,6 +12,7 @@ using Avalonia.Media;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using HlaeObsTools.Services.Viewport3D;
+using HlaeObsTools.Services.Input;
 using System.Collections.ObjectModel;
 using HlaeObsTools.ViewModels;
 
@@ -61,6 +62,8 @@ public sealed class OpenTkViewport : OpenGlControlBase
         AvaloniaProperty.Register<OpenTkViewport, float>(nameof(WorldOffsetZ), 0.0f);
     public static readonly StyledProperty<FreecamSettings?> FreecamSettingsProperty =
         AvaloniaProperty.Register<OpenTkViewport, FreecamSettings?>(nameof(FreecamSettings));
+    public static readonly StyledProperty<HlaeInputSender?> InputSenderProperty =
+        AvaloniaProperty.Register<OpenTkViewport, HlaeInputSender?>(nameof(InputSender));
 
     private int _vao;
     private int _vbo;
@@ -143,6 +146,7 @@ public sealed class OpenTkViewport : OpenGlControlBase
     private FreecamTransform _freecamSmoothed;
     private FreecamConfig _freecamConfig = FreecamConfig.Default;
     private FreecamSettings? _freecamSettings;
+    private HlaeInputSender? _inputSender;
     private readonly HashSet<Key> _keysDown = new();
     private bool _mouseButton4Down;
     private bool _mouseButton5Down;
@@ -178,6 +182,7 @@ public sealed class OpenTkViewport : OpenGlControlBase
         WorldOffsetYProperty.Changed.AddClassHandler<OpenTkViewport>((sender, _) => sender.OnWorldTransformChanged());
         WorldOffsetZProperty.Changed.AddClassHandler<OpenTkViewport>((sender, _) => sender.OnWorldTransformChanged());
         FreecamSettingsProperty.Changed.AddClassHandler<OpenTkViewport>((sender, args) => sender.OnFreecamSettingsChanged(args));
+        InputSenderProperty.Changed.AddClassHandler<OpenTkViewport>((sender, args) => sender.OnInputSenderChanged(args));
     }
 
     public string? MapPath
@@ -304,6 +309,12 @@ public sealed class OpenTkViewport : OpenGlControlBase
     {
         get => GetValue(FreecamSettingsProperty);
         set => SetValue(FreecamSettingsProperty, value);
+    }
+
+    public HlaeInputSender? InputSender
+    {
+        get => GetValue(InputSenderProperty);
+        set => SetValue(InputSenderProperty, value);
     }
 
     private readonly ObservableCollection<PinLabel> _labels = new();
@@ -965,6 +976,11 @@ public sealed class OpenTkViewport : OpenGlControlBase
         ApplyFreecamSettings();
     }
 
+    private void OnInputSenderChanged(AvaloniaPropertyChangedEventArgs e)
+    {
+        _inputSender = e.NewValue as HlaeInputSender;
+    }
+
     private void OnFreecamSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         ApplyFreecamSettings();
@@ -1379,8 +1395,30 @@ public sealed class OpenTkViewport : OpenGlControlBase
     {
         var moveSpeed = _freecamConfig.MoveSpeed * _freecamSpeedScalar;
         var verticalSpeed = _freecamConfig.VerticalSpeed * _freecamSpeedScalar;
+        var analogEnabled = _freecamSettings?.AnalogKeyboardEnabled == true;
+        var useAnalog = false;
+        var analogLX = 0f;
+        var analogLY = 0f;
+        var analogRY = 0f;
+        var analogRX = 0f;
 
-        if (IsShiftDown())
+        if (analogEnabled && _inputSender != null)
+        {
+            useAnalog = _inputSender.TryGetAnalogState(out var enabled, out analogLX, out analogLY, out analogRY, out analogRX) && enabled;
+        }
+
+        if (useAnalog)
+        {
+            var sprintInput = MathF.Max(0.0f, analogRX);
+            if (sprintInput <= 0.0f && IsShiftDown())
+            {
+                sprintInput = 1.0f;
+            }
+            var sprintFactor = 1.0f + sprintInput * (_freecamConfig.SprintMultiplier - 1.0f);
+            moveSpeed *= sprintFactor;
+            verticalSpeed *= sprintFactor;
+        }
+        else if (IsShiftDown())
         {
             moveSpeed *= _freecamConfig.SprintMultiplier;
             verticalSpeed *= _freecamConfig.SprintMultiplier;
@@ -1392,22 +1430,35 @@ public sealed class OpenTkViewport : OpenGlControlBase
 
         var desiredVel = Vector3.Zero;
 
-        if (IsKeyDown(Key.W))
-            desiredVel += forward * moveSpeed;
-        if (IsKeyDown(Key.S))
-            desiredVel -= forward * moveSpeed;
-        if (IsKeyDown(Key.A))
-            desiredVel -= right * moveSpeed;
-        if (IsKeyDown(Key.D))
-            desiredVel += right * moveSpeed;
-        if (IsKeyDown(Key.Space))
-            desiredVel += up * verticalSpeed;
-        if (IsCtrlDown())
-            desiredVel -= up * verticalSpeed;
+        if (useAnalog)
+        {
+            analogLX = Clamp(analogLX, -1.0f, 1.0f);
+            analogLY = Clamp(analogLY, -1.0f, 1.0f);
+            analogRY = Clamp(analogRY, -1.0f, 1.0f);
+
+            desiredVel += forward * (moveSpeed * analogLY);
+            desiredVel += right * (moveSpeed * analogLX);
+            desiredVel += up * (verticalSpeed * analogRY);
+        }
+        else
+        {
+            if (IsKeyDown(Key.W))
+                desiredVel += forward * moveSpeed;
+            if (IsKeyDown(Key.S))
+                desiredVel -= forward * moveSpeed;
+            if (IsKeyDown(Key.A))
+                desiredVel -= right * moveSpeed;
+            if (IsKeyDown(Key.D))
+                desiredVel += right * moveSpeed;
+            if (IsKeyDown(Key.Space))
+                desiredVel += up * verticalSpeed;
+            if (IsCtrlDown())
+                desiredVel -= up * verticalSpeed;
+        }
 
         var desiredSpeed = desiredVel.Length;
         var maxSpeed = moveSpeed;
-        if (IsKeyDown(Key.Space) || IsCtrlDown())
+        if ((useAnalog && Math.Abs(analogRY) > 0.0001f) || (!useAnalog && (IsKeyDown(Key.Space) || IsCtrlDown())))
             maxSpeed = MathF.Max(verticalSpeed, moveSpeed);
 
         if (desiredSpeed > maxSpeed && desiredSpeed > 0.001f)

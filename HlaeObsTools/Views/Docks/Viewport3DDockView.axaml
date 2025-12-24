@@ -13,6 +13,7 @@
             <controls:OpenTkViewport x:Name="Viewport"
                                      MapPath="{Binding MapObjPath}"
                                      FreecamSettings="{Binding FreecamSettings}"
+                                     InputSender="{Binding InputSender}"
                                      PinScale="{Binding PinScale}"
                                      PinOffsetX="{Binding PinOffsetX}"
                                      PinOffsetY="{Binding PinOffsetY}"

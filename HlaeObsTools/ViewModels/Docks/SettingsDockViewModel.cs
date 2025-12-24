@@ -1209,6 +1209,58 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
+        public bool AnalogKeyboardEnabled
+        {
+            get => _freecamSettings.AnalogKeyboardEnabled;
+            set
+            {
+                if (_freecamSettings.AnalogKeyboardEnabled != value)
+                {
+                    _freecamSettings.AnalogKeyboardEnabled = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public double AnalogLeftDeadzone
+        {
+            get => _freecamSettings.AnalogLeftDeadzone;
+            set
+            {
+                if (_freecamSettings.AnalogLeftDeadzone != value)
+                {
+                    _freecamSettings.AnalogLeftDeadzone = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public double AnalogRightDeadzone
+        {
+            get => _freecamSettings.AnalogRightDeadzone;
+            set
+            {
+                if (_freecamSettings.AnalogRightDeadzone != value)
+                {
+                    _freecamSettings.AnalogRightDeadzone = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public double AnalogCurve
+        {
+            get => _freecamSettings.AnalogCurve;
+            set
+            {
+                if (_freecamSettings.AnalogCurve != value)
+                {
+                    _freecamSettings.AnalogCurve = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         #endregion
 
         // Simple ICommand helper (no MVVM library required)

@@ -24,6 +24,8 @@ public class MainDockFactory : Factory, IDisposable
     private readonly HlaeWebSocketClient _webSocketClient;
     private readonly HlaeInputSender _inputSender;
     private readonly RawInputHandler _rawInputHandler;
+    private XInputHandler? _xinputHandler;
+    private FreecamSettings? _freecamSettings;
     private readonly Timer _inputFlushTimer;
     private readonly GsiServer _gsiServer;
     private readonly RadarConfigProvider _radarConfigProvider;
@@ -122,6 +124,7 @@ public class MainDockFactory : Factory, IDisposable
         };
         hudSettings.ApplyAttachPresets(_storedSettings.AttachPresets);
         var freecamSettings = new FreecamSettings();
+        _freecamSettings = freecamSettings;
         var viewport3DSettings = new Viewport3DSettings
         {
             MapObjPath = _storedSettings.MapObjPath ?? string.Empty,
@@ -159,11 +162,13 @@ public class MainDockFactory : Factory, IDisposable
             _storedSettings)
         { Id = "BottomLeft", Title = "Settings" };
         var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, _webSocketClient, _videoDisplayVm, _gsiServer) { Id = "BottomCenter", Title = "3D Viewport" };
+        bottomCenter.SetInputSender(_inputSender);
 
         // Inject WebSocket and UDP services into video display
         _videoDisplayVm.SetWebSocketClient(_webSocketClient);
         _videoDisplayVm.SetInputSender(_inputSender);
         _videoDisplayVm.SetFreecamSettings(freecamSettings);
+        ConfigureAnalogInput(freecamSettings);
         _videoDisplayVm.SetHudSettings(hudSettings);
         _videoDisplayVm.SetGsiServer(_gsiServer);
         _videoDisplayVm.SetRtpConfig(new Services.Video.RTP.RtpReceiverConfig
@@ -320,6 +325,43 @@ public class MainDockFactory : Factory, IDisposable
         _rawInputHandler.SuppressKeyboard = suppress;
     }
 
+    private void ConfigureAnalogInput(FreecamSettings freecamSettings)
+    {
+        _xinputHandler?.Dispose();
+        _xinputHandler = new XInputHandler(_inputSender);
+        _xinputHandler.Start();
+        ApplyAnalogSettings(freecamSettings);
+
+        freecamSettings.PropertyChanged -= OnFreecamSettingsChanged;
+        freecamSettings.PropertyChanged += OnFreecamSettingsChanged;
+    }
+
+    private void OnFreecamSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (_freecamSettings == null || _xinputHandler == null)
+            return;
+
+        if (e.PropertyName == nameof(FreecamSettings.AnalogKeyboardEnabled)
+            || e.PropertyName == nameof(FreecamSettings.AnalogLeftDeadzone)
+            || e.PropertyName == nameof(FreecamSettings.AnalogRightDeadzone)
+            || e.PropertyName == nameof(FreecamSettings.AnalogCurve))
+        {
+            ApplyAnalogSettings(_freecamSettings);
+        }
+    }
+
+    private void ApplyAnalogSettings(FreecamSettings freecamSettings)
+    {
+        if (_xinputHandler == null)
+            return;
+
+        _xinputHandler.SetSettings(
+            freecamSettings.AnalogKeyboardEnabled,
+            (float)freecamSettings.AnalogLeftDeadzone,
+            (float)freecamSettings.AnalogRightDeadzone,
+            (float)freecamSettings.AnalogCurve);
+    }
+
     private void OnRawInputKeyPressed(object? sender, FormsKeys key)
     {
         if (key != FormsKeys.C)
@@ -367,6 +409,11 @@ public class MainDockFactory : Factory, IDisposable
         _rawInputHandler.KeyStateChanged -= OnRawInputKeyStateChanged;
         _rawInputHandler.Dispose();
         _inputSender.Dispose();
+        if (_freecamSettings != null)
+        {
+            _freecamSettings.PropertyChanged -= OnFreecamSettingsChanged;
+        }
+        _xinputHandler?.Dispose();
 
         _gsiServer.Dispose();
         _webSocketClient.MessageReceived -= OnHlaeMessage;
