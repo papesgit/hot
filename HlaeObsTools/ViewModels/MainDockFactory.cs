@@ -18,6 +18,7 @@ using HlaeObsTools.ViewModels;
 using HlaeObsTools.Services.Settings;
 using HlaeObsTools.ViewModels.Hud;
 using HlaeObsTools.Services.Vmix;
+using HlaeObsTools.Services.Graphics;
 using HlaeObsTools.Services.Hotkeys;
 
 namespace HlaeObsTools.ViewModels;
@@ -38,7 +39,11 @@ public class MainDockFactory : Factory, IDisposable
     private readonly HotkeyService _hotkeyService;
     private readonly VmixReplayService _vmixReplayService;
     private readonly VmixReplaySettings _vmixReplaySettings;
+    private readonly GraphicsProfileStorage _graphicsProfileStorage;
+    private readonly GraphicsService _graphicsService;
+    private readonly GraphicsProducerClient _producerClient;
     private VideoDisplayDockViewModel? _videoDisplayVm;
+    private GraphicsDockViewModel? _graphicsDockVm;
     private bool _disposed;
 
     public MainDockFactory(object context)
@@ -73,6 +78,12 @@ public class MainDockFactory : Factory, IDisposable
         };
         _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixReplaySettings);
 
+        _graphicsProfileStorage = new GraphicsProfileStorage();
+        _producerClient = new GraphicsProducerClient(_storedSettings.GraphicsProducerHost, _storedSettings.GraphicsProducerPort);
+        _ = _producerClient.ConnectAsync();
+        _graphicsService = new GraphicsService(_webSocketClient, _producerClient, _gsiServer, _graphicsProfileStorage, _storedSettings.GraphicsTargetFps);
+        _graphicsService.SetEnabled(_storedSettings.GraphicsEnabled);
+
         // Initialize global raw input handler and periodically flush into UDP sender
         _rawInputHandler = new RawInputHandler();
         _rawInputHandler.CaptureOnlyWhenAppFocused = !_storedSettings.DisableFocusInputGate;
@@ -95,6 +106,8 @@ public class MainDockFactory : Factory, IDisposable
     {
         _storedSettings.WebSocketHost = data.WebSocketHost;
         _storedSettings.WebSocketPort = data.WebSocketPort;
+        _storedSettings.GraphicsProducerHost = data.GraphicsProducerHost;
+        _storedSettings.GraphicsProducerPort = data.GraphicsProducerPort;
         _storedSettings.UdpPort = data.UdpPort;
         _storedSettings.RtpPort = data.RtpPort;
         _storedSettings.GsiPort = data.GsiPort;
@@ -102,6 +115,9 @@ public class MainDockFactory : Factory, IDisposable
 
         _webSocketClient.ConfigureEndpoint(data.WebSocketHost, data.WebSocketPort);
         await _webSocketClient.ReconnectAsync();
+
+        _producerClient.ConfigureEndpoint(data.GraphicsProducerHost, data.GraphicsProducerPort);
+        await _producerClient.ReconnectAsync();
 
         _inputSender.ConfigureEndpoint(data.WebSocketHost, data.UdpPort, restartIfActive: true);
 
@@ -192,6 +208,11 @@ public class MainDockFactory : Factory, IDisposable
         var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings, bottomRight, _webSocketClient) { Id = "TopLeft", Title = "Radar" };
         _videoDisplayVm = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
         var topRight = new NetConsoleDockViewModel { Id = "TopRight", Title = "Console" };
+        _graphicsDockVm = new GraphicsDockViewModel(_graphicsService, _settingsStorage, _storedSettings)
+        {
+            Id = "Graphics",
+            Title = "Graphics"
+        };
         var bottomLeft = new SettingsDockViewModel(
             radarSettings,
             hudSettings,
@@ -254,13 +275,13 @@ public class MainDockFactory : Factory, IDisposable
             VisibleDockables = CreateList<IDockable>(_videoDisplayVm)
         };
 
-        // Top-right: Settings - remaining space
+        // Top-right: Console + Graphics
         var topRightDock = new ToolDock
         {
             Id = "TopRightDock",
             Proportion = 0.2,
             ActiveDockable = topRight,
-            VisibleDockables = CreateList<IDockable>(topRight)
+            VisibleDockables = CreateList<IDockable>(topRight, _graphicsDockVm)
         };
 
         var bottomLeftDock = new ToolDock
@@ -484,9 +505,12 @@ public class MainDockFactory : Factory, IDisposable
         _gsiServer.Dispose();
         _webSocketClient.MessageReceived -= OnHlaeMessage;
         _webSocketClient.Dispose();
+        _producerClient.Dispose();
 
         _videoDisplayVm?.Dispose();
         _vmixReplayService.Dispose();
+        _graphicsDockVm?.Dispose();
+        _graphicsService.Dispose();
 
         _disposed = true;
     }

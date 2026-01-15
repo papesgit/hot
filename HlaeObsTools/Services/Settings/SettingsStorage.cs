@@ -71,6 +71,8 @@ public class AppSettingsData
     public bool ShowPlayerNames { get; set; } = true;
     public string WebSocketHost { get; set; } = "127.0.0.1";
     public int WebSocketPort { get; set; } = 31338;
+    public string GraphicsProducerHost { get; set; } = "127.0.0.1";
+    public int GraphicsProducerPort { get; set; } = 31340;
     public int UdpPort { get; set; } = 31339;
     public int RtpPort { get; set; } = 5000;
     public int GsiPort { get; set; } = 31337;
@@ -109,6 +111,8 @@ public class AppSettingsData
     public double VmixReplayPostSeconds { get; set; } = 2.0;
     public double VmixReplayExtendWindowSeconds { get; set; } = 3.0;
     public bool DisableFocusInputGate { get; set; }
+    public bool GraphicsEnabled { get; set; }
+    public int GraphicsTargetFps { get; set; } = 30;
     public List<HotkeyBindingData> Hotkeys { get; set; } = new();
 }
 

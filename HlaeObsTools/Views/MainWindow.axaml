@@ -41,6 +41,11 @@
             <vd:NetConsoleDockView />
         </DataTemplate>
 
+        <!-- Data template for GraphicsDockViewModel -->
+        <DataTemplate DataType="vmd:GraphicsDockViewModel">
+            <vd:GraphicsDockView />
+        </DataTemplate>
+
         <!-- Data template for Viewport3DDockViewModel -->
         <DataTemplate DataType="vmd:Viewport3DDockViewModel">
             <vd:Viewport3DDockView />

@@ -1,0 +1,44 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:HlaeObsTools.Controls">
+
+    <Style Selector="local|ScrubbyNumericField">
+        <Setter Property="MinHeight" Value="24"/>
+        <Setter Property="Template">
+        <ControlTemplate>
+            <!-- Transparent background makes the control hit-testable -->
+            <Grid Background="Transparent">
+
+            <!-- DISPLAY: looks like a normal TextBox -->
+            <TextBox
+                x:Name="PART_Display"
+                IsReadOnly="True"
+                IsHitTestVisible="False"
+                IsTabStop="False"
+                Focusable="False"
+                VerticalContentAlignment="Center"
+                IsVisible="{Binding IsDisplayVisible, RelativeSource={RelativeSource TemplatedParent}}"
+                Text="{Binding DisplayText,
+                                RelativeSource={RelativeSource TemplatedParent},
+                                Mode=OneWay}"/>
+
+            <!-- EDITOR: actual editable TextBox -->
+            <TextBox Name="PART_Editor"
+                    IsVisible="{Binding IsEditing, RelativeSource={RelativeSource TemplatedParent}}"
+                    VerticalContentAlignment="Center"/>
+            </Grid>
+        </ControlTemplate>
+        </Setter>
+    </Style>
+    <!-- Hover: apply the same chrome as a hovered TextBox -->
+    <Style Selector="local|ScrubbyNumericField:hover TextBox#PART_Display">
+    <Setter Property="BorderBrush" Value="White" />
+    </Style>
+
+    <!-- Focus: apply the same chrome as a focused TextBox -->
+    <Style Selector="local|ScrubbyNumericField:focus TextBox#PART_Display">
+    <Setter Property="BorderBrush" Value="Gray" />
+    </Style>
+
+
+</Styles>

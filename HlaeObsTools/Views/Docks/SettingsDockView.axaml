@@ -68,7 +68,7 @@
                                 FontWeight="SemiBold"/>
 
                         <Grid ColumnDefinitions="Auto,*,Auto,*"
-                            RowDefinitions="Auto,Auto,Auto"
+                            RowDefinitions="Auto,Auto,Auto,Auto"
                             ColumnSpacing="8"
                             RowSpacing="6">
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="WS/UDP Host" Foreground="#AAAAAA"/>
@@ -83,6 +83,11 @@
                             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding RtpPort, Mode=TwoWay}" />
                             <TextBlock Grid.Row="2" Grid.Column="2" Text="GSI Port" Foreground="#AAAAAA"/>
                             <TextBox Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="3" Text="{Binding GsiPort, Mode=TwoWay}" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Gfx Producer Host" Foreground="#AAAAAA"/>
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding GraphicsProducerHost, Mode=TwoWay}" />
+                            <TextBlock Grid.Row="3" Grid.Column="2" Text="Gfx Producer Port" Foreground="#AAAAAA"/>
+                            <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding GraphicsProducerPort, Mode=TwoWay}" />
                         </Grid>
 
                         <Button Content="Apply / Reconnect"
