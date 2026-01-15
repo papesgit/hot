@@ -84,6 +84,7 @@ public sealed class GsiTeam
 
 public sealed class GsiGameState
 {
+    public string RawJson { get; init; } = string.Empty;
     public string MapName { get; init; } = string.Empty;
     public IReadOnlyList<GsiPlayer> Players { get; init; } = Array.Empty<GsiPlayer>();
     public IReadOnlyList<GsiGrenade> Grenades { get; init; } = Array.Empty<GsiGrenade>();

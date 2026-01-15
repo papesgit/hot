@@ -410,6 +410,7 @@ public sealed class GsiServer : IDisposable
 
             return new GsiGameState
             {
+                RawJson = body,
                 MapName = mapName,
                 Players = players,
                 Grenades = grenades,

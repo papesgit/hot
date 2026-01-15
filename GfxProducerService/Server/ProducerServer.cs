@@ -181,7 +181,8 @@ public sealed class ProducerServer : IDisposable
                 return;
             }
 
-            Console.WriteLine($"[gfxp] cmd {cmd}");
+            if (!string.Equals(cmd, "gfxp.gsi.update", StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine($"[gfxp] cmd {cmd}");
             var payload = root.TryGetProperty("data", out var dataProp) ? dataProp : root;
 
             switch (cmd)
@@ -197,6 +198,9 @@ public sealed class ProducerServer : IDisposable
                     break;
                 case "gfxp.trigger":
                     await HandleTriggerAsync(socket, id, payload);
+                    break;
+                case "gfxp.gsi.update":
+                    await HandleGsiUpdateAsync(socket, id, payload);
                     break;
                 default:
                     await SendErrorAsync(socket, id, $"Unknown cmd: {cmd}");
@@ -300,6 +304,27 @@ public sealed class ProducerServer : IDisposable
         await renderer.TriggerAsync(action, target);
         Console.WriteLine($"[gfxp] trigger '{action}' atlas='{atlas}' target='{target}'");
         await SendResponseAsync(socket, id, new { atlas, action, target });
+    }
+
+    private async Task HandleGsiUpdateAsync(WebSocket socket, string? id, JsonElement root)
+    {
+        var gsiJson = GetString(root, "gsiJson");
+        if (string.IsNullOrWhiteSpace(gsiJson))
+        {
+            await SendErrorAsync(socket, id, "gsiJson required");
+            return;
+        }
+
+        long? heartbeat = null;
+        if (root.TryGetProperty("heartbeat", out var hbProp) && hbProp.TryGetInt64(out var hb))
+            heartbeat = hb;
+
+        string? extrasJson = null;
+        if (root.TryGetProperty("extras", out var extrasProp))
+            extrasJson = extrasProp.GetRawText();
+
+        await _atlasManager.BroadcastGsiAsync(gsiJson, heartbeat, extrasJson);
+        await SendResponseAsync(socket, id, new { heartbeat });
     }
 
     private async Task SendResponseAsync(WebSocket socket, string? id, object data)

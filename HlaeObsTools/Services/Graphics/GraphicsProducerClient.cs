@@ -119,6 +119,13 @@ public sealed class GraphicsProducerClient : IDisposable
         return SendRequestAsync("gfxp.trigger", new { atlas, action, target });
     }
 
+    public Task SendGsiAsync(string gsiJson, long heartbeat, object? extras = null)
+    {
+        if (string.IsNullOrWhiteSpace(gsiJson))
+            return Task.CompletedTask;
+        return SendRequestAsync("gfxp.gsi.update", new { gsiJson, heartbeat, extras });
+    }
+
     private async Task<ProducerResponse?> SendRequestAsync(string cmd, object data)
     {
         if (!IsConnected || _webSocket == null)

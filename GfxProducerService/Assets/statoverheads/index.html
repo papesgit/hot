@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stat Overheads</title>
+  <style>
+    :root {
+      --card-w: 196px;
+      --card-h: 88px;
+      --gap-x: 8px;
+      --gap-y: 10px;
+      --bg: rgba(8, 10, 14, 0.82);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.55);
+      --ct: #7bb4ff;
+      --t: #ffb24d;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: transparent;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      color: var(--text);
+    }
+
+    #atlas {
+      position: relative;
+      width: calc((var(--card-w) * 5) + (var(--gap-x) * 4));
+      height: calc((var(--card-h) * 2) + var(--gap-y));
+      display: grid;
+      grid-template-columns: repeat(5, var(--card-w));
+      grid-template-rows: repeat(2, var(--card-h));
+      gap: var(--gap-y) var(--gap-x);
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    .card {
+      position: relative;
+      width: var(--card-w);
+      height: var(--card-h);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      overflow: hidden;
+    }
+
+    .card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.0));
+      pointer-events: none;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    .name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      margin-top: 6px;
+      font-size: 12px;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat label {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .meta {
+      position: absolute;
+      right: 10px;
+      bottom: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .team-ct { border-color: rgba(123, 180, 255, 0.4); }
+    .team-ct .name { color: var(--ct); }
+    .team-t { border-color: rgba(255, 178, 77, 0.4); }
+    .team-t .name { color: var(--t); }
+  </style>
+</head>
+<body>
+  <div id="atlas">
+    <div class="card" data-gfx="slot0"></div>
+    <div class="card" data-gfx="slot1"></div>
+    <div class="card" data-gfx="slot2"></div>
+    <div class="card" data-gfx="slot3"></div>
+    <div class="card" data-gfx="slot4"></div>
+    <div class="card" data-gfx="slot5"></div>
+    <div class="card" data-gfx="slot6"></div>
+    <div class="card" data-gfx="slot7"></div>
+    <div class="card" data-gfx="slot8"></div>
+    <div class="card" data-gfx="slot9"></div>
+  </div>
+
+  <script>
+    const cards = new Map();
+    document.querySelectorAll(".card").forEach(card => {
+      cards.set(card.dataset.gfx, card);
+      card.innerHTML = buildCardHtml("-", "-", "-", "-", "-");
+    });
+
+    function buildCardHtml(name, kills, assists, deaths, adr) {
+      return `
+        <div class="header">
+          <span>Player</span>
+        </div>
+        <div class="name">${name}</div>
+        <div class="stats">
+          <div class="stat"><label>K</label><span>${kills}</span></div>
+          <div class="stat"><label>A</label><span>${assists}</span></div>
+          <div class="stat"><label>D</label><span>${deaths}</span></div>
+          <div class="stat"><label>ADR</label><span>${adr}</span></div>
+        </div>
+      `;
+    }
+
+    function calcAdr(extras, steamId) {
+      if (!extras || !extras.roundDamages || !extras.roundDamages[steamId]) return null;
+      const perRound = extras.roundDamages[steamId];
+      const rounds = Object.keys(perRound);
+      if (rounds.length === 0) return null;
+      let total = 0;
+      for (const key of rounds) total += perRound[key];
+      return Math.round(total / rounds.length);
+    }
+
+    function updateCards(gsi, extras) {
+      if (!gsi || !gsi.allplayers) return;
+      const players = Object.entries(gsi.allplayers).map(([steamId, player]) => ({
+        steamId,
+        player
+      }));
+
+      for (let slot = 0; slot < 10; slot++) {
+        const card = cards.get(`slot${slot}`);
+        if (!card) continue;
+
+        const entry = players.find(p => (p.player.observer_slot ?? -1) === slot);
+        if (!entry) {
+          card.classList.remove("team-ct", "team-t");
+          card.innerHTML = buildCardHtml(`Slot ${slot}`, "-", "-", "-", "-");
+          continue;
+        }
+
+        const p = entry.player;
+        const team = (p.team || "").toLowerCase();
+        card.classList.toggle("team-ct", team === "ct");
+        card.classList.toggle("team-t", team === "t");
+
+        const k = p.match_stats?.kills ?? 0;
+        const d = p.match_stats?.deaths ?? 0;
+        const a = p.match_stats?.assists ?? 0;
+        const adr = calcAdr(extras, entry.steamId);
+        card.innerHTML = buildCardHtml(p.name || `Slot ${slot}`, k, a, d, adr ?? "-");
+      }
+    }
+
+    window.addEventListener("gsi:update", (e) => {
+      const { gsi, extras } = e.detail || {};
+      updateCards(gsi, extras);
+    });
+
+    window.hlaeTrigger = (action, target) => {
+      const card = cards.get(target);
+      if (!card) return;
+      if (action === "animIn") card.classList.add("visible");
+      if (action === "animOut") card.classList.remove("visible");
+    };
+
+    document.addEventListener("hlae:trigger", (e) => {
+      const { action, target } = e.detail || {};
+      window.hlaeTrigger(action, target);
+    });
+  </script>
+</body>
+</html>

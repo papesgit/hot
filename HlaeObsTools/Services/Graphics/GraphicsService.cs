@@ -19,6 +19,7 @@ public sealed class GraphicsService : IDisposable
     private bool _enabled;
     private readonly int _targetFps;
     private readonly HashSet<string> _producerAtlases = new(StringComparer.OrdinalIgnoreCase);
+    private readonly GsiExtrasTracker _gsiExtrasTracker = new();
 
     public event EventHandler? ProfileChanged;
 
@@ -245,6 +246,12 @@ public sealed class GraphicsService : IDisposable
 
     private void OnGameStateUpdated(object? sender, GsiGameState e)
     {
+        if (_enabled && _producerClient.IsConnected && !string.IsNullOrWhiteSpace(e.RawJson))
+        {
+            var extras = _gsiExtrasTracker.Update(e.RawJson);
+            _ = _producerClient.SendGsiAsync(e.RawJson, e.Heartbeat, extras);
+        }
+
         if (string.Equals(_currentMap, e.MapName, StringComparison.OrdinalIgnoreCase))
             return;
         var previousProfile = _profile;

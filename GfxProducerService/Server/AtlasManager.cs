@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using CefSharp;
 using CefSharp.OffScreen;
 using GfxProducerService.Graphics;
@@ -104,6 +105,18 @@ public sealed class AtlasManager : IDisposable
     {
         _renderers.TryGetValue(name, out var renderer);
         return renderer;
+    }
+
+    public async Task BroadcastGsiAsync(string gsiJson, long? heartbeat, string? extrasJson)
+    {
+        if (string.IsNullOrWhiteSpace(gsiJson))
+            return;
+        var tasks = new List<Task>();
+        foreach (var renderer in _renderers.Values)
+        {
+            tasks.Add(renderer.UpdateGsiAsync(gsiJson, heartbeat, extrasJson));
+        }
+        await Task.WhenAll(tasks);
     }
 
     public void DestroyAtlas(string name)
