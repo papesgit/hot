@@ -17,6 +17,7 @@ public sealed class AttachPresetViewModel : ViewModelBase
         "gun_accurate","weaponhier_l_iktarget","weaponhier_r_iktarget",
         "look_straight_ahead_crouch","axis_of_intent"
     };
+    public static IReadOnlyList<string> DefaultAttachmentOptionsList => DefaultAttachmentOptions;
     private string _title;
     private string _name = string.Empty;
     private string _attachmentName = string.Empty;

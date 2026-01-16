@@ -137,11 +137,23 @@ public sealed class GraphicsService : IDisposable
 
         foreach (var inst in _profile.Instances)
         {
+            var attachPayload = inst.AttachSlot >= 0
+                ? new
+                {
+                    slot = inst.AttachSlot,
+                    useYaw = inst.AttachUseYaw,
+                    usePitch = inst.AttachUsePitch,
+                    useRoll = inst.AttachUseRoll,
+                    attachment = inst.AttachAttachmentName
+                }
+                : null;
+
             await _webSocket.SendCommandAsync("gfx.instance.create", new
             {
                 name = inst.Name,
                 atlas = inst.Atlas,
                 region = inst.Region,
+                attach = attachPayload,
                 pos = new[] { inst.PosX, inst.PosY, inst.PosZ },
                 ang = new[] { inst.Pitch, inst.Yaw, inst.Roll },
                 scale = new[] { inst.ScaleX, inst.ScaleY },

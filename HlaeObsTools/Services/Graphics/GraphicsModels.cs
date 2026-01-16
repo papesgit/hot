@@ -49,6 +49,11 @@ public sealed class GraphicsInstance
     public string Name { get; set; } = string.Empty;
     public string Atlas { get; set; } = string.Empty;
     public string Region { get; set; } = string.Empty;
+    public int AttachSlot { get; set; } = -1;
+    public string AttachAttachmentName { get; set; } = string.Empty;
+    public bool AttachUseYaw { get; set; }
+    public bool AttachUsePitch { get; set; }
+    public bool AttachUseRoll { get; set; }
     public double PosX { get; set; }
     public double PosY { get; set; }
     public double PosZ { get; set; }

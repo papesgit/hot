@@ -10,6 +10,7 @@ public sealed class GsiExtrasTracker
     private readonly Dictionary<string, Dictionary<int, int>> _roundDamages = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _moneyAtStartOfRound = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _lastKnownPlayerObserverSlot = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _observerSlotMapped = new(StringComparer.OrdinalIgnoreCase);
     private GsiBombPlantedCountdown? _lastKnownBombPlantedCountdown;
     private string? _lastRoundPhase;
 
@@ -104,6 +105,7 @@ public sealed class GsiExtrasTracker
             if (!TryGetInt(playerProp.Value, "observer_slot", out var slot))
                 continue;
             _lastKnownPlayerObserverSlot[playerProp.Name] = slot;
+            _observerSlotMapped[playerProp.Name] = MapObserverSlot(slot);
         }
     }
 
@@ -166,6 +168,12 @@ public sealed class GsiExtrasTracker
         return roundNumber;
     }
 
+    private static int MapObserverSlot(int rawSlot)
+    {
+        if (rawSlot == 9) return 0;
+        return rawSlot + 1;
+    }
+
     private static string? GetRoundPhase(JsonElement root)
     {
         var phase = GetString(root, "phase_countdowns", "phase");
@@ -188,6 +196,7 @@ public sealed class GsiExtrasTracker
             LastKnownBombPlantedCountdown = _lastKnownBombPlantedCountdown,
             MoneyAtStartOfRound = Clone(_moneyAtStartOfRound),
             LastKnownPlayerObserverSlot = Clone(_lastKnownPlayerObserverSlot),
+            ObserverSlotMapped = Clone(_observerSlotMapped),
             RoundDamages = CloneNested(_roundDamages)
         };
     }
@@ -269,6 +278,7 @@ public sealed class GsiExtrasSnapshot
     public GsiBombPlantedCountdown? LastKnownBombPlantedCountdown { get; init; }
     public Dictionary<string, int> MoneyAtStartOfRound { get; init; } = new();
     public Dictionary<string, int> LastKnownPlayerObserverSlot { get; init; } = new();
+    public Dictionary<string, int> ObserverSlotMapped { get; init; } = new();
     public Dictionary<string, Dictionary<int, int>> RoundDamages { get; init; } = new();
 }
 

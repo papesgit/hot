@@ -5,125 +5,236 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stat Overheads</title>
   <style>
-    :root {
-      --card-w: 196px;
-      --card-h: 88px;
-      --gap-x: 8px;
-      --gap-y: 10px;
-      --bg: rgba(8, 10, 14, 0.82);
-      --border: rgba(255, 255, 255, 0.08);
-      --text: rgba(255, 255, 255, 0.92);
-      --muted: rgba(255, 255, 255, 0.55);
+    :root{
+      --card-w: 392px;
+      --card-h: 176px;
+      --gap-x: 16px;
+      --gap-y: 20px;
+
+      --bg1: rgba(8, 10, 14, 0.86);
+      --bg2: rgba(10, 14, 20, 0.58);
+      --border: rgba(255, 255, 255, 0.10);
+
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.56);
+
       --ct: #7bb4ff;
-      --t: #ffb24d;
+      --t:  #ffb24d;
+
+      --radius: 16px;
+
+      --stat-radius: 12px;
+      --stat-border: rgba(255,255,255,.15);
+      --stat-bg: rgba(255,255,255,.05);
+      --stat-bg2: rgba(0,0,0,.14);
+
+      --ease-out: cubic-bezier(.18,.82,.24,1);
+      --ease-overshoot: cubic-bezier(.16, 1.12, .3, 1);
     }
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      background: transparent;
-      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-      color: var(--text);
+    html, body{
+      width:100%;
+      height:100%;
+      margin:0;
+      background:transparent;
+      font-family:"Segoe UI", Tahoma, Arial, sans-serif;
+      color:var(--text);
     }
+    body{ overflow:hidden; }
 
-    #atlas {
-      position: relative;
+    #atlas{
+      position:relative;
       width: calc((var(--card-w) * 5) + (var(--gap-x) * 4));
       height: calc((var(--card-h) * 2) + var(--gap-y));
-      display: grid;
+      display:grid;
       grid-template-columns: repeat(5, var(--card-w));
       grid-template-rows: repeat(2, var(--card-h));
       gap: var(--gap-y) var(--gap-x);
-      padding: 0;
-      box-sizing: border-box;
+      padding:0;
+      box-sizing:border-box;
     }
 
-    .card {
-      position: relative;
-      width: var(--card-w);
-      height: var(--card-h);
-      background: var(--bg);
+    .card{
+      position:relative;
+      width:var(--card-w);
+      height:var(--card-h);
+      border-radius:var(--radius);
+      overflow:hidden;
+      box-sizing:border-box;
+
+      background: linear-gradient(180deg, var(--bg1), var(--bg2));
       border: 1px solid var(--border);
-      border-radius: 8px;
-      box-sizing: border-box;
-      padding: 8px 10px;
+
       opacity: 0;
       transform: translateY(8px);
       transition: opacity 220ms ease, transform 220ms ease;
-      overflow: hidden;
     }
-
-    .card.visible {
+    .card.visible{
       opacity: 1;
       transform: translateY(0);
     }
 
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.0));
-      pointer-events: none;
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-40px;
+      background:
+        radial-gradient(70% 60% at 18% 20%, rgba(255,255,255,.10), rgba(255,255,255,0) 60%),
+        radial-gradient(90% 80% at 78% 88%, rgba(0,0,0,.25), rgba(0,0,0,0) 65%),
+        linear-gradient(120deg, rgba(255,255,255,.06), rgba(255,255,255,0) 48%);
+      pointer-events:none;
+      opacity:.9;
     }
 
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
+    .team-ct{ border-color: rgba(123,180,255,.62); }
+    .team-t { border-color: rgba(255,178,77,.62); }
+    .team-ct .name{ color: var(--ct); }
+    .team-t  .name{ color: var(--t); }
+
+    .shell{
+      position:relative;
+      height:100%;
+      padding: 12px 18px 12px;
+      box-sizing:border-box;
+
+      transform-origin: 16% 50%;
+      transform: scaleX(.72) scaleY(.92);
+      opacity: 0;
+      filter: blur(.2px);
+      transition: transform 520ms var(--ease-overshoot), opacity 260ms ease;
+    }
+    .card.visible .shell{
+      transform: scaleX(1) scaleY(1);
+      opacity: 1;
+      filter: none;
     }
 
-    .name {
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      text-transform:uppercase;
+      letter-spacing:.12em;
       font-size: 16px;
-      font-weight: 600;
-      margin-top: 2px;
+      color: var(--muted);
+      user-select:none;
+      line-height: 1.1;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: rgba(255,255,255,.18);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.10);
+      flex: 0 0 auto;
+    }
+    .team-ct .dot{ background: rgba(123,180,255,.58); }
+    .team-t  .dot{ background: rgba(255,178,77,.58); }
+
+    .name{
+      font-size: 30px;
+      font-weight: 650;
+      margin-top: 4px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      letter-spacing:.01em;
+      line-height: 1.1;
     }
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 4px;
-      margin-top: 6px;
-      font-size: 12px;
+    .stats{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 10px;
+      margin-top: 10px;
     }
 
-    .stat {
+    .statBox{
+      border-radius: var(--stat-radius);
+      border: 1px solid var(--stat-border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+        linear-gradient(180deg, var(--stat-bg), var(--stat-bg2));
+      box-sizing:border-box;
+      overflow:hidden;
+
+      height: 72px;
+      padding: 8px 10px;
+
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      align-items: center;
+      justify-content: center;
+
+      opacity: 0;
+      transform: translateY(10px);
+      transition:
+        opacity 260ms ease,
+        transform 420ms var(--ease-out);
     }
 
-    .stat label {
+    .team-ct .statBox{ border-color: rgba(123,180,255,.26); }
+    .team-t  .statBox{ border-color: rgba(255,178,77,.26); }
+
+    .statLabel{
+      font-size: 14px;
       color: var(--muted);
-      font-size: 10px;
-      letter-spacing: 0.08em;
+      letter-spacing: .08em;
       text-transform: uppercase;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+    .statValue{
+      margin-top: 6px;
+      font-size: 28px;
+      font-weight: 650;
+      line-height: 1;
+      letter-spacing: .01em;
     }
 
-    .meta {
-      position: absolute;
-      right: 10px;
-      bottom: 8px;
-      font-size: 11px;
-      color: var(--muted);
+    .card.visible .statBox{
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .card.visible .statBox:nth-child(1){ transition-delay: 220ms, 220ms; }
+    .card.visible .statBox:nth-child(2){ transition-delay: 270ms, 270ms; }
+    .card.visible .statBox:nth-child(3){ transition-delay: 320ms, 320ms; }
+    .card.visible .statBox:nth-child(4){ transition-delay: 370ms, 370ms; }
+
+    .meta{
+      position:absolute;
+      right: 18px;
+      bottom: 10px;
+      font-size: 16px;
+      color: rgba(255,255,255,.40);
+      letter-spacing:.04em;
+      user-select:none;
+
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      transition-delay: 420ms;
+      pointer-events:none;
+    }
+    .card.visible .meta{
+      opacity: 0;
+      transform: translateY(0);
     }
 
-    .team-ct { border-color: rgba(123, 180, 255, 0.4); }
-    .team-ct .name { color: var(--ct); }
-    .team-t { border-color: rgba(255, 178, 77, 0.4); }
-    .team-t .name { color: var(--t); }
+    @media (prefers-reduced-motion: reduce){
+      .card, .shell, .statBox { transition:none !important; }
+    }
   </style>
 </head>
+
 <body>
   <div id="atlas">
-    <div class="card" data-gfx="slot0"></div>
     <div class="card" data-gfx="slot1"></div>
     <div class="card" data-gfx="slot2"></div>
     <div class="card" data-gfx="slot3"></div>
@@ -133,28 +244,61 @@
     <div class="card" data-gfx="slot7"></div>
     <div class="card" data-gfx="slot8"></div>
     <div class="card" data-gfx="slot9"></div>
+    <div class="card" data-gfx="slot0"></div>
   </div>
 
   <script>
     const cards = new Map();
-    document.querySelectorAll(".card").forEach(card => {
-      cards.set(card.dataset.gfx, card);
-      card.innerHTML = buildCardHtml("-", "-", "-", "-", "-");
-    });
 
-    function buildCardHtml(name, kills, assists, deaths, adr) {
-      return `
-        <div class="header">
-          <span>Player</span>
-        </div>
-        <div class="name">${name}</div>
-        <div class="stats">
-          <div class="stat"><label>K</label><span>${kills}</span></div>
-          <div class="stat"><label>A</label><span>${assists}</span></div>
-          <div class="stat"><label>D</label><span>${deaths}</span></div>
-          <div class="stat"><label>ADR</label><span>${adr}</span></div>
+    function createCardDOM(cardEl) {
+      cardEl.innerHTML = `
+        <div class="shell">
+          <div class="header">
+            <span class="tag"><span class="dot"></span><span>Player stats</span></span>
+          </div>
+
+          <div class="name" data-ref="name">-</div>
+
+          <div class="stats" aria-label="Player stats">
+            <div class="statBox">
+              <div class="statLabel">Kills</div>
+              <div class="statValue" data-ref="k">-</div>
+            </div>
+            <div class="statBox">
+              <div class="statLabel">Assists</div>
+              <div class="statValue" data-ref="a">-</div>
+            </div>
+            <div class="statBox">
+              <div class="statLabel">Deaths</div>
+              <div class="statValue" data-ref="d">-</div>
+            </div>
+            <div class="statBox">
+              <div class="statLabel">ADR</div>
+              <div class="statValue" data-ref="adr">-</div>
+            </div>
+          </div>
+
+          <div class="meta" data-ref="meta"></div>
         </div>
       `;
+
+      const refs = {};
+      cardEl.querySelectorAll("[data-ref]").forEach(el => {
+        refs[el.getAttribute("data-ref")] = el;
+      });
+      return refs;
+    }
+
+    function setCardValues(cardEl, refs, { name, k, a, d, adr, meta, teamClass }) {
+      cardEl.classList.remove("team-ct", "team-t");
+      if (teamClass) cardEl.classList.add(teamClass);
+
+      refs.name.textContent = name;
+      refs.k.textContent = k;
+      refs.a.textContent = a;
+      refs.d.textContent = d;
+      refs.adr.textContent = adr;
+      refs.meta.textContent = meta || "";
     }
 
     function calcAdr(extras, steamId) {
@@ -167,34 +311,75 @@
       return Math.round(total / rounds.length);
     }
 
+    document.querySelectorAll(".card").forEach(cardEl => {
+      const gfx = cardEl.dataset.gfx;
+      const refs = createCardDOM(cardEl);
+
+      cards.set(gfx, { el: cardEl, refs });
+
+      setCardValues(cardEl, refs, {
+        name: "-",
+        k: "-",
+        a: "-",
+        d: "-",
+        adr: "-",
+        meta: "",
+        teamClass: null
+      });
+    });
+
     function updateCards(gsi, extras) {
       if (!gsi || !gsi.allplayers) return;
+
       const players = Object.entries(gsi.allplayers).map(([steamId, player]) => ({
         steamId,
         player
       }));
 
       for (let slot = 0; slot < 10; slot++) {
-        const card = cards.get(`slot${slot}`);
-        if (!card) continue;
+        const item = cards.get(`slot${slot}`);
+        if (!item) continue;
 
-        const entry = players.find(p => (p.player.observer_slot ?? -1) === slot);
+        const { el, refs } = item;
+
+        const entry = players.find(p => {
+          const rawSlot = p.player.observer_slot;
+          const mapped = extras?.observerSlotMapped?.[p.steamId];
+          const resolved = mapped ?? rawSlot;
+          return resolved === slot;
+        });
+
         if (!entry) {
-          card.classList.remove("team-ct", "team-t");
-          card.innerHTML = buildCardHtml(`Slot ${slot}`, "-", "-", "-", "-");
+          setCardValues(el, refs, {
+            name: `Slot ${slot}`,
+            k: "-",
+            a: "-",
+            d: "-",
+            adr: "-",
+            meta: "",
+            teamClass: null
+          });
           continue;
         }
 
         const p = entry.player;
         const team = (p.team || "").toLowerCase();
-        card.classList.toggle("team-ct", team === "ct");
-        card.classList.toggle("team-t", team === "t");
+        const teamClass = team === "ct" ? "team-ct" : (team === "t" ? "team-t" : null);
 
         const k = p.match_stats?.kills ?? 0;
         const d = p.match_stats?.deaths ?? 0;
         const a = p.match_stats?.assists ?? 0;
         const adr = calcAdr(extras, entry.steamId);
-        card.innerHTML = buildCardHtml(p.name || `Slot ${slot}`, k, a, d, adr ?? "-");
+
+        setCardValues(el, refs, {
+          name: p.name || `Slot ${slot}`,
+          k: String(k),
+          a: String(a),
+          d: String(d),
+          adr: adr == null ? "-" : String(adr),
+          meta: team ? team.toUpperCase() : "",
+          teamClass
+        });
       }
     }
 
@@ -204,10 +389,11 @@
     });
 
     window.hlaeTrigger = (action, target) => {
-      const card = cards.get(target);
-      if (!card) return;
-      if (action === "animIn") card.classList.add("visible");
-      if (action === "animOut") card.classList.remove("visible");
+      const item = cards.get(target);
+      if (!item) return;
+
+      if (action === "animIn") item.el.classList.add("visible");
+      if (action === "animOut") item.el.classList.remove("visible");
     };
 
     document.addEventListener("hlae:trigger", (e) => {

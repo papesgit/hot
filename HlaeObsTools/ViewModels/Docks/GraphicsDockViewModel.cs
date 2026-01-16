@@ -23,11 +23,15 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private GraphicsInstanceViewModel? _selectedInstance;
     private GraphicsAtlasViewModel? _selectedInstanceAtlas;
     private GraphicsRegionViewModel? _selectedInstanceRegion;
+    private AttachSlotOption? _selectedInstanceAttachSlot;
+    private AttachAttachmentOption? _selectedInstanceAttachment;
     private string _statusText = "Idle";
     private bool _suppressApply;
 
     public ObservableCollection<GraphicsAtlasViewModel> Atlases { get; } = new();
     public ObservableCollection<GraphicsInstanceViewModel> Instances { get; } = new();
+    public ObservableCollection<AttachSlotOption> AttachSlotOptions { get; } = new();
+    public ObservableCollection<AttachAttachmentOption> AttachAttachmentOptions { get; } = new();
 
     public GraphicsDockViewModel(GraphicsService graphicsService, SettingsStorage settingsStorage, AppSettingsData settings)
     {
@@ -41,6 +45,17 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         CanPin = true;
 
         _isEnabled = settings.GraphicsEnabled;
+        AttachSlotOptions.Add(new AttachSlotOption("None", -1));
+        for (var i = 0; i < 9; i++)
+        {
+            AttachSlotOptions.Add(new AttachSlotOption($"Slot {i + 1}", i));
+        }
+        AttachSlotOptions.Add(new AttachSlotOption("Slot 0", 9));
+        AttachAttachmentOptions.Add(new AttachAttachmentOption("None", string.Empty));
+        foreach (var attachment in AttachPresetViewModel.DefaultAttachmentOptionsList)
+        {
+            AttachAttachmentOptions.Add(new AttachAttachmentOption(attachment, attachment));
+        }
         RefreshFromProfile();
 
         _graphicsService.ProfileChanged += OnProfileChanged;
@@ -138,6 +153,9 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             if (!SetProperty(ref _selectedInstance, value))
                 return;
             SelectedInstanceAtlas = ResolveAtlasByName(_selectedInstance?.Atlas);
+            SelectedInstanceAttachSlot = ResolveAttachSlot(_selectedInstance?.AttachSlot ?? -1);
+            SelectedInstanceAttachment = ResolveAttachmentName(_selectedInstance?.AttachAttachmentName);
+            SelectedInstanceRegion = ResolveRegionById(SelectedInstanceAtlas, _selectedInstance?.Region);
         }
     }
 
@@ -166,6 +184,34 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             if (SelectedInstance != null)
             {
                 SelectedInstance.Region = value?.Id ?? string.Empty;
+            }
+        }
+    }
+
+    public AttachSlotOption? SelectedInstanceAttachSlot
+    {
+        get => _selectedInstanceAttachSlot;
+        set
+        {
+            if (!SetProperty(ref _selectedInstanceAttachSlot, value))
+                return;
+            if (SelectedInstance != null)
+            {
+                SelectedInstance.AttachSlot = value?.Value ?? -1;
+            }
+        }
+    }
+
+    public AttachAttachmentOption? SelectedInstanceAttachment
+    {
+        get => _selectedInstanceAttachment;
+        set
+        {
+            if (!SetProperty(ref _selectedInstanceAttachment, value))
+                return;
+            if (SelectedInstance != null)
+            {
+                SelectedInstance.AttachAttachmentName = value?.Value ?? string.Empty;
             }
         }
     }
@@ -329,6 +375,18 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         if (string.IsNullOrWhiteSpace(id))
             return atlas.Regions.FirstOrDefault();
         return atlas.Regions.FirstOrDefault(region => region.Id == id) ?? atlas.Regions.FirstOrDefault();
+    }
+
+    private AttachSlotOption? ResolveAttachSlot(int slot)
+    {
+        return AttachSlotOptions.FirstOrDefault(option => option.Value == slot) ?? AttachSlotOptions.FirstOrDefault();
+    }
+
+    private AttachAttachmentOption? ResolveAttachmentName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return AttachAttachmentOptions.FirstOrDefault();
+        return AttachAttachmentOptions.FirstOrDefault(option => option.Value == name) ?? AttachAttachmentOptions.FirstOrDefault();
     }
 
     private async Task SetAllInstancesVisibleAsync(bool visible)
@@ -619,6 +677,36 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             set { Model.Region = value; OnPropertyChanged(); }
         }
 
+        public int AttachSlot
+        {
+            get => Model.AttachSlot;
+            set { Model.AttachSlot = value; OnPropertyChanged(); }
+        }
+
+        public string AttachAttachmentName
+        {
+            get => Model.AttachAttachmentName;
+            set { Model.AttachAttachmentName = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        public bool AttachUseYaw
+        {
+            get => Model.AttachUseYaw;
+            set { Model.AttachUseYaw = value; OnPropertyChanged(); }
+        }
+
+        public bool AttachUsePitch
+        {
+            get => Model.AttachUsePitch;
+            set { Model.AttachUsePitch = value; OnPropertyChanged(); }
+        }
+
+        public bool AttachUseRoll
+        {
+            get => Model.AttachUseRoll;
+            set { Model.AttachUseRoll = value; OnPropertyChanged(); }
+        }
+
         public double PosX
         {
             get => Model.PosX;
@@ -691,6 +779,30 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             get => Model.DepthWrite;
             set { Model.DepthWrite = value; OnPropertyChanged(); }
         }
+    }
+
+    public sealed class AttachSlotOption
+    {
+        public AttachSlotOption(string label, int value)
+        {
+            Label = label;
+            Value = value;
+        }
+
+        public string Label { get; }
+        public int Value { get; }
+    }
+
+    public sealed class AttachAttachmentOption
+    {
+        public AttachAttachmentOption(string label, string value)
+        {
+            Label = label;
+            Value = value;
+        }
+
+        public string Label { get; }
+        public string Value { get; }
     }
 
     private sealed class Relay : ICommand
