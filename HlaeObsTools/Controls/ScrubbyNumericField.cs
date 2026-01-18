@@ -1,16 +1,30 @@
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Styling;
 
 namespace HlaeObsTools.Controls
 {
     public class ScrubbyNumericField : TemplatedControl
     {
+        // ---- Platform interop for cursor locking ----
+        [DllImport("user32.dll")]
+        private static extern bool SetCursorPos(int x, int y);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out POINT lpPoint);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT
+        {
+            public int X;
+            public int Y;
+        }
+
         // ---- Bindable properties ----
         public static readonly StyledProperty<double> ValueProperty =
             AvaloniaProperty.Register<ScrubbyNumericField, double>(nameof(Value), 0.0, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
@@ -109,6 +123,9 @@ namespace HlaeObsTools.Controls
         // used to accumulate fractional steps smoothly
         private double _accumulatedPixels;
 
+        // screen position to lock cursor during drag
+        private POINT _lockCursorPos;
+
         // used to decide whether a click was “really a drag”
         private const double DragThreshold = 2.0;
 
@@ -199,22 +216,44 @@ namespace HlaeObsTools.Controls
                 // Capture only once we know it's a drag
                 _activePointer?.Capture(this);
 
+                // Store cursor position to lock it in place
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    GetCursorPos(out _lockCursorPos);
+                }
+
                 UpdateCursor(isDragging: true);
                 e.Handled = true;
             }
+
+            // Get current screen cursor position and calculate delta from lock position
+            double deltaPixels;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && GetCursorPos(out var currentPos))
+            {
+                deltaPixels = currentPos.X - _lockCursorPos.X;
+
+                // Reset cursor to locked position
+                if (deltaPixels != 0)
+                {
+                    SetCursorPos(_lockCursorPos.X, _lockCursorPos.Y);
+                }
+            }
+            else
+            {
+                // Fallback for non-Windows: use relative position
+                deltaPixels = dx - _accumulatedPixels;
+            }
+
+            if (Math.Abs(deltaPixels) < 0.001)
+                return;
 
             var sensitivity = GetSensitivityMultiplier(e.KeyModifiers);
 
             // pixelsPerStep smaller => more sensitive; apply modifier scaling
             var pixelsPerStep = Math.Max(0.001, PixelsPerStep / sensitivity);
 
-            // accumulated in pixels, convert to steps
-            var deltaPixels = dx - _accumulatedPixels;
-            var stepCount = (int)Math.Truncate(deltaPixels / pixelsPerStep);
-            if (stepCount == 0)
-                return;
-
-            _accumulatedPixels += stepCount * pixelsPerStep;
+            // Accumulate pixels and convert to steps
+            _accumulatedPixels += deltaPixels;
 
             var steps = _accumulatedPixels / pixelsPerStep;
             SetValueClamped(_dragStartValue + steps * Step);
@@ -256,6 +295,12 @@ namespace HlaeObsTools.Controls
         {
             base.OnGotFocus(e);
             PseudoClasses.Set(PseudoFocus, true);
+
+            // If focus came from keyboard navigation (Tab), enter edit mode
+            if (e.NavigationMethod == NavigationMethod.Tab && !IsEditing)
+            {
+                BeginEdit();
+            }
         }
 
         protected override void OnLostFocus(RoutedEventArgs e)
@@ -350,6 +395,12 @@ namespace HlaeObsTools.Controls
                 EndEdit(commit: false);
                 e.Handled = true;
             }
+            else if (e.Key == Key.Tab)
+            {
+                // Commit the edit and let Tab navigation proceed naturally
+                EndEdit(commit: true);
+                // Don't set e.Handled - let the Tab key propagate to move focus
+            }
         }
 
         private void SetValueClamped(double value, bool setBase = true)
@@ -380,10 +431,9 @@ namespace HlaeObsTools.Controls
 
         private void UpdateCursor(bool isDragging = false)
         {
-            // A scrubby cursor feels nice.
-            // You can customize this to SizeWestEast / Hand etc.
+            // Hide cursor during drag (since it's locked in place), show resize cursor otherwise
             Cursor = isDragging
-                ? new Cursor(StandardCursorType.Ibeam)
+                ? new Cursor(StandardCursorType.None)
                 : new Cursor(StandardCursorType.SizeWestEast);
         }
     }
