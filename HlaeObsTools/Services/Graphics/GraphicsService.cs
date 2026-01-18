@@ -14,7 +14,7 @@ public sealed class GraphicsService : IDisposable
     private readonly GraphicsProducerClient _producerClient;
     private readonly GsiServer _gsiServer;
     private readonly GraphicsProfileStorage _storage;
-    private string _currentMap = string.Empty;
+    private string _currentProfileName = "default";
     private GraphicsProfile _profile = new();
     private bool _enabled;
     private readonly int _targetFps;
@@ -37,7 +37,7 @@ public sealed class GraphicsService : IDisposable
 
     public bool Enabled => _enabled;
     public GraphicsProfile Profile => _profile;
-    public string CurrentMap => _currentMap;
+    public string CurrentProfileName => _currentProfileName;
 
     public void SetEnabled(bool enabled)
     {
@@ -47,7 +47,7 @@ public sealed class GraphicsService : IDisposable
         _enabled = enabled;
         if (_enabled)
         {
-            LoadProfileForMap(_currentMap);
+            LoadProfile(_currentProfileName);
             _ = ApplyProfileAsync();
         }
         else
@@ -57,16 +57,36 @@ public sealed class GraphicsService : IDisposable
         }
     }
 
-    public void LoadProfileForMap(string mapName)
+    public void LoadProfile(string profileName)
     {
-        _currentMap = string.IsNullOrWhiteSpace(mapName) ? "default" : mapName;
-        _profile = _storage.Load(_currentMap);
+        _currentProfileName = string.IsNullOrWhiteSpace(profileName) ? "default" : profileName.Trim();
+        _profile = _storage.Load(_currentProfileName);
         ProfileChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void SaveProfile()
+    public void SaveProfile(string profileName)
     {
-        _storage.Save(_currentMap, _profile);
+        _currentProfileName = string.IsNullOrWhiteSpace(profileName) ? "default" : profileName.Trim();
+        _storage.Save(_currentProfileName, _profile);
+        ProfileChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void DeleteProfile(string profileName)
+    {
+        if (string.IsNullOrWhiteSpace(profileName))
+            return;
+        _storage.Delete(profileName);
+        if (string.Equals(_currentProfileName, profileName, StringComparison.OrdinalIgnoreCase))
+        {
+            _currentProfileName = "default";
+            _profile = _storage.Load(_currentProfileName);
+            ProfileChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public string[] ListProfiles()
+    {
+        return _storage.ListProfiles();
     }
 
     public Task ReloadAtlasAsync(string atlasName)
@@ -264,15 +284,7 @@ public sealed class GraphicsService : IDisposable
             _ = _producerClient.SendGsiAsync(e.RawJson, e.Heartbeat, extras);
         }
 
-        if (string.Equals(_currentMap, e.MapName, StringComparison.OrdinalIgnoreCase))
-            return;
-        var previousProfile = _profile;
-        _currentMap = e.MapName;
-        if (!_enabled)
-            return;
-        _ = ClearRemoteAsync(previousProfile);
-        LoadProfileForMap(_currentMap);
-        _ = ApplyProfileAsync();
+        // Profiles are now user-selected (not tied to map).
     }
 
     private void OnWebSocketConnected(object? sender, EventArgs e)

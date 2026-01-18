@@ -25,6 +25,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private GraphicsRegionViewModel? _selectedInstanceRegion;
     private AttachSlotOption? _selectedInstanceAttachSlot;
     private AttachAttachmentOption? _selectedInstanceAttachment;
+    private string _selectedProfileName = "default";
     private string _statusText = "Idle";
     private bool _suppressApply;
 
@@ -32,6 +33,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public ObservableCollection<GraphicsInstanceViewModel> Instances { get; } = new();
     public ObservableCollection<AttachSlotOption> AttachSlotOptions { get; } = new();
     public ObservableCollection<AttachAttachmentOption> AttachAttachmentOptions { get; } = new();
+    public ObservableCollection<string> Profiles { get; } = new();
 
     public GraphicsDockViewModel(GraphicsService graphicsService, SettingsStorage settingsStorage, AppSettingsData settings)
     {
@@ -56,6 +58,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         {
             AttachAttachmentOptions.Add(new AttachAttachmentOption(attachment, attachment));
         }
+        RefreshProfiles();
+        SelectedProfileName = _graphicsService.CurrentProfileName;
         RefreshFromProfile();
 
         _graphicsService.ProfileChanged += OnProfileChanged;
@@ -63,7 +67,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         ShowSetupCommand = new Relay(() => IsSetupView = true);
         ShowLiveCommand = new Relay(() => IsSetupView = false);
         ApplyCommand = new Relay(async () => await ApplyAsync());
-        SaveProfileCommand = new Relay(() => _graphicsService.SaveProfile());
+        SaveProfileCommand = new Relay(() => _graphicsService.SaveProfile(_selectedProfileName));
         ReloadAllCommand = new Relay(async () => await ReloadAllAsync());
         ShowAllCommand = new Relay(() =>
         {
@@ -220,6 +224,19 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
         get => _statusText;
         set => SetProperty(ref _statusText, value);
+    }
+
+    public string SelectedProfileName
+    {
+        get => _selectedProfileName;
+        set
+        {
+            if (!SetProperty(ref _selectedProfileName, value))
+                return;
+            if (string.IsNullOrWhiteSpace(value))
+                return;
+            _graphicsService.LoadProfile(value);
+        }
     }
 
     public ICommand ShowSetupCommand { get; }
@@ -466,6 +483,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
     private void OnProfileChanged(object? sender, EventArgs e)
     {
+        _selectedProfileName = _graphicsService.CurrentProfileName;
+        OnPropertyChanged(nameof(SelectedProfileName));
         RefreshFromProfile();
     }
 
@@ -499,6 +518,42 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
         _graphicsService.ProfileChanged -= OnProfileChanged;
     }
+
+    public void SaveProfileAs(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+        _graphicsService.SaveProfile(name);
+        RefreshProfiles();
+        SelectedProfileName = _graphicsService.CurrentProfileName;
+    }
+
+    public void RemoveSelectedProfile()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedProfileName))
+            return;
+        _graphicsService.DeleteProfile(SelectedProfileName);
+        RefreshProfiles();
+        SelectedProfileName = _graphicsService.CurrentProfileName;
+    }
+
+    private void RefreshProfiles()
+    {
+        Profiles.Clear();
+        var profiles = _graphicsService.ListProfiles();
+        if (profiles.Length == 0)
+        {
+            Profiles.Add("default");
+            return;
+        }
+        foreach (var name in profiles)
+        {
+            Profiles.Add(name);
+        }
+        if (!Profiles.Contains("default"))
+            Profiles.Insert(0, "default");
+    }
+
 
     public sealed class GraphicsAtlasViewModel : ViewModelBase
     {

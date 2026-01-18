@@ -50,11 +50,7 @@
   <Border Background="#1E1E1E" Padding="10">
     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <TextBlock Text="Graphics"
-                   FontSize="16"
-                   FontWeight="SemiBold"
-                   Foreground="#E0E0E0" />
-        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,24,0,0" 
+        <StackPanel Orientation="Horizontal" Spacing="8"
                     IsVisible="{Binding IsSetupView, Converter={StaticResource BooleanNegationConverter}}">
           <Button Content="Reload All" Command="{Binding ReloadAllCommand}" />
           <Button Content="Show All" Command="{Binding ShowAllCommand}" />
@@ -62,17 +58,15 @@
           <Button Content="Apply" Command="{Binding ApplyCommand}" />
           <Button Content="Setup" Command="{Binding ShowSetupCommand}" />
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsSetupView}" Margin="0,24,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsSetupView}">
           <Button Content="Back" Command="{Binding ShowLiveCommand}" />
           <Button Content="Apply" Command="{Binding ApplyCommand}" />
-          <Button Content="Save Profile" Command="{Binding SaveProfileCommand}" />
+          <Button Content="Save Profile" Click="OnSaveProfileClick" />
+          <ComboBox ItemsSource="{Binding Profiles}"
+                    SelectedItem="{Binding SelectedProfileName}"
+                    Width="120" />
+          <Button Content="Remove" Click="OnRemoveProfileClick" />
         </StackPanel>
-        <Border Background="#1E1E1E" Grid.Column="1" Padding="4">
-          <ToggleSwitch Grid.Column="1"
-                        IsChecked="{Binding IsEnabled}"
-                        Content="Enabled"
-                        Foreground="#D0D0D0" />
-        </Border>
       </Grid>
 
       <Grid Grid.Row="1"
@@ -147,6 +141,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Add" Click="OnAddAtlasClick" />
                 <Button Content="Remove" Command="{Binding RemoveAtlasCommand}" />
+                <TextBlock Text="Atlas" VerticalAlignment="Center" Foreground="#B0B0B0" />
                 <ComboBox ItemsSource="{Binding Atlases}"
                           SelectedItem="{Binding SelectedAtlas}"
                           MinWidth="160">
@@ -157,13 +152,28 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
               </StackPanel>
-              <TextBox Text="{Binding SelectedAtlas.Name, Mode=TwoWay}" Watermark="Name" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="Name" Foreground="#B0B0B0" />
+                <TextBox Text="{Binding SelectedAtlas.Name, Mode=TwoWay}" Watermark="Name" />
+              </StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <TextBox Text="{Binding SelectedAtlas.Width, Mode=TwoWay}" Watermark="Width" />
-                <TextBox Grid.Column="1" Text="{Binding SelectedAtlas.Height, Mode=TwoWay}" Watermark="Height" />
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Width" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedAtlas.Width, Mode=TwoWay}" Watermark="Width" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Height" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedAtlas.Height, Mode=TwoWay}" Watermark="Height" />
+                </StackPanel>
               </Grid>
-              <TextBox Text="{Binding SelectedAtlas.HtmlPath, Mode=TwoWay}" Watermark="HTML path" />
-              <ToggleSwitch IsChecked="{Binding SelectedAtlas.Enabled}" Content="Enabled" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="HTML Path" Foreground="#B0B0B0" />
+                <TextBox Text="{Binding SelectedAtlas.HtmlPath, Mode=TwoWay}" Watermark="HTML path" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Enabled" VerticalAlignment="Center" Foreground="#B0B0B0" />
+                <ToggleSwitch IsChecked="{Binding SelectedAtlas.Enabled}" />
+              </StackPanel>
             </StackPanel>
           </HeaderedContentControl>
 
@@ -172,6 +182,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Add" Click="OnAddRegionClick" />
                 <Button Content="Remove" Command="{Binding RemoveRegionCommand}" />
+                <TextBlock Text="Region" VerticalAlignment="Center" Foreground="#B0B0B0" />
                 <ComboBox ItemsSource="{Binding SelectedAtlas.Regions}"
                           SelectedItem="{Binding SelectedRegion}"
                           MinWidth="160">
@@ -182,18 +193,39 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
               </StackPanel>
-              <TextBox Text="{Binding SelectedRegion.Id, Mode=TwoWay}" Watermark="Region Id" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="Region Id" Foreground="#B0B0B0" />
+                <TextBox Text="{Binding SelectedRegion.Id, Mode=TwoWay}" Watermark="Region Id" />
+              </StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <TextBox Text="{Binding SelectedRegion.U0, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="U0" />
-                <TextBox Grid.Column="1" Text="{Binding SelectedRegion.V0, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="V0" />
+                <StackPanel Spacing="2">
+                  <TextBlock Text="U0" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedRegion.U0, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="U0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="V0" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedRegion.V0, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="V0" />
+                </StackPanel>
               </Grid>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <TextBox Text="{Binding SelectedRegion.U1, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="U1" />
-                <TextBox Grid.Column="1" Text="{Binding SelectedRegion.V1, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="V1" />
+                <StackPanel Spacing="2">
+                  <TextBlock Text="U1" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedRegion.U1, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="U1" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="V1" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedRegion.V1, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="V1" />
+                </StackPanel>
               </Grid>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <TextBox Text="{Binding SelectedRegion.DefaultWidth, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Default W" />
-                <TextBox Grid.Column="1" Text="{Binding SelectedRegion.DefaultHeight, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Default H" />
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Default Width" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedRegion.DefaultWidth, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Default W" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Default Height" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedRegion.DefaultHeight, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Default H" />
+                </StackPanel>
               </Grid>
             </StackPanel>
           </HeaderedContentControl>
@@ -203,6 +235,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Add" Click="OnAddInstanceClick" />
                 <Button Content="Remove" Command="{Binding RemoveInstanceCommand}" />
+                <TextBlock Text="Instance" VerticalAlignment="Center" Foreground="#B0B0B0" />
                 <ComboBox ItemsSource="{Binding Instances}"
                           SelectedItem="{Binding SelectedInstance}"
                           MinWidth="160">
@@ -213,7 +246,11 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
               </StackPanel>
-              <TextBox Text="{Binding SelectedInstance.Name, Mode=TwoWay}" Watermark="Name" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="Name" Foreground="#B0B0B0" />
+                <TextBox Text="{Binding SelectedInstance.Name, Mode=TwoWay}" Watermark="Name" />
+              </StackPanel>
+              <TextBlock Text="Atlas" Foreground="#B0B0B0" />
               <ComboBox ItemsSource="{Binding Atlases}"
                         SelectedItem="{Binding SelectedInstanceAtlas}"
                         MinWidth="160">
@@ -223,6 +260,7 @@
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
+              <TextBlock Text="Region" Foreground="#B0B0B0" />
               <ComboBox ItemsSource="{Binding SelectedInstanceAtlas.Regions}"
                         SelectedItem="{Binding SelectedInstanceRegion}"
                         MinWidth="160">
@@ -232,78 +270,107 @@
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <ComboBox ItemsSource="{Binding AttachSlotOptions}"
-                          SelectedItem="{Binding SelectedInstanceAttachSlot}"
-                          MinWidth="160">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Text="{Binding Label}" />
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
-                <ComboBox ItemsSource="{Binding AttachAttachmentOptions}"
-                          SelectedItem="{Binding SelectedInstanceAttachment}"
-                          MinWidth="160">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Text="{Binding Label}" />
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
-                <CheckBox IsChecked="{Binding SelectedInstance.AttachUseYaw}" Content="Use Yaw" />
-                <CheckBox IsChecked="{Binding SelectedInstance.AttachUsePitch}" Content="Use Pitch" />
-                <CheckBox IsChecked="{Binding SelectedInstance.AttachUseRoll}" Content="Use Roll" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <StackPanel Orientation="Vertical" Spacing="2">
+                  <TextBlock Text="Attach Slot" VerticalAlignment="Center" Foreground="#B0B0B0" />
+                  <ComboBox ItemsSource="{Binding AttachSlotOptions}"
+                            SelectedItem="{Binding SelectedInstanceAttachSlot}"
+                            Width="80">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Vertical" Spacing="2">
+                  <TextBlock Text="Attachment" VerticalAlignment="Center" Foreground="#B0B0B0" />
+                  <ComboBox ItemsSource="{Binding AttachAttachmentOptions}"
+                            SelectedItem="{Binding SelectedInstanceAttachment}"
+                            Width="80">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <CheckBox IsChecked="{Binding SelectedInstance.AttachUseYaw}" Content="Use Yaw" VerticalAlignment="Bottom"/>
+                <CheckBox IsChecked="{Binding SelectedInstance.AttachUsePitch}" Content="Use Pitch" VerticalAlignment="Bottom"/>
+                <CheckBox IsChecked="{Binding SelectedInstance.AttachUseRoll}" Content="Use Roll" VerticalAlignment="Bottom"/>
               </StackPanel>
 
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
-                <controls:ScrubbyNumericField
-                    Value="{Binding SelectedInstance.PosX, Mode=TwoWay}"
-                    FormatString="0.###"
-                    Step="0.1"
-                    PixelsPerStep="6"/>
-
-                <controls:ScrubbyNumericField Grid.Column="1"
-                    Value="{Binding SelectedInstance.PosY, Mode=TwoWay}"
-                    FormatString="0.###"
-                    Step="0.1"
-                    PixelsPerStep="6"/>
-
-                <controls:ScrubbyNumericField Grid.Column="2"
-                    Value="{Binding SelectedInstance.PosZ, Mode=TwoWay}"
-                    FormatString="0.###"
-                    Step="0.1"
-                    PixelsPerStep="6"/>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Pos X" Foreground="#B0B0B0" />
+                  <controls:ScrubbyNumericField
+                      Value="{Binding SelectedInstance.PosX, Mode=TwoWay}"
+                      FormatString="0.###"
+                      Step="0.1"
+                      PixelsPerStep="6"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Pos Y" Foreground="#B0B0B0" />
+                  <controls:ScrubbyNumericField
+                      Value="{Binding SelectedInstance.PosY, Mode=TwoWay}"
+                      FormatString="0.###"
+                      Step="0.1"
+                      PixelsPerStep="6"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2">
+                  <TextBlock Text="Pos Z" Foreground="#B0B0B0" />
+                  <controls:ScrubbyNumericField
+                      Value="{Binding SelectedInstance.PosZ, Mode=TwoWay}"
+                      FormatString="0.###"
+                      Step="0.1"
+                      PixelsPerStep="6"/>
+                </StackPanel>
               </Grid>
 
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
-                <controls:ScrubbyNumericField
-                    Value="{Binding SelectedInstance.Pitch, Mode=TwoWay}"
-                    FormatString="0.##"
-                    Step="1"
-                    PixelsPerStep="6"/>
-
-                <controls:ScrubbyNumericField Grid.Column="1"
-                    Value="{Binding SelectedInstance.Yaw, Mode=TwoWay}"
-                    FormatString="0.##"
-                    Step="1"
-                    PixelsPerStep="6"/>
-
-                <controls:ScrubbyNumericField Grid.Column="2"
-                    Value="{Binding SelectedInstance.Roll, Mode=TwoWay}"
-                    FormatString="0.##"
-                    Step="1"
-                    PixelsPerStep="6"/>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Pitch" Foreground="#B0B0B0" />
+                  <controls:ScrubbyNumericField
+                      Value="{Binding SelectedInstance.Pitch, Mode=TwoWay}"
+                      FormatString="0.##"
+                      Step="1"
+                      PixelsPerStep="6"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Yaw" Foreground="#B0B0B0" />
+                  <controls:ScrubbyNumericField
+                      Value="{Binding SelectedInstance.Yaw, Mode=TwoWay}"
+                      FormatString="0.##"
+                      Step="1"
+                      PixelsPerStep="6"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2">
+                  <TextBlock Text="Roll" Foreground="#B0B0B0" />
+                  <controls:ScrubbyNumericField
+                      Value="{Binding SelectedInstance.Roll, Mode=TwoWay}"
+                      FormatString="0.##"
+                      Step="1"
+                      PixelsPerStep="6"/>
+                </StackPanel>
               </Grid>
 
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <TextBox Text="{Binding SelectedInstance.ScaleX, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Scale X" />
-                <TextBox Grid.Column="1" Text="{Binding SelectedInstance.ScaleY, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Scale Y" />
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Scale X" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedInstance.ScaleX, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Scale X" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Scale Y" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedInstance.ScaleY, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Scale Y" />
+                </StackPanel>
               </Grid>
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <ToggleSwitch IsChecked="{Binding SelectedInstance.Visible}" Content="Visible" />
-                <ToggleSwitch IsChecked="{Binding SelectedInstance.DepthTest}" Content="Depth Test" />
-                <ToggleSwitch IsChecked="{Binding SelectedInstance.DepthWrite}" Content="Depth Write" />
+                <TextBlock Text="Visible" VerticalAlignment="Center" Foreground="#B0B0B0" />
+                <ToggleSwitch IsChecked="{Binding SelectedInstance.Visible}" />
+                <TextBlock Text="Depth Test" VerticalAlignment="Center" Foreground="#B0B0B0" />
+                <ToggleSwitch IsChecked="{Binding SelectedInstance.DepthTest}" />
+                <TextBlock Text="Depth Write" VerticalAlignment="Center" Foreground="#B0B0B0" />
+                <ToggleSwitch IsChecked="{Binding SelectedInstance.DepthWrite}" />
               </StackPanel>
             </StackPanel>
           </HeaderedContentControl>
@@ -311,9 +378,29 @@
         </ScrollViewer>
       </Grid>
 
-      <TextBlock Grid.Row="2"
-                 Text="{Binding StatusText}"
-                 Foreground="#8AC6FF" />
+      <Border Grid.Row="2"
+              Background="#222222"
+              CornerRadius="6"
+              Padding="8,2"
+              BorderBrush="#2A2A2A"
+              BorderThickness="1">
+
+        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+          <TextBlock Text="{Binding StatusText}"
+                    Foreground="#8AC6FF"
+                    VerticalAlignment="Center"/>
+
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+            <TextBlock Text="Enabled"
+                      Foreground="#B0B0B0"
+                      VerticalAlignment="Center" />
+            <ToggleSwitch IsChecked="{Binding IsEnabled}" />
+          </StackPanel>
+        </Grid>
+      </Border>
     </Grid>
   </Border>
 </UserControl>

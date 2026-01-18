@@ -10,6 +10,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using HlaeObsTools.ViewModels.Docks;
+using HlaeObsTools.Views;
 
 namespace HlaeObsTools.Views.Docks;
 
@@ -53,82 +54,14 @@ public partial class CampathsDockView : UserControl
         }
     }
 
-    private async Task<string?> PromptAsync(string title, string message, int width, int height)
+    private Task<string?> PromptAsync(string title, string message, int width, int height)
     {
-        var dialog = new Window
-        {
-            Title = title,
-            Width = width,
-            Height = height,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
-
-        var textBox = new TextBox { Margin = new Thickness(0, 6, 0, 6) };
-        var okButton = new Button { Content = "OK", IsDefault = true, Width = 80 };
-        var cancelButton = new Button { Content = "Cancel", IsCancel = true, Width = 80 };
-
-        var panel = new StackPanel { Margin = new Thickness(16), Spacing = 8 };
-        panel.Children.Add(new TextBlock { Text = message });
-        panel.Children.Add(textBox);
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right };
-        buttons.Children.Add(okButton);
-        buttons.Children.Add(cancelButton);
-        panel.Children.Add(buttons);
-
-        dialog.Content = panel;
-
-        string? result = null;
-        okButton.Click += (_, _) =>
-        {
-            result = textBox.Text;
-            dialog.Close(true);
-        };
-        cancelButton.Click += (_, _) => dialog.Close(false);
-
-        var host = TopLevel.GetTopLevel(this) as Window;
-        if (host == null)
-            return null;
-
-        await dialog.ShowDialog<bool?>(host);
-        return result;
+        return DialogHelpers.PromptAsync(this, title, message, string.Empty, width, height);
     }
 
     private async Task<bool> ConfirmAsync(string title, string message)
     {
-        var dialog = new Window
-        {
-            Title = title,
-            Width = 360,
-            SizeToContent = SizeToContent.Height,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
-
-        var okButton = new Button { Content = "Delete", IsDefault = true, Width = 90 };
-        var cancelButton = new Button { Content = "Cancel", IsCancel = true, Width = 90 };
-
-        var panel = new StackPanel { Margin = new Thickness(16), Spacing = 10 };
-        panel.Children.Add(new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap });
-        var buttons = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
-        };
-        buttons.Children.Add(okButton);
-        buttons.Children.Add(cancelButton);
-        panel.Children.Add(buttons);
-
-        dialog.Content = panel;
-
-        okButton.Click += (_, _) => dialog.Close(true);
-        cancelButton.Click += (_, _) => dialog.Close(false);
-
-        var host = TopLevel.GetTopLevel(this) as Window;
-        if (host == null)
-            return false;
-
-        var result = await dialog.ShowDialog<bool?>(host);
-        return result == true;
+        return await DialogHelpers.ConfirmAsync(this, title, message);
     }
 
     private async Task<string?> BrowseFileAsync(string title)

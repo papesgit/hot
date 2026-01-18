@@ -21,15 +21,15 @@ public sealed class GraphicsProfileStorage
         Directory.CreateDirectory(_baseDir);
     }
 
-    public string GetProfilePath(string mapName)
+    public string GetProfilePath(string profileName)
     {
-        var name = SanitizeMapName(mapName);
+        var name = SanitizeProfileName(profileName);
         return Path.Combine(_baseDir, $"{name}.json");
     }
 
-    public GraphicsProfile Load(string mapName)
+    public GraphicsProfile Load(string profileName)
     {
-        var path = GetProfilePath(mapName);
+        var path = GetProfilePath(profileName);
         try
         {
             if (File.Exists(path))
@@ -48,9 +48,9 @@ public sealed class GraphicsProfileStorage
         return new GraphicsProfile();
     }
 
-    public void Save(string mapName, GraphicsProfile profile)
+    public void Save(string profileName, GraphicsProfile profile)
     {
-        var path = GetProfilePath(mapName);
+        var path = GetProfilePath(profileName);
         try
         {
             var json = JsonSerializer.Serialize(profile, _jsonOptions);
@@ -62,10 +62,46 @@ public sealed class GraphicsProfileStorage
         }
     }
 
-    private static string SanitizeMapName(string mapName)
+    public string[] ListProfiles()
     {
-        if (string.IsNullOrWhiteSpace(mapName))
+        try
+        {
+            if (!Directory.Exists(_baseDir))
+                return Array.Empty<string>();
+
+            var files = Directory.GetFiles(_baseDir, "*.json", SearchOption.TopDirectoryOnly);
+            var names = new string[files.Length];
+            for (var i = 0; i < files.Length; i++)
+            {
+                names[i] = Path.GetFileNameWithoutExtension(files[i]);
+            }
+            Array.Sort(names, StringComparer.OrdinalIgnoreCase);
+            return names;
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    public void Delete(string profileName)
+    {
+        var path = GetProfilePath(profileName);
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch
+        {
+            // ignore delete errors
+        }
+    }
+
+    private static string SanitizeProfileName(string profileName)
+    {
+        if (string.IsNullOrWhiteSpace(profileName))
             return "default";
-        return mapName.Trim().ToLowerInvariant();
+        return profileName.Trim().ToLowerInvariant();
     }
 }
