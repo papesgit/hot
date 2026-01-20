@@ -7,6 +7,10 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 
 namespace HlaeObsTools.Services.Gsi;
 
@@ -15,152 +19,150 @@ namespace HlaeObsTools.Services.Gsi;
 /// </summary>
 public sealed class GsiServer : IDisposable
 {
-    private HttpListener? _listener;
+    private IHost? _host;
     private CancellationTokenSource? _cts;
-    private Task? _loopTask;
+    private Task? _runTask;
     private long _heartbeat;
     private static readonly Dictionary<string, int> LastKnownObserverSlots = new(StringComparer.Ordinal);
 
     public event EventHandler<GsiGameState>? GameStateUpdated;
 
-    public bool IsRunning => _listener != null && _listener.IsListening;
+    public bool IsRunning => _host != null;
 
     public void Start(int port = 31337, string path = "/gsi/", string host = "0.0.0.0")
     {
         Stop();
 
         var normalizedPath = path.StartsWith("/") ? path : "/" + path;
-        if (!normalizedPath.EndsWith("/")) normalizedPath += "/";
-
-        bool started = false;
-        string requestedHost = host;
-        bool useWildcard = string.Equals(requestedHost, "0.0.0.0", StringComparison.OrdinalIgnoreCase) || requestedHost == "*";
-        string prefixHost = useWildcard ? "+" : requestedHost;
-
-        _listener = new HttpListener();
-
-        // Try requested host first (may require URL ACL for non-loopback).
-        try
-        {
-            _listener.Prefixes.Clear();
-            _listener.Prefixes.Add($"http://{prefixHost}:{port}{normalizedPath}");
-            _listener.Prefixes.Add($"http://{prefixHost}:{port}/");
-            _listener.Start();
-            started = true;
-        }
-        catch (HttpListenerException ex)
-        {
-            Console.WriteLine($"GSI listener failed on {requestedHost}:{port} ({ex.Message}). If you need non-loopback, run as administrator or add a URL ACL: netsh http add urlacl url=http://{requestedHost}:{port}/ user=Everyone");
-        }
-
-        // Fallback to loopback if requested host failed and isn't already loopback.
-        if (!started && !string.Equals(requestedHost, "127.0.0.1", StringComparison.OrdinalIgnoreCase))
-        {
-            try
-            {
-                _listener = new HttpListener();
-                _listener.Prefixes.Add($"http://127.0.0.1:{port}{normalizedPath}");
-                _listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-                _listener.Start();
-                started = true;
-                host = "127.0.0.1";
-            }
-            catch (HttpListenerException ex)
-            {
-                Console.WriteLine($"GSI listener fallback to loopback failed: {ex.Message}");
-            }
-        }
-
-        if (!started)
-        {
-            return;
-        }
+        var basePath = normalizedPath.TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(basePath))
+            basePath = "/";
 
         _cts = new CancellationTokenSource();
-        _loopTask = Task.Run(() => ListenLoopAsync(_cts.Token));
-        Console.WriteLine($"GSI listener started on http://{host}:{port}{path}");
-    }
-
-    public void Stop()
-    {
-        try
+        _runTask = Task.Run(async () =>
         {
-            _cts?.Cancel();
-            _listener?.Stop();
-            _loopTask?.Wait(TimeSpan.FromSeconds(1));
-        }
-        catch
-        {
-            // ignore
-        }
-        finally
-        {
-            _cts?.Dispose();
-            _cts = null;
-        }
-    }
-
-    private async Task ListenLoopAsync(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested)
-        {
-            HttpListenerContext? ctx = null;
             try
             {
-                if (_listener == null) break;
-                ctx = await _listener.GetContextAsync().ConfigureAwait(false);
+                var hostBuilder = new HostBuilder()
+                    .ConfigureWebHost(webHost =>
+                    {
+                        webHost.UseKestrel();
+                        webHost.UseUrls($"http://{NormalizeHost(host)}:{port}");
+                        webHost.Configure(app =>
+                        {
+                            if (basePath == "/")
+                            {
+                                app.Run(HandleRequestAsync);
+                                return;
+                            }
+
+                            app.Use(async (ctx, next) =>
+                            {
+                                var reqPath = ctx.Request.Path.Value ?? string.Empty;
+                                if (string.Equals(reqPath, basePath, StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(reqPath, basePath + "/", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    await HandleRequestAsync(ctx).ConfigureAwait(false);
+                                    return;
+                                }
+                                await next().ConfigureAwait(false);
+                            });
+                        });
+                    });
+
+                _host = hostBuilder.Build();
+                await _host.StartAsync(_cts.Token).ConfigureAwait(false);
+                Console.WriteLine($"GSI listener started on http://{host}:{port}{basePath}/");
+                await Task.Delay(Timeout.Infinite, _cts.Token).ConfigureAwait(false);
             }
-            catch when (token.IsCancellationRequested)
+            catch (OperationCanceledException)
             {
-                break;
+                // expected on shutdown
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"GSI listener error: {ex.Message}");
             }
-
-            if (ctx == null) continue;
-
-            _ = Task.Run(() => HandleRequestAsync(ctx), token);
-        }
+        });
     }
 
-    private async Task HandleRequestAsync(HttpListenerContext ctx)
+    public void Stop()
+    {
+        var host = _host;
+        var cts = _cts;
+        _host = null;
+        _cts = null;
+        _runTask = null;
+
+        if (host == null)
+            return;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                cts?.Cancel();
+                using var stopCts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                try
+                {
+                    await host.StopAsync(stopCts.Token).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // ignore
+                }
+                try
+                {
+                    host.Dispose();
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+            finally
+            {
+                cts?.Dispose();
+            }
+        });
+    }
+
+    private async Task HandleRequestAsync(HttpContext ctx)
     {
         try
         {
-            if (ctx.Request.HttpMethod != "POST")
+            if (!HttpMethods.IsPost(ctx.Request.Method))
             {
-                ctx.Response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                ctx.Response.Close();
+                ctx.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                 return;
             }
 
-            using var reader = new StreamReader(ctx.Request.InputStream, Encoding.UTF8);
+            using var reader = new StreamReader(ctx.Request.Body, Encoding.UTF8);
             var body = await reader.ReadToEndAsync().ConfigureAwait(false);
 
-            // Increment heartbeat on each GSI update
-            var currentHeartbeat = System.Threading.Interlocked.Increment(ref _heartbeat);
-
+            var currentHeartbeat = Interlocked.Increment(ref _heartbeat);
             var state = ParseState(body, currentHeartbeat);
             if (state != null)
             {
                 GameStateUpdated?.Invoke(this, state);
             }
 
-            ctx.Response.StatusCode = (int)HttpStatusCode.OK;
-            ctx.Response.Close();
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"GSI request handling failed: {ex.Message}");
-            try
-            {
-                ctx.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                ctx.Response.Close();
-            }
-            catch { }
+            ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
         }
+    }
+
+    private static string NormalizeHost(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+            return "127.0.0.1";
+        if (host == "*" || host == "+")
+            return "0.0.0.0";
+        return host;
     }
 
     private static GsiGameState? ParseState(string body, long heartbeat)
@@ -529,10 +531,5 @@ public sealed class GsiServer : IDisposable
     public void Dispose()
     {
         Stop();
-        if (_listener != null)
-        {
-            _listener.Close();
-            _listener = null;
-        }
     }
 }

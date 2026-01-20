@@ -15,5 +15,8 @@
     <PackageReference Include="Vortice.DXGI" Version="3.6.2" />
     <PackageReference Include="CefSharp.OffScreen.NETCore" Version="143.0.90" />
   </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
 </Project>

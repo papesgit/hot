@@ -48,6 +48,9 @@
       <SetConfiguration>Configuration=Release</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Update="FFmpeg\**">

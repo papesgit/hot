@@ -1,41 +1,32 @@
 using System;
 using System.IO;
-using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 
 namespace GfxProducerService.Server;
 
 public sealed class ProducerServer : IDisposable
 {
-    private readonly HttpListener _listener;
+    private readonly string _host;
     private readonly int _port;
     private readonly AtlasManager _atlasManager = new();
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
+    private WebApplication? _app;
 
     public ProducerServer(string host, int port)
     {
         _port = port;
-        _listener = new HttpListener();
-        var prefixHost = NormalizeHost(host);
-        _listener.Prefixes.Add($"http://{prefixHost}:{port}/gfxp/");
-    }
-
-    private int GetPort() => _port;
-
-    private static string NormalizeHost(string host)
-    {
-        if (string.IsNullOrWhiteSpace(host))
-            return "127.0.0.1";
-        if (host == "0.0.0.0" || host == "*" || host == "+")
-            return "+";
-        return host;
+        _host = NormalizeHost(host);
     }
 
     public void Initialize()
@@ -46,79 +37,55 @@ public sealed class ProducerServer : IDisposable
     public async Task StartAsync(CancellationToken token)
     {
         using var reg = token.Register(() => Stop());
-        _listener.Start();
-        while (!token.IsCancellationRequested)
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseKestrel();
+        builder.WebHost.UseUrls($"http://{_host}:{_port}");
+        var app = builder.Build();
+        _app = app;
+
+        app.UseWebSockets();
+        app.Map("/gfxp", async context =>
         {
-            HttpListenerContext? context = null;
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            WebSocket? socket = null;
             try
             {
-                context = await _listener.GetContextAsync();
+                socket = await context.WebSockets.AcceptWebSocketAsync();
+                var remote = context.Connection.RemoteIpAddress != null
+                    ? $"{context.Connection.RemoteIpAddress}:{context.Connection.RemotePort}"
+                    : "unknown";
+                Console.WriteLine($"[gfxp] client connected: {remote}");
+                await ReceiveLoopAsync(socket, token);
             }
-            catch (HttpListenerException ex)
+            catch (Exception ex)
             {
-                if (ex.ErrorCode == 5)
-                {
-                    Console.WriteLine("[gfxp] access denied while binding listener.");
-                    Console.WriteLine("[gfxp] run: dotnet run -- --show-urlacl --host 0.0.0.0 --port {0}", GetPort());
-                    break;
-                }
-                if (!_listener.IsListening)
-                {
-                    Console.WriteLine("[gfxp] listener stopped.");
-                    break;
-                }
-                if (token.IsCancellationRequested)
-                    break;
+                Console.WriteLine($"[gfxp] client error: {ex.Message}");
             }
-            catch (ObjectDisposedException)
+            finally
             {
-                break;
-            }
-
-            if (context == null)
-                continue;
-
-            if (!context.Request.IsWebSocketRequest)
-            {
-                context.Response.StatusCode = 400;
-                context.Response.Close();
-                continue;
-            }
-
-            _ = HandleClientAsync(context, token);
-        }
-    }
-
-    private async Task HandleClientAsync(HttpListenerContext context, CancellationToken token)
-    {
-        WebSocket? socket = null;
-        try
-        {
-            var ws = await context.AcceptWebSocketAsync(subProtocol: null);
-            socket = ws.WebSocket;
-            Console.WriteLine($"[gfxp] client connected: {context.Request.RemoteEndPoint}");
-            await ReceiveLoopAsync(socket, token);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[gfxp] client error: {ex.Message}");
-        }
-        finally
-        {
-            if (socket != null)
-            {
-                try
+                if (socket != null)
                 {
-                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                    try
+                    {
+                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+                    socket.Dispose();
                 }
-                catch
-                {
-                    // ignore
-                }
-                socket.Dispose();
+                Console.WriteLine("[gfxp] client disconnected");
             }
-            Console.WriteLine("[gfxp] client disconnected");
-        }
+        });
+
+        await app.StartAsync(token);
+        await app.WaitForShutdownAsync(token);
     }
 
     private async Task ReceiveLoopAsync(WebSocket socket, CancellationToken token)
@@ -383,9 +350,11 @@ public sealed class ProducerServer : IDisposable
 
     public void Stop()
     {
+        if (_app == null)
+            return;
         try
         {
-            _listener.Stop();
+            _app.StopAsync().GetAwaiter().GetResult();
         }
         catch
         {
@@ -396,7 +365,26 @@ public sealed class ProducerServer : IDisposable
     public void Dispose()
     {
         Stop();
-        _listener.Close();
+        if (_app != null)
+        {
+            try
+            {
+                _app.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // ignore
+            }
+        }
         _atlasManager.Dispose();
+    }
+
+    private static string NormalizeHost(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+            return "127.0.0.1";
+        if (host == "*" || host == "+")
+            return "0.0.0.0";
+        return host;
     }
 }
