@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="GfxProducerService/GfxProducerService.csproj" />
+  <Project Path="HlaeObsTools/HlaeObsTools.csproj" />
+  <Project Path="external\ValveResourceFormat\ValveResourceFormat\ValveResourceFormat.csproj" />
+  <Project Path="external\ValveResourceFormat\Renderer\Renderer.csproj" />
+</Solution>
