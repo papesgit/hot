@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using Avalonia.Controls.Primitives;
+using Avalonia.Interactivity;
 using HlaeObsTools.ViewModels.Docks;
 
 namespace HlaeObsTools.Views.Docks;
@@ -16,6 +18,7 @@ public partial class CampathsDockView : UserControl
     public CampathsDockView()
     {
         InitializeComponent();
+        InitializePopulateFlyout();
         DataContextChanged += OnDataContextChanged;
     }
 
@@ -30,6 +33,9 @@ public partial class CampathsDockView : UserControl
     private Point? _groupPressPoint;
     private bool _groupDragInitiated;
     private IPointer? _groupPointer;
+    private Button? _populateProfileButton;
+    private FlyoutBase? _populateSourceFlyout;
+    private TaskCompletionSource<CampathPopulateSource?>? _populateSourceTcs;
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
@@ -191,57 +197,46 @@ public partial class CampathsDockView : UserControl
 
     private async Task<CampathPopulateSource?> SelectPopulateSourceAsync()
     {
-        var host = TopLevel.GetTopLevel(this) as Window;
-        if (host == null)
+        if (_populateProfileButton == null || _populateSourceFlyout == null)
             return null;
 
-        var dialog = new Window
-        {
-            Title = "Populate campaths",
-            Width = 360,
-            Height = 100,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
+        if (_populateSourceTcs != null)
+            return await _populateSourceTcs.Task;
 
-        CampathPopulateSource? choice = null;
+        var tcs = new TaskCompletionSource<CampathPopulateSource?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _populateSourceTcs = tcs;
+        FlyoutBase.ShowAttachedFlyout(_populateProfileButton);
+        return await tcs.Task;
+    }
 
-        var infoText = new TextBlock { Text = "How do you want to add campaths?" };
-        var folderButton = new Button { Content = "Select folder", Width = 120 };
-        ToolTip.SetTip(folderButton, "Selects file types: .xml, .cam, .path, .campath, notype");
-        ToolTip.SetShowDelay(folderButton, 100);
-        var filesButton = new Button { Content = "Select files", Width = 120 };
-        var cancelButton = new Button { Content = "Cancel", Width = 80, IsCancel = true };
+    private void CompletePopulateSelection(CampathPopulateSource? choice)
+    {
+        var tcs = _populateSourceTcs;
+        if (tcs == null)
+            return;
 
-        folderButton.Click += (_, _) =>
-        {
-            choice = CampathPopulateSource.Folder;
-            dialog.Close(true);
-        };
-        filesButton.Click += (_, _) =>
-        {
-            choice = CampathPopulateSource.Files;
-            dialog.Close(true);
-        };
-        cancelButton.Click += (_, _) => dialog.Close(false);
+        _populateSourceTcs = null;
+        tcs.TrySetResult(choice);
+    }
 
-        var buttons = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-            HorizontalAlignment = HorizontalAlignment.Center
-        };
-        buttons.Children.Add(folderButton);
-        buttons.Children.Add(filesButton);
-        buttons.Children.Add(cancelButton);
+    private void OnPopulateSelectFolderClicked(object? sender, RoutedEventArgs e)
+    {
+        CompletePopulateSelection(CampathPopulateSource.Folder);
+    }
 
-        var panel = new StackPanel { Margin = new Thickness(16), Spacing = 12 };
-        panel.Children.Add(infoText);
-        panel.Children.Add(buttons);
+    private void OnPopulateSelectFilesClicked(object? sender, RoutedEventArgs e)
+    {
+        CompletePopulateSelection(CampathPopulateSource.Files);
+    }
 
-        dialog.Content = panel;
+    private void OnPopulateSelectCancelClicked(object? sender, RoutedEventArgs e)
+    {
+        CompletePopulateSelection(null);
+    }
 
-        await dialog.ShowDialog<bool?>(host);
-        return choice;
+    private void OnPopulateFlyoutClosed(object? sender, EventArgs e)
+    {
+        CompletePopulateSelection(null);
     }
 
     private void OnViewGroupRequested(object? sender, CampathGroupViewModel? group)
@@ -466,6 +461,19 @@ public partial class CampathsDockView : UserControl
         {
             _groupPointer.Capture(null);
             _groupPointer = null;
+        }
+    }
+
+    private void InitializePopulateFlyout()
+    {
+        _populateProfileButton = this.FindControl<Button>("PopulateProfileButton");
+        if (_populateProfileButton == null)
+            return;
+
+        _populateSourceFlyout = FlyoutBase.GetAttachedFlyout(_populateProfileButton);
+        if (_populateSourceFlyout != null)
+        {
+            _populateSourceFlyout.Closed += OnPopulateFlyoutClosed;
         }
     }
 }

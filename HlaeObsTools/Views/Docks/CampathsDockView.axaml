@@ -25,7 +25,19 @@
                  Width="{Binding ElementName=TopControlsHost, Path=Bounds.Width, Converter={StaticResource TopControlsWidthConverter}}">
         <Button Content="Add Profile" Command="{Binding AddProfileCommand}" Margin="0,4,8,4" />
         <Button Content="Add Campath" Command="{Binding AddCampathCommand}" Margin="0,4,8,4" />
-        <Button Content="Populate Profile" Command="{Binding PopulateFromFolderCommand}" Margin="0,4,8,4" />
+        <Button x:Name="PopulateProfileButton"
+                Content="Populate Profile"
+                Command="{Binding PopulateFromFolderCommand}"
+                Margin="0,4,8,4">
+          <FlyoutBase.AttachedFlyout>
+            <MenuFlyout>
+              <MenuItem Header="Select folder" Click="OnPopulateSelectFolderClicked" />
+              <MenuItem Header="Select files" Click="OnPopulateSelectFilesClicked" />
+              <Separator />
+              <MenuItem Header="Cancel" Click="OnPopulateSelectCancelClicked" />
+            </MenuFlyout>
+          </FlyoutBase.AttachedFlyout>
+        </Button>
 
         <ComboBox Width="100"
                   Padding="10,6"
