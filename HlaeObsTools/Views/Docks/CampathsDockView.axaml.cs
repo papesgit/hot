@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using HlaeObsTools.ViewModels.Docks;
 
 namespace HlaeObsTools.Views.Docks;
@@ -124,41 +125,68 @@ public partial class CampathsDockView : UserControl
 
     private async Task<string?> BrowseFileAsync(string title)
     {
-        var dlg = new OpenFileDialog
-        {
-            Title = title,
-            AllowMultiple = false
-        };
         var host = TopLevel.GetTopLevel(this) as Window;
         if (host == null)
             return null;
-        var result = await dlg.ShowAsync(host);
-        return result?.FirstOrDefault();
+
+        var storageProvider = host.StorageProvider;
+        if (storageProvider == null)
+            return null;
+
+        var result = await storageProvider.OpenFilePickerAsync(
+            new FilePickerOpenOptions
+            {
+                Title = title,
+                AllowMultiple = false
+            });
+
+        if (result is { Count: > 0 })
+            return result[0].Path.LocalPath;
+
+        return null;
     }
 
     private async Task<string?> BrowseFolderAsync(string title)
     {
-        var dlg = new OpenFolderDialog
-        {
-            Title = title
-        };
         var host = TopLevel.GetTopLevel(this) as Window;
         if (host == null)
             return null;
-        return await dlg.ShowAsync(host);
+
+        var storageProvider = host.StorageProvider;
+        if (storageProvider == null)
+            return null;
+
+        var result = await storageProvider.OpenFolderPickerAsync(
+            new FolderPickerOpenOptions
+            {
+                Title = title,
+                AllowMultiple = false
+            });
+
+        if (result is { Count: > 0 })
+            return result[0].Path.LocalPath;
+
+        return null;
     }
 
     private async Task<IEnumerable<string>?> BrowseFilesAsync(string title)
     {
-        var dlg = new OpenFileDialog
-        {
-            Title = title,
-            AllowMultiple = true
-        };
         var host = TopLevel.GetTopLevel(this) as Window;
         if (host == null)
             return null;
-        return await dlg.ShowAsync(host);
+
+        var storageProvider = host.StorageProvider;
+        if (storageProvider == null)
+            return null;
+
+        var result = await storageProvider.OpenFilePickerAsync(
+            new FilePickerOpenOptions
+            {
+                Title = title,
+                AllowMultiple = true
+            });
+
+        return result?.Select(item => item.Path.LocalPath).ToList();
     }
 
     private async Task<CampathPopulateSource?> SelectPopulateSourceAsync()

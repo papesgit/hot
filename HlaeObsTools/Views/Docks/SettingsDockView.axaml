@@ -125,7 +125,7 @@
                                     Margin="0,4,0,0"
                                     VerticalAlignment="Center">
                             <ToggleSwitch IsChecked="{Binding IsCameraPathPreviewEnabled, Mode=TwoWay}"
-                                        Content="Enable path preview"
+                                        Content="Draw Path"
                                         Foreground="#E6E6E6"
                                         HorizontalAlignment="Left"
                                         Margin="0,0,10,0"/>
