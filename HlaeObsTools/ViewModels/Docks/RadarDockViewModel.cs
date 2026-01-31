@@ -487,6 +487,9 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private readonly RadarSettings _settings;
     private CampathProfileViewModel? _attachedProfile;
     private DispatcherTimer? _flashCleanupTimer;
+    private CampathPathViewModel? _hoveredCampath;
+    private string? _hoveredCampathName;
+    private Bitmap? _hoveredCampathThumbnail;
 
     private Bitmap? _radarImage;
     private string? _currentMap;
@@ -507,6 +510,26 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     public ObservableCollection<FlameViewModel> Flames { get; } = new();
     public ObservableCollection<RadarBombViewModel> Bombs { get; } = new();
     public ObservableCollection<CampathPathViewModel> CampathPaths { get; } = new();
+
+    public string? HoveredCampathName
+    {
+        get => _hoveredCampathName;
+        private set => SetProperty(ref _hoveredCampathName, value);
+    }
+
+    public Bitmap? HoveredCampathThumbnail
+    {
+        get => _hoveredCampathThumbnail;
+        private set
+        {
+            if (SetProperty(ref _hoveredCampathThumbnail, value))
+            {
+                OnPropertyChanged(nameof(HasHoveredCampathThumbnail));
+            }
+        }
+    }
+
+    public bool HasHoveredCampathThumbnail => _hoveredCampathThumbnail != null;
 
     public Bitmap? RadarImage
     {
@@ -582,6 +605,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             _playerMarkers.Clear();
             DeadPlayers.Clear();
             CampathPaths.Clear();
+            ClearCampathHover();
             _deadPlayerMarkers.Clear();
             _lastAlivePositions.Clear();
             _playerHeightBuckets.Clear();
@@ -1160,7 +1184,10 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
     private void OnCampathItemChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(CampathItemViewModel.FilePath) || e.PropertyName == nameof(CampathItemViewModel.Name))
+        if (e.PropertyName == nameof(CampathItemViewModel.FilePath)
+            || e.PropertyName == nameof(CampathItemViewModel.Name)
+            || e.PropertyName == nameof(CampathItemViewModel.ImagePath)
+            || e.PropertyName == nameof(CampathItemViewModel.Thumbnail))
         {
             RefreshCampathOverlay();
         }
@@ -1222,6 +1249,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private void RefreshCampathOverlay()
     {
         CampathPaths.Clear();
+        ClearCampathHover();
 
         if (_campathsVm?.SelectedProfile == null || string.IsNullOrWhiteSpace(_currentMap) || !HasRadar)
             return;
@@ -1244,7 +1272,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             var iconX = points[0].X - 12.0; // center 24px icon
             var iconY = points[0].Y - 12.0;
 
-            CampathPaths.Add(new CampathPathViewModel(campath.Id, campath.Name, campath.FilePath, points, iconX, iconY, angle));
+            CampathPaths.Add(new CampathPathViewModel(campath.Id, campath.Name, campath.FilePath, points, iconX, iconY, angle, campath.Thumbnail));
         }
     }
 
@@ -1274,11 +1302,30 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             {
                 p.IsHighlighted = ReferenceEquals(p, target);
             }
+            SetCampathHover(target);
         }
         else if (target != null)
         {
             target.IsHighlighted = false;
+            if (ReferenceEquals(_hoveredCampath, target))
+            {
+                ClearCampathHover();
+            }
         }
+    }
+
+    private void SetCampathHover(CampathPathViewModel? target)
+    {
+        _hoveredCampath = target;
+        HoveredCampathName = target?.Name;
+        HoveredCampathThumbnail = target?.Thumbnail;
+    }
+
+    private void ClearCampathHover()
+    {
+        _hoveredCampath = null;
+        HoveredCampathName = null;
+        HoveredCampathThumbnail = null;
     }
 
     private AvaloniaList<Point> BuildCampathPolyline(CampathFile parsed)
