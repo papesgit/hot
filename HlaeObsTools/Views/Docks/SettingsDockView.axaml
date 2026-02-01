@@ -240,6 +240,20 @@
             <TabItem Header="Radar">
                 <ScrollViewer>
                     <StackPanel Margin="10" Spacing="10">
+                        <TextBlock Text="Radar scale"
+                                Foreground="#CCCCCC"
+                                FontWeight="SemiBold"/>
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <Slider Minimum="0.5"
+                                    Maximum="2.0"
+                                    SmallChange="0.05"
+                                    LargeChange="0.25"
+                                    Width="200"
+                                    Value="{Binding RadarSettings.RadarScale, Mode=TwoWay}"/>
+                            <TextBlock Text="{Binding RadarSettings.RadarScale, StringFormat={}{0:F2}}"
+                                    Width="50"
+                                    Foreground="#E6E6E6"/>
+                        </StackPanel>
                         <TextBlock Text="Marker size"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>
@@ -254,9 +268,6 @@
                                     Width="50"
                                     Foreground="#E6E6E6"/>
                         </StackPanel>
-                        <TextBlock Text="Adjusts player marker size on the radar."
-                                Foreground="#888888"
-                                FontSize="12"/>
                         <TextBlock Text="Height scale strength"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>
@@ -271,9 +282,6 @@
                                     Width="50"
                                     Foreground="#E6E6E6"/>
                         </StackPanel>
-                        <TextBlock Text="Controls how strongly height affects marker scale."
-                                Foreground="#888888"
-                                FontSize="12"/>
                         <ToggleSwitch IsChecked="{Binding RadarSettings.DisplayNumbersTopmost, Mode=TwoWay}"
                                     Content="Observer-Slot on top"
                                     Foreground="#E6E6E6"/>

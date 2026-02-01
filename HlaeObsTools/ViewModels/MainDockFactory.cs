@@ -131,6 +131,7 @@ public class MainDockFactory : Factory, IDisposable
         // Shared settings for radar customization
         var radarSettings = new RadarSettings
         {
+            RadarScale = _storedSettings.RadarScale,
             MarkerScale = _storedSettings.MarkerScale,
             HeightScaleMultiplier = _storedSettings.HeightScaleMultiplier,
             UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds,

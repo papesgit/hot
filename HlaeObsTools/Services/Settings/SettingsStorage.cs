@@ -62,6 +62,7 @@ public class AppSettingsData
     public List<AttachmentPresetData>? AttachPresets { get; set; }
     public List<AttachmentPresetPageData> AttachPresetPages { get; set; } = new();
     public int ActiveAttachPresetPage { get; set; }
+    public double RadarScale { get; set; } = 1.0;
     public double MarkerScale { get; set; } = 1.0;
     public double HeightScaleMultiplier { get; set; } = 1.0;
     public bool UseAltPlayerBinds { get; set; } = false;

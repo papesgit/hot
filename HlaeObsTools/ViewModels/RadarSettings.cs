@@ -9,11 +9,25 @@ namespace HlaeObsTools.ViewModels;
 /// </summary>
 public sealed class RadarSettings : ViewModelBase
 {
+    private double _radarScale = 1.0;
     private double _markerScale = 1.0;
     private double _heightScaleMultiplier = 1.0;
     private bool _useAltPlayerBinds;
     private bool _displayNumbersTopmost = true;
     private bool _showPlayerNames = true;
+
+    /// <summary>
+    /// Scale factor for the radar view.
+    /// </summary>
+    public double RadarScale
+    {
+        get => _radarScale;
+        set
+        {
+            var clamped = Math.Clamp(value, 0.5, 2.0);
+            SetProperty(ref _radarScale, clamped);
+        }
+    }
 
     /// <summary>
     /// Scale factor for player markers on the radar.

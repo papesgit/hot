@@ -17,7 +17,15 @@
   <Border Background="#0D1015" Padding="10" Focusable="True">
     <Grid>
       <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Grid Width="1024" Height="1024">
+        <Grid Width="1024" Height="1024" RenderTransformOrigin="0,0">
+          <Grid.RenderTransform>
+            <TransformGroup>
+              <TranslateTransform X="-512" Y="-512"/>
+              <ScaleTransform ScaleX="{Binding RadarSettings.RadarScale}"
+                              ScaleY="{Binding RadarSettings.RadarScale}"/>
+              <TranslateTransform X="512" Y="512"/>
+            </TransformGroup>
+          </Grid.RenderTransform>
           <Image Source="{Binding RadarImage}"
                  Stretch="Fill"
                  Width="1024"
@@ -28,7 +36,8 @@
                         Width="1024"
                         Height="1024"
                         IsHitTestVisible="False"
-                        x:CompileBindings="False">
+                        x:CompileBindings="False"
+                        ClipToBounds="False">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <Canvas />
@@ -48,7 +57,8 @@
           <ItemsControl ItemsSource="{Binding CampathPaths}"
                         Width="1024"
                         Height="1024"
-                        x:CompileBindings="False">
+                        x:CompileBindings="False"
+                        ClipToBounds="False">
             <ItemsControl.Styles>
               <Style Selector="ContentPresenter">
                 <Setter Property="Canvas.Left" Value="{Binding IconX}" />

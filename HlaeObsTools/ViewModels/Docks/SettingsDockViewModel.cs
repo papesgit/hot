@@ -497,6 +497,7 @@ namespace HlaeObsTools.ViewModels.Docks
             {
                 AttachPresetPages = _hudSettings.ToAttachPresetPageData().ToList(),
                 ActiveAttachPresetPage = _hudSettings.ActiveAttachPresetPage,
+                RadarScale = _radarSettings.RadarScale,
                 MarkerScale = _radarSettings.MarkerScale,
                 HeightScaleMultiplier = _radarSettings.HeightScaleMultiplier,
                 UseAltPlayerBinds = _radarSettings.UseAltPlayerBinds,
