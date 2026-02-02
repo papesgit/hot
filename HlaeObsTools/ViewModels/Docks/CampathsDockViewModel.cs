@@ -50,6 +50,7 @@ public class CampathsDockViewModel : Tool
     private readonly DelegateCommand _deleteGroupCommand;
     private readonly DelegateCommand _toggleGroupModeCommand;
     private readonly DelegateCommand _viewGroupCommand;
+    public event EventHandler<Guid>? ProfileRemoved;
     private HlaeWebSocketClient? _webSocketClient;
     private TaskCompletionSource<IntPtr>? _sharedHandleTcs;
     private IntPtr _sharedTextureHandle;
@@ -176,6 +177,7 @@ public class CampathsDockViewModel : Tool
         var toRemove = SelectedProfile;
         Profiles.Remove(toRemove);
         SelectedProfile = Profiles.FirstOrDefault();
+        ProfileRemoved?.Invoke(this, toRemove.Id);
         Save();
     }
 

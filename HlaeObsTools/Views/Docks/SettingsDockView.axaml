@@ -634,10 +634,10 @@
                                    Foreground="#888888"
                                    FontSize="12"/>
                         <Separator Margin="0,6,0,6"/>
-                        <TextBlock Text="Bindings"
+                        <TextBlock Text="Button/Toggle Bindings"
                                    Foreground="#CCCCCC"
                                    FontWeight="SemiBold"/>
-                        <ListBox ItemsSource="{Binding HotkeyBindings}"
+                        <ListBox ItemsSource="{Binding CommandHotkeyBindings}"
                                  SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
@@ -668,6 +668,42 @@
                         <TextBlock Text="Supports command buttons without parameters and simple toggle bindings."
                                    Foreground="#888888"
                                    FontSize="12"/>
+                        <Separator Margin="0,6,0,6"/>
+                        <TextBlock Text="Campath Bindings"
+                                   Foreground="#CCCCCC"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding ActiveCampathProfileName}"
+                                   Foreground="#888888"
+                                   FontSize="12"
+                                   Margin="0,0,0,6"/>
+                        <ListBox ItemsSource="{Binding CampathHotkeyBindings}"
+                                 SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                    <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,6">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                            <TextBlock Text="{Binding HotkeyDisplay}"
+                                                       Foreground="#E6E6E6"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding DisplayLabel}"
+                                                       Foreground="#CCCCCC"
+                                                       VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                <ToggleSwitch IsChecked="{Binding Enabled}" hotkeys:HotkeyTarget.Path="Enabled" />
+                                                <Button Content="Rebind"
+                                                        Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"/>
+                                                <Button Content="Remove"
+                                                        Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

@@ -13,5 +13,9 @@ public class HotkeyBindingData
     public string? TargetViewModelType { get; set; }
     public string? TargetCommandProperty { get; set; }
     public string? TargetPropertyPath { get; set; }
+    public Guid? TargetCampathId { get; set; }
+    public Guid? TargetCampathGroupId { get; set; }
+    public Guid? TargetCampathProfileId { get; set; }
+    public string? TargetCampathProfileName { get; set; }
     public string? DisplayName { get; set; }
 }

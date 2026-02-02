@@ -38,6 +38,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly VmixReplaySettings _vmixReplaySettings;
         private readonly Action<bool>? _setFocusInputGateDisabled;
         private readonly HotkeyService _hotkeyService;
+        private readonly CampathsDockViewModel? _campathsDockViewModel;
         private bool _suppressFreecamSave;
         private bool _suppressSettingsSave;
         private bool _isLoadingPresets;
@@ -61,7 +62,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int UdpPort, int RtpPort, int GsiPort);
 
-        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixReplaySettings? vmixSettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null)
+        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixReplaySettings? vmixSettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null)
         {
             _radarSettings = radarSettings;
             _hudSettings = hudSettings;
@@ -74,6 +75,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _setFocusInputGateDisabled = setFocusInputGateDisabled;
             _campathEditor = campathEditor ?? new CampathEditorViewModel();
             _hotkeyService = hotkeyService;
+            _campathsDockViewModel = campathsDockViewModel;
 
             Title = "Settings";
             CanClose = false;
@@ -156,6 +158,7 @@ namespace HlaeObsTools.ViewModels.Docks
                     var vm = HotkeyBindingViewModel.FromData(binding);
                     HotkeyBindings.Add(vm);
                     AttachHotkeyBinding(vm);
+                    AddToHotkeyLists(vm);
                 }
             }
             _isLoadingHotkeys = false;
@@ -164,6 +167,13 @@ namespace HlaeObsTools.ViewModels.Docks
             _hotkeyService.BindingModeChanged += OnHotkeyBindingModeChanged;
             _hotkeyService.StatusChanged += OnHotkeyStatusChanged;
             SyncHotkeysToService();
+
+            if (_campathsDockViewModel != null)
+            {
+                _campathsDockViewModel.PropertyChanged += OnCampathProfileChanged;
+                _campathsDockViewModel.ProfileRemoved += OnCampathProfileRemoved;
+                RefreshCampathHotkeys();
+            }
 
             if (_ws != null)
             {
@@ -208,6 +218,8 @@ namespace HlaeObsTools.ViewModels.Docks
         public CampathEditorViewModel CampathEditor => _campathEditor;
         public AttachPresetAnimationDockViewModel AttachPresetAnimationEditor { get; }
         public ObservableCollection<HotkeyBindingViewModel> HotkeyBindings { get; } = new();
+        public ObservableCollection<HotkeyBindingViewModel> CommandHotkeyBindings { get; } = new();
+        public ObservableCollection<HotkeyBindingViewModel> CampathHotkeyBindings { get; } = new();
 
         private bool _isEditingAttachPresetAnimation;
         public bool IsEditingAttachPresetAnimation
@@ -683,6 +695,10 @@ namespace HlaeObsTools.ViewModels.Docks
                         existing.TargetViewModelType = e.Binding.TargetViewModelType;
                         existing.TargetCommandProperty = e.Binding.TargetCommandProperty;
                         existing.TargetPropertyPath = e.Binding.TargetPropertyPath;
+                        existing.TargetCampathId = e.Binding.TargetCampathId;
+                        existing.TargetCampathGroupId = e.Binding.TargetCampathGroupId;
+                        existing.TargetCampathProfileId = e.Binding.TargetCampathProfileId;
+                        existing.TargetCampathProfileName = e.Binding.TargetCampathProfileName;
                         existing.DisplayName = e.Binding.DisplayName;
                         _isLoadingHotkeys = false;
                     }
@@ -692,6 +708,7 @@ namespace HlaeObsTools.ViewModels.Docks
                     var newBinding = HotkeyBindingViewModel.FromData(e.Binding);
                     HotkeyBindings.Add(newBinding);
                     AttachHotkeyBinding(newBinding);
+                    AddToHotkeyLists(newBinding);
                 }
 
                 EnsureUniqueHotkey(e.Binding, e.RebindId);
@@ -703,14 +720,30 @@ namespace HlaeObsTools.ViewModels.Docks
         private void EnsureUniqueHotkey(HotkeyBindingData binding, Guid? rebindId)
         {
             var excludeId = rebindId ?? binding.Id;
+            var isCampathBinding = binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.Campath
+                || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.CampathGroup;
+            var bindingProfileId = binding.TargetCampathProfileId;
             var duplicates = HotkeyBindings
                 .Where(b => b.Key == binding.Key && b.Modifiers == binding.Modifiers && b.Id != excludeId)
+                .Where(b =>
+                {
+                    if (!isCampathBinding)
+                        return true;
+
+                    var otherIsCampath = b.TargetKind == Services.Hotkeys.HotkeyTargetKind.Campath
+                        || b.TargetKind == Services.Hotkeys.HotkeyTargetKind.CampathGroup;
+                    if (!otherIsCampath)
+                        return true;
+
+                    return b.TargetCampathProfileId == bindingProfileId;
+                })
                 .ToList();
 
             foreach (var duplicate in duplicates)
             {
                 DetachHotkeyBinding(duplicate);
                 HotkeyBindings.Remove(duplicate);
+                RemoveFromHotkeyLists(duplicate);
             }
         }
 
@@ -733,6 +766,7 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             DetachHotkeyBinding(binding);
             HotkeyBindings.Remove(binding);
+            RemoveFromHotkeyLists(binding);
             if (ReferenceEquals(SelectedHotkey, binding))
                 SelectedHotkey = null;
 
@@ -744,6 +778,72 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             _hotkeyService.SetBindings(HotkeyBindings.Select(binding => binding.ToData()));
         }
+
+        private void AddToHotkeyLists(HotkeyBindingViewModel binding)
+        {
+            if (binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.Campath
+                || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.CampathGroup)
+            {
+                RefreshCampathHotkeys();
+                return;
+            }
+
+            if (!CommandHotkeyBindings.Contains(binding))
+                CommandHotkeyBindings.Add(binding);
+        }
+
+        private void RemoveFromHotkeyLists(HotkeyBindingViewModel binding)
+        {
+            CommandHotkeyBindings.Remove(binding);
+            RefreshCampathHotkeys();
+        }
+
+        private void RefreshCampathHotkeys()
+        {
+            CampathHotkeyBindings.Clear();
+            var activeProfileId = _campathsDockViewModel?.SelectedProfile?.Id;
+            if (activeProfileId == null || activeProfileId == Guid.Empty)
+                return;
+
+            foreach (var binding in HotkeyBindings)
+            {
+                if (binding.TargetKind != Services.Hotkeys.HotkeyTargetKind.Campath
+                    && binding.TargetKind != Services.Hotkeys.HotkeyTargetKind.CampathGroup)
+                    continue;
+
+                if (binding.TargetCampathProfileId == activeProfileId)
+                    CampathHotkeyBindings.Add(binding);
+            }
+
+            OnPropertyChanged(nameof(ActiveCampathProfileName));
+        }
+
+        private void OnCampathProfileChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(CampathsDockViewModel.SelectedProfile))
+            {
+                RefreshCampathHotkeys();
+            }
+        }
+
+        private void OnCampathProfileRemoved(object? sender, Guid profileId)
+        {
+            var toRemove = HotkeyBindings
+                .Where(b => b.TargetCampathProfileId == profileId)
+                .ToList();
+
+            foreach (var binding in toRemove)
+            {
+                DetachHotkeyBinding(binding);
+                HotkeyBindings.Remove(binding);
+                CommandHotkeyBindings.Remove(binding);
+            }
+
+            RefreshCampathHotkeys();
+            SaveSettings();
+        }
+
+        public string ActiveCampathProfileName => _campathsDockViewModel?.SelectedProfile?.Name ?? "No profile selected";
 
         private void SaveSettings()
         {

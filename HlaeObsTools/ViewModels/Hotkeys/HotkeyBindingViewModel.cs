@@ -13,6 +13,10 @@ public class HotkeyBindingViewModel : ViewModelBase
     private string? _targetViewModelType;
     private string? _targetCommandProperty;
     private string? _targetPropertyPath;
+    private Guid? _targetCampathId;
+    private Guid? _targetCampathGroupId;
+    private Guid? _targetCampathProfileId;
+    private string? _targetCampathProfileName;
     private HotkeyTargetKind _targetKind = HotkeyTargetKind.Command;
 
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -79,6 +83,46 @@ public class HotkeyBindingViewModel : ViewModelBase
         }
     }
 
+    public Guid? TargetCampathId
+    {
+        get => _targetCampathId;
+        set
+        {
+            if (SetProperty(ref _targetCampathId, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public Guid? TargetCampathGroupId
+    {
+        get => _targetCampathGroupId;
+        set
+        {
+            if (SetProperty(ref _targetCampathGroupId, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public Guid? TargetCampathProfileId
+    {
+        get => _targetCampathProfileId;
+        set
+        {
+            if (SetProperty(ref _targetCampathProfileId, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public string? TargetCampathProfileName
+    {
+        get => _targetCampathProfileName;
+        set
+        {
+            if (SetProperty(ref _targetCampathProfileName, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
     public HotkeyTargetKind TargetKind
     {
         get => _targetKind;
@@ -102,6 +146,10 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetViewModelType = data.TargetViewModelType,
             TargetCommandProperty = data.TargetCommandProperty,
             TargetPropertyPath = data.TargetPropertyPath,
+            TargetCampathId = data.TargetCampathId,
+            TargetCampathGroupId = data.TargetCampathGroupId,
+            TargetCampathProfileId = data.TargetCampathProfileId,
+            TargetCampathProfileName = data.TargetCampathProfileName,
             DisplayName = data.DisplayName
         };
     }
@@ -118,6 +166,10 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetViewModelType = TargetViewModelType,
             TargetCommandProperty = TargetCommandProperty,
             TargetPropertyPath = TargetPropertyPath,
+            TargetCampathId = TargetCampathId,
+            TargetCampathGroupId = TargetCampathGroupId,
+            TargetCampathProfileId = TargetCampathProfileId,
+            TargetCampathProfileName = TargetCampathProfileName,
             DisplayName = DisplayName
         };
     }

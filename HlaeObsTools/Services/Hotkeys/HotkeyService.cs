@@ -8,6 +8,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Data;
 using Avalonia.VisualTree;
+using HlaeObsTools.ViewModels.Docks;
 
 namespace HlaeObsTools.Services.Hotkeys;
 
@@ -105,14 +106,24 @@ public sealed class HotkeyService
         if (IsModifierKey(e.Key))
             return false;
 
-        var binding = _bindings.FirstOrDefault(b =>
-            b.Enabled
-            && b.Key == e.Key
-            && b.Modifiers == e.KeyModifiers);
+        var matches = _bindings
+            .Where(b => b.Enabled && b.Key == e.Key && b.Modifiers == e.KeyModifiers)
+            .ToList();
 
-        if (binding == null)
+        if (matches.Count == 0)
             return false;
 
+        foreach (var binding in matches)
+        {
+            if (TryExecuteBinding(binding))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool TryExecuteBinding(HotkeyBindingData binding)
+    {
         if (binding.TargetKind == HotkeyTargetKind.Command)
         {
             if (!TryResolveCommand(binding, out var command))
@@ -149,6 +160,24 @@ public sealed class HotkeyService
             return true;
         }
 
+        if (binding.TargetKind == HotkeyTargetKind.Campath)
+        {
+            if (!TryResolveCampath(binding.TargetCampathId, binding.TargetCampathProfileId, out var campathsVm, out var campath))
+                return false;
+
+            _ = campathsVm.PlayCampathAsync(campath);
+            return true;
+        }
+
+        if (binding.TargetKind == HotkeyTargetKind.CampathGroup)
+        {
+            if (!TryResolveCampathGroup(binding.TargetCampathGroupId, binding.TargetCampathProfileId, out var campathsVm, out var group))
+                return false;
+
+            _ = campathsVm.PlayCampathGroupAsync(group);
+            return true;
+        }
+
         return false;
     }
 
@@ -178,6 +207,10 @@ public sealed class HotkeyService
                 TargetViewModelType = _rebindTarget.TargetViewModelType,
                 TargetCommandProperty = _rebindTarget.TargetCommandProperty,
                 TargetPropertyPath = _rebindTarget.TargetPropertyPath,
+                TargetCampathId = _rebindTarget.TargetCampathId,
+                TargetCampathGroupId = _rebindTarget.TargetCampathGroupId,
+                TargetCampathProfileId = _rebindTarget.TargetCampathProfileId,
+                TargetCampathProfileName = _rebindTarget.TargetCampathProfileName,
                 DisplayName = _rebindTarget.DisplayName
             };
 
@@ -225,6 +258,60 @@ public sealed class HotkeyService
                 TargetViewModelType = boolViewModelType,
                 TargetPropertyPath = propertyPath,
                 DisplayName = boolDisplayName
+            };
+
+            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
+            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            return true;
+        }
+
+        if (TryGetCampathTarget(_hoveredControl, out var campathId, out var campathName))
+        {
+            if (!TryGetActiveCampathProfile(out var profileId, out var profileName))
+            {
+                StatusChanged?.Invoke(this, "No active campath profile.");
+                return true;
+            }
+
+            var binding = new HotkeyBindingData
+            {
+                Id = _rebindId ?? Guid.NewGuid(),
+                Enabled = true,
+                Key = e.Key,
+                Modifiers = e.KeyModifiers,
+                TargetKind = HotkeyTargetKind.Campath,
+                TargetViewModelType = typeof(CampathsDockViewModel).FullName,
+                TargetCampathId = campathId,
+                TargetCampathProfileId = profileId,
+                TargetCampathProfileName = profileName,
+                DisplayName = campathName
+            };
+
+            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
+            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            return true;
+        }
+
+        if (TryGetCampathGroupTarget(_hoveredControl, out var groupId, out var groupName))
+        {
+            if (!TryGetActiveCampathProfile(out var profileId, out var profileName))
+            {
+                StatusChanged?.Invoke(this, "No active campath profile.");
+                return true;
+            }
+
+            var binding = new HotkeyBindingData
+            {
+                Id = _rebindId ?? Guid.NewGuid(),
+                Enabled = true,
+                Key = e.Key,
+                Modifiers = e.KeyModifiers,
+                TargetKind = HotkeyTargetKind.CampathGroup,
+                TargetViewModelType = typeof(CampathsDockViewModel).FullName,
+                TargetCampathGroupId = groupId,
+                TargetCampathProfileId = profileId,
+                TargetCampathProfileName = profileName,
+                DisplayName = groupName
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
@@ -297,6 +384,17 @@ public sealed class HotkeyService
                 return $"Property path '{binding.Path}' not found or not a writable bool.";
 
             return "Unknown toggle bind failure.";
+        }
+
+        if (control is Border border)
+        {
+            var campathId = HotkeyTarget.GetCampathId(border);
+            if (campathId != null)
+                return "Campath target should be bindable.";
+
+            var groupId = HotkeyTarget.GetCampathGroupId(border);
+            if (groupId != null)
+                return "Campath group target should be bindable.";
         }
 
         if (control is Button button)
@@ -526,6 +624,12 @@ public sealed class HotkeyService
         if (source is ToggleSwitch toggle)
             return toggle;
 
+        if (source is Border border)
+        {
+            if (HotkeyTarget.GetCampathId(border) != null || HotkeyTarget.GetCampathGroupId(border) != null)
+                return border;
+        }
+
         if (source is Button button)
             return button;
 
@@ -535,10 +639,134 @@ public sealed class HotkeyService
             if (toggleAncestor != null)
                 return toggleAncestor;
 
+            var borderAncestor = visual.GetSelfAndVisualAncestors()
+                .OfType<Border>()
+                .FirstOrDefault(b => HotkeyTarget.GetCampathId(b) != null || HotkeyTarget.GetCampathGroupId(b) != null);
+            if (borderAncestor != null)
+                return borderAncestor;
+
             return visual.GetSelfAndVisualAncestors().OfType<Button>().FirstOrDefault();
         }
 
         return null;
+    }
+
+    private bool TryResolveCampath(Guid? campathId, Guid? profileId, out CampathsDockViewModel campathsVm, out CampathItemViewModel campath)
+    {
+        campathsVm = null!;
+        campath = null!;
+
+        if (campathId == null || campathId == Guid.Empty)
+            return false;
+
+        var vm = _commandContexts.OfType<CampathsDockViewModel>().FirstOrDefault();
+        if (vm == null)
+            return false;
+
+        if (profileId == null || profileId == Guid.Empty)
+            return false;
+
+        if (vm.SelectedProfile == null || vm.SelectedProfile.Id != profileId)
+            return false;
+
+        var profile = vm.SelectedProfile;
+        var match = profile.Campaths.FirstOrDefault(c => c.Id == campathId.Value);
+        if (match != null)
+        {
+            campathsVm = vm;
+            campath = match;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryResolveCampathGroup(Guid? groupId, Guid? profileId, out CampathsDockViewModel campathsVm, out CampathGroupViewModel group)
+    {
+        campathsVm = null!;
+        group = null!;
+
+        if (groupId == null || groupId == Guid.Empty)
+            return false;
+
+        var vm = _commandContexts.OfType<CampathsDockViewModel>().FirstOrDefault();
+        if (vm == null)
+            return false;
+
+        if (profileId == null || profileId == Guid.Empty)
+            return false;
+
+        if (vm.SelectedProfile == null || vm.SelectedProfile.Id != profileId)
+            return false;
+
+        var profile = vm.SelectedProfile;
+        var match = profile.Groups.FirstOrDefault(g => g.Id == groupId.Value);
+        if (match != null)
+        {
+            campathsVm = vm;
+            group = match;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryGetActiveCampathProfile(out Guid profileId, out string profileName)
+    {
+        profileId = Guid.Empty;
+        profileName = string.Empty;
+
+        var vm = _commandContexts.OfType<CampathsDockViewModel>().FirstOrDefault();
+        if (vm?.SelectedProfile == null)
+            return false;
+
+        profileId = vm.SelectedProfile.Id;
+        profileName = vm.SelectedProfile.Name;
+        return true;
+    }
+
+    private bool TryGetCampathTarget(Control control, out Guid campathId, out string displayName)
+    {
+        campathId = Guid.Empty;
+        displayName = string.Empty;
+
+        if (control is not Border border)
+            return false;
+
+        var id = HotkeyTarget.GetCampathId(border);
+        if (id == null || id == Guid.Empty)
+            return false;
+
+        campathId = id.Value;
+        displayName = GetDataContextName(border) ?? $"Campath {campathId}";
+        return true;
+    }
+
+    private bool TryGetCampathGroupTarget(Control control, out Guid groupId, out string displayName)
+    {
+        groupId = Guid.Empty;
+        displayName = string.Empty;
+
+        if (control is not Border border)
+            return false;
+
+        var id = HotkeyTarget.GetCampathGroupId(border);
+        if (id == null || id == Guid.Empty)
+            return false;
+
+        groupId = id.Value;
+        displayName = GetDataContextName(border) ?? $"Group {groupId}";
+        return true;
+    }
+
+    private static string? GetDataContextName(Control control)
+    {
+        var dataContext = control.DataContext;
+        if (dataContext == null)
+            return null;
+
+        var nameProp = dataContext.GetType().GetProperty("Name", BindingFlags.Instance | BindingFlags.Public);
+        return nameProp?.GetValue(dataContext) as string;
     }
 
 

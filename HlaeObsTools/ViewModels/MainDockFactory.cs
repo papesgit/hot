@@ -200,6 +200,7 @@ public class MainDockFactory : Factory, IDisposable
             _settingsStorage,
             _webSocketClient,
             _hotkeyService,
+            bottomRight,
             ApplyNetworkSettingsAsync,
             _storedSettings,
             _vmixReplaySettings,
