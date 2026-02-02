@@ -2,8 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:conv="using:HlaeObsTools.Converters"
+             xmlns:hk="using:HlaeObsTools.ViewModels.Hotkeys"
+             xmlns:hotkeys="using:HlaeObsTools.Services.Hotkeys"
              xmlns:docks="using:HlaeObsTools.Views.Docks"
              x:Class="HlaeObsTools.Views.Docks.SettingsDockView"
+             x:Name="Root"
              x:DataType="vm:SettingsDockViewModel">
     <UserControl.Resources>
         <conv:NullableDoubleTextConverter x:Key="NullableDouble" />
@@ -23,9 +26,11 @@
                             <ToggleSwitch IsChecked="{Binding IsDrawHudEnabled, Mode=TwoWay}"
                                         Content="Hide HUD"
                                         Foreground="#E6E6E6"
+                                hotkeys:HotkeyTarget.Path="IsDrawHudEnabled"
                                         Margin="0,0,10,0"/>
                             <ToggleSwitch IsChecked="{Binding IsOnlyDeathnotesEnabled, Mode=TwoWay}"
                                         Content="Only Deathnotices"
+                                hotkeys:HotkeyTarget.Path="IsOnlyDeathnotesEnabled"
                                         Foreground="#E6E6E6"/>
                             <StackPanel Orientation="Vertical" Spacing="2" Margin="6,0,0,0">
                                 <TextBlock Text="Force Deathnotices"
@@ -42,14 +47,17 @@
                             <ToggleSwitch IsChecked="{Binding IsXrayEnabled, Mode=TwoWay}"
                                         Content="Show Xray"
                                         Foreground="#E6E6E6"
+                                hotkeys:HotkeyTarget.Path="IsXrayEnabled"
                                         Margin="0,0,10,0"/>
                             <ToggleSwitch IsChecked="{Binding UseAltPlayerBinds, Mode=TwoWay}"
                                         Content="Use alt player binds"
+                                hotkeys:HotkeyTarget.Path="UseAltPlayerBinds"
                                         Foreground="#E6E6E6"/>
                         </StackPanel>
 
                         <ToggleSwitch IsChecked="{Binding DisableFocusInputGate, Mode=TwoWay}"
                                       Content="Disable Focus Input-Gate"
+                            hotkeys:HotkeyTarget.Path="DisableFocusInputGate"
                                       Foreground="#E6E6E6"/>
                         <Button Content="DemoUI"
                                 Command="{Binding ToggleDemouiCommand}"/>
@@ -88,6 +96,7 @@
                         <StackPanel Spacing="6">
                             <ToggleSwitch IsChecked="{Binding VmixReplaySettings.Enabled, Mode=TwoWay}"
                                           Content="Enable vMix replay markers"
+                                hotkeys:HotkeyTarget.Path="VmixReplaySettings.Enabled"
                                           Foreground="#E6E6E6"/>
                             <Grid ColumnDefinitions="Auto,Auto,Auto,Auto"
                                   RowDefinitions="Auto,Auto,Auto"
@@ -118,6 +127,7 @@
                         <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathMode, Mode=TwoWay}"
                                       Content="Viewport-Mode"
                                       Foreground="#E6E6E6"
+                            hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathMode"
                                       Margin="0,4,0,0"/>
 
                         <StackPanel Orientation="Horizontal"
@@ -128,9 +138,11 @@
                                         Content="Draw Path"
                                         Foreground="#E6E6E6"
                                         HorizontalAlignment="Left"
+                                hotkeys:HotkeyTarget.Path="IsCameraPathPreviewEnabled"
                                         Margin="0,0,10,0"/>
                             <ToggleSwitch IsChecked="{Binding IsCampathEnabled, Mode=TwoWay}"
                                             Content="Campath enabled"
+                                hotkeys:HotkeyTarget.Path="IsCampathEnabled"
                                             Foreground="#E6E6E6"/>
                         </StackPanel>
 
@@ -168,27 +180,33 @@
                                 <ToggleSwitch IsChecked="{Binding CampathEditor.PreviewDuringPlayback, Mode=TwoWay}"
                                               Content="Play-Preview"
                                               Foreground="#E6E6E6"
+                                    hotkeys:HotkeyTarget.Path="CampathEditor.PreviewDuringPlayback"
                                               Margin="0,0,10,0"/>
                                 <ToggleSwitch IsChecked="{Binding CampathEditor.UseCubic, Mode=TwoWay}"
                                               Content="Cubic Interp"
                                               Foreground="#E6E6E6"
+                                    hotkeys:HotkeyTarget.Path="CampathEditor.UseCubic"
                                               Margin="0,0,10,0"/>
                                 <ToggleSwitch IsChecked="{Binding CampathEditor.Hold, Mode=TwoWay}"
                                               Content="Hold"
+                                    hotkeys:HotkeyTarget.Path="CampathEditor.Hold"
                                               Foreground="#E6E6E6"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathOverlayEnabled, Mode=TwoWay}"
                                               Content="Draw Path"
                                               Foreground="#E6E6E6"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathOverlayEnabled"
                                               Margin="0,0,10,0"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.CampathGizmoLocalSpace, Mode=TwoWay}"
                                               Content="Gizmo Local"
                                               Foreground="#E6E6E6"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.CampathGizmoLocalSpace"
                                               Margin="0,0,10,0"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathSyncEnabled, Mode=TwoWay}"
                                               Content="HLAE-Sync"
                                               Foreground="#E6E6E6"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathSyncEnabled"
                                               Margin="0,0,10,0"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,4,0,0">
@@ -284,9 +302,11 @@
                         </StackPanel>
                         <ToggleSwitch IsChecked="{Binding RadarSettings.DisplayNumbersTopmost, Mode=TwoWay}"
                                     Content="Observer-Slot on top"
+                            hotkeys:HotkeyTarget.Path="RadarSettings.DisplayNumbersTopmost"
                                     Foreground="#E6E6E6"/>
                         <ToggleSwitch IsChecked="{Binding RadarSettings.ShowPlayerNames, Mode=TwoWay}"
                                     Content="Show player names"
+                            hotkeys:HotkeyTarget.Path="RadarSettings.ShowPlayerNames"
                                     Foreground="#E6E6E6"/>
                     </StackPanel>
                 </ScrollViewer>
@@ -300,12 +320,15 @@
                                 FontWeight="SemiBold"/>
                         <ToggleSwitch IsChecked="{Binding HudSettings.IsHudEnabled, Mode=TwoWay}"
                                     Content="Enable HUD"
+                            hotkeys:HotkeyTarget.Path="HudSettings.IsHudEnabled"
                                     Foreground="#E6E6E6"/>
                         <ToggleSwitch IsChecked="{Binding HudSettings.ShowKillfeed, Mode=TwoWay}"
                                     Content="Show killfeed"
+                            hotkeys:HotkeyTarget.Path="HudSettings.ShowKillfeed"
                                     Foreground="#E6E6E6"/>
                         <ToggleSwitch IsChecked="{Binding HudSettings.ShowKillfeedAttackerSlot, Mode=TwoWay}"
                                     Content="Show killfeed attacker bind"
+                            hotkeys:HotkeyTarget.Path="HudSettings.ShowKillfeedAttackerSlot"
                                     Foreground="#E6E6E6"/>
                     </StackPanel>
                 </ScrollViewer>
@@ -350,6 +373,7 @@
                         <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ShowFps, Mode=TwoWay}"
                                     Content="Show FPS"
                                     Foreground="#E6E6E6"
+                            hotkeys:HotkeyTarget.Path="Viewport3DSettings.ShowFps"
                                     Margin="0,6,0,0"/>
 
                         <StackPanel IsVisible="{Binding Viewport3DSettings.IsVrfViewportMode}">
@@ -360,23 +384,29 @@
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.PostprocessEnabled, Mode=TwoWay}"
                                             Content="Postprocess"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.PostprocessEnabled"
                                             Foreground="#E6E6E6"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ColorCorrectionEnabled, Mode=TwoWay}"
                                             Content="Color correction"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.ColorCorrectionEnabled"
                                             Foreground="#E6E6E6"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.DynamicShadowsEnabled, Mode=TwoWay}"
                                             Content="Dynamic shadows"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.DynamicShadowsEnabled"
                                             Foreground="#E6E6E6"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.WireframeEnabled, Mode=TwoWay}"
                                             Content="Wireframe"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.WireframeEnabled"
                                             Foreground="#E6E6E6"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.SkipWaterEnabled, Mode=TwoWay}"
                                             Content="Skip water"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.SkipWaterEnabled"
                                             Foreground="#E6E6E6"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.SkipTranslucentEnabled, Mode=TwoWay}"
                                             Content="Skip translucents"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.SkipTranslucentEnabled"
                                             Foreground="#E6E6E6"/>
                             </StackPanel>
 
@@ -462,6 +492,7 @@
                         </StackPanel>
                         <ToggleSwitch IsChecked="{Binding Viewport3DSettings.UseLegacyD3D11Viewport, Mode=TwoWay}"
                                       Content="Use legacy D3D11 viewport (OBJ maps)"
+                            hotkeys:HotkeyTarget.Path="Viewport3DSettings.UseLegacyD3D11Viewport"
                                       Margin="0,4,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
@@ -543,12 +574,15 @@
                                                     <StackPanel Orientation="Horizontal" Spacing="12">
                                                         <ToggleSwitch Content="Pitch"
                                                                       IsChecked="{Binding RotationLockPitch, Mode=TwoWay}"
+                                                            hotkeys:HotkeyTarget.Path="RotationLockPitch"
                                                                       Foreground="#E6E6E6"/>
                                                         <ToggleSwitch Content="Yaw"
                                                                       IsChecked="{Binding RotationLockYaw, Mode=TwoWay}"
+                                                            hotkeys:HotkeyTarget.Path="RotationLockYaw"
                                                                       Foreground="#E6E6E6"/>
                                                         <ToggleSwitch Content="Roll"
                                                                       IsChecked="{Binding RotationLockRoll, Mode=TwoWay}"
+                                                            hotkeys:HotkeyTarget.Path="RotationLockRoll"
                                                                       Foreground="#E6E6E6"/>
                                                     </StackPanel>
 
@@ -584,6 +618,58 @@
                         </StackPanel>
                     </TabItem>
                 </TabControl>
+            </TabItem>
+
+            <TabItem Header="Hotkeys">
+                <ScrollViewer>
+                    <StackPanel Margin="10" Spacing="10">
+                        <TextBlock Text="Hotkey Binding"
+                                   Foreground="#CCCCCC"
+                                   FontWeight="SemiBold"/>
+                        <ToggleSwitch IsChecked="{Binding IsHotkeyBindingMode, Mode=TwoWay}"
+                                      Content="Enable hotkey binding mode (Esc to exit)"
+                            hotkeys:HotkeyTarget.Path="IsHotkeyBindingMode"
+                                      Foreground="#E6E6E6"/>
+                        <TextBlock Text="{Binding HotkeyStatusMessage}"
+                                   Foreground="#888888"
+                                   FontSize="12"/>
+                        <Separator Margin="0,6,0,6"/>
+                        <TextBlock Text="Bindings"
+                                   Foreground="#CCCCCC"
+                                   FontWeight="SemiBold"/>
+                        <ListBox ItemsSource="{Binding HotkeyBindings}"
+                                 SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                    <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,6">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                            <TextBlock Text="{Binding HotkeyDisplay}"
+                                                       Foreground="#E6E6E6"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding DisplayLabel}"
+                                                       Foreground="#CCCCCC"
+                                                       VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                <ToggleSwitch IsChecked="{Binding Enabled}"/>
+                                                <Button Content="Rebind"
+                                                        Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"/>
+                                                <Button Content="Remove"
+                                                        Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Text="Supports command buttons without parameters and simple toggle bindings."
+                                   Foreground="#888888"
+                                   FontSize="12"/>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
 
             <TabItem Header="Freecam">
@@ -624,6 +710,7 @@
 
                                     <ToggleSwitch IsChecked="{Binding FreecamSettings.ClampPitch, Mode=TwoWay}"
                                                   Content="Clamp Pitch"
+                                        hotkeys:HotkeyTarget.Path="FreecamSettings.ClampPitch"
                                                   Foreground="#E6E6E6"/>
 
                                     <!-- Movement Settings -->
@@ -727,9 +814,11 @@
                                 <StackPanel Spacing="8">
                                     <ToggleSwitch IsChecked="{Binding FreecamSettings.SmoothEnabled, Mode=TwoWay}"
                                                   Content="Enable Smoothing"
+                                        hotkeys:HotkeyTarget.Path="FreecamSettings.SmoothEnabled"
                                                   Foreground="#E6E6E6"/>
                                     <ToggleSwitch IsChecked="{Binding FreecamSettings.RotCriticalDamping, Mode=TwoWay}"
                                                   Content="Use Damping (Rotation)"
+                                        hotkeys:HotkeyTarget.Path="FreecamSettings.RotCriticalDamping"
                                                   Foreground="#E6E6E6"/>
                                     <TextBlock Text="Rotation Damping Ratio (>= 1.0)"
                                                Foreground="#CCCCCC"/>
@@ -998,6 +1087,7 @@
                                             Margin="0,8,0,0"/>
                                 <ToggleSwitch IsChecked="{Binding FreecamSettings.HoldMovementFollowsCamera, Mode=TwoWay}"
                                                 Content="Hold follows camera rotation"
+                                    hotkeys:HotkeyTarget.Path="FreecamSettings.HoldMovementFollowsCamera"
                                                 Foreground="#E6E6E6"/>
                                 <Button Content="Reset to Default"
                                         Command="{Binding ResetFreecamSettingsCommand}"
@@ -1014,6 +1104,7 @@
                                            FontWeight="SemiBold"/>
                                 <ToggleSwitch IsChecked="{Binding FreecamSettings.AnalogKeyboardEnabled, Mode=TwoWay}"
                                               Content="Enable analog keyboard mode"
+                                    hotkeys:HotkeyTarget.Path="FreecamSettings.AnalogKeyboardEnabled"
                                               Foreground="#E6E6E6"/>
                                 <TextBlock Text="Left Stick Deadzone"
                                            Foreground="#CCCCCC"/>

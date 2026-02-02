@@ -1,4 +1,5 @@
 using Dock.Model.Core;
+using Avalonia.Input;
 using System;
 using System.Reflection;
 
@@ -40,6 +41,16 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
     public void SetKeyboardSuppression(bool suppress)
     {
         _factory.SetKeyboardSuppression(suppress);
+    }
+
+    public bool HandleHotkeyKeyDown(KeyEventArgs e)
+    {
+        return _factory.HandleHotkeyKeyDown(e);
+    }
+
+    public void HandleHotkeyPointerMoved(PointerEventArgs e)
+    {
+        _factory.HandleHotkeyPointerMoved(e);
     }
 
     public void Dispose()

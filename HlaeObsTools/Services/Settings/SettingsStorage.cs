@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using HlaeObsTools.Services.Hotkeys;
 
 namespace HlaeObsTools.Services.Settings;
 
@@ -108,6 +109,7 @@ public class AppSettingsData
     public double VmixReplayPostSeconds { get; set; } = 2.0;
     public double VmixReplayExtendWindowSeconds { get; set; } = 3.0;
     public bool DisableFocusInputGate { get; set; }
+    public List<HotkeyBindingData> Hotkeys { get; set; } = new();
 }
 
 public class AttachmentPresetPageData

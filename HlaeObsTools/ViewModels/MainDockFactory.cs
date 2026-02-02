@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using Timer = System.Threading.Timer;
 using FormsKeys = System.Windows.Forms.Keys;
+using Avalonia.Input;
 using HlaeObsTools.Services.Input;
 using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.ViewModels.Docks;
@@ -17,6 +18,7 @@ using HlaeObsTools.ViewModels;
 using HlaeObsTools.Services.Settings;
 using HlaeObsTools.ViewModels.Hud;
 using HlaeObsTools.Services.Vmix;
+using HlaeObsTools.Services.Hotkeys;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -33,6 +35,7 @@ public class MainDockFactory : Factory, IDisposable
     private readonly RadarConfigProvider _radarConfigProvider;
     private readonly SettingsStorage _settingsStorage;
     private readonly AppSettingsData _storedSettings;
+    private readonly HotkeyService _hotkeyService;
     private readonly VmixReplayService _vmixReplayService;
     private readonly VmixReplaySettings _vmixReplaySettings;
     private VideoDisplayDockViewModel? _videoDisplayVm;
@@ -44,6 +47,8 @@ public class MainDockFactory : Factory, IDisposable
 
         _settingsStorage = new SettingsStorage();
         _storedSettings = _settingsStorage.Load();
+        _hotkeyService = new HotkeyService();
+        _hotkeyService.SetBindings(_storedSettings.Hotkeys ?? new List<HotkeyBindingData>());
 
         // Initialize WebSocket client
         _webSocketClient = new HlaeWebSocketClient(_storedSettings.WebSocketHost, _storedSettings.WebSocketPort);
@@ -194,6 +199,7 @@ public class MainDockFactory : Factory, IDisposable
             viewport3DSettings,
             _settingsStorage,
             _webSocketClient,
+            _hotkeyService,
             ApplyNetworkSettingsAsync,
             _storedSettings,
             _vmixReplaySettings,
@@ -209,6 +215,15 @@ public class MainDockFactory : Factory, IDisposable
         _videoDisplayVm.SetFreecamSettings(freecamSettings);
         var hudOverlayVm = new HudOverlayViewModel(_gsiServer, hudSettings, _webSocketClient, bottomRight);
         _videoDisplayVm.SetHudOverlay(hudOverlayVm);
+        _hotkeyService.RegisterCommandContext(topLeft);
+        _hotkeyService.RegisterCommandContext(topRight);
+        _hotkeyService.RegisterCommandContext(bottomLeft);
+        _hotkeyService.RegisterCommandContext(bottomRight);
+        _hotkeyService.RegisterCommandContext(bottomCenter);
+        _hotkeyService.RegisterCommandContext(_videoDisplayVm);
+        _hotkeyService.RegisterCommandContext(campathEditor);
+        _hotkeyService.RegisterCommandContext(hudOverlayVm);
+        _hotkeyService.RegisterCommandContext(bottomLeft.AttachPresetAnimationEditor);
         ConfigureAnalogInput(freecamSettings);
         _videoDisplayVm.SetRtpConfig(new Services.Video.RTP.RtpReceiverConfig
         {
@@ -352,6 +367,7 @@ public class MainDockFactory : Factory, IDisposable
             {
                 var hostWindow = new Views.DockHostWindow();
                 hostWindow.SetKeyboardSuppressionHandler(SetKeyboardSuppression);
+                hostWindow.SetHotkeyHandlers(HandleHotkeyKeyDown, HandleHotkeyPointerMoved);
                 return hostWindow;
             }
         };
@@ -362,6 +378,16 @@ public class MainDockFactory : Factory, IDisposable
     public void SetKeyboardSuppression(bool suppress)
     {
         _rawInputHandler.SuppressKeyboard = suppress;
+    }
+
+    public bool HandleHotkeyKeyDown(KeyEventArgs e)
+    {
+        return _hotkeyService.HandleKeyDown(e);
+    }
+
+    public void HandleHotkeyPointerMoved(PointerEventArgs e)
+    {
+        _hotkeyService.HandlePointerMoved(e);
     }
 
     private void ConfigureAnalogInput(FreecamSettings freecamSettings)
