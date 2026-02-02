@@ -10,6 +10,8 @@
         Background="Transparent"
         SystemDecorations="None"
         CanResize="False"
+        Focusable="False"
+        ShowActivated="False"
         ShowInTaskbar="False"
         ExtendClientAreaToDecorationsHint="False"
         Width="800"

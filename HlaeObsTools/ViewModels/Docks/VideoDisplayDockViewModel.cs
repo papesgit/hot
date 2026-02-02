@@ -207,14 +207,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public void RequestFreecamInputLock()
     {
         FreecamInputLockRequested?.Invoke(this, EventArgs.Empty);
-        if (_hudOverlayWindow != null && _hudOverlayWindow.IsVisible)
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                _hudOverlayWindow.Activate();
-                _hudOverlayWindow.Focus();
-            }, DispatcherPriority.Background);
-        }
     }
 
     public void SetSprintModifierState(bool isPressed)

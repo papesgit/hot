@@ -65,7 +65,6 @@ public class D3DSharedTextureHost : NativeControlHost
 
         var parentHwnd = parent.Handle;
         _hwnd = CreateChildWindow(parentHwnd);
-        ApplyTransparentStyles(_hwnd);
         RegisterHostWindow(_hwnd, this);
         StartRenderer();
 
@@ -606,17 +605,6 @@ public class D3DSharedTextureHost : NativeControlHost
             IntPtr.Zero);
     }
 
-    private static void ApplyTransparentStyles(IntPtr hwnd)
-    {
-        // Make the child window transparent to hit-testing so freecam right-click still works.
-        const int GWL_EXSTYLE = -20;
-        const int WS_EX_TRANSPARENT = 0x00000020;
-        if (hwnd == IntPtr.Zero) return;
-        int exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-        exStyle |= WS_EX_TRANSPARENT;
-        SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
-    }
-
     private static void RegisterHostWindow(IntPtr hwnd, D3DSharedTextureHost host)
     {
         lock (_classLock)
@@ -661,17 +649,14 @@ public class D3DSharedTextureHost : NativeControlHost
     private static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
-
     private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     private static IntPtr HostWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
         const uint WM_NCHITTEST = 0x0084;
+        const uint WM_LBUTTONDOWN = 0x0201;
+        const uint WM_LBUTTONUP = 0x0202;
+        const uint WM_MOUSEMOVE = 0x0200;
         const uint WM_RBUTTONDOWN = 0x0204;
         const uint WM_RBUTTONUP = 0x0205;
         const int HTCLIENT = 1;
@@ -681,7 +666,8 @@ public class D3DSharedTextureHost : NativeControlHost
             return new IntPtr(HTCLIENT);
         }
 
-        if (msg == WM_RBUTTONDOWN || msg == WM_RBUTTONUP)
+        if (msg == WM_MOUSEMOVE || msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP ||
+            msg == WM_RBUTTONDOWN || msg == WM_RBUTTONUP)
         {
             D3DSharedTextureHost? host = null;
             lock (_classLock)
@@ -696,7 +682,7 @@ public class D3DSharedTextureHost : NativeControlHost
             {
                 if (msg == WM_RBUTTONDOWN)
                     host.RightButtonDown?.Invoke(host, EventArgs.Empty);
-                else
+                else if (msg == WM_RBUTTONUP)
                     host.RightButtonUp?.Invoke(host, EventArgs.Empty);
                 return IntPtr.Zero; // handled
             }

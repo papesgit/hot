@@ -565,10 +565,6 @@ public sealed class RtpSwapchainViewer : IDisposable
                 Console.WriteLine($"CreateWindowEx fallback failed (err={Marshal.GetLastWin32Error()}).");
             }
         }
-        if (hwnd != IntPtr.Zero && _parentHwnd != IntPtr.Zero)
-        {
-            ApplyTransparentStyle(hwnd);
-        }
         if (hwnd != IntPtr.Zero && _parentHwnd == IntPtr.Zero)
         {
             ShowWindow(hwnd, 5); // SW_SHOW only for top-level
@@ -577,18 +573,6 @@ public sealed class RtpSwapchainViewer : IDisposable
         return hwnd;
     }
 
-    private static void ApplyTransparentStyle(IntPtr hwnd)
-    {
-        const int GWL_EXSTYLE = -20;
-        const int WS_EX_TRANSPARENT = 0x00000020;
-        const int WS_EX_NOACTIVATE = 0x08000000;
-
-        if (hwnd == IntPtr.Zero)
-            return;
-
-        int ex = GetWindowLong(hwnd, GWL_EXSTYLE);
-        SetWindowLong(hwnd, GWL_EXSTYLE, ex | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE);
-    }
 
     private void ResizeWindowToFrame(int width, int height)
     {
@@ -617,10 +601,20 @@ public sealed class RtpSwapchainViewer : IDisposable
 
     private static IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
+        const uint WM_LBUTTONDOWN = 0x0201;
         const uint WM_RBUTTONDOWN = 0x0204;
         const uint WM_RBUTTONUP = 0x0205;
         const uint WM_DESTROY = 0x0002;
-        if (msg == WM_RBUTTONDOWN || msg == WM_RBUTTONUP)
+        const uint WM_NCHITTEST = 0x0084;
+        const uint WM_LBUTTONUP = 0x0202;
+        const uint WM_MOUSEMOVE = 0x0200;
+        const int HTCLIENT = 1;
+        if (msg == WM_NCHITTEST)
+        {
+            return new IntPtr(HTCLIENT);
+        }
+        if (msg == WM_MOUSEMOVE || msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP ||
+            msg == WM_RBUTTONDOWN || msg == WM_RBUTTONUP)
         {
             RtpSwapchainViewer? viewer = null;
             lock (_classLock)
@@ -635,7 +629,7 @@ public sealed class RtpSwapchainViewer : IDisposable
             {
                 if (msg == WM_RBUTTONDOWN)
                     viewer.RightButtonDown?.Invoke(viewer, EventArgs.Empty);
-                else
+                else if (msg == WM_RBUTTONUP)
                     viewer.RightButtonUp?.Invoke(viewer, EventArgs.Empty);
                 return IntPtr.Zero;
             }

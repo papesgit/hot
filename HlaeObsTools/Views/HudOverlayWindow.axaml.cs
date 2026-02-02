@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -13,10 +14,17 @@ public partial class HudOverlayWindow : Window
     public event EventHandler? RightButtonDown;
     public event EventHandler? RightButtonUp;
     public event EventHandler<bool>? ShiftKeyChanged;
+    private static readonly object WndProcLock = new();
+    private static WndProcDelegate? _wndProc;
+    private static IntPtr _wndProcPtr = IntPtr.Zero;
+    private static readonly Dictionary<IntPtr, IntPtr> WndProcMap = new();
+    private static readonly Dictionary<IntPtr, IntPtr> OwnerMap = new();
 
     public HudOverlayWindow()
     {
         InitializeComponent();
+        ShowActivated = false;
+        Focusable = false;
 
         // Make the window layered for transparency, but NOT click-through
         // This window handles all mouse interactions for the HUD
@@ -43,11 +51,14 @@ public partial class HudOverlayWindow : Window
     {
         if (!OperatingSystem.IsWindows()) return;
 
-        // Make window layered for transparency but still receive mouse events
+        // Make window layered for transparency but still receive mouse events,
+        // while preventing it from stealing focus.
         var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
         if (hwnd != IntPtr.Zero)
         {
             MakeLayered(hwnd);
+            var ownerHwnd = Owner?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            InstallNoActivateWndProc(hwnd, ownerHwnd);
         }
     }
 
@@ -55,9 +66,10 @@ public partial class HudOverlayWindow : Window
     {
         const int GWL_EXSTYLE = -20;
         const int WS_EX_LAYERED = 0x00080000;
+        const int WS_EX_NOACTIVATE = 0x08000000;
 
         int exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-        exStyle |= WS_EX_LAYERED;
+        exStyle |= WS_EX_LAYERED | WS_EX_NOACTIVATE;
         // Note: NOT adding WS_EX_TRANSPARENT so the window can receive mouse events
         SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
     }
@@ -115,9 +127,125 @@ public partial class HudOverlayWindow : Window
         }
     }
 
+    protected override void OnClosed(EventArgs e)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            if (hwnd != IntPtr.Zero)
+            {
+                UninstallWndProc(hwnd);
+            }
+        }
+        base.OnClosed(e);
+    }
+
+    private static void InstallNoActivateWndProc(IntPtr hwnd, IntPtr ownerHwnd)
+    {
+        lock (WndProcLock)
+        {
+            if (WndProcMap.ContainsKey(hwnd))
+                return;
+
+            if (_wndProc == null)
+            {
+                _wndProc = HostWndProc;
+                _wndProcPtr = Marshal.GetFunctionPointerForDelegate(_wndProc);
+            }
+
+            var oldProc = SetWindowLongPtr(hwnd, GWL_WNDPROC, _wndProcPtr);
+            if (oldProc != IntPtr.Zero)
+            {
+                WndProcMap[hwnd] = oldProc;
+                OwnerMap[hwnd] = ownerHwnd;
+            }
+        }
+    }
+
+    private static void UninstallWndProc(IntPtr hwnd)
+    {
+        lock (WndProcLock)
+        {
+            if (!WndProcMap.TryGetValue(hwnd, out var oldProc))
+                return;
+
+            SetWindowLongPtr(hwnd, GWL_WNDPROC, oldProc);
+            WndProcMap.Remove(hwnd);
+            OwnerMap.Remove(hwnd);
+        }
+    }
+
+    private static IntPtr HostWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+    {
+        const uint WM_MOUSEACTIVATE = 0x0021;
+        const uint WM_ACTIVATE = 0x0006;
+        const uint WM_ACTIVATEAPP = 0x001C;
+        const int MA_NOACTIVATE = 3;
+        const int WA_INACTIVE = 0;
+
+        if (msg == WM_MOUSEACTIVATE)
+        {
+            return new IntPtr(MA_NOACTIVATE);
+        }
+
+        if (msg == WM_ACTIVATE || msg == WM_ACTIVATEAPP)
+        {
+            int state = (int)(wParam.ToInt64() & 0xFFFF);
+            if (state != WA_INACTIVE)
+            {
+                if (TryGetOwner(hWnd, out var owner))
+                {
+                    SetForegroundWindow(owner);
+                    SetFocus(owner);
+                }
+                return IntPtr.Zero;
+            }
+        }
+
+        lock (WndProcLock)
+        {
+            if (WndProcMap.TryGetValue(hWnd, out var oldProc))
+            {
+                return CallWindowProc(oldProc, hWnd, msg, wParam, lParam);
+            }
+        }
+
+        return DefWindowProc(hWnd, msg, wParam, lParam);
+    }
+    private static bool TryGetOwner(IntPtr hwnd, out IntPtr owner)
+    {
+        lock (WndProcLock)
+        {
+            if (OwnerMap.TryGetValue(hwnd, out owner))
+                return owner != IntPtr.Zero;
+        }
+
+        owner = IntPtr.Zero;
+        return false;
+    }
+
+    private const int GWL_WNDPROC = -4;
+
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetFocus(IntPtr hWnd);
+
+    private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 }
