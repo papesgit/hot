@@ -1,0 +1,109 @@
+:root {
+  --bg: rgba(0, 0, 0, 0);
+  --accent: #26f2ff;
+  --accent2: #ff8a2a;
+  --glow: rgba(38, 242, 255, 0.5);
+  --text: #f7f8fa;
+}
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+.card {
+  position: absolute;
+  width: 320px;
+  height: 140px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  background: linear-gradient(140deg, rgba(0, 0, 0, 0.85), rgba(10, 10, 16, 0.4));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), inset 0 0 24px rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+.gfx {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.gfx.is-hidden {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  pointer-events: none;
+}
+.gfx.anim-in {
+  animation: gfxIn 0.35s ease-out forwards;
+}
+.gfx.anim-out {
+  animation: gfxOut 0.25s ease-in forwards;
+}
+@keyframes gfxIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes gfxOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+.card--primary {
+  left: 32px;
+  top: 32px;
+}
+.card--secondary {
+  right: 32px;
+  bottom: 32px;
+  height: 160px;
+  background: linear-gradient(140deg, rgba(6, 8, 18, 0.9), rgba(16, 29, 65, 0.6));
+  border-color: rgba(42, 99, 255, 0.85);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.4), inset 0 0 24px rgba(255, 138, 42, 0.08);
+}
+.title {
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+.value {
+  font-size: 38px;
+  font-weight: 600;
+}
+.bar {
+  margin-top: 14px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 12px var(--glow);
+  transition: width 0.2s ease;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.stat {
+  padding: 8px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.stat-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 4px;
+}
