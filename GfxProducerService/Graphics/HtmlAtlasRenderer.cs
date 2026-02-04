@@ -12,6 +12,23 @@ namespace GfxProducerService.Graphics;
 
 public sealed class HtmlAtlasRenderer : IDisposable
 {
+    private sealed class HotNotifyBridge
+    {
+        private readonly HtmlAtlasRenderer _owner;
+
+        public HotNotifyBridge(HtmlAtlasRenderer owner)
+        {
+            _owner = owner;
+        }
+
+        public void TriggerDone(string action, string target)
+        {
+            if (string.IsNullOrWhiteSpace(action))
+                return;
+            _owner.RaiseTriggerCompleted(action, target ?? string.Empty);
+        }
+    }
+
     private readonly GraphicsD3DDevice _device;
     private readonly object _bufferLock = new();
     private readonly object _reloadLock = new();
@@ -28,6 +45,7 @@ public sealed class HtmlAtlasRenderer : IDisposable
     private CancellationTokenSource? _cts;
     private Task? _renderTask;
     private TaskCompletionSource<bool>? _reloadPaintTcs;
+    private readonly HotNotifyBridge _hotNotifyBridge;
 
     public HtmlAtlasRenderer(GraphicsD3DDevice device, int width, int height, int targetFps, string htmlPath, Format format, bool keyedMutex)
     {
@@ -38,11 +56,13 @@ public sealed class HtmlAtlasRenderer : IDisposable
         _htmlPath = htmlPath;
         _format = format;
         _useKeyedMutex = keyedMutex;
+        _hotNotifyBridge = new HotNotifyBridge(this);
     }
 
     public ID3D11Texture2D? SharedTexture { get; private set; }
     public IDXGIKeyedMutex? KeyedMutex { get; private set; }
     public ulong SharedHandle { get; private set; }
+    public event Action<string, string>? TriggerCompleted;
 
     public void Start()
     {
@@ -61,6 +81,9 @@ public sealed class HtmlAtlasRenderer : IDisposable
         {
             Size = new System.Drawing.Size(_width, _height)
         };
+
+        _browser.JavascriptObjectRepository.Register("hotNotify", _hotNotifyBridge);
+        _browser.JavascriptMessageReceived += OnJavascriptMessageReceived;
 
         _browser.Paint += OnPaint;
 
@@ -239,6 +262,37 @@ public sealed class HtmlAtlasRenderer : IDisposable
 }})();";
     }
 
+    private void RaiseTriggerCompleted(string action, string target)
+    {
+        TriggerCompleted?.Invoke(action, target);
+    }
+
+    private void OnJavascriptMessageReceived(object? sender, JavascriptMessageReceivedEventArgs e)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(e.Message);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+                return;
+            if (!root.TryGetProperty("type", out var typeProp))
+                return;
+            var type = typeProp.GetString();
+            if (!string.Equals(type, "hotNotify", StringComparison.OrdinalIgnoreCase))
+                return;
+            var action = root.TryGetProperty("action", out var actionProp) ? actionProp.GetString() ?? string.Empty : string.Empty;
+            if (string.IsNullOrWhiteSpace(action))
+                return;
+            var target = root.TryGetProperty("target", out var targetProp) ? targetProp.GetString() ?? string.Empty : string.Empty;
+            RaiseTriggerCompleted(action, target);
+        }
+        catch
+        {
+            // ignore message parse errors
+        }
+    }
+
     private static string BuildGsiScript(string gsiJson, long? heartbeat, string? extrasJson)
     {
         var jsonLiteral = JsonSerializer.Serialize(gsiJson);
@@ -281,6 +335,7 @@ public sealed class HtmlAtlasRenderer : IDisposable
         if (_browser != null)
         {
             _browser.Paint -= OnPaint;
+            _browser.JavascriptMessageReceived -= OnJavascriptMessageReceived;
             _browser.Dispose();
             _browser = null;
         }

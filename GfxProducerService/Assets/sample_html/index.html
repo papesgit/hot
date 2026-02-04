@@ -163,11 +163,22 @@
         }
       }
 
+      function notifyDone(action, target) {
+        if (window.hotNotify && window.hotNotify.TriggerDone) {
+          window.hotNotify.TriggerDone(action, target);
+          return;
+        }
+        if (window.CefSharp && typeof CefSharp.PostMessage === "function") {
+          CefSharp.PostMessage({ type: "hotNotify", action, target });
+        }
+      }
+
       gfxNodes.forEach((el) => {
         el.addEventListener("animationend", (e) => {
           if (e.animationName === "gfxOut") {
             setHidden(el, true);
             el.classList.remove("anim-out");
+            notifyDone("animOut", el.dataset.gfx || "");
           } else if (e.animationName === "gfxIn") {
             el.classList.remove("anim-in");
           }

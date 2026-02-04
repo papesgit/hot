@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -22,11 +23,14 @@ public sealed class ProducerServer : IDisposable
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
     private WebApplication? _app;
+    private readonly object _socketLock = new();
+    private readonly HashSet<WebSocket> _sockets = new();
 
     public ProducerServer(string host, int port)
     {
         _port = port;
         _host = NormalizeHost(host);
+        _atlasManager.TriggerCompleted += OnTriggerCompleted;
     }
 
     public void Initialize()
@@ -60,6 +64,10 @@ public sealed class ProducerServer : IDisposable
                     ? $"{context.Connection.RemoteIpAddress}:{context.Connection.RemotePort}"
                     : "unknown";
                 Console.WriteLine($"[gfxp] client connected: {remote}");
+                lock (_socketLock)
+                {
+                    _sockets.Add(socket);
+                }
                 await ReceiveLoopAsync(socket, token);
             }
             catch (Exception ex)
@@ -77,6 +85,10 @@ public sealed class ProducerServer : IDisposable
                     catch
                     {
                         // ignore
+                    }
+                    lock (_socketLock)
+                    {
+                        _sockets.Remove(socket);
                     }
                     socket.Dispose();
                 }
@@ -325,6 +337,42 @@ public sealed class ProducerServer : IDisposable
         await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
+    private void OnTriggerCompleted(string atlas, string action, string target)
+    {
+        _ = BroadcastAsync(new
+        {
+            type = "gfxp.trigger.done",
+            data = new { atlas, action, target }
+        });
+    }
+
+    private async Task BroadcastAsync(object payload)
+    {
+        WebSocket[] sockets;
+        lock (_socketLock)
+        {
+            sockets = _sockets.ToArray();
+        }
+        if (sockets.Length == 0)
+            return;
+
+        var json = JsonSerializer.Serialize(payload, _jsonOptions);
+        var bytes = Encoding.UTF8.GetBytes(json);
+        foreach (var socket in sockets)
+        {
+            if (socket.State != WebSocketState.Open)
+                continue;
+            try
+            {
+                await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            catch
+            {
+                // ignore send errors
+            }
+        }
+    }
+
     private static string? GetString(JsonElement root, string name)
     {
         if (root.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String)
@@ -376,6 +424,7 @@ public sealed class ProducerServer : IDisposable
                 // ignore
             }
         }
+        _atlasManager.TriggerCompleted -= OnTriggerCompleted;
         _atlasManager.Dispose();
     }
 

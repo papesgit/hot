@@ -249,6 +249,7 @@
 
   <script>
     const cards = new Map();
+    const animOutTimers = new Map();
 
     function createCardDOM(cardEl) {
       cardEl.innerHTML = `
@@ -388,12 +389,39 @@
       updateCards(gsi, extras);
     });
 
+    function notifyDone(action, target) {
+      if (window.hotNotify && window.hotNotify.TriggerDone) {
+        window.hotNotify.TriggerDone(action, target);
+        return;
+      }
+      if (window.CefSharp && typeof CefSharp.PostMessage === "function") {
+        CefSharp.PostMessage({ type: "hotNotify", action, target });
+      }
+    }
+
     window.hotTrigger = (action, target) => {
       const item = cards.get(target);
       if (!item) return;
 
-      if (action === "animIn") item.el.classList.add("visible");
-      if (action === "animOut") item.el.classList.remove("visible");
+      if (action === "animIn") {
+        const timer = animOutTimers.get(target);
+        if (timer) {
+          clearTimeout(timer);
+          animOutTimers.delete(target);
+        }
+        item.el.classList.add("visible");
+      }
+      if (action === "animOut") {
+        item.el.classList.remove("visible");
+        const timer = animOutTimers.get(target);
+        if (timer) {
+          clearTimeout(timer);
+        }
+        animOutTimers.set(target, setTimeout(() => {
+          animOutTimers.delete(target);
+          notifyDone("animOut", target);
+        }, 560));
+      }
     };
 
     document.addEventListener("hot:trigger", (e) => {

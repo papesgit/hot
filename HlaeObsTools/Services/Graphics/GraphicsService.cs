@@ -22,6 +22,7 @@ public sealed class GraphicsService : IDisposable
     private readonly GsiExtrasTracker _gsiExtrasTracker = new();
 
     public event EventHandler? ProfileChanged;
+    public event EventHandler<GraphicsVisibilityEvent>? InstancesVisibilityChanged;
 
     public GraphicsService(HlaeWebSocketClient webSocket, GraphicsProducerClient producerClient, GsiServer gsiServer, GraphicsProfileStorage storage, int targetFps = 30)
     {
@@ -33,6 +34,7 @@ public sealed class GraphicsService : IDisposable
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
         _webSocket.Connected += OnWebSocketConnected;
         _producerClient.Connected += OnProducerConnected;
+        _producerClient.TriggerCompleted += OnProducerTriggerCompleted;
     }
 
     public bool Enabled => _enabled;
@@ -229,6 +231,11 @@ public sealed class GraphicsService : IDisposable
         var instance = _profile.Instances.FirstOrDefault(i => i.Name == instanceName);
         if (instance == null || string.IsNullOrWhiteSpace(instance.Atlas) || string.IsNullOrWhiteSpace(instance.Region))
             return Task.CompletedTask;
+        if (string.Equals(action, "animIn", StringComparison.OrdinalIgnoreCase))
+        {
+            _ = UpdateInstanceVisibilityAsync(instance.Name, true);
+            RaiseInstancesVisibilityChanged(new[] { instance.Name }, true);
+        }
         return _producerClient.TriggerAsync(instance.Atlas, action, instance.Region);
     }
 
@@ -238,14 +245,21 @@ public sealed class GraphicsService : IDisposable
             return;
         if (string.IsNullOrWhiteSpace(atlasName))
             return;
-        var regions = _profile.Instances
+        var instances = _profile.Instances
             .Where(i => string.Equals(i.Atlas, atlasName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var regions = instances
             .Select(i => i.Region)
             .Where(region => !string.IsNullOrWhiteSpace(region))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         if (regions.Count == 0)
             return;
+        if (string.Equals(action, "animIn", StringComparison.OrdinalIgnoreCase))
+        {
+            await UpdateInstancesVisibilityAsync(instances, true);
+            RaiseInstancesVisibilityChanged(instances.Select(i => i.Name), true);
+        }
         foreach (var region in regions)
         {
             await _producerClient.TriggerAsync(atlasName, action, region);
@@ -306,10 +320,39 @@ public sealed class GraphicsService : IDisposable
         _ = ApplyProfileAsync();
     }
 
+    private void OnProducerTriggerCompleted(object? sender, ProducerTriggerEvent e)
+    {
+        if (!_enabled)
+            return;
+        if (!string.Equals(e.Action, "animOut", StringComparison.OrdinalIgnoreCase))
+            return;
+        if (string.IsNullOrWhiteSpace(e.Atlas) || string.IsNullOrWhiteSpace(e.Target))
+            return;
+        var instances = _profile.Instances
+            .Where(i => string.Equals(i.Atlas, e.Atlas, StringComparison.OrdinalIgnoreCase))
+            .Where(i => string.Equals(i.Region, e.Target, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (instances.Count == 0)
+            return;
+        _ = UpdateInstancesVisibilityAsync(instances, false);
+        RaiseInstancesVisibilityChanged(instances.Select(i => i.Name), false);
+    }
+
+    private void RaiseInstancesVisibilityChanged(IEnumerable<string> names, bool visible)
+    {
+        var list = names.Where(name => !string.IsNullOrWhiteSpace(name)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (list.Count == 0)
+            return;
+        InstancesVisibilityChanged?.Invoke(this, new GraphicsVisibilityEvent(list, visible));
+    }
+
     public void Dispose()
     {
         _gsiServer.GameStateUpdated -= OnGameStateUpdated;
         _webSocket.Connected -= OnWebSocketConnected;
         _producerClient.Connected -= OnProducerConnected;
+        _producerClient.TriggerCompleted -= OnProducerTriggerCompleted;
     }
 }
+
+public sealed record GraphicsVisibilityEvent(IReadOnlyList<string> InstanceNames, bool Visible);

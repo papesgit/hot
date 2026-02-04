@@ -63,6 +63,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         RefreshFromProfile();
 
         _graphicsService.ProfileChanged += OnProfileChanged;
+        _graphicsService.InstancesVisibilityChanged += OnInstancesVisibilityChanged;
 
         ShowSetupCommand = new Relay(() => IsSetupView = true);
         ShowLiveCommand = new Relay(() => IsSetupView = false);
@@ -514,9 +515,37 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         _ = SetAtlasInstancesVisibleAsync(atlas, visible);
     }
 
+    private void OnInstancesVisibilityChanged(object? sender, GraphicsVisibilityEvent e)
+    {
+        if (e.InstanceNames.Count == 0)
+            return;
+
+        _suppressApply = true;
+        try
+        {
+            foreach (var name in e.InstanceNames)
+            {
+                var vm = Instances.FirstOrDefault(inst => inst.Name == name);
+                if (vm == null)
+                    continue;
+                vm.SetVisibleInternal(e.Visible);
+                var atlas = Atlases.FirstOrDefault(a => a.Name == vm.Atlas);
+                if (atlas != null)
+                {
+                    UpdateAtlasInstancesVisibilityState(atlas);
+                }
+            }
+        }
+        finally
+        {
+            _suppressApply = false;
+        }
+    }
+
     public void Dispose()
     {
         _graphicsService.ProfileChanged -= OnProfileChanged;
+        _graphicsService.InstancesVisibilityChanged -= OnInstancesVisibilityChanged;
     }
 
     public void SaveProfileAs(string name)
@@ -821,6 +850,14 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                 OnPropertyChanged();
                 _visibleChanged?.Invoke(this);
             }
+        }
+
+        public void SetVisibleInternal(bool visible)
+        {
+            if (Model.Visible == visible)
+                return;
+            Model.Visible = visible;
+            OnPropertyChanged(nameof(Visible));
         }
 
         public bool DepthTest

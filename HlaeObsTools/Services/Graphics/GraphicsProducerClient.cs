@@ -24,6 +24,7 @@ public sealed class GraphicsProducerClient : IDisposable
 
     public event EventHandler? Connected;
     public event EventHandler? Disconnected;
+    public event EventHandler<ProducerTriggerEvent>? TriggerCompleted;
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
 
@@ -200,6 +201,21 @@ public sealed class GraphicsProducerClient : IDisposable
         {
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
+            if (root.TryGetProperty("type", out var typeProp))
+            {
+                var type = typeProp.GetString();
+                if (string.Equals(type, "gfxp.trigger.done", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (root.TryGetProperty("data", out var dataProp) && dataProp.ValueKind == JsonValueKind.Object)
+                    {
+                        var atlas = dataProp.TryGetProperty("atlas", out var atlasProp) ? atlasProp.GetString() ?? string.Empty : string.Empty;
+                        var action = dataProp.TryGetProperty("action", out var actionProp) ? actionProp.GetString() ?? string.Empty : string.Empty;
+                        var target = dataProp.TryGetProperty("target", out var targetProp) ? targetProp.GetString() ?? string.Empty : string.Empty;
+                        TriggerCompleted?.Invoke(this, new ProducerTriggerEvent(atlas, action, target));
+                    }
+                    return;
+                }
+            }
             if (!root.TryGetProperty("id", out var idProp))
                 return;
             var id = idProp.GetString();
@@ -261,6 +277,8 @@ public sealed class GraphicsProducerClient : IDisposable
         public JsonElement Data { get; init; }
     }
 }
+
+public sealed record ProducerTriggerEvent(string Atlas, string Action, string Target);
 
 public sealed class ProducerAtlasRequest
 {

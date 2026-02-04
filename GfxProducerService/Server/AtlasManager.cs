@@ -19,6 +19,7 @@ public sealed class AtlasManager : IDisposable
     private readonly Dictionary<string, HtmlAtlasRenderer> _renderers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AtlasInfo> _info = new(StringComparer.OrdinalIgnoreCase);
     private bool _cefInitialized;
+    public event Action<string, string, string>? TriggerCompleted;
 
     public void EnsureInitialized()
     {
@@ -81,6 +82,7 @@ public sealed class AtlasManager : IDisposable
 
         var format = request.Format == "RGBA8" ? Format.R8G8B8A8_UNorm : Format.B8G8R8A8_UNorm;
         var renderer = new HtmlAtlasRenderer(_device, request.Width, request.Height, request.TargetFps, request.HtmlPath, format, request.KeyedMutex);
+        renderer.TriggerCompleted += (action, target) => TriggerCompleted?.Invoke(request.Name, action, target);
         renderer.Start();
 
         var info = new AtlasInfo
