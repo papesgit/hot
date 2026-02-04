@@ -60,7 +60,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _getCurrentTimeOffsetCommand;
         private readonly ICommand _resetFreecamSettingsCommand;
 
-        public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, string GraphicsProducerHost, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort);
+        public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort);
 
         public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixReplaySettings? vmixSettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null)
         {
@@ -86,7 +86,6 @@ namespace HlaeObsTools.ViewModels.Docks
             var settings = storedSettings ?? new AppSettingsData();
             _webSocketHost = settings.WebSocketHost;
             _webSocketPort = settings.WebSocketPort;
-            _graphicsProducerHost = settings.GraphicsProducerHost;
             _graphicsProducerPort = settings.GraphicsProducerPort;
             _udpPort = settings.UdpPort;
             _rtpPort = settings.RtpPort;
@@ -320,20 +319,6 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
-        private string _graphicsProducerHost = "127.0.0.1";
-        public string GraphicsProducerHost
-        {
-            get => _graphicsProducerHost;
-            set
-            {
-                if (_graphicsProducerHost != value)
-                {
-                    _graphicsProducerHost = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
         private int _graphicsProducerPort = 31340;
         public int GraphicsProducerPort
         {
@@ -397,7 +382,7 @@ namespace HlaeObsTools.ViewModels.Docks
             SaveSettings();
             if (_applyNetworkSettingsAsync != null)
             {
-                var payload = new NetworkSettingsData(WebSocketHost, WebSocketPort, GraphicsProducerHost, GraphicsProducerPort, UdpPort, RtpPort, GsiPort);
+                var payload = new NetworkSettingsData(WebSocketHost, WebSocketPort, GraphicsProducerPort, UdpPort, RtpPort, GsiPort);
                 await _applyNetworkSettingsAsync(payload);
             }
         }
@@ -889,7 +874,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 ShowPlayerNames = _radarSettings.ShowPlayerNames,
                 WebSocketHost = WebSocketHost,
                 WebSocketPort = WebSocketPort,
-                GraphicsProducerHost = GraphicsProducerHost,
+                GraphicsProducerHost = WebSocketHost,
                 GraphicsProducerPort = GraphicsProducerPort,
                 UdpPort = UdpPort,
                 RtpPort = RtpPort,

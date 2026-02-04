@@ -227,9 +227,9 @@ public sealed class GraphicsService : IDisposable
         if (string.IsNullOrWhiteSpace(instanceName))
             return Task.CompletedTask;
         var instance = _profile.Instances.FirstOrDefault(i => i.Name == instanceName);
-        if (instance == null || string.IsNullOrWhiteSpace(instance.Atlas))
+        if (instance == null || string.IsNullOrWhiteSpace(instance.Atlas) || string.IsNullOrWhiteSpace(instance.Region))
             return Task.CompletedTask;
-        return _producerClient.TriggerAsync(instance.Atlas, action, instanceName);
+        return _producerClient.TriggerAsync(instance.Atlas, action, instance.Region);
     }
 
     public async Task TriggerAtlasInstancesAsync(string atlasName, string action)
@@ -238,12 +238,17 @@ public sealed class GraphicsService : IDisposable
             return;
         if (string.IsNullOrWhiteSpace(atlasName))
             return;
-        var instances = _profile.Instances.Where(i => i.Atlas == atlasName).ToList();
-        if (instances.Count == 0)
+        var regions = _profile.Instances
+            .Where(i => string.Equals(i.Atlas, atlasName, StringComparison.OrdinalIgnoreCase))
+            .Select(i => i.Region)
+            .Where(region => !string.IsNullOrWhiteSpace(region))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (regions.Count == 0)
             return;
-        foreach (var inst in instances)
+        foreach (var region in regions)
         {
-            await _producerClient.TriggerAsync(atlasName, action, inst.Name);
+            await _producerClient.TriggerAsync(atlasName, action, region);
         }
     }
 

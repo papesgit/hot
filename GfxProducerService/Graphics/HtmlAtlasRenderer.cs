@@ -230,11 +230,11 @@ public sealed class HtmlAtlasRenderer : IDisposable
         return $@"(function() {{
   const action = {actionJson};
   const target = {targetJson};
-  if (window.hlaeTrigger) {{
-    window.hlaeTrigger(action, target);
+  if (window.hotTrigger) {{
+    window.hotTrigger(action, target);
     return;
   }}
-  const evt = new CustomEvent('hlae:trigger', {{ detail: {{ action, target }} }});
+  const evt = new CustomEvent('hot:trigger', {{ detail: {{ action, target }} }});
   document.dispatchEvent(evt);
 }})();";
     }

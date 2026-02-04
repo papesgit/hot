@@ -388,7 +388,7 @@
       updateCards(gsi, extras);
     });
 
-    window.hlaeTrigger = (action, target) => {
+    window.hotTrigger = (action, target) => {
       const item = cards.get(target);
       if (!item) return;
 
@@ -396,9 +396,9 @@
       if (action === "animOut") item.el.classList.remove("visible");
     };
 
-    document.addEventListener("hlae:trigger", (e) => {
+    document.addEventListener("hot:trigger", (e) => {
       const { action, target } = e.detail || {};
-      window.hlaeTrigger(action, target);
+      window.hotTrigger(action, target);
     });
   </script>
 </body>

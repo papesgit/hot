@@ -79,7 +79,7 @@ public class MainDockFactory : Factory, IDisposable
         _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixReplaySettings);
 
         _graphicsProfileStorage = new GraphicsProfileStorage();
-        _producerClient = new GraphicsProducerClient(_storedSettings.GraphicsProducerHost, _storedSettings.GraphicsProducerPort);
+        _producerClient = new GraphicsProducerClient(_storedSettings.WebSocketHost, _storedSettings.GraphicsProducerPort);
         _ = _producerClient.ConnectAsync();
         _graphicsService = new GraphicsService(_webSocketClient, _producerClient, _gsiServer, _graphicsProfileStorage, _storedSettings.GraphicsTargetFps);
         _graphicsService.SetEnabled(_storedSettings.GraphicsEnabled);
@@ -106,7 +106,7 @@ public class MainDockFactory : Factory, IDisposable
     {
         _storedSettings.WebSocketHost = data.WebSocketHost;
         _storedSettings.WebSocketPort = data.WebSocketPort;
-        _storedSettings.GraphicsProducerHost = data.GraphicsProducerHost;
+        _storedSettings.GraphicsProducerHost = data.WebSocketHost;
         _storedSettings.GraphicsProducerPort = data.GraphicsProducerPort;
         _storedSettings.UdpPort = data.UdpPort;
         _storedSettings.RtpPort = data.RtpPort;
@@ -116,7 +116,7 @@ public class MainDockFactory : Factory, IDisposable
         _webSocketClient.ConfigureEndpoint(data.WebSocketHost, data.WebSocketPort);
         await _webSocketClient.ReconnectAsync();
 
-        _producerClient.ConfigureEndpoint(data.GraphicsProducerHost, data.GraphicsProducerPort);
+        _producerClient.ConfigureEndpoint(data.WebSocketHost, data.GraphicsProducerPort);
         await _producerClient.ReconnectAsync();
 
         _inputSender.ConfigureEndpoint(data.WebSocketHost, data.UdpPort, restartIfActive: true);

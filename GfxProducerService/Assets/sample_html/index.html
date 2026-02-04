@@ -174,14 +174,14 @@
         });
       });
 
-      window.hlaeTrigger = (action, target) => {
+      window.hotTrigger = (action, target) => {
         const nodes = target ? gfxNodes.filter((el) => el.dataset.gfx === target) : gfxNodes;
         nodes.forEach((el) => trigger(el, action));
       };
 
-      document.addEventListener("hlae:trigger", (e) => {
+      document.addEventListener("hot:trigger", (e) => {
         if (!e.detail) return;
-        window.hlaeTrigger(e.detail.action, e.detail.target);
+        window.hotTrigger(e.detail.action, e.detail.target);
       });
 
       let t = 0;
