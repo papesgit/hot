@@ -28,6 +28,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private string _selectedProfileName = "default";
     private string _statusText = "Idle";
     private bool _suppressApply;
+    public event EventHandler<string>? ProfileRemoved;
 
     public ObservableCollection<GraphicsAtlasViewModel> Atlases { get; } = new();
     public ObservableCollection<GraphicsInstanceViewModel> Instances { get; } = new();
@@ -482,6 +483,84 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         await _graphicsService.TriggerInstanceAsync(instance.Name, action);
     }
 
+    public bool IsProfileActive(string? profileName)
+    {
+        return !string.IsNullOrWhiteSpace(profileName)
+            && string.Equals(SelectedProfileName, profileName, StringComparison.Ordinal);
+    }
+
+    public bool TryGetAtlasByName(string? atlasName, out GraphicsAtlasViewModel atlas)
+    {
+        atlas = null!;
+        if (string.IsNullOrWhiteSpace(atlasName))
+            return false;
+
+        var match = Atlases.FirstOrDefault(a => string.Equals(a.Name, atlasName, StringComparison.Ordinal));
+        if (match == null)
+            return false;
+
+        atlas = match;
+        return true;
+    }
+
+    public bool TryGetInstanceByName(string? instanceName, out GraphicsInstanceViewModel instance)
+    {
+        instance = null!;
+        if (string.IsNullOrWhiteSpace(instanceName))
+            return false;
+
+        var match = Instances.FirstOrDefault(i => string.Equals(i.Name, instanceName, StringComparison.Ordinal));
+        if (match == null)
+            return false;
+
+        instance = match;
+        return true;
+    }
+
+    public async Task ExecuteAtlasHotkeyActionAsync(string? atlasName, string? action)
+    {
+        if (!TryGetAtlasByName(atlasName, out var atlas) || string.IsNullOrWhiteSpace(action))
+            return;
+
+        switch (action)
+        {
+            case "reload":
+                await ReloadAtlasAsync(atlas);
+                break;
+            case "anim_in":
+                await TriggerAtlasAsync(atlas, "animIn");
+                break;
+            case "anim_out":
+                await TriggerAtlasAsync(atlas, "animOut");
+                break;
+            case "toggle_instances_visible":
+                await SetAtlasInstancesVisibleAsync(atlas, !atlas.InstancesVisible);
+                break;
+            case "toggle_enabled":
+                atlas.Enabled = !atlas.Enabled;
+                break;
+        }
+    }
+
+    public async Task ExecuteInstanceHotkeyActionAsync(string? instanceName, string? action)
+    {
+        if (!TryGetInstanceByName(instanceName, out var instance) || string.IsNullOrWhiteSpace(action))
+            return;
+
+        switch (action)
+        {
+            case "anim_in":
+                await TriggerInstanceAsync(instance, "animIn");
+                break;
+            case "anim_out":
+                await TriggerInstanceAsync(instance, "animOut");
+                break;
+            case "toggle_visible":
+                await SetInstanceVisibleAsync(instance, !instance.Visible);
+                break;
+        }
+    }
+
     private void OnProfileChanged(object? sender, EventArgs e)
     {
         _selectedProfileName = _graphicsService.CurrentProfileName;
@@ -561,9 +640,11 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
         if (string.IsNullOrWhiteSpace(SelectedProfileName))
             return;
+        var removedProfileName = SelectedProfileName;
         _graphicsService.DeleteProfile(SelectedProfileName);
         RefreshProfiles();
         SelectedProfileName = _graphicsService.CurrentProfileName;
+        ProfileRemoved?.Invoke(this, removedProfileName);
     }
 
     private void RefreshProfiles()

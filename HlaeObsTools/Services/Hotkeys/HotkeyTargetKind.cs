@@ -5,5 +5,7 @@ public enum HotkeyTargetKind
     Command = 0,
     BoolProperty = 1,
     Campath = 2,
-    CampathGroup = 3
+    CampathGroup = 3,
+    GraphicsAtlasAction = 4,
+    GraphicsInstanceAction = 5
 }

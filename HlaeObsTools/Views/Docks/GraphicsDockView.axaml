@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:conv="using:HlaeObsTools.Converters"
+             xmlns:hotkeys="using:HlaeObsTools.Services.Hotkeys"
              x:Class="HlaeObsTools.Views.Docks.GraphicsDockView"
              x:DataType="vm:GraphicsDockViewModel"
              x:Name="Root"
@@ -88,17 +89,31 @@
                   <StackPanel Orientation="Vertical" Grid.Column="1" HorizontalAlignment="Left">
                   <Button Content="AnimIn"
                           Command="{Binding DataContext.AnimInAtlasCommand, ElementName=Root}"
-                          CommandParameter="{Binding}" />
+                          CommandParameter="{Binding}"
+                          hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
+                          hotkeys:HotkeyTarget.GraphicsAction="anim_in" />
                   <Button Content="AnimOut"
                           Command="{Binding DataContext.AnimOutAtlasCommand, ElementName=Root}"
-                          CommandParameter="{Binding}" />
+                          CommandParameter="{Binding}"
+                          hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
+                          hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
                   </StackPanel>
                   <Button Grid.Column="4"
                           Content="Reload"
                           Command="{Binding DataContext.ReloadAtlasCommand, ElementName=Root}"
-                          CommandParameter="{Binding}" />
-                  <ToggleSwitch Grid.Column="5" IsChecked="{Binding InstancesVisible}" Content="Show" />
-                  <ToggleSwitch Grid.Column="6" IsChecked="{Binding Enabled}" Content="On" />
+                          CommandParameter="{Binding}"
+                          hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
+                          hotkeys:HotkeyTarget.GraphicsAction="reload" />
+                  <ToggleSwitch Grid.Column="5"
+                                IsChecked="{Binding InstancesVisible}"
+                                Content="Show"
+                                hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
+                                hotkeys:HotkeyTarget.GraphicsAction="toggle_instances_visible" />
+                  <ToggleSwitch Grid.Column="6"
+                                IsChecked="{Binding Enabled}"
+                                Content="On"
+                                hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
+                                hotkeys:HotkeyTarget.GraphicsAction="toggle_enabled" />
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -116,12 +131,20 @@
                   <StackPanel Orientation="Vertical" Grid.Column="1" HorizontalAlignment="Left">
                   <Button Content="AnimIn"
                           Command="{Binding DataContext.AnimInInstanceCommand, ElementName=Root}"
-                          CommandParameter="{Binding}" />
+                          CommandParameter="{Binding}"
+                          hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}"
+                          hotkeys:HotkeyTarget.GraphicsAction="anim_in" />
                   <Button Content="AnimOut"
                           Command="{Binding DataContext.AnimOutInstanceCommand, ElementName=Root}"
-                          CommandParameter="{Binding}" />
+                          CommandParameter="{Binding}"
+                          hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}"
+                          hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
                   </StackPanel>
-                  <ToggleSwitch Grid.Column="4" IsChecked="{Binding Visible}" Content="Show" />
+                  <ToggleSwitch Grid.Column="4"
+                                IsChecked="{Binding Visible}"
+                                Content="Show"
+                                hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}"
+                                hotkeys:HotkeyTarget.GraphicsAction="toggle_visible" />
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>

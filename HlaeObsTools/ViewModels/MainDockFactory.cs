@@ -222,6 +222,7 @@ public class MainDockFactory : Factory, IDisposable
             _webSocketClient,
             _hotkeyService,
             bottomRight,
+            _graphicsDockVm,
             ApplyNetworkSettingsAsync,
             _storedSettings,
             _vmixReplaySettings,
@@ -245,6 +246,7 @@ public class MainDockFactory : Factory, IDisposable
         _hotkeyService.RegisterCommandContext(_videoDisplayVm);
         _hotkeyService.RegisterCommandContext(campathEditor);
         _hotkeyService.RegisterCommandContext(hudOverlayVm);
+        _hotkeyService.RegisterCommandContext(_graphicsDockVm);
         _hotkeyService.RegisterCommandContext(bottomLeft.AttachPresetAnimationEditor);
         ConfigureAnalogInput(freecamSettings);
         _videoDisplayVm.SetRtpConfig(new Services.Video.RTP.RtpReceiverConfig

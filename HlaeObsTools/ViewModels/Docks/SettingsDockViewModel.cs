@@ -39,6 +39,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly Action<bool>? _setFocusInputGateDisabled;
         private readonly HotkeyService _hotkeyService;
         private readonly CampathsDockViewModel? _campathsDockViewModel;
+        private readonly GraphicsDockViewModel? _graphicsDockViewModel;
         private bool _suppressFreecamSave;
         private bool _suppressSettingsSave;
         private bool _isLoadingPresets;
@@ -62,7 +63,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort);
 
-        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixReplaySettings? vmixSettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null)
+        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixReplaySettings? vmixSettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null)
         {
             _radarSettings = radarSettings;
             _hudSettings = hudSettings;
@@ -76,6 +77,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _campathEditor = campathEditor ?? new CampathEditorViewModel();
             _hotkeyService = hotkeyService;
             _campathsDockViewModel = campathsDockViewModel;
+            _graphicsDockViewModel = graphicsDockViewModel;
 
             Title = "Settings";
             CanClose = false;
@@ -176,6 +178,13 @@ namespace HlaeObsTools.ViewModels.Docks
                 RefreshCampathHotkeys();
             }
 
+            if (_graphicsDockViewModel != null)
+            {
+                _graphicsDockViewModel.PropertyChanged += OnGraphicsProfileChanged;
+                _graphicsDockViewModel.ProfileRemoved += OnGraphicsProfileRemoved;
+                RefreshGraphicsHotkeys();
+            }
+
             if (_ws != null)
             {
                 _ws.Connected += OnWebSocketConnected;
@@ -221,6 +230,7 @@ namespace HlaeObsTools.ViewModels.Docks
         public ObservableCollection<HotkeyBindingViewModel> HotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> CommandHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> CampathHotkeyBindings { get; } = new();
+        public ObservableCollection<HotkeyBindingViewModel> GraphicsHotkeyBindings { get; } = new();
 
         private bool _isEditingAttachPresetAnimation;
         public bool IsEditingAttachPresetAnimation
@@ -714,6 +724,10 @@ namespace HlaeObsTools.ViewModels.Docks
                         existing.TargetCampathGroupId = e.Binding.TargetCampathGroupId;
                         existing.TargetCampathProfileId = e.Binding.TargetCampathProfileId;
                         existing.TargetCampathProfileName = e.Binding.TargetCampathProfileName;
+                        existing.TargetGraphicsProfileName = e.Binding.TargetGraphicsProfileName;
+                        existing.TargetGraphicsAtlasName = e.Binding.TargetGraphicsAtlasName;
+                        existing.TargetGraphicsInstanceName = e.Binding.TargetGraphicsInstanceName;
+                        existing.TargetGraphicsAction = e.Binding.TargetGraphicsAction;
                         existing.DisplayName = e.Binding.DisplayName;
                         _isLoadingHotkeys = false;
                     }
@@ -737,13 +751,26 @@ namespace HlaeObsTools.ViewModels.Docks
             var excludeId = rebindId ?? binding.Id;
             var isCampathBinding = binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.Campath
                 || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.CampathGroup;
+            var isGraphicsBinding = binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
+                || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction;
             var bindingProfileId = binding.TargetCampathProfileId;
+            var bindingGraphicsProfile = binding.TargetGraphicsProfileName;
             var duplicates = HotkeyBindings
                 .Where(b => b.Key == binding.Key && b.Modifiers == binding.Modifiers && b.Id != excludeId)
                 .Where(b =>
                 {
                     if (!isCampathBinding)
-                        return true;
+                    {
+                        if (!isGraphicsBinding)
+                            return true;
+
+                        var otherIsGraphics = b.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
+                            || b.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction;
+                        if (!otherIsGraphics)
+                            return true;
+
+                        return string.Equals(b.TargetGraphicsProfileName, bindingGraphicsProfile, StringComparison.Ordinal);
+                    }
 
                     var otherIsCampath = b.TargetKind == Services.Hotkeys.HotkeyTargetKind.Campath
                         || b.TargetKind == Services.Hotkeys.HotkeyTargetKind.CampathGroup;
@@ -803,6 +830,13 @@ namespace HlaeObsTools.ViewModels.Docks
                 return;
             }
 
+            if (binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
+                || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction)
+            {
+                RefreshGraphicsHotkeys();
+                return;
+            }
+
             if (!CommandHotkeyBindings.Contains(binding))
                 CommandHotkeyBindings.Add(binding);
         }
@@ -811,6 +845,7 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             CommandHotkeyBindings.Remove(binding);
             RefreshCampathHotkeys();
+            RefreshGraphicsHotkeys();
         }
 
         private void RefreshCampathHotkeys()
@@ -831,6 +866,29 @@ namespace HlaeObsTools.ViewModels.Docks
             }
 
             OnPropertyChanged(nameof(ActiveCampathProfileName));
+        }
+
+        private void RefreshGraphicsHotkeys()
+        {
+            GraphicsHotkeyBindings.Clear();
+            var activeProfileName = _graphicsDockViewModel?.SelectedProfileName;
+            if (string.IsNullOrWhiteSpace(activeProfileName))
+            {
+                OnPropertyChanged(nameof(ActiveGraphicsProfileName));
+                return;
+            }
+
+            foreach (var binding in HotkeyBindings)
+            {
+                if (binding.TargetKind != Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
+                    && binding.TargetKind != Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction)
+                    continue;
+
+                if (string.Equals(binding.TargetGraphicsProfileName, activeProfileName, StringComparison.Ordinal))
+                    GraphicsHotkeyBindings.Add(binding);
+            }
+
+            OnPropertyChanged(nameof(ActiveGraphicsProfileName));
         }
 
         private void OnCampathProfileChanged(object? sender, PropertyChangedEventArgs e)
@@ -858,7 +916,36 @@ namespace HlaeObsTools.ViewModels.Docks
             SaveSettings();
         }
 
+        private void OnGraphicsProfileChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(GraphicsDockViewModel.SelectedProfileName))
+            {
+                RefreshGraphicsHotkeys();
+            }
+        }
+
+        private void OnGraphicsProfileRemoved(object? sender, string profileName)
+        {
+            if (string.IsNullOrWhiteSpace(profileName))
+                return;
+
+            var toRemove = HotkeyBindings
+                .Where(b => string.Equals(b.TargetGraphicsProfileName, profileName, StringComparison.Ordinal))
+                .ToList();
+
+            foreach (var binding in toRemove)
+            {
+                DetachHotkeyBinding(binding);
+                HotkeyBindings.Remove(binding);
+                CommandHotkeyBindings.Remove(binding);
+            }
+
+            RefreshGraphicsHotkeys();
+            SaveSettings();
+        }
+
         public string ActiveCampathProfileName => _campathsDockViewModel?.SelectedProfile?.Name ?? "No profile selected";
+        public string ActiveGraphicsProfileName => _graphicsDockViewModel?.SelectedProfileName ?? "No profile selected";
 
         private void SaveSettings()
         {

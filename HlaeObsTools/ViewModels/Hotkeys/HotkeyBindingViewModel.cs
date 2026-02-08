@@ -17,6 +17,10 @@ public class HotkeyBindingViewModel : ViewModelBase
     private Guid? _targetCampathGroupId;
     private Guid? _targetCampathProfileId;
     private string? _targetCampathProfileName;
+    private string? _targetGraphicsProfileName;
+    private string? _targetGraphicsAtlasName;
+    private string? _targetGraphicsInstanceName;
+    private string? _targetGraphicsAction;
     private HotkeyTargetKind _targetKind = HotkeyTargetKind.Command;
 
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -123,6 +127,46 @@ public class HotkeyBindingViewModel : ViewModelBase
         }
     }
 
+    public string? TargetGraphicsProfileName
+    {
+        get => _targetGraphicsProfileName;
+        set
+        {
+            if (SetProperty(ref _targetGraphicsProfileName, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public string? TargetGraphicsAtlasName
+    {
+        get => _targetGraphicsAtlasName;
+        set
+        {
+            if (SetProperty(ref _targetGraphicsAtlasName, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public string? TargetGraphicsInstanceName
+    {
+        get => _targetGraphicsInstanceName;
+        set
+        {
+            if (SetProperty(ref _targetGraphicsInstanceName, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public string? TargetGraphicsAction
+    {
+        get => _targetGraphicsAction;
+        set
+        {
+            if (SetProperty(ref _targetGraphicsAction, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
     public HotkeyTargetKind TargetKind
     {
         get => _targetKind;
@@ -150,6 +194,10 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetCampathGroupId = data.TargetCampathGroupId,
             TargetCampathProfileId = data.TargetCampathProfileId,
             TargetCampathProfileName = data.TargetCampathProfileName,
+            TargetGraphicsProfileName = data.TargetGraphicsProfileName,
+            TargetGraphicsAtlasName = data.TargetGraphicsAtlasName,
+            TargetGraphicsInstanceName = data.TargetGraphicsInstanceName,
+            TargetGraphicsAction = data.TargetGraphicsAction,
             DisplayName = data.DisplayName
         };
     }
@@ -170,6 +218,10 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetCampathGroupId = TargetCampathGroupId,
             TargetCampathProfileId = TargetCampathProfileId,
             TargetCampathProfileName = TargetCampathProfileName,
+            TargetGraphicsProfileName = TargetGraphicsProfileName,
+            TargetGraphicsAtlasName = TargetGraphicsAtlasName,
+            TargetGraphicsInstanceName = TargetGraphicsInstanceName,
+            TargetGraphicsAction = TargetGraphicsAction,
             DisplayName = DisplayName
         };
     }

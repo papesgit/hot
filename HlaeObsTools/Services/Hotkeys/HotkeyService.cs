@@ -178,6 +178,24 @@ public sealed class HotkeyService
             return true;
         }
 
+        if (binding.TargetKind == HotkeyTargetKind.GraphicsAtlasAction)
+        {
+            if (!TryResolveGraphicsDock(binding.TargetGraphicsProfileName, out var graphicsVm))
+                return false;
+
+            _ = graphicsVm.ExecuteAtlasHotkeyActionAsync(binding.TargetGraphicsAtlasName, binding.TargetGraphicsAction);
+            return true;
+        }
+
+        if (binding.TargetKind == HotkeyTargetKind.GraphicsInstanceAction)
+        {
+            if (!TryResolveGraphicsDock(binding.TargetGraphicsProfileName, out var graphicsVm))
+                return false;
+
+            _ = graphicsVm.ExecuteInstanceHotkeyActionAsync(binding.TargetGraphicsInstanceName, binding.TargetGraphicsAction);
+            return true;
+        }
+
         return false;
     }
 
@@ -211,6 +229,10 @@ public sealed class HotkeyService
                 TargetCampathGroupId = _rebindTarget.TargetCampathGroupId,
                 TargetCampathProfileId = _rebindTarget.TargetCampathProfileId,
                 TargetCampathProfileName = _rebindTarget.TargetCampathProfileName,
+                TargetGraphicsProfileName = _rebindTarget.TargetGraphicsProfileName,
+                TargetGraphicsAtlasName = _rebindTarget.TargetGraphicsAtlasName,
+                TargetGraphicsInstanceName = _rebindTarget.TargetGraphicsInstanceName,
+                TargetGraphicsAction = _rebindTarget.TargetGraphicsAction,
                 DisplayName = _rebindTarget.DisplayName
             };
 
@@ -258,6 +280,48 @@ public sealed class HotkeyService
                 TargetViewModelType = boolViewModelType,
                 TargetPropertyPath = propertyPath,
                 DisplayName = boolDisplayName
+            };
+
+            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
+            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            return true;
+        }
+
+        if (TryGetGraphicsAtlasTarget(_hoveredControl, out var graphicsProfileName, out var graphicsAtlasName, out var graphicsAtlasAction, out var graphicsAtlasDisplay))
+        {
+            var binding = new HotkeyBindingData
+            {
+                Id = _rebindId ?? Guid.NewGuid(),
+                Enabled = true,
+                Key = e.Key,
+                Modifiers = e.KeyModifiers,
+                TargetKind = HotkeyTargetKind.GraphicsAtlasAction,
+                TargetViewModelType = typeof(GraphicsDockViewModel).FullName,
+                TargetGraphicsProfileName = graphicsProfileName,
+                TargetGraphicsAtlasName = graphicsAtlasName,
+                TargetGraphicsAction = graphicsAtlasAction,
+                DisplayName = graphicsAtlasDisplay
+            };
+
+            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
+            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            return true;
+        }
+
+        if (TryGetGraphicsInstanceTarget(_hoveredControl, out var graphicsInstanceProfileName, out var graphicsInstanceName, out var graphicsInstanceAction, out var graphicsInstanceDisplay))
+        {
+            var binding = new HotkeyBindingData
+            {
+                Id = _rebindId ?? Guid.NewGuid(),
+                Enabled = true,
+                Key = e.Key,
+                Modifiers = e.KeyModifiers,
+                TargetKind = HotkeyTargetKind.GraphicsInstanceAction,
+                TargetViewModelType = typeof(GraphicsDockViewModel).FullName,
+                TargetGraphicsProfileName = graphicsInstanceProfileName,
+                TargetGraphicsInstanceName = graphicsInstanceName,
+                TargetGraphicsAction = graphicsInstanceAction,
+                DisplayName = graphicsInstanceDisplay
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
@@ -328,6 +392,14 @@ public sealed class HotkeyService
     {
         if (control is ToggleSwitch toggle)
         {
+            if (!string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAtlasName(toggle)) &&
+                !string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAction(toggle)))
+                return "Graphics atlas toggle should be bindable.";
+
+            if (!string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsInstanceName(toggle)) &&
+                !string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAction(toggle)))
+                return "Graphics instance toggle should be bindable.";
+
             var explicitPath = HotkeyTarget.GetPath(toggle);
             if (!string.IsNullOrWhiteSpace(explicitPath))
             {
@@ -399,6 +471,14 @@ public sealed class HotkeyService
 
         if (control is Button button)
         {
+            if (!string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAtlasName(button)) &&
+                !string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAction(button)))
+                return "Graphics atlas target should be bindable.";
+
+            if (!string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsInstanceName(button)) &&
+                !string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAction(button)))
+                return "Graphics instance target should be bindable.";
+
             if (button.Command == null)
                 return "Button has no Command.";
             if (button.CommandParameter != null)
@@ -435,7 +515,11 @@ public sealed class HotkeyService
     private bool IsBindableControl(Control control)
     {
         return TryGetCommandBindingTarget(control, out _, out _, out _)
-            || TryGetBoolBindingTarget(control, out _, out _, out _);
+            || TryGetBoolBindingTarget(control, out _, out _, out _)
+            || TryGetGraphicsAtlasTarget(control, out _, out _, out _, out _)
+            || TryGetGraphicsInstanceTarget(control, out _, out _, out _, out _)
+            || TryGetCampathTarget(control, out _, out _)
+            || TryGetCampathGroupTarget(control, out _, out _);
     }
 
     private bool TryGetCommandBindingTarget(Control control, out string viewModelType, out string commandProperty, out string displayName)
@@ -681,6 +765,23 @@ public sealed class HotkeyService
         return false;
     }
 
+    private bool TryResolveGraphicsDock(string? profileName, out GraphicsDockViewModel graphicsVm)
+    {
+        graphicsVm = null!;
+        if (string.IsNullOrWhiteSpace(profileName))
+            return false;
+
+        var vm = _commandContexts.OfType<GraphicsDockViewModel>().FirstOrDefault();
+        if (vm == null)
+            return false;
+
+        if (!vm.IsProfileActive(profileName))
+            return false;
+
+        graphicsVm = vm;
+        return true;
+    }
+
     private bool TryResolveCampathGroup(Guid? groupId, Guid? profileId, out CampathsDockViewModel campathsVm, out CampathGroupViewModel group)
     {
         campathsVm = null!;
@@ -756,6 +857,69 @@ public sealed class HotkeyService
 
         groupId = id.Value;
         displayName = GetDataContextName(border) ?? $"Group {groupId}";
+        return true;
+    }
+
+    private bool TryGetGraphicsAtlasTarget(Control control, out string profileName, out string atlasName, out string action, out string displayName)
+    {
+        profileName = string.Empty;
+        atlasName = string.Empty;
+        action = string.Empty;
+        displayName = string.Empty;
+
+        var target = control as AvaloniaObject;
+        if (target == null)
+            return false;
+
+        var atlas = HotkeyTarget.GetGraphicsAtlasName(target);
+        var targetAction = HotkeyTarget.GetGraphicsAction(target);
+        if (string.IsNullOrWhiteSpace(atlas) || string.IsNullOrWhiteSpace(targetAction))
+            return false;
+
+        if (!TryGetActiveGraphicsProfile(out profileName))
+            return false;
+
+        atlasName = atlas;
+        action = targetAction;
+        var controlName = control is Button button ? GetButtonDisplayName(button, nameof(GraphicsDockViewModel), targetAction) : (control as ToggleSwitch)?.Content?.ToString();
+        displayName = $"[{profileName}] {controlName ?? targetAction} ({atlasName})";
+        return true;
+    }
+
+    private bool TryGetGraphicsInstanceTarget(Control control, out string profileName, out string instanceName, out string action, out string displayName)
+    {
+        profileName = string.Empty;
+        instanceName = string.Empty;
+        action = string.Empty;
+        displayName = string.Empty;
+
+        var target = control as AvaloniaObject;
+        if (target == null)
+            return false;
+
+        var instance = HotkeyTarget.GetGraphicsInstanceName(target);
+        var targetAction = HotkeyTarget.GetGraphicsAction(target);
+        if (string.IsNullOrWhiteSpace(instance) || string.IsNullOrWhiteSpace(targetAction))
+            return false;
+
+        if (!TryGetActiveGraphicsProfile(out profileName))
+            return false;
+
+        instanceName = instance;
+        action = targetAction;
+        var controlName = control is Button button ? GetButtonDisplayName(button, nameof(GraphicsDockViewModel), targetAction) : (control as ToggleSwitch)?.Content?.ToString();
+        displayName = $"[{profileName}] {controlName ?? targetAction} ({instanceName})";
+        return true;
+    }
+
+    private bool TryGetActiveGraphicsProfile(out string profileName)
+    {
+        profileName = string.Empty;
+        var vm = _commandContexts.OfType<GraphicsDockViewModel>().FirstOrDefault();
+        if (vm == null || string.IsNullOrWhiteSpace(vm.SelectedProfileName))
+            return false;
+
+        profileName = vm.SelectedProfileName;
         return true;
     }
 

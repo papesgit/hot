@@ -17,5 +17,9 @@ public class HotkeyBindingData
     public Guid? TargetCampathGroupId { get; set; }
     public Guid? TargetCampathProfileId { get; set; }
     public string? TargetCampathProfileName { get; set; }
+    public string? TargetGraphicsProfileName { get; set; }
+    public string? TargetGraphicsAtlasName { get; set; }
+    public string? TargetGraphicsInstanceName { get; set; }
+    public string? TargetGraphicsAction { get; set; }
     public string? DisplayName { get; set; }
 }
