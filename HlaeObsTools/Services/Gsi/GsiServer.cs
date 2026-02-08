@@ -19,6 +19,7 @@ namespace HlaeObsTools.Services.Gsi;
 /// </summary>
 public sealed class GsiServer : IDisposable
 {
+    private readonly object _lifecycleLock = new();
     private IHost? _host;
     private CancellationTokenSource? _cts;
     private Task? _runTask;
@@ -27,7 +28,16 @@ public sealed class GsiServer : IDisposable
 
     public event EventHandler<GsiGameState>? GameStateUpdated;
 
-    public bool IsRunning => _host != null;
+    public bool IsRunning
+    {
+        get
+        {
+            lock (_lifecycleLock)
+            {
+                return _runTask != null;
+            }
+        }
+    }
 
     public void Start(int port = 31337, string path = "/gsi/", string host = "0.0.0.0")
     {
@@ -38,9 +48,10 @@ public sealed class GsiServer : IDisposable
         if (string.IsNullOrWhiteSpace(basePath))
             basePath = "/";
 
-        _cts = new CancellationTokenSource();
-        _runTask = Task.Run(async () =>
+        var cts = new CancellationTokenSource();
+        var runTask = Task.Run(async () =>
         {
+            IHost? localHost = null;
             try
             {
                 var hostBuilder = new HostBuilder()
@@ -70,10 +81,15 @@ public sealed class GsiServer : IDisposable
                         });
                     });
 
-                _host = hostBuilder.Build();
-                await _host.StartAsync(_cts.Token).ConfigureAwait(false);
+                localHost = hostBuilder.Build();
+                lock (_lifecycleLock)
+                {
+                    _host = localHost;
+                }
+
+                await localHost.StartAsync(cts.Token).ConfigureAwait(false);
                 Console.WriteLine($"GSI listener started on http://{host}:{port}{basePath}/");
-                await Task.Delay(Timeout.Infinite, _cts.Token).ConfigureAwait(false);
+                await Task.Delay(Timeout.Infinite, cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -83,48 +99,78 @@ public sealed class GsiServer : IDisposable
             {
                 Console.WriteLine($"GSI listener error: {ex.Message}");
             }
+            finally
+            {
+                if (localHost != null)
+                {
+                    using var stopCts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                    try
+                    {
+                        await localHost.StopAsync(stopCts.Token).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+
+                    try
+                    {
+                        localHost.Dispose();
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+                }
+
+                lock (_lifecycleLock)
+                {
+                    if (ReferenceEquals(_host, localHost))
+                    {
+                        _host = null;
+                    }
+                }
+            }
         });
+
+        lock (_lifecycleLock)
+        {
+            _cts = cts;
+            _runTask = runTask;
+        }
     }
 
     public void Stop()
     {
-        var host = _host;
-        var cts = _cts;
-        _host = null;
-        _cts = null;
-        _runTask = null;
-
-        if (host == null)
-            return;
-
-        Task.Run(async () =>
+        CancellationTokenSource? cts;
+        Task? runTask;
+        lock (_lifecycleLock)
         {
-            try
-            {
-                cts?.Cancel();
-                using var stopCts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-                try
-                {
-                    await host.StopAsync(stopCts.Token).ConfigureAwait(false);
-                }
-                catch
-                {
-                    // ignore
-                }
-                try
-                {
-                    host.Dispose();
-                }
-                catch
-                {
-                    // ignore
-                }
-            }
-            finally
-            {
-                cts?.Dispose();
-            }
-        });
+            cts = _cts;
+            runTask = _runTask;
+            _cts = null;
+            _runTask = null;
+        }
+
+        if (runTask == null)
+        {
+            cts?.Dispose();
+            return;
+        }
+
+        try
+        {
+            cts?.Cancel();
+            runTask.GetAwaiter().GetResult();
+        }
+        catch
+        {
+            // ignore shutdown errors
+        }
+        finally
+        {
+            cts?.Dispose();
+        }
     }
 
     private async Task HandleRequestAsync(HttpContext ctx)
