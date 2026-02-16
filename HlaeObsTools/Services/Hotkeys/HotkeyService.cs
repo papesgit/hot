@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Input;
@@ -1038,7 +1039,10 @@ public sealed class HotkeyService
         return !string.IsNullOrWhiteSpace(path);
     }
 
-    private static bool TryGetBindingExpression(AvaloniaObject target, AvaloniaProperty property, out BindingExpressionBase expression)
+    private static bool TryGetBindingExpression(
+        AvaloniaObject target,
+        AvaloniaProperty property,
+        [NotNullWhen(true)] out BindingExpressionBase? expression)
     {
         expression = BindingOperations.GetBindingExpressionBase(target, property);
         return expression != null;

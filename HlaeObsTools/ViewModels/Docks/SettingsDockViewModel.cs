@@ -117,7 +117,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 var cmd = _useCubic
                     ? "mirv_campath edit interp position cubic; mirv_campath edit interp rotation cubic; mirv_campath edit interp fov cubic"
                     : "mirv_campath edit interp position linear; mirv_campath edit interp rotation sLinear; mirv_campath edit interp fov linear";
-                _ws.SendExecCommandAsync(cmd);
+                SendExecCommand(cmd);
             });
             _addPointCommand = new AsyncRelay(() => _ws.SendExecCommandAsync("mirv_campath add"));
             _clearCampathCommand = new AsyncRelay(() => _ws.SendExecCommandAsync("mirv_campath clear"));
