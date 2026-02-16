@@ -8,6 +8,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Data;
 using Avalonia.VisualTree;
+using HlaeObsTools.ViewModels;
 using HlaeObsTools.ViewModels.Docks;
 
 namespace HlaeObsTools.Services.Hotkeys;
@@ -196,6 +197,22 @@ public sealed class HotkeyService
             return true;
         }
 
+        if (binding.TargetKind == HotkeyTargetKind.AttachPresetSlotAction)
+        {
+            if (binding.TargetAttachPresetPage == null || binding.TargetAttachPresetIndex == null || binding.TargetAttachSlot == null)
+                return false;
+
+            var settingsVm = _commandContexts.OfType<SettingsDockViewModel>().FirstOrDefault();
+            if (settingsVm == null)
+                return false;
+
+            _ = settingsVm.ExecuteAttachPresetHotkeyActionAsync(
+                binding.TargetAttachPresetPage.Value,
+                binding.TargetAttachPresetIndex.Value,
+                binding.TargetAttachSlot.Value);
+            return true;
+        }
+
         return false;
     }
 
@@ -233,6 +250,9 @@ public sealed class HotkeyService
                 TargetGraphicsAtlasName = _rebindTarget.TargetGraphicsAtlasName,
                 TargetGraphicsInstanceName = _rebindTarget.TargetGraphicsInstanceName,
                 TargetGraphicsAction = _rebindTarget.TargetGraphicsAction,
+                TargetAttachPresetPage = _rebindTarget.TargetAttachPresetPage,
+                TargetAttachPresetIndex = _rebindTarget.TargetAttachPresetIndex,
+                TargetAttachSlot = _rebindTarget.TargetAttachSlot,
                 DisplayName = _rebindTarget.DisplayName
             };
 
@@ -322,6 +342,27 @@ public sealed class HotkeyService
                 TargetGraphicsInstanceName = graphicsInstanceName,
                 TargetGraphicsAction = graphicsInstanceAction,
                 DisplayName = graphicsInstanceDisplay
+            };
+
+            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
+            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            return true;
+        }
+
+        if (TryGetAttachPresetTarget(_hoveredControl, out var attachPresetPage, out var attachPresetIndex, out var attachSlot, out var attachDisplay))
+        {
+            var binding = new HotkeyBindingData
+            {
+                Id = _rebindId ?? Guid.NewGuid(),
+                Enabled = true,
+                Key = e.Key,
+                Modifiers = e.KeyModifiers,
+                TargetKind = HotkeyTargetKind.AttachPresetSlotAction,
+                TargetViewModelType = typeof(SettingsDockViewModel).FullName,
+                TargetAttachPresetPage = attachPresetPage,
+                TargetAttachPresetIndex = attachPresetIndex,
+                TargetAttachSlot = attachSlot,
+                DisplayName = attachDisplay
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
@@ -471,6 +512,9 @@ public sealed class HotkeyService
 
         if (control is Button button)
         {
+            if (TryGetAttachPresetTarget(button, out _, out _, out _, out _))
+                return "Attach preset action should be bindable.";
+
             if (!string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAtlasName(button)) &&
                 !string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAction(button)))
                 return "Graphics atlas target should be bindable.";
@@ -518,6 +562,7 @@ public sealed class HotkeyService
             || TryGetBoolBindingTarget(control, out _, out _, out _)
             || TryGetGraphicsAtlasTarget(control, out _, out _, out _, out _)
             || TryGetGraphicsInstanceTarget(control, out _, out _, out _, out _)
+            || TryGetAttachPresetTarget(control, out _, out _, out _, out _)
             || TryGetCampathTarget(control, out _, out _)
             || TryGetCampathGroupTarget(control, out _, out _);
     }
@@ -921,6 +966,45 @@ public sealed class HotkeyService
 
         profileName = vm.SelectedProfileName;
         return true;
+    }
+
+    private bool TryGetAttachPresetTarget(Control control, out int presetPage, out int presetIndex, out int slot, out string displayName)
+    {
+        presetPage = -1;
+        presetIndex = -1;
+        slot = -1;
+        displayName = string.Empty;
+
+        if (control is not Button button)
+            return false;
+
+        var page = HotkeyTarget.GetAttachPresetPage(button);
+        var index = HotkeyTarget.GetAttachPresetIndex(button);
+        var targetSlot = HotkeyTarget.GetAttachSlot(button);
+        var action = HotkeyTarget.GetAttachAction(button);
+        if (!string.Equals(action, "execute", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (page < 0 || index < 0 || targetSlot < 0 || targetSlot > 9)
+            return false;
+
+        var presetName = button.DataContext switch
+        {
+            AttachPresetViewModel presetVm when !string.IsNullOrWhiteSpace(presetVm.Name) => presetVm.Name,
+            AttachPresetViewModel presetVm => presetVm.Title,
+            _ => "Preset"
+        };
+
+        presetPage = page;
+        presetIndex = index;
+        slot = targetSlot;
+        displayName = $"[Page {page + 1}] Attach {presetName} -> Slot {GetSlotLabel(targetSlot)}";
+        return true;
+    }
+
+    private static string GetSlotLabel(int slot)
+    {
+        return slot == 9 ? "0" : (slot + 1).ToString();
     }
 
     private static string? GetDataContextName(Control control)

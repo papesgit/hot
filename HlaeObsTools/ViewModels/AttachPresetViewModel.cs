@@ -72,6 +72,8 @@ public sealed class AttachPresetViewModel : ViewModelBase
         set => SetProperty(ref _title, value);
     }
 
+    public int PresetIndex { get; set; }
+
     public string Name
     {
         get => _name;

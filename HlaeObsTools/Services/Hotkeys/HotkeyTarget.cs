@@ -19,6 +19,14 @@ public sealed class HotkeyTarget
         AvaloniaProperty.RegisterAttached<HotkeyTarget, AvaloniaObject, string?>("GraphicsInstanceName");
     public static readonly AttachedProperty<string?> GraphicsActionProperty =
         AvaloniaProperty.RegisterAttached<HotkeyTarget, AvaloniaObject, string?>("GraphicsAction");
+    public static readonly AttachedProperty<int> AttachPresetPageProperty =
+        AvaloniaProperty.RegisterAttached<HotkeyTarget, AvaloniaObject, int>("AttachPresetPage", -1);
+    public static readonly AttachedProperty<int> AttachPresetIndexProperty =
+        AvaloniaProperty.RegisterAttached<HotkeyTarget, AvaloniaObject, int>("AttachPresetIndex", -1);
+    public static readonly AttachedProperty<int> AttachSlotProperty =
+        AvaloniaProperty.RegisterAttached<HotkeyTarget, AvaloniaObject, int>("AttachSlot", -1);
+    public static readonly AttachedProperty<string?> AttachActionProperty =
+        AvaloniaProperty.RegisterAttached<HotkeyTarget, AvaloniaObject, string?>("AttachAction");
 
     public static void SetPath(AvaloniaObject element, string? value) =>
         element.SetValue(PathProperty, value);
@@ -55,4 +63,28 @@ public sealed class HotkeyTarget
 
     public static string? GetGraphicsAction(AvaloniaObject element) =>
         element.GetValue(GraphicsActionProperty);
+
+    public static void SetAttachPresetPage(AvaloniaObject element, int value) =>
+        element.SetValue(AttachPresetPageProperty, value);
+
+    public static int GetAttachPresetPage(AvaloniaObject element) =>
+        element.GetValue(AttachPresetPageProperty);
+
+    public static void SetAttachPresetIndex(AvaloniaObject element, int value) =>
+        element.SetValue(AttachPresetIndexProperty, value);
+
+    public static int GetAttachPresetIndex(AvaloniaObject element) =>
+        element.GetValue(AttachPresetIndexProperty);
+
+    public static void SetAttachSlot(AvaloniaObject element, int value) =>
+        element.SetValue(AttachSlotProperty, value);
+
+    public static int GetAttachSlot(AvaloniaObject element) =>
+        element.GetValue(AttachSlotProperty);
+
+    public static void SetAttachAction(AvaloniaObject element, string? value) =>
+        element.SetValue(AttachActionProperty, value);
+
+    public static string? GetAttachAction(AvaloniaObject element) =>
+        element.GetValue(AttachActionProperty);
 }

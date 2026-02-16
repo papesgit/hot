@@ -60,6 +60,16 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _saveViewportCampathCommand;
         private readonly ICommand _getCurrentTimeOffsetCommand;
         private readonly ICommand _resetFreecamSettingsCommand;
+        private readonly ICommand _executeAttachPresetSlot1Command;
+        private readonly ICommand _executeAttachPresetSlot2Command;
+        private readonly ICommand _executeAttachPresetSlot3Command;
+        private readonly ICommand _executeAttachPresetSlot4Command;
+        private readonly ICommand _executeAttachPresetSlot5Command;
+        private readonly ICommand _executeAttachPresetSlot6Command;
+        private readonly ICommand _executeAttachPresetSlot7Command;
+        private readonly ICommand _executeAttachPresetSlot8Command;
+        private readonly ICommand _executeAttachPresetSlot9Command;
+        private readonly ICommand _executeAttachPresetSlot0Command;
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort);
 
@@ -152,6 +162,16 @@ namespace HlaeObsTools.ViewModels.Docks
             });
             _getCurrentTimeOffsetCommand = new AsyncRelay(GetCurrentTimeOffsetAsync);
             _resetFreecamSettingsCommand = new Relay(ResetFreecamSettings);
+            _executeAttachPresetSlot1Command = CreateExecuteAttachPresetSlotCommand(0);
+            _executeAttachPresetSlot2Command = CreateExecuteAttachPresetSlotCommand(1);
+            _executeAttachPresetSlot3Command = CreateExecuteAttachPresetSlotCommand(2);
+            _executeAttachPresetSlot4Command = CreateExecuteAttachPresetSlotCommand(3);
+            _executeAttachPresetSlot5Command = CreateExecuteAttachPresetSlotCommand(4);
+            _executeAttachPresetSlot6Command = CreateExecuteAttachPresetSlotCommand(5);
+            _executeAttachPresetSlot7Command = CreateExecuteAttachPresetSlotCommand(6);
+            _executeAttachPresetSlot8Command = CreateExecuteAttachPresetSlotCommand(7);
+            _executeAttachPresetSlot9Command = CreateExecuteAttachPresetSlotCommand(8);
+            _executeAttachPresetSlot0Command = CreateExecuteAttachPresetSlotCommand(9);
 
             _isLoadingHotkeys = true;
             if (settings.Hotkeys != null)
@@ -165,6 +185,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 }
             }
             _isLoadingHotkeys = false;
+            RefreshCommandHotkeys();
 
             _hotkeyService.BindingCaptured += OnHotkeyBindingCaptured;
             _hotkeyService.BindingModeChanged += OnHotkeyBindingModeChanged;
@@ -210,6 +231,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _activeAttachPresetPage = _hudSettings.ActiveAttachPresetPage;
 
             LoadAttachPresets();
+            RefreshAttachHotkeys();
             SendAltPlayerBindsMode();
             if (_ws?.IsConnected == true)
                 _ = SendAllFreecamConfigAsync();
@@ -231,6 +253,7 @@ namespace HlaeObsTools.ViewModels.Docks
         public ObservableCollection<HotkeyBindingViewModel> CommandHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> CampathHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> GraphicsHotkeyBindings { get; } = new();
+        public ObservableCollection<HotkeyBindingViewModel> AttachHotkeyBindings { get; } = new();
 
         private bool _isEditingAttachPresetAnimation;
         public bool IsEditingAttachPresetAnimation
@@ -631,16 +654,27 @@ namespace HlaeObsTools.ViewModels.Docks
                 _hudSettings.ActiveAttachPresetPage = _activeAttachPresetPage;
                 OnPropertyChanged();
                 LoadAttachPresets();
+                RefreshAttachHotkeys();
                 SaveSettings();
             }
         }
 
         public ObservableCollection<AttachPresetViewModel> AttachPresets { get; }
             = new ObservableCollection<AttachPresetViewModel>(
-                Enumerable.Range(0, 5).Select(i => new AttachPresetViewModel($"Preset {i + 1}")));
+                Enumerable.Range(0, 5).Select(i => new AttachPresetViewModel($"Preset {i + 1}") { PresetIndex = i }));
 
         public ICommand OpenAttachPresetAnimationCommand { get; }
         public ICommand CloseAttachPresetAnimationCommand { get; }
+        public ICommand ExecuteAttachPresetSlot1Command => _executeAttachPresetSlot1Command;
+        public ICommand ExecuteAttachPresetSlot2Command => _executeAttachPresetSlot2Command;
+        public ICommand ExecuteAttachPresetSlot3Command => _executeAttachPresetSlot3Command;
+        public ICommand ExecuteAttachPresetSlot4Command => _executeAttachPresetSlot4Command;
+        public ICommand ExecuteAttachPresetSlot5Command => _executeAttachPresetSlot5Command;
+        public ICommand ExecuteAttachPresetSlot6Command => _executeAttachPresetSlot6Command;
+        public ICommand ExecuteAttachPresetSlot7Command => _executeAttachPresetSlot7Command;
+        public ICommand ExecuteAttachPresetSlot8Command => _executeAttachPresetSlot8Command;
+        public ICommand ExecuteAttachPresetSlot9Command => _executeAttachPresetSlot9Command;
+        public ICommand ExecuteAttachPresetSlot0Command => _executeAttachPresetSlot0Command;
 
         private void LoadAttachPresets()
         {
@@ -682,6 +716,36 @@ namespace HlaeObsTools.ViewModels.Docks
             if (index >= page.Presets.Count) return;
             page.Presets[index] = vm.ToModel();
             SaveSettings();
+        }
+
+        public async Task ExecuteAttachPresetHotkeyActionAsync(int pageIndex, int presetIndex, int observerSlot)
+        {
+            if (_ws == null)
+                return;
+
+            if (pageIndex != _hudSettings.ActiveAttachPresetPage)
+                return;
+
+            if (presetIndex < 0 || presetIndex >= AttachPresets.Count)
+                return;
+
+            var preset = AttachPresets[presetIndex].ToModel();
+            await _ws.SendCommandAsync("attach_camera", BuildAttachCameraArgs(observerSlot, preset, targetObserverSlot: null));
+        }
+
+        private ICommand CreateExecuteAttachPresetSlotCommand(int observerSlot)
+        {
+            return new RelayParam<AttachPresetViewModel>(
+                preset => _ = ExecuteAttachPresetSlotCommandAsync(preset, observerSlot),
+                preset => preset != null);
+        }
+
+        private async Task ExecuteAttachPresetSlotCommandAsync(AttachPresetViewModel? preset, int observerSlot)
+        {
+            if (_ws == null || preset == null)
+                return;
+
+            await _ws.SendCommandAsync("attach_camera", BuildAttachCameraArgs(observerSlot, preset.ToModel(), targetObserverSlot: null));
         }
 
         private void AttachHotkeyBinding(HotkeyBindingViewModel binding)
@@ -728,6 +792,9 @@ namespace HlaeObsTools.ViewModels.Docks
                         existing.TargetGraphicsAtlasName = e.Binding.TargetGraphicsAtlasName;
                         existing.TargetGraphicsInstanceName = e.Binding.TargetGraphicsInstanceName;
                         existing.TargetGraphicsAction = e.Binding.TargetGraphicsAction;
+                        existing.TargetAttachPresetPage = e.Binding.TargetAttachPresetPage;
+                        existing.TargetAttachPresetIndex = e.Binding.TargetAttachPresetIndex;
+                        existing.TargetAttachSlot = e.Binding.TargetAttachSlot;
                         existing.DisplayName = e.Binding.DisplayName;
                         _isLoadingHotkeys = false;
                     }
@@ -741,6 +808,10 @@ namespace HlaeObsTools.ViewModels.Docks
                 }
 
                 EnsureUniqueHotkey(e.Binding, e.RebindId);
+                RefreshCommandHotkeys();
+                RefreshCampathHotkeys();
+                RefreshGraphicsHotkeys();
+                RefreshAttachHotkeys();
                 SyncHotkeysToService();
                 SaveSettings();
             });
@@ -753,8 +824,10 @@ namespace HlaeObsTools.ViewModels.Docks
                 || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.CampathGroup;
             var isGraphicsBinding = binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
                 || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction;
+            var isAttachBinding = binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.AttachPresetSlotAction;
             var bindingProfileId = binding.TargetCampathProfileId;
             var bindingGraphicsProfile = binding.TargetGraphicsProfileName;
+            var bindingAttachPage = binding.TargetAttachPresetPage;
             var duplicates = HotkeyBindings
                 .Where(b => b.Key == binding.Key && b.Modifiers == binding.Modifiers && b.Id != excludeId)
                 .Where(b =>
@@ -762,7 +835,16 @@ namespace HlaeObsTools.ViewModels.Docks
                     if (!isCampathBinding)
                     {
                         if (!isGraphicsBinding)
-                            return true;
+                        {
+                            if (!isAttachBinding)
+                                return true;
+
+                            var otherIsAttach = b.TargetKind == Services.Hotkeys.HotkeyTargetKind.AttachPresetSlotAction;
+                            if (!otherIsAttach)
+                                return true;
+
+                            return b.TargetAttachPresetPage == bindingAttachPage;
+                        }
 
                         var otherIsGraphics = b.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
                             || b.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction;
@@ -837,15 +919,38 @@ namespace HlaeObsTools.ViewModels.Docks
                 return;
             }
 
+            if (binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.AttachPresetSlotAction)
+            {
+                RefreshAttachHotkeys();
+                return;
+            }
+
             if (!CommandHotkeyBindings.Contains(binding))
                 CommandHotkeyBindings.Add(binding);
         }
 
         private void RemoveFromHotkeyLists(HotkeyBindingViewModel binding)
         {
-            CommandHotkeyBindings.Remove(binding);
+            RefreshCommandHotkeys();
             RefreshCampathHotkeys();
             RefreshGraphicsHotkeys();
+            RefreshAttachHotkeys();
+        }
+
+        private void RefreshCommandHotkeys()
+        {
+            CommandHotkeyBindings.Clear();
+            foreach (var binding in HotkeyBindings)
+            {
+                if (binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.Campath
+                    || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.CampathGroup
+                    || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
+                    || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction
+                    || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.AttachPresetSlotAction)
+                    continue;
+
+                CommandHotkeyBindings.Add(binding);
+            }
         }
 
         private void RefreshCampathHotkeys()
@@ -889,6 +994,22 @@ namespace HlaeObsTools.ViewModels.Docks
             }
 
             OnPropertyChanged(nameof(ActiveGraphicsProfileName));
+        }
+
+        private void RefreshAttachHotkeys()
+        {
+            AttachHotkeyBindings.Clear();
+            var activePage = _hudSettings.ActiveAttachPresetPage;
+            foreach (var binding in HotkeyBindings)
+            {
+                if (binding.TargetKind != Services.Hotkeys.HotkeyTargetKind.AttachPresetSlotAction)
+                    continue;
+
+                if (binding.TargetAttachPresetPage == activePage)
+                    AttachHotkeyBindings.Add(binding);
+            }
+
+            OnPropertyChanged(nameof(ActiveAttachPresetPageName));
         }
 
         private void OnCampathProfileChanged(object? sender, PropertyChangedEventArgs e)
@@ -946,6 +1067,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         public string ActiveCampathProfileName => _campathsDockViewModel?.SelectedProfile?.Name ?? "No profile selected";
         public string ActiveGraphicsProfileName => _graphicsDockViewModel?.SelectedProfileName ?? "No profile selected";
+        public string ActiveAttachPresetPageName => $"Attach Page {Math.Clamp(_hudSettings.ActiveAttachPresetPage + 1, 1, 5)}";
 
         private void SaveSettings()
         {
@@ -1341,6 +1463,119 @@ namespace HlaeObsTools.ViewModels.Docks
         private void SendExecCommand(string command)
         {
             _ = SendExecCommandAsync(command);
+        }
+
+        private static object BuildAttachCameraArgs(int observerSlot, HudSettings.AttachmentPreset preset, int? targetObserverSlot)
+        {
+            object? animation = null;
+            if (preset.Animation.Enabled)
+            {
+                var events = (preset.Animation.Events ?? new List<HudSettings.AttachmentPresetAnimationEvent>())
+                    .Select(ev =>
+                    {
+                        if (ev.Type == HudSettings.AttachmentPresetAnimationEventType.Transition)
+                        {
+                            return (object)new
+                            {
+                                type = "transition",
+                                time = ev.Time,
+                                order = ev.Order,
+                                duration = ev.TransitionDuration ?? 0.0,
+                                easing = ToTransitionEasing(ev.TransitionEasing)
+                            };
+                        }
+
+                        return (object)new
+                        {
+                            type = "keyframe",
+                            time = ev.Time,
+                            order = ev.Order,
+                            delta_pos = new { x = ev.DeltaPosX, y = ev.DeltaPosY, z = ev.DeltaPosZ },
+                            delta_angles = new { pitch = ev.DeltaPitch, yaw = ev.DeltaYaw, roll = ev.DeltaRoll },
+                            fov = ev.Fov,
+                            easing_curve = ToKeyframeEasingCurve(ev.KeyframeEasingCurve),
+                            easing_mode = ToKeyframeEasingMode(ev.KeyframeEasingMode)
+                        };
+                    })
+                    .ToList();
+
+                animation = new
+                {
+                    enabled = preset.Animation.Enabled,
+                    events
+                };
+            }
+
+            return new
+            {
+                observer_slot = observerSlot,
+                target_observer_slot = targetObserverSlot,
+                attachment = preset.AttachmentName,
+                offset_pos = new { x = preset.OffsetPosX, y = preset.OffsetPosY, z = preset.OffsetPosZ },
+                offset_angles = new { pitch = preset.OffsetPitch, yaw = preset.OffsetYaw, roll = preset.OffsetRoll },
+                fov = preset.Fov,
+                rotation_reference = ToRotationReference(preset.RotationReference),
+                rotation_basis = new
+                {
+                    pitch = ToRotationBasis(preset.RotationBasisPitch),
+                    yaw = ToRotationBasis(preset.RotationBasisYaw),
+                    roll = ToRotationBasis(preset.RotationBasisRoll)
+                },
+                rotation_axis_lock = new
+                {
+                    pitch = preset.RotationLockPitch,
+                    yaw = preset.RotationLockYaw,
+                    roll = preset.RotationLockRoll
+                },
+                animation
+            };
+        }
+
+        private static string ToTransitionEasing(HudSettings.AttachmentPresetAnimationTransitionEasing? easing)
+        {
+            return (easing ?? HudSettings.AttachmentPresetAnimationTransitionEasing.Smoothstep) switch
+            {
+                HudSettings.AttachmentPresetAnimationTransitionEasing.Linear => "linear",
+                HudSettings.AttachmentPresetAnimationTransitionEasing.Smoothstep => "smoothstep",
+                HudSettings.AttachmentPresetAnimationTransitionEasing.EaseInOutCubic => "easeinoutcubic",
+                _ => "smoothstep"
+            };
+        }
+
+        private static string ToKeyframeEasingCurve(HudSettings.AttachmentPresetAnimationKeyframeCurve? curve)
+        {
+            return (curve ?? HudSettings.AttachmentPresetAnimationKeyframeCurve.Linear) switch
+            {
+                HudSettings.AttachmentPresetAnimationKeyframeCurve.Linear => "linear",
+                HudSettings.AttachmentPresetAnimationKeyframeCurve.Smoothstep => "smoothstep",
+                HudSettings.AttachmentPresetAnimationKeyframeCurve.Cubic => "cubic",
+                _ => "linear"
+            };
+        }
+
+        private static string ToKeyframeEasingMode(HudSettings.AttachmentPresetAnimationKeyframeEase? mode)
+        {
+            return (mode ?? HudSettings.AttachmentPresetAnimationKeyframeEase.EaseInOut) switch
+            {
+                HudSettings.AttachmentPresetAnimationKeyframeEase.EaseIn => "easein",
+                HudSettings.AttachmentPresetAnimationKeyframeEase.EaseOut => "easeout",
+                HudSettings.AttachmentPresetAnimationKeyframeEase.EaseInOut => "easeinout",
+                _ => "easeinout"
+            };
+        }
+
+        private static string ToRotationReference(HudSettings.AttachmentPresetRotationReference reference)
+        {
+            return reference == HudSettings.AttachmentPresetRotationReference.OffsetLocal
+                ? "offset_local"
+                : "attachment";
+        }
+
+        private static string ToRotationBasis(HudSettings.AttachmentPresetRotationBasis basis)
+        {
+            return basis == HudSettings.AttachmentPresetRotationBasis.World
+                ? "world"
+                : "attachment";
         }
 
         #endregion

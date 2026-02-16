@@ -530,6 +530,81 @@
                                                                 Click="OpenAnimationEditor_Click"
                                                                 HorizontalAlignment="Right"/>
                                                     </Grid>
+                                                    <TextBlock Text="Execute preset on slot"
+                                                               Foreground="#AAAAAA"
+                                                               FontSize="12"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <Button Content="1"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot1Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="0"/>
+                                                        <Button Content="2"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot2Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="1"/>
+                                                        <Button Content="3"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot3Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="2"/>
+                                                        <Button Content="4"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot4Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="3"/>
+                                                        <Button Content="5"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot5Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="4"/>
+                                                        <Button Content="6"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot6Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="5"/>
+                                                        <Button Content="7"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot7Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="6"/>
+                                                        <Button Content="8"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot8Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="7"/>
+                                                        <Button Content="9"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot9Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="8"/>
+                                                        <Button Content="0"
+                                                                Command="{Binding DataContext.ExecuteAttachPresetSlot0Command, ElementName=Root}"
+                                                                CommandParameter="{Binding}"
+                                                                hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                hotkeys:HotkeyTarget.AttachSlot="9"/>
+                                                    </StackPanel>
                                                     <TextBlock Text="Preset Name" Foreground="#AAAAAA" FontSize="12"/>
                                                     <TextBox Width="300"
                                                              Watermark="Preset name"
@@ -668,7 +743,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                        <TextBlock Text="Supports command buttons, simple toggles, and profile-scoped graphics actions."
+                        <TextBlock Text="Supports command buttons, simple toggles, campaths, graphics actions, and attach preset slot actions."
                                    Foreground="#888888"
                                    FontSize="12"/>
                         <Separator Margin="0,6,0,6"/>
@@ -716,6 +791,42 @@
                                    FontSize="12"
                                    Margin="0,0,0,6"/>
                         <ListBox ItemsSource="{Binding GraphicsHotkeyBindings}"
+                                 SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                    <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,6">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                            <TextBlock Text="{Binding HotkeyDisplay}"
+                                                       Foreground="#E6E6E6"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding DisplayLabel}"
+                                                       Foreground="#CCCCCC"
+                                                       VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                <ToggleSwitch IsChecked="{Binding Enabled}" />
+                                                <Button Content="Rebind"
+                                                        Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"/>
+                                                <Button Content="Remove"
+                                                        Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <Separator Margin="0,6,0,6"/>
+                        <TextBlock Text="Attach Preset Bindings"
+                                   Foreground="#CCCCCC"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding ActiveAttachPresetPageName}"
+                                   Foreground="#888888"
+                                   FontSize="12"
+                                   Margin="0,0,0,6"/>
+                        <ListBox ItemsSource="{Binding AttachHotkeyBindings}"
                                  SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="hk:HotkeyBindingViewModel">

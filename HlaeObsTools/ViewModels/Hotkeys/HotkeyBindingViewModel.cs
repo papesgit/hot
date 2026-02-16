@@ -21,6 +21,9 @@ public class HotkeyBindingViewModel : ViewModelBase
     private string? _targetGraphicsAtlasName;
     private string? _targetGraphicsInstanceName;
     private string? _targetGraphicsAction;
+    private int? _targetAttachPresetPage;
+    private int? _targetAttachPresetIndex;
+    private int? _targetAttachSlot;
     private HotkeyTargetKind _targetKind = HotkeyTargetKind.Command;
 
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -173,6 +176,36 @@ public class HotkeyBindingViewModel : ViewModelBase
         set => SetProperty(ref _targetKind, value);
     }
 
+    public int? TargetAttachPresetPage
+    {
+        get => _targetAttachPresetPage;
+        set
+        {
+            if (SetProperty(ref _targetAttachPresetPage, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public int? TargetAttachPresetIndex
+    {
+        get => _targetAttachPresetIndex;
+        set
+        {
+            if (SetProperty(ref _targetAttachPresetIndex, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public int? TargetAttachSlot
+    {
+        get => _targetAttachSlot;
+        set
+        {
+            if (SetProperty(ref _targetAttachSlot, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
     public string HotkeyDisplay => FormatHotkey(Key, Modifiers);
     public string DisplayLabel => !string.IsNullOrWhiteSpace(DisplayName)
         ? DisplayName
@@ -198,6 +231,9 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetGraphicsAtlasName = data.TargetGraphicsAtlasName,
             TargetGraphicsInstanceName = data.TargetGraphicsInstanceName,
             TargetGraphicsAction = data.TargetGraphicsAction,
+            TargetAttachPresetPage = data.TargetAttachPresetPage,
+            TargetAttachPresetIndex = data.TargetAttachPresetIndex,
+            TargetAttachSlot = data.TargetAttachSlot,
             DisplayName = data.DisplayName
         };
     }
@@ -222,6 +258,9 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetGraphicsAtlasName = TargetGraphicsAtlasName,
             TargetGraphicsInstanceName = TargetGraphicsInstanceName,
             TargetGraphicsAction = TargetGraphicsAction,
+            TargetAttachPresetPage = TargetAttachPresetPage,
+            TargetAttachPresetIndex = TargetAttachPresetIndex,
+            TargetAttachSlot = TargetAttachSlot,
             DisplayName = DisplayName
         };
     }

@@ -7,5 +7,6 @@ public enum HotkeyTargetKind
     Campath = 2,
     CampathGroup = 3,
     GraphicsAtlasAction = 4,
-    GraphicsInstanceAction = 5
+    GraphicsInstanceAction = 5,
+    AttachPresetSlotAction = 6
 }

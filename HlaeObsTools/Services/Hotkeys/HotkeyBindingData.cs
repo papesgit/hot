@@ -21,5 +21,8 @@ public class HotkeyBindingData
     public string? TargetGraphicsAtlasName { get; set; }
     public string? TargetGraphicsInstanceName { get; set; }
     public string? TargetGraphicsAction { get; set; }
+    public int? TargetAttachPresetPage { get; set; }
+    public int? TargetAttachPresetIndex { get; set; }
+    public int? TargetAttachSlot { get; set; }
     public string? DisplayName { get; set; }
 }
