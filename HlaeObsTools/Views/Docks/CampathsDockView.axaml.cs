@@ -22,8 +22,10 @@ public partial class CampathsDockView : UserControl
         DataContextChanged += OnDataContextChanged;
     }
 
-    private const string CampathDragFormat = "campath-item";
-    private const string GroupDragFormat = "group-item";
+    private static readonly DataFormat<string> CampathDragFormat =
+        DataFormat.CreateStringApplicationFormat("hlaeobs.campath-id");
+    private static readonly DataFormat<string> GroupDragFormat =
+        DataFormat.CreateStringApplicationFormat("hlaeobs.group-id");
     private const double CampathDragThreshold = 4.0;
     private CampathItemViewModel? _campathPressedItem;
     private Point? _campathPressPoint;
@@ -288,9 +290,11 @@ public partial class CampathsDockView : UserControl
         if (sender is Control control && control.DataContext is CampathItemViewModel campathVm && ReferenceEquals(campathVm, _campathPressedItem))
         {
             _campathDragInitiated = true;
-            var data = new DataObject();
-            data.Set(CampathDragFormat, campathVm);
-            await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+            var data = new DataTransfer();
+            var item = new DataTransferItem();
+            item.Set(CampathDragFormat, campathVm.Id.ToString("D"));
+            data.Add(item);
+            await DragDrop.DoDragDropAsync(e, data, DragDropEffects.Move);
             ResetCampathPointerState(control);
         }
     }
@@ -327,7 +331,7 @@ public partial class CampathsDockView : UserControl
 
     private void OnCampathDragOver(object? sender, DragEventArgs e)
     {
-        if (e.Data.Contains(CampathDragFormat) && sender is Control { DataContext: CampathItemViewModel })
+        if (e.DataTransfer.Contains(CampathDragFormat) && sender is Control { DataContext: CampathItemViewModel })
         {
             e.DragEffects = DragDropEffects.Move;
             e.Handled = true;
@@ -339,8 +343,7 @@ public partial class CampathsDockView : UserControl
         if (DataContext is not CampathsDockViewModel vm)
             return;
 
-        var dragged = e.Data.Get(CampathDragFormat) as CampathItemViewModel;
-        if (dragged == null)
+        if (!TryResolveCampath(e.DataTransfer, vm, out var dragged) || dragged == null)
             return;
 
         var target = (sender as Control)?.DataContext as CampathItemViewModel;
@@ -353,12 +356,12 @@ public partial class CampathsDockView : UserControl
 
     private void OnGroupDragOver(object? sender, DragEventArgs e)
     {
-        if (e.Data.Contains(GroupDragFormat) && sender is Control { DataContext: CampathGroupViewModel })
+        if (e.DataTransfer.Contains(GroupDragFormat) && sender is Control { DataContext: CampathGroupViewModel })
         {
             e.DragEffects = DragDropEffects.Move;
             e.Handled = true;
         }
-        else if (e.Data.Contains(CampathDragFormat) && sender is Control { DataContext: CampathGroupViewModel })
+        else if (e.DataTransfer.Contains(CampathDragFormat) && sender is Control { DataContext: CampathGroupViewModel })
         {
             e.DragEffects = DragDropEffects.Move;
             e.Handled = true;
@@ -370,8 +373,8 @@ public partial class CampathsDockView : UserControl
         if (DataContext is not CampathsDockViewModel vm)
             return;
 
-        var draggedGroup = e.Data.Get(GroupDragFormat) as CampathGroupViewModel;
-        var draggedCampath = e.Data.Get(CampathDragFormat) as CampathItemViewModel;
+        TryResolveGroup(e.DataTransfer, vm, out var draggedGroup);
+        TryResolveCampath(e.DataTransfer, vm, out var draggedCampath);
         var group = (sender as Control)?.DataContext as CampathGroupViewModel;
         if (group == null)
             return;
@@ -427,11 +430,37 @@ public partial class CampathsDockView : UserControl
         if (sender is Control control && control.DataContext is CampathGroupViewModel groupVm && ReferenceEquals(groupVm, _groupPressed))
         {
             _groupDragInitiated = true;
-            var data = new DataObject();
-            data.Set(GroupDragFormat, groupVm);
-            await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+            var data = new DataTransfer();
+            var item = new DataTransferItem();
+            item.Set(GroupDragFormat, groupVm.Id.ToString("D"));
+            data.Add(item);
+            await DragDrop.DoDragDropAsync(e, data, DragDropEffects.Move);
             ResetGroupPointerState(control);
         }
+    }
+
+    private static bool TryResolveCampath(IDataTransfer dataTransfer, CampathsDockViewModel vm, out CampathItemViewModel? campath)
+    {
+        campath = null;
+
+        var idText = dataTransfer.TryGetValue(CampathDragFormat);
+        if (string.IsNullOrWhiteSpace(idText) || !Guid.TryParse(idText, out var id))
+            return false;
+
+        campath = vm.SelectedProfile?.Campaths.FirstOrDefault(c => c.Id == id);
+        return campath != null;
+    }
+
+    private static bool TryResolveGroup(IDataTransfer dataTransfer, CampathsDockViewModel vm, out CampathGroupViewModel? group)
+    {
+        group = null;
+
+        var idText = dataTransfer.TryGetValue(GroupDragFormat);
+        if (string.IsNullOrWhiteSpace(idText) || !Guid.TryParse(idText, out var id))
+            return false;
+
+        group = vm.SelectedProfile?.Groups.FirstOrDefault(g => g.Id == id);
+        return group != null;
     }
 
     private async void OnGroupPointerReleased(object? sender, PointerReleasedEventArgs e)

@@ -309,7 +309,7 @@ namespace HlaeObsTools.ViewModels.Docks
                     var cmd = value
                         ? "cl_drawhud 0"
                         : "cl_drawhud 1";
-                    _ws.SendExecCommandAsync(cmd);
+                    SendExecCommand(cmd);
                 }
             }
         }
@@ -328,7 +328,7 @@ namespace HlaeObsTools.ViewModels.Docks
                     var cmd = value
                         ? "cl_draw_only_deathnotices 1"
                         : "cl_draw_only_deathnotices 0";
-                    _ws.SendExecCommandAsync(cmd);
+                    SendExecCommand(cmd);
                 }
             }
         }
@@ -347,7 +347,7 @@ namespace HlaeObsTools.ViewModels.Docks
                     var cmd = value
                         ? "spec_show_xray 1"
                         : "spec_show_xray 0";
-                    _ws.SendExecCommandAsync(cmd);
+                    SendExecCommand(cmd);
                 }
             }
         }
@@ -373,9 +373,9 @@ namespace HlaeObsTools.ViewModels.Docks
             OnPropertyChanged(nameof(ForceDeathnoticesLabel));
 
             var cmd = $"cl_drawhud_force_deathnotices {_forceDeathnoticesMode}";
-            _ws.SendExecCommandAsync(cmd);
+            SendExecCommand(cmd);
         }
-        public ICommand ToggleDemouiCommand => new AsyncRelay(() => _ws.SendExecCommandAsync("demoui"));
+        public ICommand ToggleDemouiCommand => new AsyncRelay(() => SendExecCommandAsync("demoui"));
 
         private void OnWebSocketConnected(object? sender, EventArgs e)
         {
@@ -565,7 +565,7 @@ namespace HlaeObsTools.ViewModels.Docks
                     var cmd = value
                         ? "mirv_campath draw enabled 1"
                         : "mirv_campath draw enabled 0";
-                    _ws.SendExecCommandAsync(cmd);
+                    SendExecCommand(cmd);
                 }
             }
         }
@@ -584,7 +584,7 @@ namespace HlaeObsTools.ViewModels.Docks
                     var cmd = value
                         ? "mirv_campath enabled 1"
                         : "mirv_campath enabled 0";
-                    _ws.SendExecCommandAsync(cmd);
+                    SendExecCommand(cmd);
                 }
             }
         }
@@ -633,9 +633,9 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             private readonly Func<Task> _action;
             public AsyncRelay(Func<Task> action) => _action = action;
-            public bool CanExecute(object parameter) => true;
-            public async void Execute(object parameter) => await _action();
-            public event EventHandler CanExecuteChanged { add { } remove { } }
+            public bool CanExecute(object? parameter) => true;
+            public async void Execute(object? parameter) => await _action();
+            public event EventHandler? CanExecuteChanged { add { } remove { } }
         }
 
         // Dummy interpolation state
@@ -650,13 +650,13 @@ namespace HlaeObsTools.ViewModels.Docks
             var cmd = _useCubic
                 ? "mirv_campath edit interp position cubic; mirv_campath edit interp rotation cubic; mirv_campath edit interp fov cubic"
                 : "mirv_campath edit interp position linear; mirv_campath edit interp rotation sLinear; mirv_campath edit interp fov linear";
-            _ws.SendExecCommandAsync(cmd);
+            SendExecCommand(cmd);
         });
 
         // Dummy camera path actions
-        public ICommand AddPointCommand => new AsyncRelay(() => _ws.SendExecCommandAsync("mirv_campath add"));
-        public ICommand ClearCampathCommand => new AsyncRelay(() => _ws.SendExecCommandAsync("mirv_campath clear"));
-        public ICommand GotoStartCommand => new AsyncRelay(() => _ws.SendExecCommandAsync("echo \"Implement this\""));
+        public ICommand AddPointCommand => new AsyncRelay(() => SendExecCommandAsync("mirv_campath add"));
+        public ICommand ClearCampathCommand => new AsyncRelay(() => SendExecCommandAsync("mirv_campath clear"));
+        public ICommand GotoStartCommand => new AsyncRelay(() => SendExecCommandAsync("echo \"Implement this\""));
         
         public ICommand LoadCampathCommand => new AsyncRelay(async () =>
         {
@@ -666,7 +666,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
             // You might want to escape quotes in path if that’s ever an issue
             var cmd = $"mirv_campath load \"{path}\"";
-            await _ws.SendExecCommandAsync(cmd);
+            await SendExecCommandAsync(cmd);
         });
 
         public ICommand SaveCampathCommand => new AsyncRelay(async () =>
@@ -676,7 +676,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 return; // user cancelled
 
             var cmd = $"mirv_campath save \"{path}\"";
-            await _ws.SendExecCommandAsync(cmd);
+            await SendExecCommandAsync(cmd);
         });
 
         public ICommand LoadViewportCampathCommand => new AsyncRelay(async () =>
@@ -918,6 +918,19 @@ namespace HlaeObsTools.ViewModels.Docks
             await _ws.SendCommandAsync("freecam_config", config);
         }
 
+        private Task SendExecCommandAsync(string command)
+        {
+            if (_ws == null)
+                return Task.CompletedTask;
+
+            return _ws.SendExecCommandAsync(command);
+        }
+
+        private void SendExecCommand(string command)
+        {
+            _ = SendExecCommandAsync(command);
+        }
+
         #endregion
 
         // Simple ICommand helper (no MVVM library required)
@@ -925,9 +938,9 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             private readonly Action _action;
             public Relay(Action action) => _action = action;
-            public bool CanExecute(object parameter) => true;
-            public void Execute(object parameter) => _action();
-            public event EventHandler CanExecuteChanged { add { } remove { } }
+            public bool CanExecute(object? parameter) => true;
+            public void Execute(object? parameter) => _action();
+            public event EventHandler? CanExecuteChanged { add { } remove { } }
         }
 
         private sealed class RelayParam<T> : ICommand where T : class

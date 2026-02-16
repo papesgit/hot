@@ -17,7 +17,6 @@ using HlaeObsTools.ViewModels;
 using HlaeObsTools.Services.Settings;
 using HlaeObsTools.ViewModels.Hud;
 using HlaeObsTools.Services.Vmix;
-using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.ViewModels;
 

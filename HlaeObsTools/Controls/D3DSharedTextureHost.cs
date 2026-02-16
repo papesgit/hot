@@ -52,7 +52,6 @@ public class D3DSharedTextureHost : NativeControlHost
     private bool _loggedFallback;
     private bool _loggedDevice1Missing;
     private bool _loggedFirstFrame;
-    private bool _loggedSwapchainSize;
     private double _texAspect;
 
     public event EventHandler? SharedHandleInvalidated;
@@ -120,7 +119,6 @@ public class D3DSharedTextureHost : NativeControlHost
         _loggedFallback = false;
         _loggedDevice1Missing = false;
         _loggedFirstFrame = false;
-        _loggedSwapchainSize = false;
         _texAspect = 0;
         _targetWidth = 0;
         _targetHeight = 0;

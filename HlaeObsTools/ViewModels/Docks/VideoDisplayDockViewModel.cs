@@ -130,7 +130,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public void SetHudOverlay(HudOverlayViewModel hudOverlay)
     {
         HudOverlay = hudOverlay;
-        _hudOverlay.IsFreecamActive = _isFreecamActive;
+        hudOverlay.IsFreecamActive = _isFreecamActive;
         if (_hudOverlayWindow != null)
         {
             _hudOverlayWindow.DataContext = hudOverlay;

@@ -102,7 +102,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private bool _rendererReady;
     private bool _mapLoadPending;
     private string? _pendingMapPath;
-    private bool _showEntityModels;
+    private bool _showEntityModels = false;
     private bool _renderLogged;
     private bool _mapHasExternalReferences;
 
@@ -159,7 +159,6 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private Vector3 _gizmoDragStartPosition;
     private Quaternion _gizmoDragStartRotation = Quaternion.Identity;
     private Vector3 _gizmoDragStartVector;
-    private float _gizmoDragStartScalar;
     private float _gizmoDragStartAxisT;
     private GizmoMode _gizmoHover = GizmoMode.None;
     private readonly Vector3[] _pinConeUnit = CreateUnitCone();
@@ -3404,10 +3403,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
         }
 
-        _mainFramebuffer.Bind(FramebufferTarget.Framebuffer);
+        var framebuffer = _mainFramebuffer;
+        var renderer = _renderer;
+        if (framebuffer == null || renderer == null)
+            return;
+
+        framebuffer.Bind(FramebufferTarget.Framebuffer);
         GL.Viewport(0, 0, width, height);
 
-        var mvp = ToMatrix4(_renderer.Camera.ViewProjectionMatrix);
+        var mvp = ToMatrix4(renderer.Camera.ViewProjectionMatrix);
         GL.UseProgram(_pinShaderProgram);
         if (_pinMvpLocation >= 0)
         {
@@ -3448,10 +3452,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
         }
 
-        _mainFramebuffer.Bind(FramebufferTarget.Framebuffer);
+        var framebuffer = _mainFramebuffer;
+        var renderer = _renderer;
+        if (framebuffer == null || renderer == null)
+            return;
+
+        framebuffer.Bind(FramebufferTarget.Framebuffer);
         GL.Viewport(0, 0, width, height);
 
-        var mvp = ToMatrix4(_renderer.Camera.ViewProjectionMatrix);
+        var mvp = ToMatrix4(renderer.Camera.ViewProjectionMatrix);
         GL.UseProgram(_campathOverlayShaderProgram);
         if (_campathOverlayMvpLocation >= 0)
         {

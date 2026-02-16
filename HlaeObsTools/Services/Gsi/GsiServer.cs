@@ -86,7 +86,7 @@ public sealed class GsiServer : IDisposable
         try
         {
             _cts?.Cancel();
-            _listener.Stop();
+            _listener?.Stop();
             _loopTask?.Wait(TimeSpan.FromSeconds(1));
         }
         catch

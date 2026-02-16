@@ -87,7 +87,7 @@ public sealed class SharedTextureVideoSource : IVideoSource
 
     private void CreateDevice()
     {
-        ID3D11Device tempDevice;
+        ID3D11Device? tempDevice;
         Result result = D3D11CreateDevice(
             null,
             DriverType.Hardware,
@@ -95,7 +95,7 @@ public sealed class SharedTextureVideoSource : IVideoSource
             null,
             out tempDevice);
 
-        if (result.Failure)
+        if (result.Failure || tempDevice == null)
         {
             result = D3D11CreateDevice(
                 null,
@@ -105,7 +105,7 @@ public sealed class SharedTextureVideoSource : IVideoSource
                 out tempDevice);
         }
 
-        if (result.Failure)
+        if (result.Failure || tempDevice == null)
         {
             throw new InvalidOperationException("Failed to create D3D11 device for shared texture access.");
         }

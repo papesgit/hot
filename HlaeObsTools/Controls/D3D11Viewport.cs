@@ -41,8 +41,12 @@ namespace HlaeObsTools.Controls;
 
 public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
 {
+// TODO: Legacy D3D11 viewport does not implement campath gizmo yet.
+// Keep these events to satisfy IViewport3DControl and future feature parity with VRFViewport.
+#pragma warning disable CS0067
     public event Action<Vector3, Quaternion>? CampathGizmoPoseChanged;
     public event Action? CampathGizmoDragEnded;
+#pragma warning restore CS0067
     private static readonly string LogPath = GetLogPath();
     private static bool _logPathAnnounced;
     private static bool _logWriteFailedLogged;
@@ -121,7 +125,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
     private ID3D11Buffer? _groundBuffer;
     private int _groundVertexCount;
     private ID3D11Buffer? _debugBuffer;
-    private int _debugVertexCount;
+    private int _debugVertexCount = 0;
     private ID3D11Buffer? _pinBuffer;
     private int _pinVertexCount;
     private int _renderWidth;
@@ -143,7 +147,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
     private int _fpsFrameCount;
     private float _fpsValue;
     private string _statusPrefix = string.Empty;
-    private bool _showDebugTriangle;
+    private bool _showDebugTriangle = false;
     private bool _showGroundPlane = true;
     private string _inputStatus = "Input: idle";
     private readonly Vector3 _lightDir = Vector3.Normalize(new Vector3(0.4f, 0.9f, 0.2f));
@@ -1012,6 +1016,12 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
         if (ObjMeshLoader.TryLoad(path, out var mesh, out _))
         {
             _loadedMeshOriginal = mesh;
+            if (mesh == null)
+            {
+                SetStatusText("Failed to load map: mesh is null");
+                return;
+            }
+
             _pendingMesh = ApplyMapTransform(mesh);
             _meshDirty = true;
             RequestNextFrame();
@@ -1371,7 +1381,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
             LightDirAmbient = new Vector4(_lightDir.X, _lightDir.Y, _lightDir.Z, AmbientLight)
         };
 
-        _context.UpdateSubresource(ref constants, _constantBuffer);
+        _context.UpdateSubresource(in constants, _constantBuffer);
     }
 
     private void Orbit(float deltaX, float deltaY)
