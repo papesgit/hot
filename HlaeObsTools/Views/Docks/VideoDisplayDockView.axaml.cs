@@ -420,12 +420,31 @@ public partial class VideoDisplayDockView : UserControl
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern int ShowCursor(bool bShow);
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern short GetKeyState(int nVirtKey);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
+
     private struct RECT
     {
         public int left;
         public int top;
         public int right;
         public int bottom;
+    }
+
+    private static bool IsCapsLockHeld()
+    {
+        const int VK_CAPITAL = 0x14;
+        return (GetAsyncKeyState(VK_CAPITAL) & 0x8000) != 0;
+    }
+
+    private static FreecamInitMode ResolveInitMode(VideoDisplayDockViewModel vm)
+    {
+        var capsLockHeld = IsCapsLockHeld();
+        var useStatic = vm.FreecamSettings?.SwapRightClickInitMode == true ? !capsLockHeld : capsLockHeld;
+        return useStatic ? FreecamInitMode.Static : FreecamInitMode.InheritMotion;
     }
 
     private void SetCursorPosition(int x, int y)
@@ -627,7 +646,7 @@ public partial class VideoDisplayDockView : UserControl
         if (DataContext is not VideoDisplayDockViewModel vm)
             return;
 
-        vm.ActivateFreecam();
+        vm.ActivateFreecam(ResolveInitMode(vm));
 
         // Determine which control to use for cursor center calculation
         Control? targetControl = null;

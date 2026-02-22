@@ -170,7 +170,7 @@
                         BorderBrush="#D0D0D0"
                         BorderThickness="1"
                         CornerRadius="12"
-                        ToolTip.Tip="Controls:&#10;Hold RMB = Activate&#10;WASD = Move Camera&#10;Space/Ctrl = Move Up/Down&#10;Shift = Sprint&#10;Scroll = FOV&#10;Alt+Scroll or Mouse4/5 = Adjust Speed&#10;V = Lock on Player&#10;C = Hold Input State&#10;B = Handoff from 3D Viewport"
+                        ToolTip.Tip="Controls:&#10;Hold RMB = Activate (inherited init by default)&#10;Hold CapsLock + RMB = Activate (static init by default)&#10;(swap behavior in Freecam settings)&#10;WASD = Move Camera&#10;Space/Ctrl = Move Up/Down&#10;Shift = Sprint&#10;Scroll = FOV&#10;Alt+Scroll or Mouse4/5 = Adjust Speed&#10;V = Lock on Player&#10;C = Hold Input State&#10;B = Handoff from 3D Viewport"
                         ToolTip.Placement="Pointer">
 
                     <TextBlock Text="i"

@@ -199,6 +199,7 @@ public class FreecamSettingsData
     public bool RotCriticalDamping { get; set; } = false;
     public double RotDampingRatio { get; set; } = 1.0;
     public bool HoldMovementFollowsCamera { get; set; } = true;
+    public bool SwapRightClickInitMode { get; set; } = false;
     public bool AnalogKeyboardEnabled { get; set; }
     public double AnalogLeftDeadzone { get; set; }
     public double AnalogRightDeadzone { get; set; }

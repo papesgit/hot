@@ -1285,6 +1285,10 @@
                     <TabItem Header="Controls">
                         <ScrollViewer>
                             <StackPanel Margin="10" Spacing="10">
+                                <ToggleSwitch IsChecked="{Binding FreecamSettings.SwapRightClickInitMode, Mode=TwoWay}"
+                                                Content="Swap RMB/Hold CapsLock+RMB init mode"
+                                    hotkeys:HotkeyTarget.Path="FreecamSettings.SwapRightClickInitMode"
+                                                Foreground="#E6E6E6"/>
                                 <TextBlock Text="Analog Keyboard"
                                            Foreground="#CCCCCC"
                                            FontWeight="SemiBold"/>

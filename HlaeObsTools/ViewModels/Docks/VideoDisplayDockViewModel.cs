@@ -15,6 +15,12 @@ using System.Threading.Tasks;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
+public enum FreecamInitMode
+{
+    InheritMotion,
+    Static
+}
+
 /// <summary>
 /// Video display dock view model
 /// </summary>
@@ -172,6 +178,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     }
 
     public bool AnalogKeyboardEnabled => _freecamSettings?.AnalogKeyboardEnabled ?? false;
+    public FreecamSettings? FreecamSettings => _freecamSettings;
 
     public bool TryGetAnalogSprint(out double sprintInput)
     {
@@ -245,13 +252,13 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     /// <summary>
     /// Activate freecam (called when right mouse button pressed)
     /// </summary>
-    public async void ActivateFreecam()
+    public async void ActivateFreecam(FreecamInitMode initMode = FreecamInitMode.InheritMotion)
     {
         if (_webSocketClient == null)
             return;
 
-        // Send freecam enable command to HLAE
-        await _webSocketClient.SendCommandAsync("freecam_enable");
+        var initModeValue = initMode == FreecamInitMode.Static ? "static" : "inherit_motion";
+        await _webSocketClient.SendCommandAsync("freecam_enable", new { initMode = initModeValue });
 
         IsFreecamActive = true;
         FreecamStateChanged?.Invoke(this, true);

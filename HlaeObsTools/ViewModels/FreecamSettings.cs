@@ -47,6 +47,7 @@ public sealed class FreecamSettings : ViewModelBase
 
     // Hold settings
     private bool _holdMovementFollowsCamera = true;
+    private bool _swapRightClickInitMode;
 
     // Analog keyboard settings
     private bool _analogKeyboardEnabled;
@@ -77,6 +78,17 @@ public sealed class FreecamSettings : ViewModelBase
     {
         get => _holdMovementFollowsCamera;
         set => SetProperty(ref _holdMovementFollowsCamera, value);
+    }
+
+    /// <summary>
+    /// Swap right-click freecam init mapping:
+    /// Off: RMB=inherited motion, Hold CapsLock+RMB=static.
+    /// On:  RMB=static, Hold CapsLock+RMB=inherited motion.
+    /// </summary>
+    public bool SwapRightClickInitMode
+    {
+        get => _swapRightClickInitMode;
+        set => SetProperty(ref _swapRightClickInitMode, value);
     }
 
     #endregion
@@ -410,6 +422,7 @@ public sealed class FreecamSettings : ViewModelBase
             RotCriticalDamping = RotCriticalDamping,
             RotDampingRatio = RotDampingRatio,
             HoldMovementFollowsCamera = HoldMovementFollowsCamera,
+            SwapRightClickInitMode = SwapRightClickInitMode,
             AnalogKeyboardEnabled = AnalogKeyboardEnabled,
             AnalogLeftDeadzone = AnalogLeftDeadzone,
             AnalogRightDeadzone = AnalogRightDeadzone,
@@ -450,6 +463,7 @@ public sealed class FreecamSettings : ViewModelBase
         RotCriticalDamping = data.RotCriticalDamping;
         RotDampingRatio = data.RotDampingRatio;
         HoldMovementFollowsCamera = data.HoldMovementFollowsCamera;
+        SwapRightClickInitMode = data.SwapRightClickInitMode;
         AnalogKeyboardEnabled = data.AnalogKeyboardEnabled;
         AnalogLeftDeadzone = data.AnalogLeftDeadzone;
         AnalogRightDeadzone = data.AnalogRightDeadzone;
