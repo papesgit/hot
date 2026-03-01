@@ -14,6 +14,20 @@ using Microsoft.Extensions.Hosting;
 
 namespace HlaeObsTools.Services.Gsi;
 
+public enum GsiRelayHealthLevel
+{
+    Unknown,
+    Healthy,
+    Degraded,
+    Unhealthy
+}
+
+public sealed record GsiRelayEndpointHealth(
+    string Endpoint,
+    GsiRelayHealthLevel Level,
+    string Message,
+    DateTimeOffset? LastUpdatedUtc);
+
 /// <summary>
 /// Lightweight HTTP listener for CS2 Game State Integration callbacks.
 /// </summary>
@@ -38,6 +52,9 @@ public sealed class GsiServer : IDisposable
         public object Sync { get; } = new();
         public RelayEnvelope? PendingPayload { get; set; }
         public bool IsWorkerRunning { get; set; }
+        public GsiRelayHealthLevel HealthLevel { get; set; } = GsiRelayHealthLevel.Unknown;
+        public string HealthMessage { get; set; } = "No relay attempt yet.";
+        public DateTimeOffset? LastUpdatedUtc { get; set; }
     }
 
     private readonly object _lifecycleLock = new();
@@ -49,6 +66,7 @@ public sealed class GsiServer : IDisposable
     private CancellationTokenSource? _cts;
     private Task? _runTask;
     private long _heartbeat;
+    private long _lastRequestUtcTicks;
     private static readonly Dictionary<string, int> LastKnownObserverSlots = new(StringComparer.Ordinal);
     private static readonly HashSet<string> HopByHopRelayHeaders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -74,6 +92,17 @@ public sealed class GsiServer : IDisposable
             {
                 return _runTask != null;
             }
+        }
+    }
+
+    public DateTimeOffset? LastRequestUtc
+    {
+        get
+        {
+            var ticks = Interlocked.Read(ref _lastRequestUtcTicks);
+            if (ticks <= 0)
+                return null;
+            return new DateTimeOffset(new DateTime(ticks, DateTimeKind.Utc));
         }
     }
 
@@ -132,7 +161,40 @@ public sealed class GsiServer : IDisposable
             {
                 // ignore cancellation errors
             }
+
+            try
+            {
+                removed.Cancellation.Dispose();
+            }
+            catch
+            {
+                // ignore dispose errors
+            }
         }
+    }
+
+    public IReadOnlyList<GsiRelayEndpointHealth> GetRelayEndpointHealthSnapshot()
+    {
+        RelayEndpointState[] states;
+        lock (_relayLock)
+        {
+            states = _relayEndpointStates.Values.ToArray();
+        }
+
+        var result = new List<GsiRelayEndpointHealth>(states.Length);
+        foreach (var state in states)
+        {
+            lock (state.Sync)
+            {
+                result.Add(new GsiRelayEndpointHealth(
+                    state.Endpoint.AbsoluteUri,
+                    state.HealthLevel,
+                    state.HealthMessage,
+                    state.LastUpdatedUtc));
+            }
+        }
+
+        return result;
     }
 
     public void Start(int port = 31337, string path = "/gsi/")
@@ -283,6 +345,7 @@ public sealed class GsiServer : IDisposable
             var rawBody = buffer.ToArray();
             var headers = CaptureRelayHeaders(ctx.Request.Headers);
             var body = Encoding.UTF8.GetString(rawBody);
+            Interlocked.Exchange(ref _lastRequestUtcTicks, DateTime.UtcNow.Ticks);
 
             RelayPayload(new RelayEnvelope
             {
@@ -405,15 +468,41 @@ public sealed class GsiServer : IDisposable
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine($"GSI relay failed ({(int)response.StatusCode}) {endpoint}");
+                SetRelayHealth(endpoint, GsiRelayHealthLevel.Unhealthy, $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
+            }
+            else
+            {
+                SetRelayHealth(endpoint, GsiRelayHealthLevel.Healthy, $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             Console.WriteLine($"GSI relay timeout {endpoint}");
+            SetRelayHealth(endpoint, GsiRelayHealthLevel.Degraded, "Request timed out.");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"GSI relay error {endpoint}: {ex.Message}");
+            SetRelayHealth(endpoint, GsiRelayHealthLevel.Unhealthy, ex.Message);
+        }
+    }
+
+    private void SetRelayHealth(Uri endpoint, GsiRelayHealthLevel level, string message)
+    {
+        RelayEndpointState? state;
+        lock (_relayLock)
+        {
+            _relayEndpointStates.TryGetValue(endpoint.AbsoluteUri, out state);
+        }
+
+        if (state == null)
+            return;
+
+        lock (state.Sync)
+        {
+            state.HealthLevel = level;
+            state.HealthMessage = message;
+            state.LastUpdatedUtc = DateTimeOffset.UtcNow;
         }
     }
 

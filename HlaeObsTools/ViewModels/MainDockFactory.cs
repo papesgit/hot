@@ -231,7 +231,11 @@ public class MainDockFactory : Factory, IDisposable
             _storedSettings,
             _vmixReplaySettings,
             setFocusInputGateDisabled: disable => _rawInputHandler.CaptureOnlyWhenAppFocused = !disable,
-            campathEditor: campathEditor)
+            campathEditor: campathEditor,
+            gsiServer: _gsiServer,
+            inputSender: _inputSender,
+            videoDisplayDockViewModel: _videoDisplayVm,
+            graphicsProducerClient: _producerClient)
         { Id = "BottomLeft", Title = "Settings" };
         var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer) { Id = "BottomCenter", Title = "3D Viewport" };
         bottomCenter.SetInputSender(_inputSender);

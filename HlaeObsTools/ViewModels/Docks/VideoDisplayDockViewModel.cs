@@ -31,6 +31,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private string _statusText = "Not Connected";
     private double _frameRate;
     private DateTime _lastFrameTime;
+    private DateTimeOffset? _lastFrameReceivedUtc;
     private int _frameCount;
     private RtpSwapchainViewer? _rtpViewer;
     private IntPtr _rtpParentHwnd;
@@ -86,6 +87,18 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         private set
         {
             _frameRate = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public DateTimeOffset? LastFrameReceivedUtc
+    {
+        get => _lastFrameReceivedUtc;
+        private set
+        {
+            if (_lastFrameReceivedUtc == value)
+                return;
+            _lastFrameReceivedUtc = value;
             OnPropertyChanged();
         }
     }
@@ -366,10 +379,13 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         IsStreaming = false;
         StatusText = "Not Connected";
         FrameRate = 0;
+        LastFrameReceivedUtc = null;
     }
 
     private void OnFrameReceived(object? sender, VideoFrame frame)
     {
+        LastFrameReceivedUtc = DateTimeOffset.UtcNow;
+
         // Calculate frame rate
         _frameCount++;
         var now = DateTime.Now;
@@ -577,6 +593,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         IsStreaming = true;
         var activeConfig = config ?? _rtpConfig;
         StatusText = $"Connected - {activeConfig.Address}:{activeConfig.Port}";
+        LastFrameReceivedUtc = null;
         _lastFrameTime = DateTime.Now;
         _frameCount = 0;
     }

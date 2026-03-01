@@ -75,17 +75,37 @@
                             <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding WebSocketHost, Mode=TwoWay}" />
 
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="WS Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding WebSocketPort, Mode=TwoWay}" />
+                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBox Width="90" Text="{Binding WebSocketPort, Mode=TwoWay}" />
+                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding WebSocketHealthBrush}"
+                                        ToolTip.Tip="{Binding WebSocketHealthTooltip}" VerticalAlignment="Center"/>
+                            </StackPanel>
                             <TextBlock Grid.Row="1" Grid.Column="2" Text="UDP Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="3" Text="{Binding UdpPort, Mode=TwoWay}" />
+                            <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBox Width="90" Text="{Binding UdpPort, Mode=TwoWay}" />
+                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding UdpHealthBrush}"
+                                        ToolTip.Tip="{Binding UdpHealthTooltip}" VerticalAlignment="Center"/>
+                            </StackPanel>
 
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="RTP Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding RtpPort, Mode=TwoWay}" />
+                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBox Width="90" Text="{Binding RtpPort, Mode=TwoWay}" />
+                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding RtpHealthBrush}"
+                                        ToolTip.Tip="{Binding RtpHealthTooltip}" VerticalAlignment="Center"/>
+                            </StackPanel>
                             <TextBlock Grid.Row="2" Grid.Column="2" Text="GSI Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="3" Text="{Binding GsiPort, Mode=TwoWay}" />
+                            <StackPanel Grid.Row="2" Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBox Width="90" Text="{Binding GsiPort, Mode=TwoWay}" />
+                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding GsiHealthBrush}"
+                                        ToolTip.Tip="{Binding GsiHealthTooltip}" VerticalAlignment="Center"/>
+                            </StackPanel>
 
                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Gfx Producer Port" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding GraphicsProducerPort, Mode=TwoWay}" />
+                            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBox Width="90" Text="{Binding GraphicsProducerPort, Mode=TwoWay}" />
+                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding GraphicsProducerHealthBrush}"
+                                        ToolTip.Tip="{Binding GraphicsProducerHealthTooltip}" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Grid>
 
                         <TextBlock Text="GSI Relay Endpoints"
@@ -95,13 +115,20 @@
                                  MaxHeight="180">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="vm:GsiRelayEndpointViewModel">
-                                    <Grid ColumnDefinitions="*,Auto"
+                                    <Grid ColumnDefinitions="Auto,*,Auto"
                                           ColumnSpacing="6"
                                           Margin="0,0,0,6">
-                                        <TextBox Grid.Column="0"
+                                        <Border Grid.Column="0"
+                                                Width="12"
+                                                Height="12"
+                                                CornerRadius="6"
+                                                Background="{Binding HealthBrush}"
+                                                ToolTip.Tip="{Binding HealthTooltip}"
+                                                VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1"
                                                  Text="{Binding Uri, Mode=TwoWay}"
                                                  Watermark="http://127.0.0.1:1349/api/gsi"/>
-                                        <Button Grid.Column="1"
+                                        <Button Grid.Column="2"
                                                 Content="Remove"
                                                 Command="{Binding DataContext.RemoveGsiRelayEndpointCommand, ElementName=Root}"
                                                 CommandParameter="{Binding}"/>

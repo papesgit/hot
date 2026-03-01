@@ -8,9 +8,13 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
+using HlaeObsTools.Services.Graphics;
+using HlaeObsTools.Services.Gsi;
+using HlaeObsTools.Services.Input;
 using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.Services.Settings;
@@ -25,11 +29,25 @@ namespace HlaeObsTools.ViewModels.Docks
     public sealed class GsiRelayEndpointViewModel : ViewModelBase
     {
         private string _uri = string.Empty;
+        private IBrush _healthBrush = Brushes.Gray;
+        private string _healthTooltip = "No status available.";
 
         public string Uri
         {
             get => _uri;
             set => SetProperty(ref _uri, value);
+        }
+
+        public IBrush HealthBrush
+        {
+            get => _healthBrush;
+            set => SetProperty(ref _healthBrush, value);
+        }
+
+        public string HealthTooltip
+        {
+            get => _healthTooltip;
+            set => SetProperty(ref _healthTooltip, value);
         }
     }
 
@@ -51,6 +69,11 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly HotkeyService _hotkeyService;
         private readonly CampathsDockViewModel? _campathsDockViewModel;
         private readonly GraphicsDockViewModel? _graphicsDockViewModel;
+        private readonly GraphicsProducerClient? _graphicsProducerClient;
+        private readonly GsiServer? _gsiServer;
+        private readonly HlaeInputSender? _inputSender;
+        private readonly VideoDisplayDockViewModel? _videoDisplayDockViewModel;
+        private readonly DispatcherTimer _networkHealthTimer;
         private bool _suppressFreecamSave;
         private bool _suppressSettingsSave;
         private bool _isLoadingPresets;
@@ -86,7 +109,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort, IReadOnlyList<string> GsiRelayUris);
 
-        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixReplaySettings? vmixSettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null)
+        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixReplaySettings? vmixSettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
         {
             _radarSettings = radarSettings;
             _hudSettings = hudSettings;
@@ -101,6 +124,11 @@ namespace HlaeObsTools.ViewModels.Docks
             _hotkeyService = hotkeyService;
             _campathsDockViewModel = campathsDockViewModel;
             _graphicsDockViewModel = graphicsDockViewModel;
+            _graphicsProducerClient = graphicsProducerClient;
+            _gsiServer = gsiServer;
+            _inputSender = inputSender;
+            _videoDisplayDockViewModel = videoDisplayDockViewModel;
+            _networkHealthTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
 
             Title = "Settings";
             CanClose = false;
@@ -232,6 +260,7 @@ namespace HlaeObsTools.ViewModels.Docks
             {
                 _ws.Connected += OnWebSocketConnected;
                 _ws.MessageReceived += OnWebSocketMessage;
+                _ws.Disconnected += OnWebSocketDisconnected;
             }
 
             AttachPresetAnimationEditor = new AttachPresetAnimationDockViewModel();
@@ -262,6 +291,10 @@ namespace HlaeObsTools.ViewModels.Docks
             _viewport3DSettings.PropertyChanged += OnViewport3DSettingsChanged;
             _freecamSettings.PropertyChanged += OnFreecamSettingsChanged;
             _vmixReplaySettings.PropertyChanged += OnVmixSettingsChanged;
+
+            _networkHealthTimer.Tick += (_, _) => RefreshNetworkHealth();
+            _networkHealthTimer.Start();
+            RefreshNetworkHealth();
         }
 
         public RadarSettings RadarSettings => _radarSettings;
@@ -277,6 +310,81 @@ namespace HlaeObsTools.ViewModels.Docks
         public ObservableCollection<HotkeyBindingViewModel> GraphicsHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> AttachHotkeyBindings { get; } = new();
         public ObservableCollection<GsiRelayEndpointViewModel> GsiRelayEndpoints { get; } = new();
+
+        private static readonly IBrush HealthGreenBrush = new SolidColorBrush(Color.Parse("#43A047"));
+        private static readonly IBrush HealthOrangeBrush = new SolidColorBrush(Color.Parse("#FB8C00"));
+        private static readonly IBrush HealthRedBrush = new SolidColorBrush(Color.Parse("#E53935"));
+        private static readonly IBrush HealthGrayBrush = new SolidColorBrush(Color.Parse("#757575"));
+
+        private IBrush _webSocketHealthBrush = HealthGrayBrush;
+        public IBrush WebSocketHealthBrush
+        {
+            get => _webSocketHealthBrush;
+            private set => SetProperty(ref _webSocketHealthBrush, value);
+        }
+
+        private string _webSocketHealthTooltip = "WebSocket status unknown.";
+        public string WebSocketHealthTooltip
+        {
+            get => _webSocketHealthTooltip;
+            private set => SetProperty(ref _webSocketHealthTooltip, value);
+        }
+
+        private IBrush _udpHealthBrush = HealthGrayBrush;
+        public IBrush UdpHealthBrush
+        {
+            get => _udpHealthBrush;
+            private set => SetProperty(ref _udpHealthBrush, value);
+        }
+
+        private string _udpHealthTooltip = "UDP sender status unknown.";
+        public string UdpHealthTooltip
+        {
+            get => _udpHealthTooltip;
+            private set => SetProperty(ref _udpHealthTooltip, value);
+        }
+
+        private IBrush _rtpHealthBrush = HealthGrayBrush;
+        public IBrush RtpHealthBrush
+        {
+            get => _rtpHealthBrush;
+            private set => SetProperty(ref _rtpHealthBrush, value);
+        }
+
+        private string _rtpHealthTooltip = "RTP receiver status unknown.";
+        public string RtpHealthTooltip
+        {
+            get => _rtpHealthTooltip;
+            private set => SetProperty(ref _rtpHealthTooltip, value);
+        }
+
+        private IBrush _gsiHealthBrush = HealthGrayBrush;
+        public IBrush GsiHealthBrush
+        {
+            get => _gsiHealthBrush;
+            private set => SetProperty(ref _gsiHealthBrush, value);
+        }
+
+        private string _gsiHealthTooltip = "GSI listener status unknown.";
+        public string GsiHealthTooltip
+        {
+            get => _gsiHealthTooltip;
+            private set => SetProperty(ref _gsiHealthTooltip, value);
+        }
+
+        private IBrush _graphicsProducerHealthBrush = HealthGrayBrush;
+        public IBrush GraphicsProducerHealthBrush
+        {
+            get => _graphicsProducerHealthBrush;
+            private set => SetProperty(ref _graphicsProducerHealthBrush, value);
+        }
+
+        private string _graphicsProducerHealthTooltip = "Graphics producer status unknown.";
+        public string GraphicsProducerHealthTooltip
+        {
+            get => _graphicsProducerHealthTooltip;
+            private set => SetProperty(ref _graphicsProducerHealthTooltip, value);
+        }
 
         private bool _isEditingAttachPresetAnimation;
         public bool IsEditingAttachPresetAnimation
@@ -448,6 +556,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private void AddGsiRelayEndpoint()
         {
             GsiRelayEndpoints.Add(new GsiRelayEndpointViewModel());
+            RefreshRelayHealth();
         }
 
         private void RemoveGsiRelayEndpoint(GsiRelayEndpointViewModel? endpoint)
@@ -456,6 +565,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 return;
 
             GsiRelayEndpoints.Remove(endpoint);
+            RefreshRelayHealth();
         }
         #endregion
 
@@ -635,6 +745,12 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             SendAltPlayerBindsMode();
             _ = SendAllFreecamConfigAsync();
+            RefreshNetworkHealth();
+        }
+
+        private void OnWebSocketDisconnected(object? sender, EventArgs e)
+        {
+            RefreshNetworkHealth();
         }
 
         private void OnWebSocketMessage(object? sender, string message)
@@ -1194,6 +1310,223 @@ namespace HlaeObsTools.ViewModels.Docks
             }
 
             return relayUris;
+        }
+
+        private void RefreshNetworkHealth()
+        {
+            RefreshWebSocketHealth();
+            RefreshUdpHealth();
+            RefreshRtpHealth();
+            RefreshGsiHealth();
+            RefreshGraphicsProducerHealth();
+            RefreshRelayHealth();
+        }
+
+        private void RefreshWebSocketHealth()
+        {
+            if (_ws == null)
+            {
+                WebSocketHealthBrush = HealthGrayBrush;
+                WebSocketHealthTooltip = "WebSocket client unavailable.";
+                return;
+            }
+
+            if (_ws.IsConnected)
+            {
+                WebSocketHealthBrush = HealthGreenBrush;
+                WebSocketHealthTooltip = $"Connected to {WebSocketHost}:{WebSocketPort}.";
+            }
+            else
+            {
+                WebSocketHealthBrush = HealthRedBrush;
+                WebSocketHealthTooltip = $"Disconnected from {WebSocketHost}:{WebSocketPort}.";
+            }
+        }
+
+        private void RefreshUdpHealth()
+        {
+            if (_inputSender == null)
+            {
+                UdpHealthBrush = HealthGrayBrush;
+                UdpHealthTooltip = "UDP sender unavailable.";
+                return;
+            }
+
+            if (_inputSender.IsActive)
+            {
+                UdpHealthBrush = HealthGreenBrush;
+                UdpHealthTooltip = $"UDP sender active on {WebSocketHost}:{UdpPort}.";
+            }
+            else
+            {
+                UdpHealthBrush = HealthRedBrush;
+                UdpHealthTooltip = $"UDP sender inactive on {WebSocketHost}:{UdpPort}.";
+            }
+        }
+
+        private void RefreshRtpHealth()
+        {
+            if (_videoDisplayDockViewModel == null)
+            {
+                RtpHealthBrush = HealthGrayBrush;
+                RtpHealthTooltip = "RTP receiver unavailable.";
+                return;
+            }
+
+            if (!_videoDisplayDockViewModel.IsStreaming)
+            {
+                if (_videoDisplayDockViewModel.StatusText.StartsWith("Error:", StringComparison.OrdinalIgnoreCase))
+                {
+                    RtpHealthBrush = HealthRedBrush;
+                    RtpHealthTooltip = _videoDisplayDockViewModel.StatusText;
+                }
+                else
+                {
+                    RtpHealthBrush = HealthGrayBrush;
+                    RtpHealthTooltip = "RTP stream not running.";
+                }
+                return;
+            }
+
+            if (_videoDisplayDockViewModel.StatusText.StartsWith("Error:", StringComparison.OrdinalIgnoreCase))
+            {
+                RtpHealthBrush = HealthRedBrush;
+                RtpHealthTooltip = _videoDisplayDockViewModel.StatusText;
+                return;
+            }
+
+            var lastFrame = _videoDisplayDockViewModel.LastFrameReceivedUtc;
+            if (!lastFrame.HasValue)
+            {
+                RtpHealthBrush = HealthOrangeBrush;
+                RtpHealthTooltip = "RTP running, waiting for first frame.";
+                return;
+            }
+
+            var age = DateTimeOffset.UtcNow - lastFrame.Value;
+            if (age <= TimeSpan.FromSeconds(2))
+            {
+                RtpHealthBrush = HealthGreenBrush;
+                RtpHealthTooltip = $"RTP receiving frames. Last frame {age.TotalSeconds:F1}s ago.";
+            }
+            else
+            {
+                RtpHealthBrush = HealthOrangeBrush;
+                RtpHealthTooltip = $"RTP running but no recent frames. Last frame {age.TotalSeconds:F1}s ago.";
+            }
+        }
+
+        private void RefreshGsiHealth()
+        {
+            if (_gsiServer == null)
+            {
+                GsiHealthBrush = HealthGrayBrush;
+                GsiHealthTooltip = "GSI listener unavailable.";
+                return;
+            }
+
+            if (!_gsiServer.IsRunning)
+            {
+                GsiHealthBrush = HealthRedBrush;
+                GsiHealthTooltip = $"GSI listener stopped on port {GsiPort}.";
+                return;
+            }
+
+            var lastRequest = _gsiServer.LastRequestUtc;
+            if (!lastRequest.HasValue)
+            {
+                GsiHealthBrush = HealthOrangeBrush;
+                GsiHealthTooltip = $"GSI listener running on port {GsiPort}, waiting for payloads.";
+                return;
+            }
+
+            var age = DateTimeOffset.UtcNow - lastRequest.Value;
+            if (age <= TimeSpan.FromSeconds(5))
+            {
+                GsiHealthBrush = HealthGreenBrush;
+                GsiHealthTooltip = $"GSI listener healthy. Last payload {age.TotalSeconds:F1}s ago.";
+            }
+            else
+            {
+                GsiHealthBrush = HealthOrangeBrush;
+                GsiHealthTooltip = $"GSI listener running. Last payload {age.TotalSeconds:F1}s ago.";
+            }
+        }
+
+        private void RefreshGraphicsProducerHealth()
+        {
+            if (_graphicsProducerClient == null)
+            {
+                GraphicsProducerHealthBrush = HealthGrayBrush;
+                GraphicsProducerHealthTooltip = "Graphics producer client unavailable.";
+                return;
+            }
+
+            if (_graphicsProducerClient.IsConnected)
+            {
+                GraphicsProducerHealthBrush = HealthGreenBrush;
+                GraphicsProducerHealthTooltip = $"Graphics producer connected on {WebSocketHost}:{GraphicsProducerPort}.";
+            }
+            else
+            {
+                GraphicsProducerHealthBrush = HealthRedBrush;
+                GraphicsProducerHealthTooltip = $"Graphics producer disconnected on {WebSocketHost}:{GraphicsProducerPort}.";
+            }
+        }
+
+        private void RefreshRelayHealth()
+        {
+            var snapshots = _gsiServer?.GetRelayEndpointHealthSnapshot()
+                ?? Array.Empty<GsiRelayEndpointHealth>();
+            var byEndpoint = snapshots.ToDictionary(s => s.Endpoint, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var endpointVm in GsiRelayEndpoints)
+            {
+                if (!TryNormalizeRelayUri(endpointVm.Uri, out var normalized))
+                {
+                    endpointVm.HealthBrush = HealthRedBrush;
+                    endpointVm.HealthTooltip = "Invalid relay URI. Use absolute http/https URL.";
+                    continue;
+                }
+
+                if (!byEndpoint.TryGetValue(normalized, out var snapshot))
+                {
+                    endpointVm.HealthBrush = HealthOrangeBrush;
+                    endpointVm.HealthTooltip = "Not active yet. Click Apply / Reconnect.";
+                    continue;
+                }
+
+                endpointVm.HealthBrush = snapshot.Level switch
+                {
+                    GsiRelayHealthLevel.Healthy => HealthGreenBrush,
+                    GsiRelayHealthLevel.Degraded => HealthOrangeBrush,
+                    GsiRelayHealthLevel.Unhealthy => HealthRedBrush,
+                    _ => HealthGrayBrush
+                };
+
+                var updatedText = snapshot.LastUpdatedUtc.HasValue
+                    ? $" Last update {snapshot.LastUpdatedUtc.Value.LocalDateTime:T}."
+                    : string.Empty;
+                endpointVm.HealthTooltip = snapshot.Message + updatedText;
+            }
+        }
+
+        private static bool TryNormalizeRelayUri(string? rawValue, out string normalized)
+        {
+            normalized = string.Empty;
+            var value = rawValue?.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+                return false;
+
+            if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            normalized = uri.AbsoluteUri;
+            return true;
         }
 
         #endregion
