@@ -4,6 +4,7 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
@@ -66,6 +67,7 @@ public class MainDockFactory : Factory, IDisposable
         _inputSender.Start();
 
         _gsiServer = new GsiServer();
+        _gsiServer.ConfigureRelayEndpoints(_storedSettings.GsiRelayUris);
         _radarConfigProvider = new RadarConfigProvider();
         _vmixReplaySettings = new VmixReplaySettings
         {
@@ -111,7 +113,9 @@ public class MainDockFactory : Factory, IDisposable
         _storedSettings.UdpPort = data.UdpPort;
         _storedSettings.RtpPort = data.RtpPort;
         _storedSettings.GsiPort = data.GsiPort;
+        _storedSettings.GsiRelayUris = data.GsiRelayUris.ToList();
         _settingsStorage.Save(_storedSettings);
+        _gsiServer.ConfigureRelayEndpoints(data.GsiRelayUris);
 
         _webSocketClient.ConfigureEndpoint(data.WebSocketHost, data.WebSocketPort);
         await _webSocketClient.ReconnectAsync();

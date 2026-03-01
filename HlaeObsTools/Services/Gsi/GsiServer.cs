@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -19,12 +19,50 @@ namespace HlaeObsTools.Services.Gsi;
 /// </summary>
 public sealed class GsiServer : IDisposable
 {
+    private sealed class RelayEnvelope
+    {
+        public required byte[] RawBody { get; init; }
+        public required Dictionary<string, string[]> Headers { get; init; }
+    }
+
+    private sealed class RelayEndpointState
+    {
+        public RelayEndpointState(Uri endpoint, CancellationTokenSource cancellation)
+        {
+            Endpoint = endpoint;
+            Cancellation = cancellation;
+        }
+
+        public Uri Endpoint { get; }
+        public CancellationTokenSource Cancellation { get; }
+        public object Sync { get; } = new();
+        public RelayEnvelope? PendingPayload { get; set; }
+        public bool IsWorkerRunning { get; set; }
+    }
+
     private readonly object _lifecycleLock = new();
+    private readonly object _relayLock = new();
+    private readonly CancellationTokenSource _relayShutdownCts = new();
+    private readonly HttpClient _relayHttpClient = CreateRelayHttpClient();
+    private Dictionary<string, RelayEndpointState> _relayEndpointStates = new(StringComparer.OrdinalIgnoreCase);
     private IHost? _host;
     private CancellationTokenSource? _cts;
     private Task? _runTask;
     private long _heartbeat;
     private static readonly Dictionary<string, int> LastKnownObserverSlots = new(StringComparer.Ordinal);
+    private static readonly HashSet<string> HopByHopRelayHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Connection",
+        "Keep-Alive",
+        "Proxy-Authenticate",
+        "Proxy-Authorization",
+        "TE",
+        "Trailer",
+        "Transfer-Encoding",
+        "Upgrade",
+        "Host",
+        "Content-Length"
+    };
 
     public event EventHandler<GsiGameState>? GameStateUpdated;
 
@@ -35,6 +73,64 @@ public sealed class GsiServer : IDisposable
             lock (_lifecycleLock)
             {
                 return _runTask != null;
+            }
+        }
+    }
+
+    public void ConfigureRelayEndpoints(IEnumerable<string> relayUris)
+    {
+        var normalized = new List<Uri>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var relayUri in relayUris ?? Enumerable.Empty<string>())
+        {
+            var value = relayUri?.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+                continue;
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+                continue;
+            if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!seen.Add(uri.AbsoluteUri))
+                continue;
+
+            normalized.Add(uri);
+        }
+
+        RelayEndpointState[] removedStates;
+        lock (_relayLock)
+        {
+            var nextStates = new Dictionary<string, RelayEndpointState>(StringComparer.OrdinalIgnoreCase);
+            foreach (var endpoint in normalized)
+            {
+                var key = endpoint.AbsoluteUri;
+                if (_relayEndpointStates.TryGetValue(key, out var existing))
+                {
+                    nextStates[key] = existing;
+                    continue;
+                }
+
+                var endpointCts = CancellationTokenSource.CreateLinkedTokenSource(_relayShutdownCts.Token);
+                nextStates[key] = new RelayEndpointState(endpoint, endpointCts);
+            }
+
+            removedStates = _relayEndpointStates
+                .Where(kvp => !nextStates.ContainsKey(kvp.Key))
+                .Select(kvp => kvp.Value)
+                .ToArray();
+            _relayEndpointStates = nextStates;
+        }
+
+        foreach (var removed in removedStates)
+        {
+            try
+            {
+                removed.Cancellation.Cancel();
+            }
+            catch
+            {
+                // ignore cancellation errors
             }
         }
     }
@@ -183,8 +279,17 @@ public sealed class GsiServer : IDisposable
                 return;
             }
 
-            using var reader = new StreamReader(ctx.Request.Body, Encoding.UTF8);
-            var body = await reader.ReadToEndAsync().ConfigureAwait(false);
+            using var buffer = new MemoryStream();
+            await ctx.Request.Body.CopyToAsync(buffer).ConfigureAwait(false);
+            var rawBody = buffer.ToArray();
+            var headers = CaptureRelayHeaders(ctx.Request.Headers);
+            var body = Encoding.UTF8.GetString(rawBody);
+
+            RelayPayload(new RelayEnvelope
+            {
+                RawBody = rawBody,
+                Headers = headers
+            });
 
             var currentHeartbeat = Interlocked.Increment(ref _heartbeat);
             var state = ParseState(body, currentHeartbeat);
@@ -200,6 +305,147 @@ public sealed class GsiServer : IDisposable
             Console.WriteLine($"GSI request handling failed: {ex.Message}");
             ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
         }
+    }
+
+    private void RelayPayload(RelayEnvelope payload)
+    {
+        RelayEndpointState[] relayStates;
+        lock (_relayLock)
+        {
+            relayStates = _relayEndpointStates.Values.ToArray();
+        }
+
+        if (relayStates.Length == 0)
+            return;
+
+        foreach (var relayState in relayStates)
+        {
+            QueueRelayPayload(relayState, payload);
+        }
+    }
+
+    private void QueueRelayPayload(RelayEndpointState relayState, RelayEnvelope payload)
+    {
+        if (relayState.Cancellation.IsCancellationRequested)
+            return;
+
+        var shouldStartWorker = false;
+        lock (relayState.Sync)
+        {
+            // Latest payload wins while a worker is busy.
+            relayState.PendingPayload = payload;
+            if (!relayState.IsWorkerRunning)
+            {
+                relayState.IsWorkerRunning = true;
+                shouldStartWorker = true;
+            }
+        }
+
+        if (shouldStartWorker)
+        {
+            _ = RelayEndpointLoopAsync(relayState, relayState.Cancellation.Token);
+        }
+    }
+
+    private async Task RelayEndpointLoopAsync(RelayEndpointState relayState, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                lock (relayState.Sync)
+                {
+                    relayState.PendingPayload = null;
+                    relayState.IsWorkerRunning = false;
+                }
+                return;
+            }
+
+            RelayEnvelope? payload;
+            lock (relayState.Sync)
+            {
+                payload = relayState.PendingPayload;
+                relayState.PendingPayload = null;
+                if (payload == null)
+                {
+                    relayState.IsWorkerRunning = false;
+                    return;
+                }
+            }
+
+            await PostRelayAsync(relayState.Endpoint, payload, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task PostRelayAsync(Uri endpoint, RelayEnvelope payload, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
+            using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            request.Content = new ByteArrayContent(payload.RawBody);
+
+            foreach (var header in payload.Headers)
+            {
+                if (HopByHopRelayHeaders.Contains(header.Key))
+                    continue;
+
+                if (request.Headers.TryAddWithoutValidation(header.Key, header.Value))
+                    continue;
+
+                request.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+
+            if (request.Content.Headers.ContentType == null)
+            {
+                request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+            }
+
+            using var response = await _relayHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutCts.Token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"GSI relay failed ({(int)response.StatusCode}) {endpoint}");
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Console.WriteLine($"GSI relay timeout {endpoint}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GSI relay error {endpoint}: {ex.Message}");
+        }
+    }
+
+    private static Dictionary<string, string[]> CaptureRelayHeaders(IHeaderDictionary headers)
+    {
+        var result = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in headers)
+        {
+            result[header.Key] = header.Value
+                .Select(value => value ?? string.Empty)
+                .ToArray();
+        }
+
+        return result;
+    }
+
+    private static HttpClient CreateRelayHttpClient()
+    {
+        var handler = new SocketsHttpHandler
+        {
+            // Prevent system proxy settings from interfering with localhost relays.
+            UseProxy = false,
+            AllowAutoRedirect = false,
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+            MaxConnectionsPerServer = 4
+        };
+
+        return new HttpClient(handler)
+        {
+            Timeout = Timeout.InfiniteTimeSpan
+        };
     }
 
     private static string NormalizeHost(string host)
@@ -577,5 +823,37 @@ public sealed class GsiServer : IDisposable
     public void Dispose()
     {
         Stop();
+        _relayShutdownCts.Cancel();
+
+        RelayEndpointState[] states;
+        lock (_relayLock)
+        {
+            states = _relayEndpointStates.Values.ToArray();
+            _relayEndpointStates.Clear();
+        }
+
+        foreach (var state in states)
+        {
+            try
+            {
+                state.Cancellation.Cancel();
+            }
+            catch
+            {
+                // ignore cancellation errors
+            }
+
+            try
+            {
+                state.Cancellation.Dispose();
+            }
+            catch
+            {
+                // ignore dispose errors
+            }
+        }
+
+        _relayShutdownCts.Dispose();
+        _relayHttpClient.Dispose();
     }
 }

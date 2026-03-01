@@ -88,6 +88,31 @@
                             <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding GraphicsProducerPort, Mode=TwoWay}" />
                         </Grid>
 
+                        <TextBlock Text="GSI Relay Endpoints"
+                                   Foreground="#AAAAAA"
+                                   Margin="0,8,0,0"/>
+                        <ListBox ItemsSource="{Binding GsiRelayEndpoints}"
+                                 MaxHeight="180">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GsiRelayEndpointViewModel">
+                                    <Grid ColumnDefinitions="*,Auto"
+                                          ColumnSpacing="6"
+                                          Margin="0,0,0,6">
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding Uri, Mode=TwoWay}"
+                                                 Watermark="http://127.0.0.1:1349/api/gsi"/>
+                                        <Button Grid.Column="1"
+                                                Content="Remove"
+                                                Command="{Binding DataContext.RemoveGsiRelayEndpointCommand, ElementName=Root}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <Button Content="Add relay endpoint"
+                                HorizontalAlignment="Left"
+                                Command="{Binding AddGsiRelayEndpointCommand}"/>
+
                         <Button Content="Apply / Reconnect"
                                 Command="{Binding ApplyNetworkSettingsCommand}"
                                 Margin="0,6,0,0"/>

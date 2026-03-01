@@ -76,6 +76,7 @@ public class AppSettingsData
     public int UdpPort { get; set; } = 31339;
     public int RtpPort { get; set; } = 5000;
     public int GsiPort { get; set; } = 31337;
+    public List<string> GsiRelayUris { get; set; } = new();
     public string MapObjPath { get; set; } = string.Empty;
     public bool ViewportUseLegacyD3D11 { get; set; }
     public double PinScale { get; set; } = 200.0;

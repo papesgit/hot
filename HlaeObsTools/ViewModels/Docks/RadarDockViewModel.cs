@@ -560,7 +560,6 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         CanPin = true;
 
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
-        _gsiServer.Start(); // fire and forget
 
         _settings.PropertyChanged += OnSettingsChanged;
 

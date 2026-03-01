@@ -22,6 +22,17 @@ using HlaeObsTools.ViewModels.Hotkeys;
 
 namespace HlaeObsTools.ViewModels.Docks
 {
+    public sealed class GsiRelayEndpointViewModel : ViewModelBase
+    {
+        private string _uri = string.Empty;
+
+        public string Uri
+        {
+            get => _uri;
+            set => SetProperty(ref _uri, value);
+        }
+    }
+
     /// <summary>
     /// Settings dock for configuring UI options like radar markers and camera paths.
     /// </summary>
@@ -70,8 +81,10 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _executeAttachPresetSlot8Command;
         private readonly ICommand _executeAttachPresetSlot9Command;
         private readonly ICommand _executeAttachPresetSlot0Command;
+        private readonly ICommand _addGsiRelayEndpointCommand;
+        private readonly ICommand _removeGsiRelayEndpointCommand;
 
-        public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort);
+        public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort, IReadOnlyList<string> GsiRelayUris);
 
         public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixReplaySettings? vmixSettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null)
         {
@@ -103,8 +116,17 @@ namespace HlaeObsTools.ViewModels.Docks
             _rtpPort = settings.RtpPort;
             _gsiPort = settings.GsiPort;
             _disableFocusInputGate = settings.DisableFocusInputGate;
+            if (settings.GsiRelayUris != null)
+            {
+                foreach (var relayUri in settings.GsiRelayUris)
+                {
+                    GsiRelayEndpoints.Add(new GsiRelayEndpointViewModel { Uri = relayUri ?? string.Empty });
+                }
+            }
 
             _applyNetworkSettingsCommand = new AsyncRelay(ApplyNetworkSettingsInternalAsync);
+            _addGsiRelayEndpointCommand = new Relay(AddGsiRelayEndpoint);
+            _removeGsiRelayEndpointCommand = new RelayParam<GsiRelayEndpointViewModel>(RemoveGsiRelayEndpoint, endpoint => endpoint != null);
             _browseMapObjCommand = new AsyncRelay(BrowseMapObjAsync);
             _clearMapObjCommand = new Relay(() => _viewport3DSettings.MapObjPath = string.Empty);
             _cycleForceDeathnoticesCommand = new Relay(CycleForceDeathnoticesMode);
@@ -254,6 +276,7 @@ namespace HlaeObsTools.ViewModels.Docks
         public ObservableCollection<HotkeyBindingViewModel> CampathHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> GraphicsHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> AttachHotkeyBindings { get; } = new();
+        public ObservableCollection<GsiRelayEndpointViewModel> GsiRelayEndpoints { get; } = new();
 
         private bool _isEditingAttachPresetAnimation;
         public bool IsEditingAttachPresetAnimation
@@ -409,15 +432,30 @@ namespace HlaeObsTools.ViewModels.Docks
         }
 
         public ICommand ApplyNetworkSettingsCommand => _applyNetworkSettingsCommand;
+        public ICommand AddGsiRelayEndpointCommand => _addGsiRelayEndpointCommand;
+        public ICommand RemoveGsiRelayEndpointCommand => _removeGsiRelayEndpointCommand;
 
         private async Task ApplyNetworkSettingsInternalAsync()
         {
             SaveSettings();
             if (_applyNetworkSettingsAsync != null)
             {
-                var payload = new NetworkSettingsData(WebSocketHost, WebSocketPort, GraphicsProducerPort, UdpPort, RtpPort, GsiPort);
+                var payload = new NetworkSettingsData(WebSocketHost, WebSocketPort, GraphicsProducerPort, UdpPort, RtpPort, GsiPort, GetSanitizedGsiRelayUris());
                 await _applyNetworkSettingsAsync(payload);
             }
+        }
+
+        private void AddGsiRelayEndpoint()
+        {
+            GsiRelayEndpoints.Add(new GsiRelayEndpointViewModel());
+        }
+
+        private void RemoveGsiRelayEndpoint(GsiRelayEndpointViewModel? endpoint)
+        {
+            if (endpoint == null)
+                return;
+
+            GsiRelayEndpoints.Remove(endpoint);
         }
         #endregion
 
@@ -1071,6 +1109,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         private void SaveSettings()
         {
+            var gsiRelayUris = GetSanitizedGsiRelayUris();
             var data = new AppSettingsData
             {
                 AttachPresetPages = _hudSettings.ToAttachPresetPageData().ToList(),
@@ -1088,6 +1127,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 UdpPort = UdpPort,
                 RtpPort = RtpPort,
                 GsiPort = GsiPort,
+                GsiRelayUris = gsiRelayUris,
                 MapObjPath = _viewport3DSettings.MapObjPath,
                 ViewportUseLegacyD3D11 = _viewport3DSettings.UseLegacyD3D11Viewport,
                 PinScale = _viewport3DSettings.PinScale,
@@ -1126,6 +1166,34 @@ namespace HlaeObsTools.ViewModels.Docks
                 Hotkeys = HotkeyBindings.Select(binding => binding.ToData()).ToList()
             };
             _settingsStorage.Save(data);
+        }
+
+        private List<string> GetSanitizedGsiRelayUris()
+        {
+            var relayUris = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var endpoint in GsiRelayEndpoints)
+            {
+                var value = endpoint.Uri?.Trim();
+                if (string.IsNullOrWhiteSpace(value))
+                    continue;
+
+                if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+                    continue;
+
+                if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var normalized = uri.AbsoluteUri;
+                if (!seen.Add(normalized))
+                    continue;
+
+                relayUris.Add(normalized);
+            }
+
+            return relayUris;
         }
 
         #endregion
