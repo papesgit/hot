@@ -3,33 +3,35 @@ const animOutTimers = new Map();
 
 function createCardDOM(cardEl) {
   cardEl.innerHTML = `
-    <div class="shell">
-      <div class="header">
-        <span class="tag"><span class="dot"></span><span>Player stats</span></span>
+    <div class="inner">
+      <div class="shell">
+        <div class="header">
+          <span class="tag"><span class="dot"></span><span>Player stats</span></span>
+        </div>
+
+        <div class="name" data-ref="name">-</div>
+
+        <div class="stats" aria-label="Player stats">
+          <div class="statBox">
+            <div class="statLabel">Kills</div>
+            <div class="statValue" data-ref="k">-</div>
+          </div>
+          <div class="statBox">
+            <div class="statLabel">Assists</div>
+            <div class="statValue" data-ref="a">-</div>
+          </div>
+          <div class="statBox">
+            <div class="statLabel">Deaths</div>
+            <div class="statValue" data-ref="d">-</div>
+          </div>
+          <div class="statBox">
+            <div class="statLabel">ADR</div>
+            <div class="statValue" data-ref="adr">-</div>
+          </div>
+        </div>
+
+        <div class="meta" data-ref="meta"></div>
       </div>
-
-      <div class="name" data-ref="name">-</div>
-
-      <div class="stats" aria-label="Player stats">
-        <div class="statBox">
-          <div class="statLabel">Kills</div>
-          <div class="statValue" data-ref="k">-</div>
-        </div>
-        <div class="statBox">
-          <div class="statLabel">Assists</div>
-          <div class="statValue" data-ref="a">-</div>
-        </div>
-        <div class="statBox">
-          <div class="statLabel">Deaths</div>
-          <div class="statValue" data-ref="d">-</div>
-        </div>
-        <div class="statBox">
-          <div class="statLabel">ADR</div>
-          <div class="statValue" data-ref="adr">-</div>
-        </div>
-      </div>
-
-      <div class="meta" data-ref="meta"></div>
     </div>
   `;
 

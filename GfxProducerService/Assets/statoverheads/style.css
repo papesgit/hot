@@ -1,8 +1,8 @@
 :root{
-  --card-w: 392px;
-  --card-h: 176px;
-  --gap-x: 16px;
-  --gap-y: 20px;
+  --card-w: 400px;
+  --card-h: 200px;
+  --gap-x: 0px;
+  --gap-y: 0px;
 
   --bg1: rgba(8, 10, 14, 0.86);
   --bg2: rgba(10, 14, 20, 0.58);
@@ -37,12 +37,12 @@ body{ overflow:hidden; }
 
 #atlas{
   position:relative;
-  width: calc((var(--card-w) * 5) + (var(--gap-x) * 4));
-  height: calc((var(--card-h) * 2) + var(--gap-y));
+  width: calc(var(--card-w) * 5);
+  height: calc(var(--card-h) * 2);
   display:grid;
   grid-template-columns: repeat(5, var(--card-w));
   grid-template-rows: repeat(2, var(--card-h));
-  gap: var(--gap-y) var(--gap-x);
+  gap: 0;
   padding:0;
   box-sizing:border-box;
 }
@@ -51,23 +51,31 @@ body{ overflow:hidden; }
   position:relative;
   width:var(--card-w);
   height:var(--card-h);
-  border-radius:var(--radius);
-  overflow:hidden;
-  box-sizing:border-box;
 
-  background: linear-gradient(180deg, var(--bg1), var(--bg2));
-  border: 1px solid var(--border);
+  border-radius:0;
+  overflow:hidden;
 
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 220ms ease, transform 220ms ease;
 }
+
 .card.visible{
   opacity: 1;
   transform: translateY(0);
 }
 
-.card::before{
+.inner{
+  position:absolute;
+  inset:6px;              /* ← bleed protection */
+  border-radius:16px;
+  overflow:hidden;
+
+  background: linear-gradient(180deg, var(--bg1), var(--bg2));
+  border: 1px solid var(--border);
+}
+
+.inner::before{
   content:"";
   position:absolute;
   inset:-40px;
@@ -79,8 +87,8 @@ body{ overflow:hidden; }
   opacity:.9;
 }
 
-.team-ct{ border-color: rgba(123,180,255,.62); }
-.team-t { border-color: rgba(255,178,77,.62); }
+.team-ct .inner{ border-color: rgba(123,180,255,.62); }
+.team-t .inner{ border-color: rgba(255,178,77,.62); }
 .team-ct .name{ color: var(--ct); }
 .team-t  .name{ color: var(--t); }
 
@@ -90,12 +98,16 @@ body{ overflow:hidden; }
   padding: 12px 18px 12px;
   box-sizing:border-box;
 
+  display:flex;
+  flex-direction:column;
+
   transform-origin: 16% 50%;
   transform: scaleX(.72) scaleY(.92);
   opacity: 0;
   filter: blur(.2px);
   transition: transform 520ms var(--ease-overshoot), opacity 260ms ease;
 }
+
 .card.visible .shell{
   transform: scaleX(1) scaleY(1);
   opacity: 1;
@@ -142,7 +154,9 @@ body{ overflow:hidden; }
   display:grid;
   grid-template-columns: repeat(4, minmax(0,1fr));
   gap: 10px;
-  margin-top: 10px;
+
+  margin-top:auto;
+  margin-bottom:auto;
 }
 
 .statBox{
