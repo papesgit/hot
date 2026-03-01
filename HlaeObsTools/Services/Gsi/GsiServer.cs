@@ -135,7 +135,7 @@ public sealed class GsiServer : IDisposable
         }
     }
 
-    public void Start(int port = 31337, string path = "/gsi/", string host = "0.0.0.0")
+    public void Start(int port = 31337, string path = "/gsi/")
     {
         Stop();
 
@@ -153,8 +153,7 @@ public sealed class GsiServer : IDisposable
                 var hostBuilder = new HostBuilder()
                     .ConfigureWebHost(webHost =>
                     {
-                        webHost.UseKestrel();
-                        webHost.UseUrls($"http://{NormalizeHost(host)}:{port}");
+                        webHost.UseKestrel(options => options.ListenAnyIP(port));
                         webHost.Configure(app =>
                         {
                             if (basePath == "/")
@@ -184,7 +183,7 @@ public sealed class GsiServer : IDisposable
                 }
 
                 await localHost.StartAsync(cts.Token).ConfigureAwait(false);
-                Console.WriteLine($"GSI listener started on http://{host}:{port}{basePath}/");
+                Console.WriteLine($"GSI listener started on http://0.0.0.0:{port}{basePath}/");
                 await Task.Delay(Timeout.Infinite, cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
@@ -446,15 +445,6 @@ public sealed class GsiServer : IDisposable
         {
             Timeout = Timeout.InfiniteTimeSpan
         };
-    }
-
-    private static string NormalizeHost(string host)
-    {
-        if (string.IsNullOrWhiteSpace(host))
-            return "127.0.0.1";
-        if (host == "*" || host == "+")
-            return "0.0.0.0";
-        return host;
     }
 
     private static GsiGameState? ParseState(string body, long heartbeat)

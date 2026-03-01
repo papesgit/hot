@@ -142,7 +142,7 @@ public class MainDockFactory : Factory, IDisposable
 
         // Restart GSI listener with new endpoint
         _gsiServer.Stop();
-        _gsiServer.Start(data.GsiPort, "/gsi/", "0.0.0.0");
+        _gsiServer.Start(data.GsiPort, "/gsi/");
     }
 
     public override IDocumentDock CreateDocumentDock() => new DocumentDock();
@@ -259,7 +259,7 @@ public class MainDockFactory : Factory, IDisposable
             Port = _storedSettings.RtpPort
         });
         // Start GSI listener on all interfaces with configured port
-        _gsiServer.Start(_storedSettings.GsiPort, "/gsi/", "0.0.0.0");
+        _gsiServer.Start(_storedSettings.GsiPort, "/gsi/");
         bottomRight.SetWebSocketClient(_webSocketClient);
 
         // Wrap tools in ToolDocks for proper docking behavior
