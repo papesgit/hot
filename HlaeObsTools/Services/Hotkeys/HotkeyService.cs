@@ -19,6 +19,7 @@ public sealed class HotkeyService
     private readonly List<object> _commandContexts = new();
     private readonly List<HotkeyBindingData> _bindings = new();
     private Control? _hoveredControl;
+    private string _statusMessage = "Hotkey mode disabled.";
     private Guid? _rebindId;
     private HotkeyBindingData? _rebindTarget;
     private bool _isBindingMode;
@@ -26,8 +27,11 @@ public sealed class HotkeyService
     public event EventHandler<HotkeyBindingCapturedEventArgs>? BindingCaptured;
     public event EventHandler<bool>? BindingModeChanged;
     public event EventHandler<string>? StatusChanged;
+    public event EventHandler<HotkeyHoverChangedEventArgs>? HoverTargetChanged;
 
     public bool IsBindingMode => _isBindingMode;
+    public string StatusMessage => _statusMessage;
+    public Control? HoveredControl => _hoveredControl;
 
     public void RegisterCommandContext(object context)
     {
@@ -48,7 +52,7 @@ public sealed class HotkeyService
         _rebindId = rebindId;
         _rebindTarget = null;
         SetBindingMode(true);
-        StatusChanged?.Invoke(this, "Hover a button or toggle and press a key combo (Esc to exit).");
+        UpdateStatus("Hover a button or toggle and press a key combo (Esc to exit).");
     }
 
     public void BeginRebind(HotkeyBindingData binding)
@@ -56,7 +60,7 @@ public sealed class HotkeyService
         _rebindId = binding.Id;
         _rebindTarget = binding;
         SetBindingMode(true);
-        StatusChanged?.Invoke(this, "Press a new key combo (Esc to cancel).");
+        UpdateStatus("Press a new key combo (Esc to cancel).");
     }
 
     public void EndCapture()
@@ -65,7 +69,7 @@ public sealed class HotkeyService
         _rebindTarget = null;
         ClearHoveredControl();
         SetBindingMode(false);
-        StatusChanged?.Invoke(this, "Hotkey mode disabled.");
+        UpdateStatus("Hotkey mode disabled.");
     }
 
     public void HandlePointerMoved(PointerEventArgs e)
@@ -74,14 +78,17 @@ public sealed class HotkeyService
             return;
 
         var control = FindHotkeyTarget(e.Source);
-        if (control == null)
+        if (control == null || !IsBindableControl(control))
         {
             ClearHoveredControl();
             return;
         }
 
         if (!ReferenceEquals(_hoveredControl, control))
+        {
             _hoveredControl = control;
+            HoverTargetChanged?.Invoke(this, new HotkeyHoverChangedEventArgs(_hoveredControl));
+        }
     }
 
     public bool HandleKeyDown(KeyEventArgs e)
@@ -221,13 +228,13 @@ public sealed class HotkeyService
     {
         if (IsBlacklisted(e.Key, e.KeyModifiers))
         {
-            StatusChanged?.Invoke(this, "That key combo is reserved.");
+            UpdateStatus("That key combo is reserved.");
             return true;
         }
 
         if (IsModifierKey(e.Key) || e.Key == Key.None)
         {
-            StatusChanged?.Invoke(this, "Press a non-modifier key.");
+            UpdateStatus("Press a non-modifier key.");
             return true;
         }
 
@@ -258,7 +265,7 @@ public sealed class HotkeyService
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            StatusChanged?.Invoke(this, $"Rebound to {FormatHotkey(binding.Key, binding.Modifiers)}.");
+            UpdateStatus($"Rebound to {FormatHotkey(binding.Key, binding.Modifiers)}.");
             EndCapture();
             return true;
         }
@@ -266,7 +273,7 @@ public sealed class HotkeyService
         if (_hoveredControl == null)
         {
             Console.WriteLine("[Hotkeys] Capture: no hovered control. Pointer move not detected or control not bindable.");
-            StatusChanged?.Invoke(this, "Hover a button or toggle first.");
+            UpdateStatus("Hover a button or toggle first.");
             return true;
         }
 
@@ -285,7 +292,7 @@ public sealed class HotkeyService
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
@@ -304,7 +311,7 @@ public sealed class HotkeyService
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
@@ -325,7 +332,7 @@ public sealed class HotkeyService
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
@@ -346,7 +353,7 @@ public sealed class HotkeyService
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
@@ -367,7 +374,7 @@ public sealed class HotkeyService
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
@@ -375,7 +382,7 @@ public sealed class HotkeyService
         {
             if (!TryGetActiveCampathProfile(out var profileId, out var profileName))
             {
-                StatusChanged?.Invoke(this, "No active campath profile.");
+                UpdateStatus("No active campath profile.");
                 return true;
             }
 
@@ -394,7 +401,7 @@ public sealed class HotkeyService
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
@@ -402,7 +409,7 @@ public sealed class HotkeyService
         {
             if (!TryGetActiveCampathProfile(out var profileId, out var profileName))
             {
-                StatusChanged?.Invoke(this, "No active campath profile.");
+                UpdateStatus("No active campath profile.");
                 return true;
             }
 
@@ -421,12 +428,12 @@ public sealed class HotkeyService
             };
 
             BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            StatusChanged?.Invoke(this, $"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
         Console.WriteLine($"[Hotkeys] Capture: hovered control not bindable: {_hoveredControl.GetType().Name}. {GetBindFailureReason(_hoveredControl)}");
-        StatusChanged?.Invoke(this, "That control cannot be bound yet.");
+        UpdateStatus("That control cannot be bound yet.");
         return true;
     }
 
@@ -715,7 +722,11 @@ public sealed class HotkeyService
 
     private void ClearHoveredControl()
     {
+        if (_hoveredControl == null)
+            return;
+
         _hoveredControl = null;
+        HoverTargetChanged?.Invoke(this, new HotkeyHoverChangedEventArgs(null));
     }
 
     private void SetBindingMode(bool enabled)
@@ -1104,6 +1115,12 @@ public sealed class HotkeyService
         parts.Add(key.ToString());
         return string.Join("+", parts);
     }
+
+    private void UpdateStatus(string message)
+    {
+        _statusMessage = message;
+        StatusChanged?.Invoke(this, message);
+    }
 }
 
 public sealed class HotkeyBindingCapturedEventArgs : EventArgs
@@ -1116,4 +1133,14 @@ public sealed class HotkeyBindingCapturedEventArgs : EventArgs
 
     public HotkeyBindingData Binding { get; }
     public Guid? RebindId { get; }
+}
+
+public sealed class HotkeyHoverChangedEventArgs : EventArgs
+{
+    public HotkeyHoverChangedEventArgs(Control? control)
+    {
+        Control = control;
+    }
+
+    public Control? Control { get; }
 }

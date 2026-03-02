@@ -3,10 +3,12 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using System;
+using HlaeObsTools.Services.Hotkeys;
 
 namespace HlaeObsTools.Views;
 
@@ -15,6 +17,9 @@ public partial class DockHostWindow : Window, IHostWindow
     private Action<bool>? _keyboardSuppressionHandler;
     private Func<KeyEventArgs, bool>? _hotkeyKeyDownHandler;
     private Action<PointerEventArgs>? _hotkeyPointerMovedHandler;
+    private HotkeyService? _hotkeyService;
+    private Control? _hotkeyHoveredControl;
+    private bool _isHotkeyBindingMode;
     private bool _suppressHotkeys;
 
     public DockHostWindow()
@@ -54,7 +59,12 @@ public partial class DockHostWindow : Window, IHostWindow
 
     public void OnClosed()
     {
-        // Cleanup if needed
+        if (_hotkeyService != null)
+        {
+            _hotkeyService.BindingModeChanged -= OnHotkeyBindingModeChanged;
+            _hotkeyService.StatusChanged -= OnHotkeyStatusChanged;
+            _hotkeyService.HoverTargetChanged -= OnHotkeyHoverTargetChanged;
+        }
     }
 
     public void Present(bool isDialog)
@@ -131,6 +141,27 @@ public partial class DockHostWindow : Window, IHostWindow
         _hotkeyPointerMovedHandler = pointerMovedHandler;
     }
 
+    public void SetHotkeyOverlaySource(HotkeyService hotkeyService)
+    {
+        if (_hotkeyService != null)
+        {
+            _hotkeyService.BindingModeChanged -= OnHotkeyBindingModeChanged;
+            _hotkeyService.StatusChanged -= OnHotkeyStatusChanged;
+            _hotkeyService.HoverTargetChanged -= OnHotkeyHoverTargetChanged;
+        }
+
+        _hotkeyService = hotkeyService;
+        _hotkeyHoveredControl = hotkeyService.HoveredControl;
+        _isHotkeyBindingMode = hotkeyService.IsBindingMode;
+        HotkeyStatusText.Text = hotkeyService.StatusMessage;
+
+        hotkeyService.BindingModeChanged += OnHotkeyBindingModeChanged;
+        hotkeyService.StatusChanged += OnHotkeyStatusChanged;
+        hotkeyService.HoverTargetChanged += OnHotkeyHoverTargetChanged;
+
+        RefreshHotkeyOverlay();
+    }
+
     private void OnInputElementGotFocus(object? sender, GotFocusEventArgs e)
     {
         _suppressHotkeys = IsTextInputElement(e.Source);
@@ -162,6 +193,84 @@ public partial class DockHostWindow : Window, IHostWindow
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
         _hotkeyPointerMovedHandler?.Invoke(e);
+    }
+
+    private void OnHotkeyBindingModeChanged(object? sender, bool isEnabled)
+    {
+        _isHotkeyBindingMode = isEnabled;
+        if (!isEnabled)
+            _hotkeyHoveredControl = null;
+
+        RefreshHotkeyOverlay();
+    }
+
+    private void OnHotkeyStatusChanged(object? sender, string status)
+    {
+        HotkeyStatusText.Text = status ?? string.Empty;
+        RefreshHotkeyOverlay();
+    }
+
+    private void OnHotkeyHoverTargetChanged(object? sender, HotkeyHoverChangedEventArgs e)
+    {
+        _hotkeyHoveredControl = e.Control;
+        RefreshHotkeyOverlay();
+    }
+
+    private void RefreshHotkeyOverlay()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(RefreshHotkeyOverlay);
+            return;
+        }
+
+        HotkeyStatusPanel.IsVisible = _isHotkeyBindingMode;
+        if (!_isHotkeyBindingMode)
+        {
+            HotkeyHoverOutline.IsVisible = false;
+            return;
+        }
+
+        if (!TryGetOverlayBounds(_hotkeyHoveredControl, out var x, out var y, out var width, out var height))
+        {
+            HotkeyHoverOutline.IsVisible = false;
+            return;
+        }
+
+        Canvas.SetLeft(HotkeyHoverOutline, x);
+        Canvas.SetTop(HotkeyHoverOutline, y);
+        HotkeyHoverOutline.Width = width;
+        HotkeyHoverOutline.Height = height;
+        HotkeyHoverOutline.IsVisible = true;
+    }
+
+    private bool TryGetOverlayBounds(Control? control, out double x, out double y, out double width, out double height)
+    {
+        x = 0;
+        y = 0;
+        width = 0;
+        height = 0;
+
+        if (control == null || !control.IsVisible)
+            return false;
+
+        if (!ReferenceEquals(TopLevel.GetTopLevel(control), this))
+            return false;
+
+        var topLeft = Avalonia.VisualExtensions.TranslatePoint(control, default, HotkeyOverlayCanvas);
+        if (topLeft == null)
+            return false;
+
+        var bounds = control.Bounds;
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+            return false;
+
+        const double padding = 3;
+        x = Math.Max(0, topLeft.Value.X - padding);
+        y = Math.Max(0, topLeft.Value.Y - padding);
+        width = bounds.Width + (padding * 2);
+        height = bounds.Height + (padding * 2);
+        return true;
     }
 
     public void SetActive()

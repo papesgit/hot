@@ -57,7 +57,7 @@
         </DataTemplate>
     </Window.DataTemplates>
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid Name="RootGrid" RowDefinitions="Auto,*">
         <!-- Custom Title Bar -->
         <Border Grid.Row="0"
                 Background="#2D2D2D"
@@ -160,6 +160,33 @@
         </Border>
 
         <!-- Main Content -->
-        <dock:DockControl Grid.Row="1" Layout="{Binding Layout}" />
+        <Grid Grid.Row="1">
+            <dock:DockControl Layout="{Binding Layout}" />
+            <Grid IsHitTestVisible="False"
+                  Panel.ZIndex="9999">
+                <Canvas Name="HotkeyOverlayCanvas">
+                    <Border Name="HotkeyHoverOutline"
+                            IsVisible="False"
+                            BorderBrush="#FF4CC2FF"
+                            BorderThickness="2"
+                            Background="#334CC2FF"
+                            CornerRadius="4"/>
+                </Canvas>
+                <Border Name="HotkeyStatusPanel"
+                        IsVisible="False"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Background="#E6191C22"
+                        BorderBrush="#FF4CC2FF"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="10,6">
+                    <TextBlock Name="HotkeyStatusText"
+                               Foreground="White"
+                               FontSize="13"
+                               Text="Hotkey mode"/>
+                </Border>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>

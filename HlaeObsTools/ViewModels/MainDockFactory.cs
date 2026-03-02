@@ -46,6 +46,7 @@ public class MainDockFactory : Factory, IDisposable
     private VideoDisplayDockViewModel? _videoDisplayVm;
     private GraphicsDockViewModel? _graphicsDockVm;
     private bool _disposed;
+    public HotkeyService HotkeyService => _hotkeyService;
 
     public MainDockFactory(object context)
     {
@@ -400,6 +401,7 @@ public class MainDockFactory : Factory, IDisposable
                 var hostWindow = new Views.DockHostWindow();
                 hostWindow.SetKeyboardSuppressionHandler(SetKeyboardSuppression);
                 hostWindow.SetHotkeyHandlers(HandleHotkeyKeyDown, HandleHotkeyPointerMoved);
+                hostWindow.SetHotkeyOverlaySource(_hotkeyService);
                 return hostWindow;
             }
         };

@@ -2,6 +2,7 @@ using Dock.Model.Core;
 using Avalonia.Input;
 using System;
 using System.Reflection;
+using HlaeObsTools.Services.Hotkeys;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -37,6 +38,8 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
         Layout = _factory.CreateLayout();
         _factory.InitLayout(Layout);
     }
+
+    public HotkeyService HotkeyService => _factory.HotkeyService;
 
     public void SetKeyboardSuppression(bool suppress)
     {
