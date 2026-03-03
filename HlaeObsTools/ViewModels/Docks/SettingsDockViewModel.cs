@@ -427,6 +427,35 @@ namespace HlaeObsTools.ViewModels.Docks
             set => SetProperty(ref _hotkeyStatusMessage, value);
         }
 
+        public ObservableCollection<string> HotkeyCategoryOptions { get; } = new()
+        {
+            "General",
+            "Campath",
+            "Graphics",
+            "Attach"
+        };
+
+        private string _selectedHotkeyCategory = "General";
+        public string SelectedHotkeyCategory
+        {
+            get => _selectedHotkeyCategory;
+            set
+            {
+                if (!SetProperty(ref _selectedHotkeyCategory, value))
+                    return;
+
+                OnPropertyChanged(nameof(IsGeneralHotkeyCategorySelected));
+                OnPropertyChanged(nameof(IsCampathHotkeyCategorySelected));
+                OnPropertyChanged(nameof(IsGraphicsHotkeyCategorySelected));
+                OnPropertyChanged(nameof(IsAttachHotkeyCategorySelected));
+            }
+        }
+
+        public bool IsGeneralHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "General", StringComparison.Ordinal);
+        public bool IsCampathHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Campath", StringComparison.Ordinal);
+        public bool IsGraphicsHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Graphics", StringComparison.Ordinal);
+        public bool IsAttachHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Attach", StringComparison.Ordinal);
+
         private ICommand? _rebindHotkeyCommand;
         public ICommand RebindHotkeyCommand => _rebindHotkeyCommand ??= new RelayParam<HotkeyBindingViewModel>(
             binding =>

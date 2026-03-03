@@ -753,159 +753,172 @@
             <TabItem Header="Hotkeys">
                 <ScrollViewer>
                     <StackPanel Margin="10" Spacing="10">
-                        <TextBlock Text="Hotkey Binding"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"/>
-                        <ToggleSwitch IsChecked="{Binding IsHotkeyBindingMode, Mode=TwoWay}"
-                                      Content="Enable hotkey binding mode (Esc to exit)"
-                            hotkeys:HotkeyTarget.Path="IsHotkeyBindingMode"
-                                      Foreground="#E6E6E6"/>
-                        <TextBlock Text="{Binding HotkeyStatusMessage}"
-                                   Foreground="#888888"
-                                   FontSize="12"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Category" VerticalAlignment="Center"
+                                        Foreground="#CCCCCC"
+                                        FontWeight="SemiBold"/>
+                                <ComboBox Width="120" VerticalAlignment="Center" Margin="0,0,10,0"
+                                            ItemsSource="{Binding HotkeyCategoryOptions}"
+                                            SelectedItem="{Binding SelectedHotkeyCategory, Mode=TwoWay}"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Binding Mode" VerticalAlignment="Center"
+                                        Foreground="#CCCCCC"
+                                        FontWeight="SemiBold"/>
+                                <ToggleSwitch IsChecked="{Binding IsHotkeyBindingMode, Mode=TwoWay}"
+                                    hotkeys:HotkeyTarget.Path="IsHotkeyBindingMode"
+                                            Foreground="#E6E6E6"/>
+                                <TextBlock Text="{Binding HotkeyStatusMessage}"
+                                        Foreground="#888888"
+                                        FontSize="12"/>
+                            </StackPanel>
+                        </StackPanel>
                         <Separator Margin="0,6,0,6"/>
-                        <TextBlock Text="Button/Toggle Bindings"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"/>
-                        <ListBox ItemsSource="{Binding CommandHotkeyBindings}"
-                                 SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
-                                    <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,6">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                                            <TextBlock Text="{Binding HotkeyDisplay}"
-                                                       Foreground="#E6E6E6"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding DisplayLabel}"
-                                                       Foreground="#CCCCCC"
-                                                       VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
-                                                <ToggleSwitch IsChecked="{Binding Enabled}"/>
-                                                <Button Content="Rebind"
-                                                        Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
-                                                        CommandParameter="{Binding}"/>
-                                                <Button Content="Remove"
-                                                        Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
-                                                        CommandParameter="{Binding}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <TextBlock Text="Supports command buttons, simple toggles, campaths, graphics actions, and attach preset slot actions."
-                                   Foreground="#888888"
-                                   FontSize="12"/>
-                        <Separator Margin="0,6,0,6"/>
-                        <TextBlock Text="Campath Bindings"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding ActiveCampathProfileName}"
-                                   Foreground="#888888"
-                                   FontSize="12"
-                                   Margin="0,0,0,6"/>
-                        <ListBox ItemsSource="{Binding CampathHotkeyBindings}"
-                                 SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
-                                    <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,6">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                                            <TextBlock Text="{Binding HotkeyDisplay}"
-                                                       Foreground="#E6E6E6"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding DisplayLabel}"
-                                                       Foreground="#CCCCCC"
-                                                       VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
-                                                <ToggleSwitch IsChecked="{Binding Enabled}" hotkeys:HotkeyTarget.Path="Enabled" />
-                                                <Button Content="Rebind"
-                                                        Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
-                                                        CommandParameter="{Binding}"/>
-                                                <Button Content="Remove"
-                                                        Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
-                                                        CommandParameter="{Binding}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <Separator Margin="0,6,0,6"/>
-                        <TextBlock Text="Graphics Bindings"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding ActiveGraphicsProfileName}"
-                                   Foreground="#888888"
-                                   FontSize="12"
-                                   Margin="0,0,0,6"/>
-                        <ListBox ItemsSource="{Binding GraphicsHotkeyBindings}"
-                                 SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
-                                    <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,6">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                                            <TextBlock Text="{Binding HotkeyDisplay}"
-                                                       Foreground="#E6E6E6"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding DisplayLabel}"
-                                                       Foreground="#CCCCCC"
-                                                       VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
-                                                <ToggleSwitch IsChecked="{Binding Enabled}" />
-                                                <Button Content="Rebind"
-                                                        Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
-                                                        CommandParameter="{Binding}"/>
-                                                <Button Content="Remove"
-                                                        Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
-                                                        CommandParameter="{Binding}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <Separator Margin="0,6,0,6"/>
-                        <TextBlock Text="Attach Preset Bindings"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding ActiveAttachPresetPageName}"
-                                   Foreground="#888888"
-                                   FontSize="12"
-                                   Margin="0,0,0,6"/>
-                        <ListBox ItemsSource="{Binding AttachHotkeyBindings}"
-                                 SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
-                                    <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,6">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                                            <TextBlock Text="{Binding HotkeyDisplay}"
-                                                       Foreground="#E6E6E6"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding DisplayLabel}"
-                                                       Foreground="#CCCCCC"
-                                                       VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
-                                                <ToggleSwitch IsChecked="{Binding Enabled}" />
-                                                <Button Content="Rebind"
-                                                        Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
-                                                        CommandParameter="{Binding}"/>
-                                                <Button Content="Remove"
-                                                        Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
-                                                        CommandParameter="{Binding}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <StackPanel IsVisible="{Binding IsGeneralHotkeyCategorySelected}" Spacing="6">
+                            <TextBlock Text="Button/Toggle Bindings"
+                                       Foreground="#CCCCCC"
+                                       FontWeight="SemiBold"/>
+                            <ListBox ItemsSource="{Binding CommandHotkeyBindings}"
+                                     SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                        <Border>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                                <TextBlock Text="{Binding HotkeyDisplay}"
+                                                           Foreground="#E6E6E6"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding DisplayLabel}"
+                                                           Foreground="#CCCCCC"
+                                                           VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                    <ToggleSwitch IsChecked="{Binding Enabled}"/>
+                                                    <Button Content="Rebind"
+                                                            Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="Remove"
+                                                            Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding IsCampathHotkeyCategorySelected}" Spacing="6">
+                            <TextBlock Text="Campath Bindings"
+                                       Foreground="#CCCCCC"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding ActiveCampathProfileName}"
+                                       Foreground="#888888"
+                                       FontSize="12"
+                                       Margin="0,0,0,6"/>
+                            <ListBox ItemsSource="{Binding CampathHotkeyBindings}"
+                                     SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                        <Border>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                                <TextBlock Text="{Binding HotkeyDisplay}"
+                                                           Foreground="#E6E6E6"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding DisplayLabel}"
+                                                           Foreground="#CCCCCC"
+                                                           VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                    <ToggleSwitch IsChecked="{Binding Enabled}" hotkeys:HotkeyTarget.Path="Enabled" />
+                                                    <Button Content="Rebind"
+                                                            Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="Remove"
+                                                            Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding IsGraphicsHotkeyCategorySelected}" Spacing="6">
+                            <TextBlock Text="Graphics Bindings"
+                                       Foreground="#CCCCCC"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding ActiveGraphicsProfileName}"
+                                       Foreground="#888888"
+                                       FontSize="12"
+                                       Margin="0,0,0,6"/>
+                            <ListBox ItemsSource="{Binding GraphicsHotkeyBindings}"
+                                     SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                        <Border>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                                <TextBlock Text="{Binding HotkeyDisplay}"
+                                                           Foreground="#E6E6E6"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding DisplayLabel}"
+                                                           Foreground="#CCCCCC"
+                                                           VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                    <ToggleSwitch IsChecked="{Binding Enabled}" />
+                                                    <Button Content="Rebind"
+                                                            Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="Remove"
+                                                            Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding IsAttachHotkeyCategorySelected}" Spacing="6">
+                            <TextBlock Text="Attach Preset Bindings"
+                                       Foreground="#CCCCCC"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding ActiveAttachPresetPageName}"
+                                       Foreground="#888888"
+                                       FontSize="12"
+                                       Margin="0,0,0,6"/>
+                            <ListBox ItemsSource="{Binding AttachHotkeyBindings}"
+                                     SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                        <Border>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                                <TextBlock Text="{Binding HotkeyDisplay}"
+                                                           Foreground="#E6E6E6"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding DisplayLabel}"
+                                                           Foreground="#CCCCCC"
+                                                           VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                    <ToggleSwitch IsChecked="{Binding Enabled}" />
+                                                    <Button Content="Rebind"
+                                                            Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="Remove"
+                                                            Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
