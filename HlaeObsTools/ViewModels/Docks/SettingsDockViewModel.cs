@@ -8,6 +8,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -21,6 +22,7 @@ using HlaeObsTools.Services.Settings;
 using HlaeObsTools.Services.Campaths;
 using System.Text.Json;
 using HlaeObsTools.Services.Hotkeys;
+using HlaeObsTools.Services.Vmix;
 using HlaeObsTools.ViewModels.Hotkeys;
 
 
@@ -66,6 +68,10 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly Func<NetworkSettingsData, Task>? _applyNetworkSettingsAsync;
         private readonly VmixSettings _vmixSettings;
         private readonly VmixReplaySettings _vmixReplaySettings;
+        private readonly VmixApiClient _vmixApiClient;
+        private readonly VmixShortcutCatalog _vmixShortcutCatalog;
+        private readonly Dictionary<string, List<VmixFunctionDefinition>> _vmixFunctionsByCategory = new(StringComparer.Ordinal);
+        private bool _isUpdatingVmixBindingUi;
         private readonly Action<bool>? _setFocusInputGateDisabled;
         private readonly HotkeyService _hotkeyService;
         private readonly CampathsDockViewModel? _campathsDockViewModel;
@@ -107,10 +113,12 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _executeAttachPresetSlot0Command;
         private readonly ICommand _addGsiRelayEndpointCommand;
         private readonly ICommand _removeGsiRelayEndpointCommand;
+        private readonly ICommand _refreshVmixStateCommand;
+        private readonly ICommand _addVmixHotkeyCommand;
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort, IReadOnlyList<string> GsiRelayUris);
 
-        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixSettings? vmixSettings = null, VmixReplaySettings? vmixReplaySettings = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
+        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixSettings? vmixSettings = null, VmixReplaySettings? vmixReplaySettings = null, VmixApiClient? vmixApiClient = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
         {
             _radarSettings = radarSettings;
             _hudSettings = hudSettings;
@@ -121,6 +129,8 @@ namespace HlaeObsTools.ViewModels.Docks
             _applyNetworkSettingsAsync = applyNetworkSettingsAsync;
             _vmixSettings = vmixSettings ?? new VmixSettings();
             _vmixReplaySettings = vmixReplaySettings ?? new VmixReplaySettings();
+            _vmixApiClient = vmixApiClient ?? new VmixApiClient(_vmixSettings);
+            _vmixShortcutCatalog = VmixShortcutCatalogLoader.LoadFromAssets();
             _setFocusInputGateDisabled = setFocusInputGateDisabled;
             _campathEditor = campathEditor ?? new CampathEditorViewModel();
             _hotkeyService = hotkeyService;
@@ -157,6 +167,8 @@ namespace HlaeObsTools.ViewModels.Docks
             _applyNetworkSettingsCommand = new AsyncRelay(ApplyNetworkSettingsInternalAsync);
             _addGsiRelayEndpointCommand = new Relay(AddGsiRelayEndpoint);
             _removeGsiRelayEndpointCommand = new RelayParam<GsiRelayEndpointViewModel>(RemoveGsiRelayEndpoint, endpoint => endpoint != null);
+            _refreshVmixStateCommand = new AsyncRelay(RefreshVmixStateAsync);
+            _addVmixHotkeyCommand = new Relay(AddVmixHotkey);
             _browseMapObjCommand = new AsyncRelay(BrowseMapObjAsync);
             _clearMapObjCommand = new Relay(() => _viewport3DSettings.MapObjPath = string.Empty);
             _cycleForceDeathnoticesCommand = new Relay(CycleForceDeathnoticesMode);
@@ -225,6 +237,12 @@ namespace HlaeObsTools.ViewModels.Docks
             _executeAttachPresetSlot9Command = CreateExecuteAttachPresetSlotCommand(8);
             _executeAttachPresetSlot0Command = CreateExecuteAttachPresetSlotCommand(9);
 
+            foreach (var category in _vmixShortcutCatalog.Categories)
+            {
+                VmixFunctionCategories.Add(category);
+                _vmixFunctionsByCategory[category] = _vmixShortcutCatalog.GetFunctionsByCategory(category).ToList();
+            }
+
             _isLoadingHotkeys = true;
             if (settings.Hotkeys != null)
             {
@@ -238,6 +256,7 @@ namespace HlaeObsTools.ViewModels.Docks
             }
             _isLoadingHotkeys = false;
             RefreshCommandHotkeys();
+            RefreshVmixHotkeys();
 
             _hotkeyService.BindingCaptured += OnHotkeyBindingCaptured;
             _hotkeyService.BindingModeChanged += OnHotkeyBindingModeChanged;
@@ -313,6 +332,9 @@ namespace HlaeObsTools.ViewModels.Docks
         public ObservableCollection<HotkeyBindingViewModel> CampathHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> GraphicsHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> AttachHotkeyBindings { get; } = new();
+        public ObservableCollection<HotkeyBindingViewModel> VmixHotkeyBindings { get; } = new();
+        public ObservableCollection<string> VmixFunctionCategories { get; } = new();
+        public ObservableCollection<VmixInputInfo> VmixInputOptions { get; } = new();
         public ObservableCollection<GsiRelayEndpointViewModel> GsiRelayEndpoints { get; } = new();
 
         private static readonly IBrush HealthGreenBrush = new SolidColorBrush(Color.Parse("#43A047"));
@@ -436,7 +458,8 @@ namespace HlaeObsTools.ViewModels.Docks
             "General",
             "Campath",
             "Graphics",
-            "Attach"
+            "Attach",
+            "vMix"
         };
 
         private string _selectedHotkeyCategory = "General";
@@ -452,6 +475,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 OnPropertyChanged(nameof(IsCampathHotkeyCategorySelected));
                 OnPropertyChanged(nameof(IsGraphicsHotkeyCategorySelected));
                 OnPropertyChanged(nameof(IsAttachHotkeyCategorySelected));
+                OnPropertyChanged(nameof(IsVmixHotkeyCategorySelected));
             }
         }
 
@@ -459,6 +483,14 @@ namespace HlaeObsTools.ViewModels.Docks
         public bool IsCampathHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Campath", StringComparison.Ordinal);
         public bool IsGraphicsHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Graphics", StringComparison.Ordinal);
         public bool IsAttachHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Attach", StringComparison.Ordinal);
+        public bool IsVmixHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "vMix", StringComparison.Ordinal);
+
+        private string _vmixStateStatusMessage = "vMix state not loaded.";
+        public string VmixStateStatusMessage
+        {
+            get => _vmixStateStatusMessage;
+            set => SetProperty(ref _vmixStateStatusMessage, value);
+        }
 
         private ICommand? _rebindHotkeyCommand;
         public ICommand RebindHotkeyCommand => _rebindHotkeyCommand ??= new RelayParam<HotkeyBindingViewModel>(
@@ -479,6 +511,19 @@ namespace HlaeObsTools.ViewModels.Docks
                 RemoveHotkey(binding);
             },
             binding => binding != null);
+
+        private ICommand? _bindVmixHotkeyCommand;
+        public ICommand BindVmixHotkeyCommand => _bindVmixHotkeyCommand ??= new RelayParam<HotkeyBindingViewModel>(
+            binding =>
+            {
+                if (binding == null) return;
+                SelectedHotkey = binding;
+                _hotkeyService.BeginRebind(binding.ToData());
+            },
+            binding => binding != null);
+
+        public ICommand AddVmixHotkeyCommand => _addVmixHotkeyCommand;
+        public ICommand RefreshVmixStateCommand => _refreshVmixStateCommand;
 
         private ICommand? _clearHotkeySelectionCommand;
         public ICommand ClearHotkeySelectionCommand => _clearHotkeySelectionCommand ??= new Relay(() =>
@@ -947,6 +992,27 @@ namespace HlaeObsTools.ViewModels.Docks
 
         private void OnHotkeyBindingChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (sender is HotkeyBindingViewModel binding && binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.VmixFunction)
+            {
+                if (e.PropertyName == nameof(HotkeyBindingViewModel.TargetVmixFunctionCategory))
+                {
+                    ConfigureVmixBinding(binding, keepFunctionIfValid: false);
+                }
+                else if (e.PropertyName == nameof(HotkeyBindingViewModel.TargetVmixFunctionName))
+                {
+                    UpdateVmixBindingParameterState(binding, binding.TargetVmixFunctionCategory);
+                    binding.DisplayName = BuildVmixDisplayName(binding.TargetVmixFunctionName, binding.TargetVmixValue);
+                }
+                else if (e.PropertyName == nameof(HotkeyBindingViewModel.TargetVmixValue))
+                {
+                    binding.DisplayName = BuildVmixDisplayName(binding.TargetVmixFunctionName, binding.TargetVmixValue);
+                }
+                else if (e.PropertyName == nameof(HotkeyBindingViewModel.TargetKind))
+                {
+                    RefreshVmixHotkeys();
+                }
+            }
+
             if (_isLoadingHotkeys)
                 return;
 
@@ -966,23 +1032,6 @@ namespace HlaeObsTools.ViewModels.Docks
                         _isLoadingHotkeys = true;
                         existing.Key = e.Binding.Key;
                         existing.Modifiers = e.Binding.Modifiers;
-                        existing.Enabled = e.Binding.Enabled;
-                        existing.TargetKind = e.Binding.TargetKind;
-                        existing.TargetViewModelType = e.Binding.TargetViewModelType;
-                        existing.TargetCommandProperty = e.Binding.TargetCommandProperty;
-                        existing.TargetPropertyPath = e.Binding.TargetPropertyPath;
-                        existing.TargetCampathId = e.Binding.TargetCampathId;
-                        existing.TargetCampathGroupId = e.Binding.TargetCampathGroupId;
-                        existing.TargetCampathProfileId = e.Binding.TargetCampathProfileId;
-                        existing.TargetCampathProfileName = e.Binding.TargetCampathProfileName;
-                        existing.TargetGraphicsProfileName = e.Binding.TargetGraphicsProfileName;
-                        existing.TargetGraphicsAtlasName = e.Binding.TargetGraphicsAtlasName;
-                        existing.TargetGraphicsInstanceName = e.Binding.TargetGraphicsInstanceName;
-                        existing.TargetGraphicsAction = e.Binding.TargetGraphicsAction;
-                        existing.TargetAttachPresetPage = e.Binding.TargetAttachPresetPage;
-                        existing.TargetAttachPresetIndex = e.Binding.TargetAttachPresetIndex;
-                        existing.TargetAttachSlot = e.Binding.TargetAttachSlot;
-                        existing.DisplayName = e.Binding.DisplayName;
                         _isLoadingHotkeys = false;
                     }
                 }
@@ -999,6 +1048,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 RefreshCampathHotkeys();
                 RefreshGraphicsHotkeys();
                 RefreshAttachHotkeys();
+                RefreshVmixHotkeys();
                 SyncHotkeysToService();
                 SaveSettings();
             });
@@ -1112,6 +1162,12 @@ namespace HlaeObsTools.ViewModels.Docks
                 return;
             }
 
+            if (binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.VmixFunction)
+            {
+                RefreshVmixHotkeys();
+                return;
+            }
+
             if (!CommandHotkeyBindings.Contains(binding))
                 CommandHotkeyBindings.Add(binding);
         }
@@ -1122,6 +1178,7 @@ namespace HlaeObsTools.ViewModels.Docks
             RefreshCampathHotkeys();
             RefreshGraphicsHotkeys();
             RefreshAttachHotkeys();
+            RefreshVmixHotkeys();
         }
 
         private void RefreshCommandHotkeys()
@@ -1133,7 +1190,8 @@ namespace HlaeObsTools.ViewModels.Docks
                     || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.CampathGroup
                     || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
                     || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction
-                    || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.AttachPresetSlotAction)
+                    || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.AttachPresetSlotAction
+                    || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.VmixFunction)
                     continue;
 
                 CommandHotkeyBindings.Add(binding);
@@ -1197,6 +1255,196 @@ namespace HlaeObsTools.ViewModels.Docks
             }
 
             OnPropertyChanged(nameof(ActiveAttachPresetPageName));
+        }
+
+        private void RefreshVmixHotkeys()
+        {
+            VmixHotkeyBindings.Clear();
+            foreach (var binding in HotkeyBindings)
+            {
+                if (binding.TargetKind != Services.Hotkeys.HotkeyTargetKind.VmixFunction)
+                    continue;
+
+                ConfigureVmixBinding(binding, keepFunctionIfValid: true);
+                VmixHotkeyBindings.Add(binding);
+            }
+        }
+
+        private void AddVmixHotkey()
+        {
+            var category = VmixFunctionCategories.FirstOrDefault() ?? string.Empty;
+            var function = category.Length > 0 && _vmixFunctionsByCategory.TryGetValue(category, out var funcs)
+                ? funcs.FirstOrDefault()?.Name ?? string.Empty
+                : string.Empty;
+
+            var binding = new HotkeyBindingViewModel
+            {
+                Id = Guid.NewGuid(),
+                Enabled = true,
+                Key = Key.None,
+                Modifiers = KeyModifiers.None,
+                TargetKind = Services.Hotkeys.HotkeyTargetKind.VmixFunction,
+                TargetVmixFunctionCategory = category,
+                TargetVmixFunctionName = function,
+                DisplayName = BuildVmixDisplayName(function, null)
+            };
+
+            ConfigureVmixBinding(binding, keepFunctionIfValid: true);
+            HotkeyBindings.Add(binding);
+            AttachHotkeyBinding(binding);
+            AddToHotkeyLists(binding);
+            SelectedHotkey = binding;
+            SyncHotkeysToService();
+            SaveSettings();
+        }
+
+        private async Task RefreshVmixStateAsync()
+        {
+            var snapshot = await _vmixApiClient.FetchStateAsync(System.Threading.CancellationToken.None);
+            if (snapshot == null)
+            {
+                VmixStateStatusMessage = "Failed to fetch vMix state.";
+                VmixInputOptions.Clear();
+                return;
+            }
+
+            VmixInputOptions.Clear();
+            foreach (var input in snapshot.Inputs.OrderBy(i => i.Number))
+            {
+                VmixInputOptions.Add(input);
+            }
+
+            if (snapshot.Transitions.Count > 0)
+            {
+                const string transitionCategory = "Transition";
+                if (!_vmixFunctionsByCategory.TryGetValue(transitionCategory, out var functions))
+                {
+                    functions = new List<VmixFunctionDefinition>();
+                    _vmixFunctionsByCategory[transitionCategory] = functions;
+                    if (!VmixFunctionCategories.Contains(transitionCategory))
+                        VmixFunctionCategories.Add(transitionCategory);
+                }
+
+                foreach (var transition in snapshot.Transitions)
+                {
+                    if (functions.Any(f => string.Equals(f.Name, transition, StringComparison.Ordinal)))
+                        continue;
+
+                    functions.Add(new VmixFunctionDefinition
+                    {
+                        Category = transitionCategory,
+                        Name = transition,
+                        Description = "Dynamic transition from vMix state.",
+                        ParameterKinds = new List<VmixFunctionParameterKind> { VmixFunctionParameterKind.None }
+                    });
+                }
+            }
+
+            foreach (var binding in VmixHotkeyBindings)
+            {
+                ConfigureVmixBinding(binding, keepFunctionIfValid: true);
+            }
+
+            VmixStateStatusMessage = $"vMix state loaded. Inputs: {snapshot.Inputs.Count}, Transitions: {snapshot.Transitions.Count}.";
+        }
+
+        private void ConfigureVmixBinding(HotkeyBindingViewModel binding, bool keepFunctionIfValid)
+        {
+            if (_isUpdatingVmixBindingUi || binding.TargetKind != Services.Hotkeys.HotkeyTargetKind.VmixFunction)
+                return;
+
+            _isUpdatingVmixBindingUi = true;
+            try
+            {
+                var category = binding.TargetVmixFunctionCategory;
+                if (string.IsNullOrWhiteSpace(category))
+                {
+                    category = VmixFunctionCategories.FirstOrDefault() ?? string.Empty;
+                    binding.TargetVmixFunctionCategory = category;
+                }
+                else if (!_vmixFunctionsByCategory.ContainsKey(category))
+                {
+                    // Preserve persisted/custom categories instead of forcing a reset.
+                    _vmixFunctionsByCategory[category] = new List<VmixFunctionDefinition>();
+                    if (!VmixFunctionCategories.Contains(category))
+                        VmixFunctionCategories.Add(category);
+                }
+
+                if (!string.IsNullOrWhiteSpace(category) && _vmixFunctionsByCategory.TryGetValue(category, out var functionDefs))
+                {
+                    var orderedNames = functionDefs
+                        .OrderBy(f => f.Name, StringComparer.Ordinal)
+                        .Select(f => f.Name)
+                        .ToList();
+
+                    if (!keepFunctionIfValid)
+                    {
+                        binding.VmixFunctionOptions.Clear();
+                    }
+
+                    foreach (var functionName in orderedNames)
+                    {
+                        if (!binding.VmixFunctionOptions.Contains(functionName))
+                            binding.VmixFunctionOptions.Add(functionName);
+                    }
+
+                    if (!keepFunctionIfValid || string.IsNullOrWhiteSpace(binding.TargetVmixFunctionName))
+                    {
+                        binding.TargetVmixFunctionName = binding.VmixFunctionOptions.FirstOrDefault();
+                    }
+                    else if (!binding.VmixFunctionOptions.Contains(binding.TargetVmixFunctionName))
+                    {
+                        // Preserve persisted/custom functions (e.g. dynamic transitions)
+                        // across refreshes and app restarts.
+                        binding.VmixFunctionOptions.Add(binding.TargetVmixFunctionName);
+                    }
+                }
+
+                UpdateVmixBindingParameterState(binding, category);
+                binding.DisplayName = BuildVmixDisplayName(binding.TargetVmixFunctionName, binding.TargetVmixValue);
+            }
+            finally
+            {
+                _isUpdatingVmixBindingUi = false;
+            }
+        }
+
+        private void UpdateVmixBindingParameterState(HotkeyBindingViewModel binding, string? category)
+        {
+            var definition = _vmixShortcutCatalog.FindFunction(binding.TargetVmixFunctionName)
+                ?? (!string.IsNullOrWhiteSpace(category) && _vmixFunctionsByCategory.TryGetValue(category, out var dynamicDefs)
+                    ? dynamicDefs.FirstOrDefault(d => string.Equals(d.Name, binding.TargetVmixFunctionName, StringComparison.Ordinal))
+                    : null);
+
+            var parameterKinds = definition?.ParameterKinds ?? new List<VmixFunctionParameterKind> { VmixFunctionParameterKind.Custom };
+            binding.VmixHasValueParameter = parameterKinds.Contains(VmixFunctionParameterKind.Value);
+            binding.VmixHasInputParameter = parameterKinds.Contains(VmixFunctionParameterKind.Input);
+            binding.VmixHasChannelParameter = parameterKinds.Contains(VmixFunctionParameterKind.Channel);
+            binding.VmixHasDurationParameter = parameterKinds.Contains(VmixFunctionParameterKind.Duration);
+            binding.VmixHasCustomParameter = parameterKinds.Contains(VmixFunctionParameterKind.Custom)
+                || (!binding.VmixHasValueParameter && !binding.VmixHasInputParameter && !binding.VmixHasChannelParameter && !binding.VmixHasDurationParameter);
+
+            if (!binding.VmixHasValueParameter)
+                binding.TargetVmixValue = null;
+            if (!binding.VmixHasInputParameter)
+                binding.TargetVmixInputNumber = null;
+            binding.SelectedVmixInput = VmixInputOptions.FirstOrDefault(i => i.Number == binding.TargetVmixInputNumber);
+            if (!binding.VmixHasChannelParameter)
+                binding.TargetVmixChannel = null;
+            if (!binding.VmixHasDurationParameter)
+                binding.TargetVmixDuration = null;
+            if (!binding.VmixHasCustomParameter)
+                binding.TargetVmixExtraQuery = null;
+        }
+
+        private static string BuildVmixDisplayName(string? functionName, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(functionName))
+                return "vMix";
+
+            return string.IsNullOrWhiteSpace(value)
+                ? $"vMix: {functionName}"
+                : $"vMix: {functionName}({value})";
         }
 
         private void OnCampathProfileChanged(object? sender, PropertyChangedEventArgs e)

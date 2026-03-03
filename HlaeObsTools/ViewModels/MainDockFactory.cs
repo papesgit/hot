@@ -85,6 +85,7 @@ public class MainDockFactory : Factory, IDisposable
             ExtendWindowSeconds = _storedSettings.VmixReplayExtendWindowSeconds
         };
         _vmixApiClient = new VmixApiClient(_vmixSettings);
+        _hotkeyService.SetVmixApiClient(_vmixApiClient);
         _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixApiClient, _vmixReplaySettings);
 
         _graphicsProfileStorage = new GraphicsProfileStorage();
@@ -238,6 +239,7 @@ public class MainDockFactory : Factory, IDisposable
             _storedSettings,
             _vmixSettings,
             _vmixReplaySettings,
+            _vmixApiClient,
             setFocusInputGateDisabled: disable => _rawInputHandler.CaptureOnlyWhenAppFocused = !disable,
             campathEditor: campathEditor,
             gsiServer: _gsiServer,

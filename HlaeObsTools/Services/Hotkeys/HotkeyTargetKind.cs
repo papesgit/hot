@@ -8,5 +8,6 @@ public enum HotkeyTargetKind
     CampathGroup = 3,
     GraphicsAtlasAction = 4,
     GraphicsInstanceAction = 5,
-    AttachPresetSlotAction = 6
+    AttachPresetSlotAction = 6,
+    VmixFunction = 7
 }

@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Data;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using HlaeObsTools.Services.Vmix;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.ViewModels.Docks;
 
@@ -18,6 +22,7 @@ public sealed class HotkeyService
 {
     private readonly List<object> _commandContexts = new();
     private readonly List<HotkeyBindingData> _bindings = new();
+    private VmixApiClient? _vmixApiClient;
     private Control? _hoveredControl;
     private string _statusMessage = "Hotkey mode disabled.";
     private Guid? _rebindId;
@@ -45,6 +50,11 @@ public sealed class HotkeyService
     {
         _bindings.Clear();
         _bindings.AddRange(bindings);
+    }
+
+    public void SetVmixApiClient(VmixApiClient vmixApiClient)
+    {
+        _vmixApiClient = vmixApiClient;
     }
 
     public void BeginCapture(Guid? rebindId = null)
@@ -221,7 +231,41 @@ public sealed class HotkeyService
             return true;
         }
 
+        if (binding.TargetKind == HotkeyTargetKind.VmixFunction)
+        {
+            if (_vmixApiClient == null || string.IsNullOrWhiteSpace(binding.TargetVmixFunctionName))
+                return false;
+
+            _ = ExecuteVmixBindingAsync(binding);
+            return true;
+        }
+
         return false;
+    }
+
+    private async Task ExecuteVmixBindingAsync(HotkeyBindingData binding)
+    {
+        if (_vmixApiClient == null || string.IsNullOrWhiteSpace(binding.TargetVmixFunctionName))
+            return;
+
+        var call = new VmixFunctionCall
+        {
+            Function = binding.TargetVmixFunctionName,
+            Value = binding.TargetVmixValue,
+            Input = binding.TargetVmixInputNumber,
+            Channel = binding.TargetVmixChannel,
+            Duration = binding.TargetVmixDuration,
+            ExtraQuery = binding.TargetVmixExtraQuery
+        };
+
+        var ok = await _vmixApiClient.ExecuteFunctionAsync(call, CancellationToken.None, binding.DisplayName).ConfigureAwait(false);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ok)
+                UpdateStatus($"Executed vMix: {binding.TargetVmixFunctionName}");
+            else
+                UpdateStatus($"vMix request failed: {binding.TargetVmixFunctionName}");
+        });
     }
 
     private bool TryCaptureBinding(KeyEventArgs e)
@@ -261,6 +305,13 @@ public sealed class HotkeyService
                 TargetAttachPresetPage = _rebindTarget.TargetAttachPresetPage,
                 TargetAttachPresetIndex = _rebindTarget.TargetAttachPresetIndex,
                 TargetAttachSlot = _rebindTarget.TargetAttachSlot,
+                TargetVmixFunctionCategory = _rebindTarget.TargetVmixFunctionCategory,
+                TargetVmixFunctionName = _rebindTarget.TargetVmixFunctionName,
+                TargetVmixValue = _rebindTarget.TargetVmixValue,
+                TargetVmixInputNumber = _rebindTarget.TargetVmixInputNumber,
+                TargetVmixChannel = _rebindTarget.TargetVmixChannel,
+                TargetVmixDuration = _rebindTarget.TargetVmixDuration,
+                TargetVmixExtraQuery = _rebindTarget.TargetVmixExtraQuery,
                 DisplayName = _rebindTarget.DisplayName
             };
 

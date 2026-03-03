@@ -1,6 +1,8 @@
 using System;
+using System.Collections.ObjectModel;
 using Avalonia.Input;
 using HlaeObsTools.Services.Hotkeys;
+using HlaeObsTools.Services.Vmix;
 
 namespace HlaeObsTools.ViewModels.Hotkeys;
 
@@ -24,9 +26,23 @@ public class HotkeyBindingViewModel : ViewModelBase
     private int? _targetAttachPresetPage;
     private int? _targetAttachPresetIndex;
     private int? _targetAttachSlot;
+    private string? _targetVmixFunctionCategory;
+    private string? _targetVmixFunctionName;
+    private string? _targetVmixValue;
+    private int? _targetVmixInputNumber;
+    private string? _targetVmixChannel;
+    private string? _targetVmixDuration;
+    private string? _targetVmixExtraQuery;
+    private bool _vmixHasValueParameter;
+    private bool _vmixHasInputParameter;
+    private bool _vmixHasChannelParameter;
+    private bool _vmixHasDurationParameter;
+    private bool _vmixHasCustomParameter;
+    private VmixInputInfo? _selectedVmixInput;
     private HotkeyTargetKind _targetKind = HotkeyTargetKind.Command;
 
     public Guid Id { get; set; } = Guid.NewGuid();
+    public ObservableCollection<string> VmixFunctionOptions { get; } = new();
 
     public Key Key
     {
@@ -206,10 +222,107 @@ public class HotkeyBindingViewModel : ViewModelBase
         }
     }
 
+    public string? TargetVmixFunctionCategory
+    {
+        get => _targetVmixFunctionCategory;
+        set
+        {
+            if (SetProperty(ref _targetVmixFunctionCategory, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public string? TargetVmixFunctionName
+    {
+        get => _targetVmixFunctionName;
+        set
+        {
+            if (SetProperty(ref _targetVmixFunctionName, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public string? TargetVmixValue
+    {
+        get => _targetVmixValue;
+        set
+        {
+            if (SetProperty(ref _targetVmixValue, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
+    public int? TargetVmixInputNumber
+    {
+        get => _targetVmixInputNumber;
+        set => SetProperty(ref _targetVmixInputNumber, value);
+    }
+
+    public string? TargetVmixChannel
+    {
+        get => _targetVmixChannel;
+        set => SetProperty(ref _targetVmixChannel, value);
+    }
+
+    public string? TargetVmixDuration
+    {
+        get => _targetVmixDuration;
+        set => SetProperty(ref _targetVmixDuration, value);
+    }
+
+    public string? TargetVmixExtraQuery
+    {
+        get => _targetVmixExtraQuery;
+        set => SetProperty(ref _targetVmixExtraQuery, value);
+    }
+
+    public bool VmixHasValueParameter
+    {
+        get => _vmixHasValueParameter;
+        set => SetProperty(ref _vmixHasValueParameter, value);
+    }
+
+    public bool VmixHasInputParameter
+    {
+        get => _vmixHasInputParameter;
+        set => SetProperty(ref _vmixHasInputParameter, value);
+    }
+
+    public bool VmixHasChannelParameter
+    {
+        get => _vmixHasChannelParameter;
+        set => SetProperty(ref _vmixHasChannelParameter, value);
+    }
+
+    public bool VmixHasDurationParameter
+    {
+        get => _vmixHasDurationParameter;
+        set => SetProperty(ref _vmixHasDurationParameter, value);
+    }
+
+    public bool VmixHasCustomParameter
+    {
+        get => _vmixHasCustomParameter;
+        set => SetProperty(ref _vmixHasCustomParameter, value);
+    }
+
+    public VmixInputInfo? SelectedVmixInput
+    {
+        get => _selectedVmixInput;
+        set
+        {
+            if (!SetProperty(ref _selectedVmixInput, value))
+                return;
+
+            if (value != null)
+                TargetVmixInputNumber = value.Number;
+        }
+    }
+
     public string HotkeyDisplay => FormatHotkey(Key, Modifiers);
     public string DisplayLabel => !string.IsNullOrWhiteSpace(DisplayName)
         ? DisplayName
-        : (TargetCommandProperty ?? TargetPropertyPath ?? "Unknown");
+        : (TargetVmixFunctionName ?? TargetCommandProperty ?? TargetPropertyPath ?? "Unknown");
 
     public static HotkeyBindingViewModel FromData(HotkeyBindingData data)
     {
@@ -234,6 +347,13 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetAttachPresetPage = data.TargetAttachPresetPage,
             TargetAttachPresetIndex = data.TargetAttachPresetIndex,
             TargetAttachSlot = data.TargetAttachSlot,
+            TargetVmixFunctionCategory = data.TargetVmixFunctionCategory,
+            TargetVmixFunctionName = data.TargetVmixFunctionName,
+            TargetVmixValue = data.TargetVmixValue,
+            TargetVmixInputNumber = data.TargetVmixInputNumber,
+            TargetVmixChannel = data.TargetVmixChannel,
+            TargetVmixDuration = data.TargetVmixDuration,
+            TargetVmixExtraQuery = data.TargetVmixExtraQuery,
             DisplayName = data.DisplayName
         };
     }
@@ -261,6 +381,13 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetAttachPresetPage = TargetAttachPresetPage,
             TargetAttachPresetIndex = TargetAttachPresetIndex,
             TargetAttachSlot = TargetAttachSlot,
+            TargetVmixFunctionCategory = TargetVmixFunctionCategory,
+            TargetVmixFunctionName = TargetVmixFunctionName,
+            TargetVmixValue = TargetVmixValue,
+            TargetVmixInputNumber = TargetVmixInputNumber,
+            TargetVmixChannel = TargetVmixChannel,
+            TargetVmixDuration = TargetVmixDuration,
+            TargetVmixExtraQuery = TargetVmixExtraQuery,
             DisplayName = DisplayName
         };
     }

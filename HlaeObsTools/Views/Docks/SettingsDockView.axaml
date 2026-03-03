@@ -116,8 +116,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="vm:GsiRelayEndpointViewModel">
                                     <Grid ColumnDefinitions="Auto,*,Auto"
-                                          ColumnSpacing="6"
-                                          Margin="0,0,0,6">
+                                          ColumnSpacing="6">
                                         <Border Grid.Column="0"
                                                 Width="12"
                                                 Height="12"
@@ -145,10 +144,16 @@
                                 Margin="0,6,0,0"/>
 
                         <Separator Margin="0,10,0,6"/>
-                        <TextBlock Text="vMix Replay"
+                        <TextBlock Text="vMix"
                                    Foreground="#CCCCCC"
                                    FontWeight="SemiBold"/>
-                        <StackPanel Spacing="6">
+                        <StackPanel Spacing="6" Margin="0,0,0,12">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <TextBlock VerticalAlignment="Center" Text="Host" Foreground="#AAAAAA"/>
+                                <TextBox MaxWidth="120" MinWidth="100" Text="{Binding VmixSettings.Host, Mode=TwoWay}" />
+                                <TextBlock VerticalAlignment="Center" Text="Port" Foreground="#AAAAAA"/>
+                                <TextBox MaxWidth="80" Text="{Binding VmixSettings.Port, Mode=TwoWay}" />
+                            </StackPanel>
                             <ToggleSwitch IsChecked="{Binding VmixReplaySettings.Enabled, Mode=TwoWay}"
                                           Content="Enable vMix replay markers"
                                 hotkeys:HotkeyTarget.Path="VmixReplaySettings.Enabled"
@@ -157,17 +162,13 @@
                                   RowDefinitions="Auto,Auto,Auto"
                                   ColumnSpacing="8"
                                   RowSpacing="6">
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Host" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="120" MinWidth="100" Text="{Binding VmixSettings.Host, Mode=TwoWay}" />
-                                <TextBlock Grid.Row="0" Grid.Column="2" HorizontalAlignment="Left" Text="Port" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixSettings.Port, Mode=TwoWay}" />
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Pre-roll (s)" Foreground="#AAAAAA"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Pre-roll (s)" Foreground="#AAAAAA"/>
                                 <TextBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.PreSeconds, Mode=TwoWay}" />
-                                <TextBlock Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" Text="Post-roll (s)" Foreground="#AAAAAA"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Left" Text="Post-roll (s)" Foreground="#AAAAAA"/>
                                 <TextBox Grid.Row="1" Grid.Column="3" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.PostSeconds, Mode=TwoWay}" />
 
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Extend window (s)" Foreground="#AAAAAA"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Extend window (s)" Foreground="#AAAAAA"/>
                                 <TextBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" />
                             </Grid>
                         </StackPanel>
@@ -912,6 +913,107 @@
                                                     <Button Content="Remove"
                                                             Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
                                                             CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding IsVmixHotkeyCategorySelected}" Spacing="6">
+                            <TextBlock Text="vMix Bindings"
+                                       Foreground="#CCCCCC"
+                                       FontWeight="SemiBold"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Refresh vMix State"
+                                        Command="{Binding RefreshVmixStateCommand}" />
+                                <Button Content="Add"
+                                        Command="{Binding AddVmixHotkeyCommand}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding VmixStateStatusMessage}"
+                                       Foreground="#888888"
+                                       FontSize="12"/>
+                            <ListBox ItemsSource="{Binding VmixHotkeyBindings}"
+                                     SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                        <Border Padding="6" Margin="0,3,0,3">
+                                            <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                                                  ColumnDefinitions="Auto,Auto,*,Auto"
+                                                  RowSpacing="6"
+                                                  ColumnSpacing="8">
+                                                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="20">
+                                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                                            Text="{Binding HotkeyDisplay}"
+                                                            Foreground="#E6E6E6"
+                                                            FontWeight="SemiBold"
+                                                            VerticalAlignment="Center"/>
+                                                    <ToggleSwitch Grid.Row="0" Grid.Column="0"
+                                                                IsChecked="{Binding Enabled}"/>
+                                                    <Button Grid.Row="0" Grid.Column="0"
+                                                            Content="Bind"
+                                                            HorizontalAlignment="Left"
+                                                            Command="{Binding DataContext.BindVmixHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+
+                                                <Button Grid.Row="0" Grid.Column="3"
+                                                        Content="Remove"
+                                                        Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                        CommandParameter="{Binding}"/>
+
+                                                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Grid.Row="1" Grid.Column="0"
+                                                            Text="Category"
+                                                            Foreground="#AAAAAA"
+                                                            VerticalAlignment="Center"/>
+                                                    <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                                                            ItemsSource="{Binding DataContext.VmixFunctionCategories, ElementName=Root}"
+                                                            SelectedItem="{Binding TargetVmixFunctionCategory, Mode=TwoWay}"/>
+
+                                                    <TextBlock Grid.Row="2" Grid.Column="0"
+                                                            Text="Function"
+                                                            Foreground="#AAAAAA"
+                                                            VerticalAlignment="Center"/>
+                                                    <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                                                            IsEditable="True"
+                                                            ItemsSource="{Binding VmixFunctionOptions}"
+                                                            Text="{Binding TargetVmixFunctionName, Mode=TwoWay}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" Spacing="4">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasValueParameter}">
+                                                        <TextBlock Text="Value" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                                                        <TextBox Width="260" Text="{Binding TargetVmixValue, Mode=TwoWay}" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasInputParameter}">
+                                                        <TextBlock Text="Input" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                                                        <ComboBox Width="260"
+                                                                  ItemsSource="{Binding DataContext.VmixInputOptions, ElementName=Root}"
+                                                                  SelectedItem="{Binding SelectedVmixInput, Mode=TwoWay}" />
+                                                        <TextBox Width="80"
+                                                                 Watermark="#"
+                                                                 Text="{Binding TargetVmixInputNumber, Mode=TwoWay}" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasChannelParameter}">
+                                                        <TextBlock Text="Channel" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                                                        <ComboBox Width="180"
+                                                                  IsEditable="True"
+                                                                  Text="{Binding TargetVmixChannel, Mode=TwoWay}">
+                                                            <ComboBoxItem Content="A" />
+                                                            <ComboBoxItem Content="B" />
+                                                        </ComboBox>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasDurationParameter}">
+                                                        <TextBlock Text="Duration" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                                                        <TextBox Width="180" Text="{Binding TargetVmixDuration, Mode=TwoWay}" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasCustomParameter}">
+                                                        <TextBlock Text="Extra" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                                                        <TextBox Width="360"
+                                                                 Watermark="key=value&amp;key2=value2"
+                                                                 Text="{Binding TargetVmixExtraQuery, Mode=TwoWay}" />
+                                                    </StackPanel>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>

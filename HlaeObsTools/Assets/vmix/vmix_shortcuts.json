@@ -1,0 +1,2906 @@
+﻿[
+    {
+        "Category":  "General",
+        "Name":  "ActivatorRefresh",
+        "Description":  "Refresh all activator device lights and controls",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "General",
+        "Name":  "CallManagerShowHide",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "General",
+        "Name":  "KeyPress",
+        "Description":  "Value = Key",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "General",
+        "Name":  "SendKeys",
+        "Description":  "Send keys to active window\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Keys",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "General",
+        "Name":  "SetDynamicValue1",
+        "Description":  "Set Dynamic Value to use when specifying Dynamic1 as a shortcut value.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "General",
+        "Name":  "SetDynamicValue2",
+        "Description":  "Set Dynamic Value to use when specifying Dynamic2 as a shortcut value.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "General",
+        "Name":  "SetDynamicValue3",
+        "Description":  "Set Dynamic Value to use when specifying Dynamic3 as a shortcut value.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "General",
+        "Name":  "SetDynamicValue4",
+        "Description":  "Set Dynamic Value to use when specifying Dynamic4 as a shortcut value.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "Audio",
+        "Description":  "Toggle Audio Mute On/Off",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioAuto",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioAutoOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioAutoOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioBus",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioBusOff",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioBusOn",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioChannelMatrixApplyPreset",
+        "Description":  "Apply preset to channel matrix\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Preset Name",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioMixerShowHide",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioPluginOff",
+        "Description":  "Turn off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioPluginOn",
+        "Description":  "Turn on Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioPluginOnOff",
+        "Description":  "Toggle on/off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "AudioPluginShow",
+        "Description":  "Show Audio Plugin Editor, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusAAudio",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusAAudioOff",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusAAudioOn",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusAAudioPluginOff",
+        "Description":  "Turn off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusAAudioPluginOn",
+        "Description":  "Turn on Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusAAudioPluginOnOff",
+        "Description":  "Toggle on/off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusAAudioPluginShow",
+        "Description":  "Show Audio Plugin Editor, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusBAudio",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusBAudioOff",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusBAudioOn",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusBAudioPluginOff",
+        "Description":  "Turn off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusBAudioPluginOn",
+        "Description":  "Turn on Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusBAudioPluginOnOff",
+        "Description":  "Toggle on/off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusBAudioPluginShow",
+        "Description":  "Show Audio Plugin Editor, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXAudio",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXAudioOff",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXAudioOn",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXAudioPluginOff",
+        "Description":  "Turn off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus,PluginNumber",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXAudioPluginOn",
+        "Description":  "Turn on Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus,PluginNumber",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXAudioPluginOnOff",
+        "Description":  "Toggle on/off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus,PluginNumber",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXAudioPluginShow",
+        "Description":  "Show Audio Plugin Editor, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus,PluginNumber",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXSendToMaster",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXSendToMasterOff",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXSendToMasterOn",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXSolo",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXSoloOff",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "BusXSoloOn",
+        "Description":  "M,A,B,C,D,E,F,G\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Bus",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "MasterAudio",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "MasterAudioOff",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "MasterAudioOn",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "MasterAudioPluginOff",
+        "Description":  "Turn off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "MasterAudioPluginOn",
+        "Description":  "Turn on Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "MasterAudioPluginOnOff",
+        "Description":  "Toggle on/off Audio Plugin, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "MasterAudioPluginShow",
+        "Description":  "Show Audio Plugin Editor, starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Plugin Number",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetBalance",
+        "Description":  "Value = Balance -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetBusAVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetBusBVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetBusCVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetBusDVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetBusEVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetBusFVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetBusGVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetGain",
+        "Description":  "Value = Gain dB 0-24",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetGainChannel1",
+        "Description":  "Value = Gain dB 0-24",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetGainChannel2",
+        "Description":  "Value = Gain dB 0-24",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetHeadphonesVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetMasterVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetVolume",
+        "Description":  "Value = Volume 0-100",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetVolumeChannel1",
+        "Description":  "When using SeparateMono on an Audio Input, this can be used to set channel volumes independently.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Volume 0-100",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetVolumeChannel2",
+        "Description":  "When using SeparateMono on an Audio Input, this can be used to set channel volumes independently.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Volume 0-100",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetVolumeChannelMixer",
+        "Description":  "Set Volume of an Input\u0027s sub channel (1 to 16)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Channel,Volume 0-100",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SetVolumeFade",
+        "Description":  "Set volume gradually over x milliseconds.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Volume 0-100,Milliseconds",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "Solo",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SoloOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Audio",
+        "Name":  "SoloOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "CutDirect",
+        "Description":  "Cuts the input directly to Output without changing Preview",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "FadeToBlack",
+        "Description":  "Toggle FTB On/Off",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "QuickPlay",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetFader",
+        "Description":  "Set Master Fader T-Bar, 255 will cut to Preview\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Fader 0-255",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetTransitionDuration1",
+        "Description":  "Change Transition Duration for Button 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Duration MS",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetTransitionDuration2",
+        "Description":  "Change Transition Duration for Button 2\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Duration MS",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetTransitionDuration3",
+        "Description":  "Change Transition Duration for Button 3\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Duration MS",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetTransitionDuration4",
+        "Description":  "Change Transition Duration for Button 4\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Duration MS",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetTransitionEffect1",
+        "Description":  "Change Transition for Button 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Transition",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetTransitionEffect2",
+        "Description":  "Change Transition for Button 2\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Transition",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetTransitionEffect3",
+        "Description":  "Change Transition for Button 3\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Transition",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "SetTransitionEffect4",
+        "Description":  "Change Transition for Button 4\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Transition",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "Stinger1",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "Stinger2",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "Stinger3",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "Stinger4",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "Transition1",
+        "Description":  "Clicks one of the four Transition buttons in the main vMix window.",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "Transition2",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "Transition3",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Transition",
+        "Name":  "Transition4",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "Fullscreen",
+        "Description":  "Toggles Fullscreen On or Off",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "FullscreenOff",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "FullscreenOn",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "SetOutput2",
+        "Description":  "Change what is displayed on Output 2.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eOutput,Preview,MultiView,Input\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output, Preview, MultiView, Input",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "SetOutput3",
+        "Description":  "Change what is displayed on Output 3.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eOutput,Preview,MultiView,Input\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output, Preview, MultiView, Input",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "SetOutput4",
+        "Description":  "Change what is displayed on Output 4.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eOutput,Preview,MultiView,Input\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output, Preview, MultiView, Input",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "SetOutputExternal2",
+        "Description":  "Change what is displayed on the External2 output.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eOutput,Preview,MultiView,Input\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output, Preview, MultiView, Input",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "SetOutputFullscreen",
+        "Description":  "Change what is displayed on the Fullscreen output.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eOutput,Preview,MultiView,Input\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output, Preview, MultiView, Input",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "SetOutputFullscreen2",
+        "Description":  "Change what is displayed on the Fullscreen2 output.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eOutput,Preview,MultiView,Input\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output, Preview, MultiView, Input",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "Snapshot",
+        "Description":  "Create a snapshot image of the current Output. Optional Value specifies save Filename, otherwise a save file window will appear. Filename can specify date, for example mysnapshot {0:dd MMM yyyy}.jpg\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "SnapshotInput",
+        "Description":  "Create a snapshot image of the selected Input. Optional Value specifies save Filename, otherwise a save file window will appear. Filename can specify date, for example mysnapshot {0:dd MMM yyyy}.jpg\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartExternal",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartMultiCorder",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartRecording",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartSRTOutput",
+        "Description":  "Optional output number starting from 0. Leave blank to control Output 1 only.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartStopExternal",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartStopMultiCorder",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartStopRecording",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartStopSRTOutput",
+        "Description":  "Optional output number starting from 0. Leave blank to control Output 1 only.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartStopStreaming",
+        "Description":  "Optional stream number starting from 0. Leave blank to control all streams.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Stream",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StartStreaming",
+        "Description":  "Optional stream number starting from 0. Leave blank to control all streams.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Stream",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StopExternal",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StopMultiCorder",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StopRecording",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StopSRTOutput",
+        "Description":  "Optional output number starting from 0. Leave blank to control Output 1 only.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Output",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StopStreaming",
+        "Description":  "Optional stream number starting from 0. Leave blank to control all streams.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Stream",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StreamingSetKey",
+        "Description":  "Set Key on Custom RTMP Stream. Optional stream number starting from 0 at start followed by comma, e.g 0,mystreamkey\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Stream",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StreamingSetPassword",
+        "Description":  "Set Password on Custom RTMP Stream. Optional stream number starting from 0 at start followed by comma, e.g 0,password\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Stream",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StreamingSetURL",
+        "Description":  "Set URL on Custom RTMP Stream. Optional stream number starting from 0 at start followed by comma, e.g 0,rtmp://myurl/\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Stream",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "StreamingSetUsername",
+        "Description":  "Set Username on Custom RTMP Stream. Optional stream number starting from 0 at start followed by comma, e.g 0,username\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Stream",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Output",
+        "Name":  "WriteDurationToRecordingLog",
+        "Description":  "Write current recording duration to log file with optional tag text Value.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Tag Text",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "AdjustCountdown",
+        "Description":  "Seconds to add or subtract from current Countdown time\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Seconds",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "ChangeCountdown",
+        "Description":  "Change countdown time according to Value as hh:mm:ss (00:00:00)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Time 00:00:00",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "NextTitlePreset",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "PauseCountdown",
+        "Description":  "Pause or Resume Countdown or if complete, Start from beginning.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "PauseRender",
+        "Description":  "Freeze Title Input while making multiple updates",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "PreviousTitlePreset",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "ResumeRender",
+        "Description":  "Resume Title Input rendering after making multiple updates",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SelectTitlePreset",
+        "Description":  "Value = Preset Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetCountdown",
+        "Description":  "Set countdown duration according to Value as hh:mm:ss (00:00:00)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Duration 00:00:00",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetImage",
+        "Description":  "Change Image in Title according to Filename or empty to clear.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedValue can be used to select image.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Filename",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetImageVisible",
+        "Description":  "Toggle Image Visibility in Title\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedValue can be used to select image.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetImageVisibleOff",
+        "Description":  "Hide Image in Title\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedValue can be used to select image.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetImageVisibleOn",
+        "Description":  "Show Image in Title\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedValue can be used to select image.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetText",
+        "Description":  "Change Text in Title according to Value parameter.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedName can be used to select Text Field\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Text",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetTextColour",
+        "Description":  "Change Colour of Text in Title in HTML format (#xxxxxx)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Colour",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetTextVisible",
+        "Description":  "Toggle Text Visibility in Title\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedValue can be used to select text field.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetTextVisibleOff",
+        "Description":  "Hide Text in Title\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedValue can be used to select text field.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetTextVisibleOn",
+        "Description":  "Show Text in Title\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedValue can be used to select text field.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetTickerSpeed",
+        "Description":  "Change Ticker Speed.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eSelectedIndex or SelectedValue can be used to select ticker field.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Speed 0-1000",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SetColor",
+        "Description":  "Change Color in Title using HTML #xxxxxxxx format.  \u003cbr\u003e  \u003cbr\u003eSelectedIndex or SelectedValue can be used to select object.  \u003cbr\u003e  \u003cbr\u003eValue = Color",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "StartCountdown",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "StopCountdown",
+        "Description":  "Stop and Reset Countdown",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "SuspendCountdown",
+        "Description":  "Pause Countdown Only",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Title",
+        "Name":  "TitleBeginAnimation",
+        "Description":  "Value = Animation",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ActiveInput",
+        "Description":  "Send to Output the selected Input",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AddInput",
+        "Description":  "Create a new Input based on information provided in Value.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eVideo\\",
+        "Parameters":  "c:\\\\path\\\\to\\\\video.avi\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eImage\\"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPauseOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPauseOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPlayFirst",
+        "Description":  "Toggle automatically playing first item in a List with Transition",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPlayFirstOff",
+        "Description":  "Turn Off automatically playing first item in a List with Transition",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPlayFirstOn",
+        "Description":  "Turn On automatically playing first item in a List with Transition",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPlayNext",
+        "Description":  "Toggle automatically playing next item in a List",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPlayNextOff",
+        "Description":  "Turn Off automatically playing next item in a List",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPlayNextOn",
+        "Description":  "Turn On automatically playing next item in a List",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPlayOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoPlayOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoRestartOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "AutoRestartOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ColourCorrectionAuto",
+        "Description":  "Basic Auto Colour Correction.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ColourCorrectionReset",
+        "Description":  "Reset Colour Correction to Default Values.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "CreateVirtualInput",
+        "Description":  "Create a new Virtual Input from the specified Input.",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "DeinterlaceOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "DeinterlaceOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "InputPreviewHide",
+        "Description":  "Hides large preview of input",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "InputPreviewShow",
+        "Description":  "Shows large preview of input",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "InputPreviewShowHide",
+        "Description":  "Toggles large preview of input",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "LayerOff",
+        "Description":  "Turn Off Layer For Input At Index (starting from 1)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "LayerOn",
+        "Description":  "Turn On Layer For Input At Index (starting from 1)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "LayerOnOff",
+        "Description":  "Toggle On/Off Layer For Input At Index (starting from 1)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ListAdd",
+        "Description":  "Add Filename to List\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Filename",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ListExport",
+        "Description":  "Export List as M3U to Filename\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Filename",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ListPlayOut",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ListRemove",
+        "Description":  "Remove from List by Index starting from 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ListRemoveAll",
+        "Description":  "Remove all items from List",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ListShowHide",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ListShuffle",
+        "Description":  "Shuffle (randomize) List",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "LivePlayPause",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "LoopOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "LoopOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MarkIn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MarkOut",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MarkReset",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MarkResetIn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MarkResetOut",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MirrorOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MirrorOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MoveInput",
+        "Description":  "Value = Number",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "MoveLayer",
+        "Description":  "Move Layer in Input according to Value parameter.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eExample: 1,2 moves Layer1 to Layer2\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = FromIndex,ToIndex",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "NextItem",
+        "Description":  "Move to next item in List",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "NextPicture",
+        "Description":  "Move to Next Picture for Photo and PowerPoint Inputs",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "Pause",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "Play",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "PlayPause",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "PreviewInput",
+        "Description":  "Send to Preview the selected Input",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "PreviewInputNext",
+        "Description":  "Send to Preview the next Input",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "PreviewInputPrevious",
+        "Description":  "Send to Preview the previous Input",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "PreviousItem",
+        "Description":  "Move to previous item in List",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "PreviousPicture",
+        "Description":  "Move to Previous Picture for Photo and PowerPoint Inputs",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "RemoveInput",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "ResetInput",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "Restart",
+        "Description":  "Restart selected Input",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SaveVideoDelay",
+        "Description":  "Save video clip from Video Delay according to Duration in milliseconds",
+        "Parameters":  "Input,Duration"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SelectCategory",
+        "Description":  "Change to Category according to Value (All,Red,Green,Orange,Purple,Aqua,Blue,Search)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Category",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SelectIndex",
+        "Description":  "Photos,List: Selects item in List according to Value starting from number 1\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eVirtual Set: Zooms to selected preset using the current speed settings\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetAlpha",
+        "Description":  "Set Input transparency according to Value. 0 is transparent, 255 is opaque\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Alpha 0-255",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCGainB",
+        "Description":  "Change Gain R level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e1=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value 0-2",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCGainG",
+        "Description":  "Change Gain R level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e1=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value 0-2",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCGainR",
+        "Description":  "Change Gain R level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e1=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value 0-2",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCGainRGB",
+        "Description":  "Change Gain RGB level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e1=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value 0-2",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCGammaB",
+        "Description":  "Change Gamma B level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCGammaG",
+        "Description":  "Change Gamma G level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCGammaR",
+        "Description":  "Change Gamma R level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCGammaRGB",
+        "Description":  "Change Gamma RGB level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCHue",
+        "Description":  "Change Hue level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCLiftB",
+        "Description":  "Change Lift B level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCLiftG",
+        "Description":  "Change Lift G level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCLiftR",
+        "Description":  "Change Lift R level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCLiftRGB",
+        "Description":  "Change Lift RGB level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetCCSaturation",
+        "Description":  "Change Saturation level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=Original, -1=Greyscale\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -1-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetDynamicInput1",
+        "Description":  "Set Dynamic Input from Input Name or Number\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Input",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetDynamicInput2",
+        "Description":  "Set Dynamic Input from Input Name or Number\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Input",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetDynamicInput3",
+        "Description":  "Set Dynamic Input from Input Name or Number\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Input",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetDynamicInput4",
+        "Description":  "Set Dynamic Input from Input Name or Number\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Input",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetInputName",
+        "Description":  "Set the Display Name of the Input\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetLayer",
+        "Description":  "Change Layer in Input according to Value parameter.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eExample: 1,2 changes Layer1 to Input2\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index,Input",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetPanX",
+        "Description":  "Change current PanX value of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=centered, -2=100% to left, 2=100% to right\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -2-2",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetPanY",
+        "Description":  "Change current PanY value of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0=centered, -2=100% to bottom, 2=100% to top\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value -2-2",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetPictureEffect",
+        "Description":  "Set transition effect for Photos and PowerPoint Inputs (Fade, Zoom, etc)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Transition",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetPictureEffectDuration",
+        "Description":  "Set duration of transition effect in Milliseconds\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Duration MS",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetPictureTransition",
+        "Description":  "Set transition time between Photos and PowerPoint slides in Seconds\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Seconds",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetPosition",
+        "Description":  "Set Position of selected Input according to Value in Milliseconds\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Milliseconds",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetRate",
+        "Description":  "Set Playback speed/rate for Videos and Video Delays\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0.5=50%,1=100%,2=200% etc\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Speed 0.1-4",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetRateSlowMotion",
+        "Description":  "Set Slow Motion speed for Instant Replay\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e0.5=50%,1=100% etc\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SetZoom",
+        "Description":  "Change current Zoom level of Input.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003e1=100%, 0.5=50%, 2=200%\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Value 0-5",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SharpenOff",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "SharpenOn",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "VideoCallAudioSource",
+        "Description":  "Master,Headphones,BusA,BusB,BusC,BusD,BusE,BusF,BusG\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Source",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "VideoCallVideoSource",
+        "Description":  "Output1,Output2,Output3,Output4\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Source",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "VideoDelayStartRecording",
+        "Description":  "Start Video Delay Recording",
+        "Parameters":  "Input,Duration"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "VideoDelayStartStopRecording",
+        "Description":  "Toggle Video Delay Recording",
+        "Parameters":  "Input,Duration"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "VideoDelayStopRecording",
+        "Description":  "Stop Video Delay Recording",
+        "Parameters":  "Input,Duration"
+    },
+    {
+        "Category":  "Input",
+        "Name":  "WaitForCompletion",
+        "Description":  "Wait for a Video Input to reach the end of playback.",
+        "Parameters":  "Input,Duration"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "MoveMultiViewOverlay",
+        "Description":  "Move Overlay in Input MultiView according to Value parameter.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eExample: 1,2 moves Overlay1 to Overlay2\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = FromIndex,ToIndex",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "MultiViewOverlay",
+        "Description":  "Toggle On/Off MultiView Overlay For Input At Index (starting from 1)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "MultiViewOverlayOff",
+        "Description":  "Turn Off MultiView Overlay For Input At Index (starting from 1)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "MultiViewOverlayOn",
+        "Description":  "Turn On MultiView Overlay For Input At Index (starting from 1)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput1",
+        "Description":  "Toggle Overlay1 On/Off with selected Input using configured Transition",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput1In",
+        "Description":  "Transition Out to Overlay1 with selected Input",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput1Last",
+        "Description":  "Toggle Overlay1 On/Off with last used Input on this channel",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput1Off",
+        "Description":  "Immediately switch Overlay1 Off (Cut)",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput1Out",
+        "Description":  "Transition Out Overlay1",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput1Zoom",
+        "Description":  "Zooms PIP Overlay to fill Fullscreen and vice versa",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput2",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput2In",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput2Last",
+        "Description":  "Toggle Overlay2 On/Off with last used Input on this channel",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput2Off",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput2Out",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput2Zoom",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput3",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput3In",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput3Last",
+        "Description":  "Toggle Overlay3 On/Off with last used Input on this channel",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput3Off",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput3Out",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput3Zoom",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput4",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput4In",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput4Last",
+        "Description":  "Toggle Overlay4 On/Off with last used Input on this channel",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput4Off",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput4Out",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInput4Zoom",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "OverlayInputAllOff",
+        "Description":  "Immediately switch all Overlays Off",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "PreviewOverlayInput1",
+        "Description":  "Preview Overlay1 using the selected Input",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "PreviewOverlayInput2",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "PreviewOverlayInput3",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "PreviewOverlayInput4",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Overlay",
+        "Name":  "SetMultiViewOverlay",
+        "Description":  "Change Layer in Input MultiView according to Value parameter.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eExample: 1,2 changes Layer 1 to Input2\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index,Input",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PlayList",
+        "Name":  "NextPlayListEntry",
+        "Description":  "Move to Next Item in a running PlayList",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "PlayList",
+        "Name":  "PreviousPlayListEntry",
+        "Description":  "Move to Previous Item in a running PlayList",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "PlayList",
+        "Name":  "SelectPlayList",
+        "Description":  "Open PlayList with Name matching Value\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = PlayList",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "PlayList",
+        "Name":  "StartPlayList",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "PlayList",
+        "Name":  "StopPlayList",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Scripting",
+        "Name":  "ScriptStart",
+        "Description":  "Value = Script Name",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Scripting",
+        "Name":  "ScriptStartDynamic",
+        "Description":  "Start a dynamic script using code specified as the Value.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Code",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Scripting",
+        "Name":  "ScriptStop",
+        "Description":  "Value = Script Name",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Scripting",
+        "Name":  "ScriptStopAll",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Scripting",
+        "Name":  "ScriptStopDynamic",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayACamera1",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayACamera2",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayACamera3",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayACamera4",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayACamera5",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayACamera6",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayACamera7",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayACamera8",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayBCamera1",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayBCamera2",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayBCamera3",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayBCamera4",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayBCamera5",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayBCamera6",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayBCamera7",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayBCamera8",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCamera1",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCamera2",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCamera3",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCamera4",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCamera5",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCamera6",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCamera7",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCamera8",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayChangeDirection",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayChangeSpeed",
+        "Description":  "Value = Speed",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCopyLastEvent",
+        "Description":  "Value = Event List 0-19",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayCopySelectedEvent",
+        "Description":  "Value = Event List 0-19",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayDeleteLastEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayDeleteSelectedEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayDuplicateLastEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayDuplicateSelectedEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayExportLastEvent",
+        "Description":  "Value = Folder",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayFastBackward",
+        "Description":  "1-30x\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Speed",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayFastForward",
+        "Description":  "1-30x\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Speed",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayJumpFrames",
+        "Description":  "Value = Frames",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayJumpFramesFastOff",
+        "Description":  "ReplayJumpFrames jumps 1 frame for each value instead of 1 second.",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayJumpFramesFastOn",
+        "Description":  "ReplayJumpFrames jumps 1 second for each value instead of 1 frame.",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayJumpToNow",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayLastEventCameraOff",
+        "Description":  "Turns off the specified camera angle (1-8)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Camera",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayLastEventCameraOn",
+        "Description":  "Turns on the specified camera angle (1-8)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Camera",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayLastEventSingleCameraOn",
+        "Description":  "Turns on only the specified camera angle (1-8)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Camera",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayLive",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayLiveToggle",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkCancel",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkIn",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkInLive",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkInOut",
+        "Description":  "Number of previous seconds to use when creating a new event.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Seconds",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkInOutLive",
+        "Description":  "Number of previous seconds to use when creating a new event.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Seconds",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkInOutRecorded",
+        "Description":  "Number of previous seconds to use when creating a new event.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Seconds",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkInRecorded",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkInRecordedNow",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMarkOut",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMoveLastEvent",
+        "Description":  "Value = Event List 0-19",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMoveSelectedEvent",
+        "Description":  "Value = Event List 0-19",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMoveSelectedEventDown",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMoveSelectedEventUp",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMoveSelectedInPoint",
+        "Description":  "Value = Frames",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayMoveSelectedOutPoint",
+        "Description":  "Value = Frames",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPause",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlay",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayAllEvents",
+        "Description":  "Play all Events in active list",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayAllEventsToOutput",
+        "Description":  "Play all Events in active list",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayBackward",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayEvent",
+        "Description":  "Value = Event Number 0-1000",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayEventsByID",
+        "Description":  "Value = List of IDs",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayEventsByIDToOutput",
+        "Description":  "Value = List of IDs",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayEventToOutput",
+        "Description":  "Value = Event Number 0-1000",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayForward",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayLastEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayLastEventToOutput",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayNext",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayPause",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlayPrevious",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlaySelectedEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayPlaySelectedEventToOutput",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayRecorded",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectAllEvents",
+        "Description":  "Select all events in active channel.",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectChannelA",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectChannelAB",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectChannelB",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectedEventCameraOff",
+        "Description":  "Turns off the specified camera angle (1-8)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Camera",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectedEventCameraOn",
+        "Description":  "Turns on the specified camera angle (1-8)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Camera",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectedEventSingleCameraOn",
+        "Description":  "Turns on only the specified camera angle (1-8)\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Camera",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents1",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents10",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents11",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents12",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents13",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents14",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents15",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents16",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents17",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents18",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents19",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents2",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents20",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents3",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents4",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents5",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents6",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents7",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents8",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectEvents9",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectFirstEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectLastEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectNextEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySelectPreviousEvent",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySetAudioSource",
+        "Description":  "Name as per dropdown box. e.g \u0027Camera1\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = AudioSource",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySetDirectionBackward",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySetDirectionForward",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySetLastEventText",
+        "Description":  "Value = Text",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySetLastEventTextCamera",
+        "Description":  "Changes the text of the specified angle (1-4), example: 3,angle3text\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Camera,Text",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySetSelectedEventText",
+        "Description":  "Value = Text",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySetSelectedEventTextCamera",
+        "Description":  "Changes the text of the specified angle (1-4), example: 3,angle3text\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Camera,Text",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySetSpeed",
+        "Description":  "See SetRateSlowMotion\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Speed 0-1",
+        "Parameters":  "Value,Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayShowHide",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayStartRecording",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayStartStopRecording",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayStopEvents",
+        "Description":  "",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayStopRecording",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplaySwapChannels",
+        "Description":  "Swap A to B and vice versa, includes angles and playback status.",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleLastEventCamera1",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleLastEventCamera2",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleLastEventCamera3",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleLastEventCamera4",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleLastEventCamera5",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleLastEventCamera6",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleLastEventCamera7",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleLastEventCamera8",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleSelectedEventCamera1",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleSelectedEventCamera2",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleSelectedEventCamera3",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleSelectedEventCamera4",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleSelectedEventCamera5",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleSelectedEventCamera6",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleSelectedEventCamera7",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayToggleSelectedEventCamera8",
+        "Description":  "",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayUpdateSelectedInPoint",
+        "Description":  "Update In point of Selected Event to current Position.",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayUpdateSelectedOutPoint",
+        "Description":  "Update Mark Out point of Selected Event to current Position.",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayUpdateSelectedSpeed",
+        "Description":  "Update Selected Event to use Current Speed.",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "Replay",
+        "Name":  "ReplayUpdateSelectedSpeedDefault",
+        "Description":  "Update Selected Event to use Default Speed.",
+        "Parameters":  "Channel"
+    },
+    {
+        "Category":  "NDI",
+        "Name":  "NDICommand",
+        "Description":  "Send specified command to NDI source\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Command",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "NDI",
+        "Name":  "NDISelectSourceByIndex",
+        "Description":  "Value = Index 0-100",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "NDI",
+        "Name":  "NDISelectSourceByName",
+        "Description":  "Value = Name",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "NDI",
+        "Name":  "NDIStartRecording",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "NDI",
+        "Name":  "NDIStopRecording",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZCreateVirtualInput",
+        "Description":  "Creates a PTZ Virtual Input with the current Position",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZFocusAuto",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZFocusFar",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZFocusManual",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZFocusNear",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZFocusStop",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZHome",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveDown",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveDownLeft",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveDownRight",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveLeft",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveRight",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveStop",
+        "Description":  "Stop all PTZ movement",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveToVirtualInputPosition",
+        "Description":  "Moves to the Position of the PTZ Virtual Input without selecting it into Preview",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveToVirtualInputPositionByIndex",
+        "Description":  "Moves to the Position of the PTZ Virtual Input associated with this Input. Index is first Input found starting from 0\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Index 0-100",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveUp",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveUpLeft",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZMoveUpRight",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZUpdateVirtualInput",
+        "Description":  "Updates selected PTZ Virtual Input with current Position",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZZoomIn",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZZoomOut",
+        "Description":  "Value = Speed 0-1",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "PTZ",
+        "Name":  "PTZZoomStop",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Preset",
+        "Name":  "LastPreset",
+        "Description":  "Load the last preset.",
+        "Parameters":  "None"
+    },
+    {
+        "Category":  "Preset",
+        "Name":  "OpenPreset",
+        "Description":  "Load preset from the specified Filename.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Filename",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Preset",
+        "Name":  "SavePreset",
+        "Description":  "Save preset to the specified Filename.\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Filename",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourceAutoNextOff",
+        "Description":  "Name of the Data Source, Table Name (optional) eg \u0027Excel/CSV,Sheet1\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name,Table",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourceAutoNextOn",
+        "Description":  "Name of the Data Source, Table Name (optional) eg \u0027Excel/CSV,Sheet1\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name,Table",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourceAutoNextOnOff",
+        "Description":  "Name of the Data Source, Table Name (optional) eg \u0027Excel/CSV,Sheet1\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name,Table",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourceNextRow",
+        "Description":  "Name of the Data Source and Table Name (optional) eg \u0027Excel/CSV,Sheet1\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name,Table",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourcePause",
+        "Description":  "Name of Data Source eg \u0027Excel/CSV\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourcePlay",
+        "Description":  "Name of Data Source eg \u0027Excel/CSV\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourcePlayPause",
+        "Description":  "Name of Data Source eg \u0027Excel/CSV\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourcePreviousRow",
+        "Description":  "Name of the Data Source and Table Name (optional) eg \u0027Excel/CSV,Sheet1\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name,Table",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "DataSources",
+        "Name":  "DataSourceSelectRow",
+        "Description":  "Name of the Data Source, Table Name (optional) and Row Index starting from 0 eg \u0027Excel/CSV,Sheet1,5\u0027\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = Name,Table,Index",
+        "Parameters":  "Value"
+    },
+    {
+        "Category":  "Browser",
+        "Name":  "BrowserBack",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Browser",
+        "Name":  "BrowserForward",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Browser",
+        "Name":  "BrowserKeyboardDisabled",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Browser",
+        "Name":  "BrowserKeyboardEnabled",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Browser",
+        "Name":  "BrowserMouseDisabled",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Browser",
+        "Name":  "BrowserMouseEnabled",
+        "Description":  "",
+        "Parameters":  "Input"
+    },
+    {
+        "Category":  "Browser",
+        "Name":  "BrowserNavigate",
+        "Description":  "URL\u003cbr\u003e\u003cbr\u003e  \u003cbr\u003e\u003cbr\u003eValue = URL",
+        "Parameters":  "Value,Input"
+    },
+    {
+        "Category":  "Browser",
+        "Name":  "BrowserReload",
+        "Description":  "",
+        "Parameters":  "Input"
+    }
+]

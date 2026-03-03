@@ -24,5 +24,12 @@ public class HotkeyBindingData
     public int? TargetAttachPresetPage { get; set; }
     public int? TargetAttachPresetIndex { get; set; }
     public int? TargetAttachSlot { get; set; }
+    public string? TargetVmixFunctionCategory { get; set; }
+    public string? TargetVmixFunctionName { get; set; }
+    public string? TargetVmixValue { get; set; }
+    public int? TargetVmixInputNumber { get; set; }
+    public string? TargetVmixChannel { get; set; }
+    public string? TargetVmixDuration { get; set; }
+    public string? TargetVmixExtraQuery { get; set; }
     public string? DisplayName { get; set; }
 }
