@@ -38,7 +38,9 @@ public class MainDockFactory : Factory, IDisposable
     private readonly SettingsStorage _settingsStorage;
     private readonly AppSettingsData _storedSettings;
     private readonly HotkeyService _hotkeyService;
+    private readonly VmixApiClient _vmixApiClient;
     private readonly VmixReplayService _vmixReplayService;
+    private readonly VmixSettings _vmixSettings;
     private readonly VmixReplaySettings _vmixReplaySettings;
     private readonly GraphicsProfileStorage _graphicsProfileStorage;
     private readonly GraphicsService _graphicsService;
@@ -70,16 +72,20 @@ public class MainDockFactory : Factory, IDisposable
         _gsiServer = new GsiServer();
         _gsiServer.ConfigureRelayEndpoints(_storedSettings.GsiRelayUris);
         _radarConfigProvider = new RadarConfigProvider();
+        _vmixSettings = new VmixSettings
+        {
+            Host = _storedSettings.VmixReplayHost,
+            Port = _storedSettings.VmixReplayPort
+        };
         _vmixReplaySettings = new VmixReplaySettings
         {
             Enabled = _storedSettings.VmixReplayEnabled,
-            Host = _storedSettings.VmixReplayHost,
-            Port = _storedSettings.VmixReplayPort,
             PreSeconds = _storedSettings.VmixReplayPreSeconds,
             PostSeconds = _storedSettings.VmixReplayPostSeconds,
             ExtendWindowSeconds = _storedSettings.VmixReplayExtendWindowSeconds
         };
-        _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixReplaySettings);
+        _vmixApiClient = new VmixApiClient(_vmixSettings);
+        _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixApiClient, _vmixReplaySettings);
 
         _graphicsProfileStorage = new GraphicsProfileStorage();
         _producerClient = new GraphicsProducerClient(_storedSettings.WebSocketHost, _storedSettings.GraphicsProducerPort);
@@ -230,6 +236,7 @@ public class MainDockFactory : Factory, IDisposable
             _graphicsDockVm,
             ApplyNetworkSettingsAsync,
             _storedSettings,
+            _vmixSettings,
             _vmixReplaySettings,
             setFocusInputGateDisabled: disable => _rawInputHandler.CaptureOnlyWhenAppFocused = !disable,
             campathEditor: campathEditor,
@@ -518,6 +525,7 @@ public class MainDockFactory : Factory, IDisposable
         _webSocketClient.MessageReceived -= OnHlaeMessage;
         _webSocketClient.Dispose();
         _producerClient.Dispose();
+        _vmixApiClient.Dispose();
 
         _videoDisplayVm?.Dispose();
         _vmixReplayService.Dispose();

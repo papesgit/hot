@@ -158,9 +158,9 @@
                                   ColumnSpacing="8"
                                   RowSpacing="6">
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Host" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="120" MinWidth="100" Text="{Binding VmixReplaySettings.Host, Mode=TwoWay}" />
+                                <TextBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="120" MinWidth="100" Text="{Binding VmixSettings.Host, Mode=TwoWay}" />
                                 <TextBlock Grid.Row="0" Grid.Column="2" HorizontalAlignment="Left" Text="Port" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.Port, Mode=TwoWay}" />
+                                <TextBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixSettings.Port, Mode=TwoWay}" />
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Pre-roll (s)" Foreground="#AAAAAA"/>
                                 <TextBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.PreSeconds, Mode=TwoWay}" />

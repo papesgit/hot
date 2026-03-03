@@ -1,7 +1,6 @@
 using System;
 using System.Globalization;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +17,7 @@ public sealed class VmixReplayService : IDisposable
 {
     private readonly HlaeWebSocketClient _webSocketClient;
     private readonly GsiServer _gsiServer;
-    private readonly HttpClient _httpClient;
+    private readonly VmixApiClient _vmixApiClient;
     private readonly VmixReplaySettings _settings;
     private readonly object _sync = new();
     private readonly Dictionary<(int Round, string Player), int> _roundKillCounts = new();
@@ -42,14 +41,14 @@ public sealed class VmixReplayService : IDisposable
     private const string FunctionUpdateOut = "ReplayUpdateSelectedOutPoint";
     private const string FunctionSetText = "ReplaySetLastEventText";
 
-    private readonly record struct VmixConfig(bool Enabled, string Host, int Port, double PreSeconds, double PostSeconds, double ExtendWindowSeconds);
+    private readonly record struct VmixConfig(bool Enabled, double PreSeconds, double PostSeconds, double ExtendWindowSeconds);
     private readonly record struct EventKill(string PlayerName, int RoundKillNumber);
 
-    public VmixReplayService(HlaeWebSocketClient webSocketClient, GsiServer gsiServer, VmixReplaySettings settings)
+    public VmixReplayService(HlaeWebSocketClient webSocketClient, GsiServer gsiServer, VmixApiClient vmixApiClient, VmixReplaySettings settings)
     {
         _webSocketClient = webSocketClient;
         _gsiServer = gsiServer;
-        _httpClient = new HttpClient();
+        _vmixApiClient = vmixApiClient;
         _settings = settings;
 
         _webSocketClient.MessageReceived += OnWebSocketMessage;
@@ -252,9 +251,8 @@ public sealed class VmixReplayService : IDisposable
             valueSeconds = config.PreSeconds + config.PostSeconds;
         }
 
-        var uri = BuildFunctionUri(FunctionMark, Math.Ceiling(valueSeconds).ToString(CultureInfo.InvariantCulture), config);
         Console.WriteLine($"[VMIX] Marking replay: in ~{valueSeconds:F1}s before now (first kill {firstKill:O}, last kill {lastKill:O})");
-        await SafeGetAsync(uri, token, "ReplayMarkInOutLive").ConfigureAwait(false);
+        await SafeExecuteAsync(FunctionMark, Math.Ceiling(valueSeconds).ToString(CultureInfo.InvariantCulture), token, "ReplayMarkInOutLive").ConfigureAwait(false);
 
         lock (_sync)
         {
@@ -262,7 +260,7 @@ public sealed class VmixReplayService : IDisposable
             _markCts = null;
         }
 
-        await ApplyLabelAsync(token, config).ConfigureAwait(false);
+        await ApplyLabelAsync(token).ConfigureAwait(false);
     }
 
     private void ScheduleExtend(VmixConfig config)
@@ -279,15 +277,15 @@ public sealed class VmixReplayService : IDisposable
             try
             {
                 Console.WriteLine("[VMIX] Selecting last replay event for extension");
-                await SafeGetAsync(BuildFunctionUri(FunctionSelectLast, null, config), cts.Token, "ReplaySelectLastEvent").ConfigureAwait(false);
+                await SafeExecuteAsync(FunctionSelectLast, null, cts.Token, "ReplaySelectLastEvent").ConfigureAwait(false);
                 await Task.Delay(delay, cts.Token).ConfigureAwait(false);
                 Console.WriteLine("[VMIX] Jumping replay to live before extending");
-                await SafeGetAsync(BuildFunctionUri(FunctionJumpToNow, null, config), cts.Token, "ReplayJumpToNow").ConfigureAwait(false);
+                await SafeExecuteAsync(FunctionJumpToNow, null, cts.Token, "ReplayJumpToNow").ConfigureAwait(false);
                 // Give vMix a brief moment to apply the jump before updating out point
                 await Task.Delay(200, cts.Token).ConfigureAwait(false);
                 Console.WriteLine($"[VMIX] Extending last replay out point (new out at {DateTimeOffset.UtcNow:O})");
-                await SafeGetAsync(BuildFunctionUri(FunctionUpdateOut, null, config), cts.Token, "ReplayUpdateSelectedOutPoint").ConfigureAwait(false);
-                await ApplyLabelAsync(cts.Token, config).ConfigureAwait(false);
+                await SafeExecuteAsync(FunctionUpdateOut, null, cts.Token, "ReplayUpdateSelectedOutPoint").ConfigureAwait(false);
+                await ApplyLabelAsync(cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -363,36 +361,14 @@ public sealed class VmixReplayService : IDisposable
 
     private VmixConfig SnapshotSettings()
     {
-        var host = _settings.Host;
-        if (string.IsNullOrWhiteSpace(host))
-        {
-            host = "127.0.0.1";
-        }
-
-        var port = _settings.Port <= 0 ? 8088 : _settings.Port;
         var pre = Math.Max(0, _settings.PreSeconds);
         var post = Math.Max(0, _settings.PostSeconds);
         var extend = Math.Max(0, _settings.ExtendWindowSeconds);
 
-        return new VmixConfig(_settings.Enabled, host, port, pre, post, extend);
+        return new VmixConfig(_settings.Enabled, pre, post, extend);
     }
 
-    private Uri BuildFunctionUri(string function, string? value, VmixConfig config)
-    {
-        var baseUri = $"http://{config.Host}:{config.Port}/api/?Function={function}";
-        if (!string.IsNullOrWhiteSpace(value))
-        {
-            baseUri += $"&Value={value}";
-        }
-        return new Uri(baseUri);
-    }
-
-    private Uri BuildSetTextUri(string label, VmixConfig config)
-    {
-        return BuildFunctionUri(FunctionSetText, Uri.EscapeDataString(label), config);
-    }
-
-    private async Task ApplyLabelAsync(CancellationToken token, VmixConfig config)
+    private async Task ApplyLabelAsync(CancellationToken token)
     {
         string? label;
         lock (_sync)
@@ -405,8 +381,8 @@ public sealed class VmixReplayService : IDisposable
 
         try
         {
-            await SafeGetAsync(BuildFunctionUri(FunctionSelectLast, null, config), token, "ReplaySelectLastEvent (label)").ConfigureAwait(false);
-            await SafeGetAsync(BuildSetTextUri(label, config), token, "ReplaySetLastEventText").ConfigureAwait(false);
+            await SafeExecuteAsync(FunctionSelectLast, null, token, "ReplaySelectLastEvent (label)").ConfigureAwait(false);
+            await SafeExecuteAsync(FunctionSetText, label, token, "ReplaySetLastEventText").ConfigureAwait(false);
             Console.WriteLine($"[VMIX] Labeled replay event: {label}");
         }
         catch (OperationCanceledException)
@@ -415,21 +391,9 @@ public sealed class VmixReplayService : IDisposable
         }
     }
 
-    private async Task SafeGetAsync(Uri uri, CancellationToken token, string? label = null)
+    private Task SafeExecuteAsync(string function, string? value, CancellationToken token, string? label = null)
     {
-        try
-        {
-            using var response = await _httpClient.GetAsync(uri, token).ConfigureAwait(false);
-            _ = response.EnsureSuccessStatusCode();
-        }
-        catch
-        {
-            // swallow errors to avoid disrupting observer flow
-            if (!token.IsCancellationRequested)
-            {
-                Console.WriteLine($"[VMIX] Request failed: {(label ?? uri.ToString())}");
-            }
-        }
+        return _vmixApiClient.ExecuteFunctionAsync(function, value, token, label);
     }
 
     public void Dispose()
@@ -442,6 +406,5 @@ public sealed class VmixReplayService : IDisposable
 
         _markCts?.Cancel();
         _extendCts?.Cancel();
-        _httpClient.Dispose();
     }
 }
