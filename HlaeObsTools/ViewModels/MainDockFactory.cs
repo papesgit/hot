@@ -502,6 +502,21 @@ public class MainDockFactory : Factory, IDisposable
         if (_disposed)
             return;
 
+        // Stop shared texture renderer before service teardown.
+        if (_videoDisplayVm != null)
+        {
+            try
+            {
+                _videoDisplayVm.UseD3DHost = false;
+            }
+            catch
+            {
+                // Ignore shutdown ordering races.
+            }
+            _videoDisplayVm.Dispose();
+            _videoDisplayVm = null;
+        }
+
         // Stop periodic flushing before disposing input resources
         try
         {
@@ -528,8 +543,6 @@ public class MainDockFactory : Factory, IDisposable
         _webSocketClient.Dispose();
         _producerClient.Dispose();
         _vmixApiClient.Dispose();
-
-        _videoDisplayVm?.Dispose();
         _vmixReplayService.Dispose();
         _graphicsDockVm?.Dispose();
         _graphicsService.Dispose();

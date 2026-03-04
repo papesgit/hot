@@ -27,6 +27,9 @@ namespace HlaeObsTools.Controls;
 /// </summary>
 public class D3DSharedTextureHost : NativeControlHost
 {
+    private const int KeyedMutexAcquireTimeoutMs = 200;
+    private const int DxgiErrorWaitTimeout = unchecked((int)0x887A0027);
+
     public event EventHandler? RightButtonDown;
     public event EventHandler? RightButtonUp;
 
@@ -103,7 +106,7 @@ public class D3DSharedTextureHost : NativeControlHost
     public void StopRenderer()
     {
         _cts?.Cancel();
-        try { _renderLoop?.Wait(100); } catch { /* ignore */ }
+        try { _renderLoop?.Wait(); } catch { /* ignore */ }
         _cts?.Dispose();
         _cts = null;
         _renderLoop = null;
@@ -209,12 +212,13 @@ public class D3DSharedTextureHost : NativeControlHost
                         {
                             _loggedFallback = false;
                             bool acquired = true;
+                            bool waitTimedOut = false;
                             bool locked = false;
                             try
                             {
                                 if (_sharedKeyedMutex != null)
                                 {
-                                    _sharedKeyedMutex.AcquireSync(1, 3000);
+                                    _sharedKeyedMutex.AcquireSync(1, KeyedMutexAcquireTimeoutMs);
                                     locked = true;
                                 }
 
@@ -223,7 +227,11 @@ public class D3DSharedTextureHost : NativeControlHost
                             catch (SharpGen.Runtime.SharpGenException ex)
                             {
                                 acquired = false;
-                                Log($"CopyResource/Acquire failed: {ex.ResultCode.Code}");
+                                waitTimedOut = ex.ResultCode.Code == DxgiErrorWaitTimeout;
+                                if (!waitTimedOut)
+                                {
+                                    Log($"CopyResource/Acquire failed: {ex.ResultCode.Code}");
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -241,6 +249,10 @@ public class D3DSharedTextureHost : NativeControlHost
                             if (!acquired && token.IsCancellationRequested)
                             {
                                 break;
+                            }
+                            else if (!acquired && waitTimedOut)
+                            {
+                                continue;
                             }
                             else if (!acquired)
                             {
