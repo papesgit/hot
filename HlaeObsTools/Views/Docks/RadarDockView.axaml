@@ -190,6 +190,15 @@
                       <RotateTransform Angle="{Binding Rotation}" CenterX="4" CenterY="6" />
                     </Path.RenderTransform>
                   </Path>
+                  <Path Data="M 8,22 L 14,22 M 22,22 L 28,22 M 18,4 L 18,18 M 18,26 L 18,32"
+                        IsVisible="{Binding IsSniperEquipped}"
+                        Stroke="{Binding ActualBorder}"
+                        StrokeThickness="1.6"
+                        StrokeLineCap="Round" >
+                    <Path.RenderTransform>
+                      <RotateTransform Angle="{Binding Rotation}" CenterX="4" CenterY="6" />
+                    </Path.RenderTransform>
+                  </Path>
                   <TextBlock Text="{Binding DisplayNumber}"
                              Canvas.Left="10"
                              Canvas.Top="14"

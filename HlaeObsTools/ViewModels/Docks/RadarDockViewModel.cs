@@ -34,6 +34,7 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     private double _baseScale = 1.0;
     private double _heightScale = 1.0;
     private bool _isShooting;
+    private bool _isSniperEquipped;
     private DateTime _shootingExpiryTime;
     private bool _useAltBindings;
     private string? _activeGrenadeIconPath;
@@ -210,6 +211,12 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     {
         get => _isShooting;
         set => SetProperty(ref _isShooting, value);
+    }
+
+    public bool IsSniperEquipped
+    {
+        get => _isSniperEquipped;
+        set => SetProperty(ref _isSniperEquipped, value);
     }
 
     public DateTime ShootingExpiryTime
@@ -679,6 +686,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 var activeWeapon = p.Weapons.FirstOrDefault(w =>
                     w.State.Equals("active", StringComparison.OrdinalIgnoreCase));
                 var activeGrenadeIcon = GetActiveGrenadeIconPath(p.Weapons);
+                var hasSniperEquipped = HasSniperEquipped(p.Weapons);
 
                 if (!_playerMarkers.TryGetValue(p.SteamId, out var vm))
                 {
@@ -700,6 +708,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 vm.Level = level;
                 vm.UseAltBindings = _settings.UseAltPlayerBinds;
                 vm.ActiveGrenadeIconPath = activeGrenadeIcon;
+                vm.IsSniperEquipped = hasSniperEquipped;
                 vm.Altitude = p.Position.Z;
                 vm.SetHeightScale(ResolveHeightScale(state.MapName, p.Position.Z, level));
                 vm.SetBaseScale(_settings.MarkerScale);
@@ -1085,6 +1094,35 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         };
 
         return iconName == null ? null : $"avares://HlaeObsTools/Assets/hud/weapons/{iconName}.svg";
+    }
+
+    private static bool HasSniperEquipped(IReadOnlyList<GsiWeapon> weapons)
+    {
+        if (weapons == null || weapons.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var weapon in weapons)
+        {
+            if (string.IsNullOrWhiteSpace(weapon.Name))
+            {
+                continue;
+            }
+
+            var normalized = weapon.Name.Trim().ToLowerInvariant();
+            if (normalized.StartsWith("weapon_", StringComparison.Ordinal))
+            {
+                normalized = normalized.Substring("weapon_".Length);
+            }
+
+            if (normalized == "awp" || normalized == "ssg08")
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void LoadRadarResources(string mapName)
