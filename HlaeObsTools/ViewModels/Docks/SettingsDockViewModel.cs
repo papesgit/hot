@@ -304,9 +304,6 @@ namespace HlaeObsTools.ViewModels.Docks
 
             LoadAttachPresets();
             RefreshAttachHotkeys();
-            SendAltPlayerBindsMode();
-            if (_ws?.IsConnected == true)
-                _ = SendAllFreecamConfigAsync();
             _radarSettings.PropertyChanged += OnRadarSettingsChanged;
             _hudSettings.PropertyChanged += OnHudSettingsChanged;
             _viewport3DSettings.PropertyChanged += OnViewport3DSettingsChanged;

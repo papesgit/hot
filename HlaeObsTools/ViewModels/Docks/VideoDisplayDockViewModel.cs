@@ -175,11 +175,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         _speedWebSocketClient.MessageReceived += OnWebSocketMessage;
         _speedWebSocketClient.Connected -= OnWebSocketConnected;
         _speedWebSocketClient.Connected += OnWebSocketConnected;
-
-        if (_speedWebSocketClient.IsConnected)
-        {
-            _ = RequestSharedTextureHandleAsync();
-        }
     }
 
     /// <summary>

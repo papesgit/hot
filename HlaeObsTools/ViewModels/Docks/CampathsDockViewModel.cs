@@ -305,12 +305,10 @@ public class CampathsDockViewModel : Tool
         if (_webSocketClient != null)
         {
             _webSocketClient.MessageReceived -= OnWebSocketMessage;
-            _webSocketClient.Connected -= OnWebSocketConnected;
         }
 
         _webSocketClient = client;
         _webSocketClient.MessageReceived += OnWebSocketMessage;
-        _webSocketClient.Connected += OnWebSocketConnected;
     }
 
     public void RemoveCampath(CampathItemViewModel? item)
@@ -436,20 +434,6 @@ public class CampathsDockViewModel : Tool
         {
             // ignore malformed
         }
-    }
-
-    private void OnWebSocketConnected(object? sender, EventArgs e)
-    {
-        _ = RequestSharedTextureHandleAsync();
-    }
-
-    private Task RequestSharedTextureHandleAsync()
-    {
-        if (_webSocketClient == null || !_webSocketClient.IsConnected)
-            return Task.CompletedTask;
-
-        int pid = Process.GetCurrentProcess().Id;
-        return _webSocketClient.SendCommandAsync("sharedtex_register", new { pid });
     }
 
     private void UpdateCampathImage(CampathItemViewModel item, string imagePath)
