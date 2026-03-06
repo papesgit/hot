@@ -150,22 +150,33 @@ public class D3DSharedTextureHost : NativeControlHost
 
     public void SetSharedTextureHandle(IntPtr handle)
     {
-        if (handle == _sharedHandle)
-            return;
-
-        if (_sharedHandle != IntPtr.Zero)
+        var deviceLock = _deviceLock;
+        if (deviceLock != null)
+            Monitor.Enter(deviceLock);
+        try
         {
-            _sharedHandle = IntPtr.Zero;
+            if (handle == _sharedHandle)
+                return;
+
+            if (_sharedHandle != IntPtr.Zero)
+            {
+                _sharedHandle = IntPtr.Zero;
+            }
+
+            _sharedHandle = handle;
+            _sharedHandleInvalidNotified = false;
+
+            _sharedKeyedMutex?.Release();
+            _sharedKeyedMutex = null;
+            _sharedTexture?.Release();
+            _sharedTexture = null;
+            _texAspect = 0;
         }
-
-        _sharedHandle = handle;
-        _sharedHandleInvalidNotified = false;
-
-        _sharedKeyedMutex?.Release();
-        _sharedKeyedMutex = null;
-        _sharedTexture?.Release();
-        _sharedTexture = null;
-        _texAspect = 0;
+        finally
+        {
+            if (deviceLock != null)
+                Monitor.Exit(deviceLock);
+        }
     }
 
     private void RenderLoop(CancellationToken token)
@@ -214,15 +225,20 @@ public class D3DSharedTextureHost : NativeControlHost
                             bool acquired = true;
                             bool waitTimedOut = false;
                             bool locked = false;
+                            var sharedTexture = _sharedTexture;
+                            var sharedKeyedMutex = _sharedKeyedMutex;
                             try
                             {
-                                if (_sharedKeyedMutex != null)
+                                if (sharedKeyedMutex != null)
                                 {
-                                    _sharedKeyedMutex.AcquireSync(1, KeyedMutexAcquireTimeoutMs);
+                                    sharedKeyedMutex.AcquireSync(1, KeyedMutexAcquireTimeoutMs);
                                     locked = true;
                                 }
 
-                                _context.CopyResource(backBuffer, _sharedTexture);
+                                if (sharedTexture != null)
+                                {
+                                    _context.CopyResource(backBuffer, sharedTexture);
+                                }
                             }
                             catch (SharpGen.Runtime.SharpGenException ex)
                             {
@@ -240,9 +256,9 @@ public class D3DSharedTextureHost : NativeControlHost
                             }
                             finally
                             {
-                                if (locked && _sharedKeyedMutex != null)
+                                if (locked && sharedKeyedMutex != null)
                                 {
-                                    try { _sharedKeyedMutex.ReleaseSync(0); } catch { /* ignore */ }
+                                    try { sharedKeyedMutex.ReleaseSync(0); } catch { /* ignore */ }
                                 }
                             }
 
