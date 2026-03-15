@@ -9,7 +9,7 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        var host = "127.0.0.1";
+        var host = "*";
         var port = 31340;
         for (var i = 0; i < args.Length - 1; i++)
         {
@@ -37,27 +37,21 @@ public static class Program
 
     private static void RunServerSta(string host, int port, TaskCompletionSource<bool> exitTcs)
     {
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         ProducerServer? server = null;
-        Console.TreatControlCAsInput = true;
-        _ = Task.Run(async () =>
+        ConsoleCancelEventHandler? cancelHandler = null;
+        var stopping = 0;
+        cancelHandler = (_, eventArgs) =>
         {
-            while (!cts.Token.IsCancellationRequested)
-            {
-                if (Console.KeyAvailable)
-                {
-                    var key = Console.ReadKey(intercept: true);
-                    if (key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control))
-                    {
-                        Console.WriteLine("Stopping...");
-                        server?.Stop();
-                        cts.Cancel();
-                        break;
-                    }
-                }
-                await Task.Delay(50, cts.Token);
-            }
-        }, cts.Token);
+            eventArgs.Cancel = true;
+            if (Interlocked.Exchange(ref stopping, 1) != 0)
+                return;
+
+            Console.WriteLine("Stopping...");
+            cts.Cancel();
+            server?.Stop();
+        };
+        Console.CancelKeyPress += cancelHandler;
 
         try
         {
@@ -66,10 +60,21 @@ public static class Program
             localServer.Initialize();
             Console.WriteLine($"GfxProducerService listening on ws://{host}:{port}/gfxp/");
             Console.WriteLine("Press Ctrl+C to stop.");
-            localServer.StartAsync(cts.Token).GetAwaiter().GetResult();
+            try
+            {
+                localServer.StartAsync(cts.Token).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException) when (cts.IsCancellationRequested)
+            {
+                // expected during shutdown
+            }
         }
         finally
         {
+            if (cancelHandler != null)
+            {
+                Console.CancelKeyPress -= cancelHandler;
+            }
             server = null;
             exitTcs.TrySetResult(true);
         }

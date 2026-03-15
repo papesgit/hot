@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Hosting;
 
 namespace GfxProducerService.Server;
@@ -18,6 +20,7 @@ public sealed class ProducerServer : IDisposable
     private readonly string _host;
     private readonly int _port;
     private readonly AtlasManager _atlasManager = new();
+    private readonly CancellationTokenSource _shutdownCts = new();
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -25,6 +28,7 @@ public sealed class ProducerServer : IDisposable
     private WebApplication? _app;
     private readonly object _socketLock = new();
     private readonly HashSet<WebSocket> _sockets = new();
+    private int _stopRequested;
 
     public ProducerServer(string host, int port)
     {
@@ -40,10 +44,10 @@ public sealed class ProducerServer : IDisposable
 
     public async Task StartAsync(CancellationToken token)
     {
-        using var reg = token.Register(() => Stop());
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _shutdownCts.Token);
+        var shutdownToken = linkedCts.Token;
         var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseKestrel();
-        builder.WebHost.UseUrls($"http://{_host}:{_port}");
+        builder.WebHost.UseKestrel(ConfigureKestrel);
         var app = builder.Build();
         _app = app;
 
@@ -68,7 +72,11 @@ public sealed class ProducerServer : IDisposable
                 {
                     _sockets.Add(socket);
                 }
-                await ReceiveLoopAsync(socket, token);
+                await ReceiveLoopAsync(socket, shutdownToken);
+            }
+            catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)
+            {
+                // expected during shutdown
             }
             catch (Exception ex)
             {
@@ -96,8 +104,19 @@ public sealed class ProducerServer : IDisposable
             }
         });
 
-        await app.StartAsync(token);
-        await app.WaitForShutdownAsync(token);
+        try
+        {
+            await app.StartAsync(shutdownToken);
+            await app.WaitForShutdownAsync(shutdownToken);
+        }
+        catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)
+        {
+            // expected during shutdown
+        }
+        finally
+        {
+            await StopAppAsync(app);
+        }
     }
 
     private async Task ReceiveLoopAsync(WebSocket socket, CancellationToken token)
@@ -398,8 +417,15 @@ public sealed class ProducerServer : IDisposable
 
     public void Stop()
     {
+        if (Interlocked.Exchange(ref _stopRequested, 1) != 0)
+            return;
+
+        _shutdownCts.Cancel();
+        AbortSockets();
+
         if (_app == null)
             return;
+
         try
         {
             _app.StopAsync().GetAwaiter().GetResult();
@@ -426,6 +452,7 @@ public sealed class ProducerServer : IDisposable
         }
         _atlasManager.TriggerCompleted -= OnTriggerCompleted;
         _atlasManager.Dispose();
+        _shutdownCts.Dispose();
     }
 
     private static string NormalizeHost(string host)
@@ -435,5 +462,68 @@ public sealed class ProducerServer : IDisposable
         if (host == "*" || host == "+")
             return "0.0.0.0";
         return host;
+    }
+
+    private void ConfigureKestrel(KestrelServerOptions options)
+    {
+        if (IPAddress.TryParse(_host, out var ipAddress))
+        {
+            if (IPAddress.Any.Equals(ipAddress) || IPAddress.IPv6Any.Equals(ipAddress))
+            {
+                options.ListenAnyIP(_port);
+                return;
+            }
+
+            if (IPAddress.Loopback.Equals(ipAddress) || IPAddress.IPv6Loopback.Equals(ipAddress))
+            {
+                options.ListenLocalhost(_port);
+                return;
+            }
+
+            options.Listen(ipAddress, _port);
+            return;
+        }
+
+        if (string.Equals(_host, "localhost", StringComparison.OrdinalIgnoreCase))
+        {
+            options.ListenLocalhost(_port);
+            return;
+        }
+
+        options.ListenAnyIP(_port);
+    }
+
+    private void AbortSockets()
+    {
+        WebSocket[] sockets;
+        lock (_socketLock)
+        {
+            sockets = _sockets.ToArray();
+        }
+
+        foreach (var socket in sockets)
+        {
+            try
+            {
+                // Force active requests to unwind so Kestrel shutdown is not blocked by open WebSockets.
+                socket.Abort();
+            }
+            catch
+            {
+                // ignore shutdown errors
+            }
+        }
+    }
+
+    private static async Task StopAppAsync(WebApplication app)
+    {
+        try
+        {
+            await app.StopAsync();
+        }
+        catch
+        {
+            // ignore shutdown errors
+        }
     }
 }
