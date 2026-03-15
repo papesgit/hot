@@ -296,6 +296,35 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
+          <!-- HE / flash detonation indicators -->
+          <ItemsControl ItemsSource="{Binding Detonations}"
+                        Width="1024"
+                        Height="1024"
+                        IsHitTestVisible="False"
+                        x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding CanvasX}" />
+                <Setter Property="Canvas.Top" Value="{Binding CanvasY}" />
+                <Setter Property="Opacity" Value="{Binding Opacity}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RadarDetonationViewModel">
+                <Ellipse Width="60"
+                         Height="60"
+                         Canvas.Left="-24"
+                         Canvas.Top="-24"
+                         Fill="{Binding Fill}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
           <!-- Flames (for inferno grenades) -->
           <ItemsControl ItemsSource="{Binding Flames}"
                         Width="1024"

@@ -581,6 +581,9 @@ public sealed class RadarGrenadeViewModel : ViewModelBase
         set => SetProperty(ref _canvasY, value);
     }
 
+    public double CurrentSampleCanvasX => _currentCanvasX;
+    public double CurrentSampleCanvasY => _currentCanvasY;
+
     public void Update(string type, string iconPath, Vec3 position, bool isDetonated, double smokeProgress)
     {
         Type = type;
@@ -641,6 +644,48 @@ public sealed class RadarGrenadeViewModel : ViewModelBase
     }
 }
 
+public sealed class RadarDetonationViewModel : ViewModelBase
+{
+    private double _canvasX;
+    private double _canvasY;
+    private double _opacity = 1.0;
+    private IBrush _fill;
+
+    public RadarDetonationViewModel(double canvasX, double canvasY, IBrush fill, DateTime expiresAtUtc)
+    {
+        _canvasX = canvasX;
+        _canvasY = canvasY;
+        _fill = fill;
+        ExpiresAtUtc = expiresAtUtc;
+    }
+
+    public double CanvasX
+    {
+        get => _canvasX;
+        set => SetProperty(ref _canvasX, value);
+    }
+
+    public double CanvasY
+    {
+        get => _canvasY;
+        set => SetProperty(ref _canvasY, value);
+    }
+
+    public double Opacity
+    {
+        get => _opacity;
+        set => SetProperty(ref _opacity, value);
+    }
+
+    public IBrush Fill
+    {
+        get => _fill;
+        set => SetProperty(ref _fill, value);
+    }
+
+    public DateTime ExpiresAtUtc { get; }
+}
+
 public sealed class RadarBombViewModel : ViewModelBase
 {
     private double _canvasX;
@@ -681,6 +726,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private const double DefaultInterpolationDelaySeconds = 0.1;
     private const double MaxInterpolationDelaySeconds = 0.25;
     private const double TeleportSnapDistancePixels = 160.0;
+    private const double DetonationDurationSeconds = 0.5;
     private readonly GsiServer _gsiServer;
     private readonly RadarConfigProvider _configProvider;
     private readonly RadarProjector _projector;
@@ -717,6 +763,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     public ObservableCollection<RadarPlayerViewModel> Players { get; } = new();
     public ObservableCollection<RadarDeadPlayerViewModel> DeadPlayers { get; } = new();
     public ObservableCollection<RadarGrenadeViewModel> Grenades { get; } = new();
+    public ObservableCollection<RadarDetonationViewModel> Detonations { get; } = new();
     public ObservableCollection<FlameViewModel> Flames { get; } = new();
     public ObservableCollection<RadarBombViewModel> Bombs { get; } = new();
     public ObservableCollection<CampathPathViewModel> CampathPaths { get; } = new();
@@ -816,6 +863,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             _playerMarkers.Clear();
             DeadPlayers.Clear();
             Grenades.Clear();
+            Detonations.Clear();
             CampathPaths.Clear();
             ClearCampathHover();
             _deadPlayerMarkers.Clear();
@@ -837,6 +885,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             _playerMarkers.Clear();
             DeadPlayers.Clear();
             Grenades.Clear();
+            Detonations.Clear();
             _deadPlayerMarkers.Clear();
             _grenadeMarkers.Clear();
             _lastAlivePositions.Clear();
@@ -1202,6 +1251,11 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             .ToList();
         foreach (var key in grenadeKeysToRemove)
         {
+            if (!mapChanged && _grenadeMarkers.TryGetValue(key, out var removedVm))
+            {
+                TryAddDetonationEffect(removedVm, nowUtc);
+            }
+
             _grenadeMarkers.Remove(key);
         }
 
@@ -1249,6 +1303,19 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         foreach (var grenade in Grenades)
         {
             grenade.AdvanceInterpolation(nowUtc, _interpolationDelaySeconds);
+        }
+
+        for (int i = Detonations.Count - 1; i >= 0; i--)
+        {
+            var detonation = Detonations[i];
+            var remainingSeconds = (detonation.ExpiresAtUtc - nowUtc).TotalSeconds;
+            if (remainingSeconds <= 0)
+            {
+                Detonations.RemoveAt(i);
+                continue;
+            }
+
+            detonation.Opacity = Math.Clamp(remainingSeconds / DetonationDurationSeconds, 0.0, 1.0);
         }
     }
 
@@ -1857,6 +1924,42 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private static string GetSmokeKey(GsiGrenade grenade)
     {
         return grenade.Id;
+    }
+
+    private void TryAddDetonationEffect(RadarGrenadeViewModel grenadeVm, DateTime nowUtc)
+    {
+        IBrush? fill = grenadeVm.Type switch
+        {
+            "flashbang" => CreateDetonationBrush(Color.Parse("#F5F5F5")),
+            "frag" => CreateDetonationBrush(Color.Parse("#FF5353")),
+            _ => null
+        };
+
+        if (fill == null)
+            return;
+
+        Detonations.Add(new RadarDetonationViewModel(
+            grenadeVm.CurrentSampleCanvasX - 18.0,
+            grenadeVm.CurrentSampleCanvasY - 18.0,
+            fill,
+            nowUtc.AddSeconds(DetonationDurationSeconds)));
+    }
+
+    private static IBrush CreateDetonationBrush(Color color)
+    {
+        return new RadialGradientBrush
+        {
+            Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+            GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+            RadiusX = new RelativeScalar(0.5, RelativeUnit.Relative),
+            RadiusY = new RelativeScalar(0.5, RelativeUnit.Relative),
+            GradientStops = new GradientStops
+            {
+                new GradientStop(color, 0.0),
+                new GradientStop(Color.FromArgb((byte)(color.A * 0.7), color.R, color.G, color.B), 0.45),
+                new GradientStop(Color.FromArgb(0, color.R, color.G, color.B), 1.0)
+            }
+        };
     }
 
 
