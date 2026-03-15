@@ -274,6 +274,7 @@ public partial class VideoDisplayDockView : UserControl
     {
         if (DataContext is VideoDisplayDockViewModel vm && (vm.UseD3DHost || (!vm.UseD3DHost && vm.IsStreaming)))
         {
+            StatusBar.Focus();
             _isRightButtonDown = true;
             BeginFreecam();
         }

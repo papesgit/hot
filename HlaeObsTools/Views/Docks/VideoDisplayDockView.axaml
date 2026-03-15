@@ -81,7 +81,7 @@
         </Grid>
 
         <!-- No signal overlay -->
-        <Border Grid.Row="0"
+        <Border Grid.Row="0" Focusable="True"
                 x:Name="NoSignalOverlay"
                 Background="#1A1A1A"
                 IsVisible="{Binding ShowNoSignal}"
@@ -102,7 +102,7 @@
         </Border>
 
         <!-- Status bar -->
-        <Border Grid.Row="1" Background="#2D2D30" Padding="8,4">
+        <Border Grid.Row="1" Background="#2D2D30" Padding="8,4" Focusable="True" x:Name="StatusBar">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

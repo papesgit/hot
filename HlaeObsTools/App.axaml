@@ -8,6 +8,9 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://HlaeObsTools/Themes/ScrubbyNumericField.axaml"/>
+        <Style Selector="Button, ToggleSwitch, CheckBox">
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
         <DockFluentTheme />
     </Application.Styles>
 
