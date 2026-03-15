@@ -21,6 +21,15 @@ namespace HlaeObsTools.ViewModels.Docks;
 public sealed class RadarPlayerViewModel : ViewModelBase
 {
     private const double MarkerWidth = 36.0;
+    private bool _hasInterpolationSample;
+    private double _previousCanvasX;
+    private double _previousCanvasY;
+    private double _currentCanvasX;
+    private double _currentCanvasY;
+    private double _previousRotation;
+    private double _currentRotation;
+    private DateTime _previousSampleTimeUtc;
+    private DateTime _currentSampleTimeUtc;
     private double _relativeX;
     private double _relativeY;
     private double _rotation;
@@ -268,6 +277,58 @@ public sealed class RadarPlayerViewModel : ViewModelBase
         ShootingExpiryTime = DateTime.UtcNow.AddMilliseconds(durationMs);
     }
 
+    public void PushPositionSample(double canvasX, double canvasY, double rotation, DateTime sampleTimeUtc, bool snap)
+    {
+        if (snap || !_hasInterpolationSample)
+        {
+            _hasInterpolationSample = true;
+            _previousCanvasX = canvasX;
+            _previousCanvasY = canvasY;
+            _currentCanvasX = canvasX;
+            _currentCanvasY = canvasY;
+            _previousRotation = rotation;
+            _currentRotation = rotation;
+            _previousSampleTimeUtc = sampleTimeUtc;
+            _currentSampleTimeUtc = sampleTimeUtc;
+            CanvasX = canvasX;
+            CanvasY = canvasY;
+            Rotation = rotation;
+            return;
+        }
+
+        _previousCanvasX = _currentCanvasX;
+        _previousCanvasY = _currentCanvasY;
+        _currentCanvasX = canvasX;
+        _currentCanvasY = canvasY;
+        _previousRotation = _currentRotation;
+        _currentRotation = rotation;
+        _previousSampleTimeUtc = _currentSampleTimeUtc;
+        _currentSampleTimeUtc = sampleTimeUtc;
+    }
+
+    public void AdvanceInterpolation(DateTime renderTimeUtc, double interpolationDelaySeconds)
+    {
+        if (!_hasInterpolationSample)
+            return;
+
+        if (_currentSampleTimeUtc <= _previousSampleTimeUtc)
+        {
+            CanvasX = _currentCanvasX;
+            CanvasY = _currentCanvasY;
+            Rotation = _currentRotation;
+            return;
+        }
+
+        var delayedTimeUtc = renderTimeUtc - TimeSpan.FromSeconds(interpolationDelaySeconds);
+        var totalSeconds = (_currentSampleTimeUtc - _previousSampleTimeUtc).TotalSeconds;
+        var elapsedSeconds = (delayedTimeUtc - _previousSampleTimeUtc).TotalSeconds;
+        var t = Math.Clamp(elapsedSeconds / totalSeconds, 0.0, 1.0);
+
+        CanvasX = Lerp(_previousCanvasX, _currentCanvasX, t);
+        CanvasY = Lerp(_previousCanvasY, _currentCanvasY, t);
+        Rotation = LerpAngleDegrees(_previousRotation, _currentRotation, t);
+    }
+
     public void UpdateShootingState()
     {
         if (IsShooting && DateTime.UtcNow >= ShootingExpiryTime)
@@ -279,6 +340,28 @@ public sealed class RadarPlayerViewModel : ViewModelBase
     private void UpdateMarkerScale()
     {
         MarkerScale = _baseScale * _heightScale;
+    }
+
+    private static double Lerp(double from, double to, double t)
+    {
+        return from + (to - from) * t;
+    }
+
+    private static double LerpAngleDegrees(double from, double to, double t)
+    {
+        var delta = ((to - from + 540.0) % 360.0) - 180.0;
+        return NormalizeDegrees(from + delta * t);
+    }
+
+    private static double NormalizeDegrees(double degrees)
+    {
+        degrees %= 360.0;
+        if (degrees < 0)
+        {
+            degrees += 360.0;
+        }
+
+        return degrees;
     }
 }
 
@@ -393,7 +476,6 @@ internal sealed class SmokeTracker
 {
     public Vec3 Position { get; set; }
     public Vec3 LastPosition { get; set; }
-    public int StationaryUpdates { get; set; }
     public bool IsDetonated { get; set; }
     public DateTime? DetonatedAtUtc { get; set; }
     public bool HasDetonatedOnce { get; set; }
@@ -407,25 +489,81 @@ internal sealed class PlayerWeaponState
 
 public sealed class RadarGrenadeViewModel : ViewModelBase
 {
+    private bool _hasInterpolationSample;
+    private double _previousCanvasX;
+    private double _previousCanvasY;
+    private double _currentCanvasX;
+    private double _currentCanvasY;
+    private DateTime _previousSampleTimeUtc;
+    private DateTime _currentSampleTimeUtc;
+    private string _type;
+    private string _iconPath;
+    private Vec3 _position;
+    private bool _isDetonated;
+    private double _smokeProgress;
     private double _canvasX;
     private double _canvasY;
 
     public RadarGrenadeViewModel(string id, string type, string iconPath, Vec3 position, bool isDetonated, double smokeProgress = 0)
     {
         Id = id;
-        Type = type;
-        IconPath = iconPath;
-        Position = position;
-        IsDetonated = isDetonated;
-        SmokeProgress = smokeProgress;
+        _type = type;
+        _iconPath = iconPath;
+        _position = position;
+        _isDetonated = isDetonated;
+        _smokeProgress = smokeProgress;
     }
 
     public string Id { get; }
-    public string Type { get; }
-    public string IconPath { get; }
-    public Vec3 Position { get; }
-    public bool IsDetonated { get; }
-    public double SmokeProgress { get; }
+    public string Type
+    {
+        get => _type;
+        private set
+        {
+            if (SetProperty(ref _type, value))
+            {
+                OnPropertyChanged(nameof(IsSmoke));
+                OnPropertyChanged(nameof(IsInferno));
+            }
+        }
+    }
+
+    public string IconPath
+    {
+        get => _iconPath;
+        private set => SetProperty(ref _iconPath, value);
+    }
+
+    public Vec3 Position
+    {
+        get => _position;
+        private set => SetProperty(ref _position, value);
+    }
+
+    public bool IsDetonated
+    {
+        get => _isDetonated;
+        private set
+        {
+            if (SetProperty(ref _isDetonated, value))
+            {
+                OnPropertyChanged(nameof(IsSmoke));
+            }
+        }
+    }
+
+    public double SmokeProgress
+    {
+        get => _smokeProgress;
+        private set
+        {
+            if (SetProperty(ref _smokeProgress, value))
+            {
+                OnPropertyChanged(nameof(SmokeRemainingProgress));
+            }
+        }
+    }
+
     public double SmokeRemainingProgress => Math.Clamp(1.0 - SmokeProgress, 0.0, 1.0);
 
     public bool IsSmoke => Type == "smoke" && IsDetonated;
@@ -441,6 +579,65 @@ public sealed class RadarGrenadeViewModel : ViewModelBase
     {
         get => _canvasY;
         set => SetProperty(ref _canvasY, value);
+    }
+
+    public void Update(string type, string iconPath, Vec3 position, bool isDetonated, double smokeProgress)
+    {
+        Type = type;
+        IconPath = iconPath;
+        Position = position;
+        IsDetonated = isDetonated;
+        SmokeProgress = smokeProgress;
+    }
+
+    public void PushPositionSample(double canvasX, double canvasY, DateTime sampleTimeUtc, bool snap)
+    {
+        if (snap || !_hasInterpolationSample)
+        {
+            _hasInterpolationSample = true;
+            _previousCanvasX = canvasX;
+            _previousCanvasY = canvasY;
+            _currentCanvasX = canvasX;
+            _currentCanvasY = canvasY;
+            _previousSampleTimeUtc = sampleTimeUtc;
+            _currentSampleTimeUtc = sampleTimeUtc;
+            CanvasX = canvasX;
+            CanvasY = canvasY;
+            return;
+        }
+
+        _previousCanvasX = _currentCanvasX;
+        _previousCanvasY = _currentCanvasY;
+        _currentCanvasX = canvasX;
+        _currentCanvasY = canvasY;
+        _previousSampleTimeUtc = _currentSampleTimeUtc;
+        _currentSampleTimeUtc = sampleTimeUtc;
+    }
+
+    public void AdvanceInterpolation(DateTime renderTimeUtc, double interpolationDelaySeconds)
+    {
+        if (!_hasInterpolationSample)
+            return;
+
+        if (_currentSampleTimeUtc <= _previousSampleTimeUtc)
+        {
+            CanvasX = _currentCanvasX;
+            CanvasY = _currentCanvasY;
+            return;
+        }
+
+        var delayedTimeUtc = renderTimeUtc - TimeSpan.FromSeconds(interpolationDelaySeconds);
+        var totalSeconds = (_currentSampleTimeUtc - _previousSampleTimeUtc).TotalSeconds;
+        var elapsedSeconds = (delayedTimeUtc - _previousSampleTimeUtc).TotalSeconds;
+        var t = Math.Clamp(elapsedSeconds / totalSeconds, 0.0, 1.0);
+
+        CanvasX = Lerp(_previousCanvasX, _currentCanvasX, t);
+        CanvasY = Lerp(_previousCanvasY, _currentCanvasY, t);
+    }
+
+    private static double Lerp(double from, double to, double t)
+    {
+        return from + (to - from) * t;
     }
 }
 
@@ -480,20 +677,25 @@ public sealed class RadarBombViewModel : ViewModelBase
 /// </summary>
 public sealed class RadarDockViewModel : Tool, IDisposable
 {
+    private const double InterpolationTimerIntervalMs = 16.0;
+    private const double DefaultInterpolationDelaySeconds = 0.1;
+    private const double MaxInterpolationDelaySeconds = 0.25;
+    private const double TeleportSnapDistancePixels = 160.0;
     private readonly GsiServer _gsiServer;
     private readonly RadarConfigProvider _configProvider;
     private readonly RadarProjector _projector;
-    private readonly Dictionary<int, SmokeTracker> _smokeTrackers = new();
+    private readonly Dictionary<string, SmokeTracker> _smokeTrackers = new();
     private readonly Dictionary<string, PlayerWeaponState> _playerWeaponStates = new();
     private readonly Dictionary<string, RadarPlayerViewModel> _playerMarkers = new();
     private readonly Dictionary<string, RadarDeadPlayerViewModel> _deadPlayerMarkers = new();
+    private readonly Dictionary<string, RadarGrenadeViewModel> _grenadeMarkers = new();
     private readonly Dictionary<string, Vec3> _lastAlivePositions = new();
     private readonly Dictionary<string, int> _playerHeightBuckets = new();
     private readonly CampathsDockViewModel? _campathsVm;
     private readonly HlaeWebSocketClient? _webSocketClient;
     private readonly RadarSettings _settings;
     private CampathProfileViewModel? _attachedProfile;
-    private DispatcherTimer? _flashCleanupTimer;
+    private DispatcherTimer? _animationTimer;
     private CampathPathViewModel? _hoveredCampath;
     private string? _hoveredCampathName;
     private Bitmap? _hoveredCampathThumbnail;
@@ -502,9 +704,10 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private string? _currentMap;
     private bool _hasRadar;
     private long _lastProcessedHeartbeat;
+    private long _lastInterpolatedHeartbeat = -1;
+    private DateTime _lastSampleTimeUtc;
+    private double _interpolationDelaySeconds = DefaultInterpolationDelaySeconds;
 
-    private const double PositionThreshold = 1.0; // Units of movement to consider stationary
-    private const int StationaryUpdatesRequired = 2; // Number of updates smoke must be stationary to be detonated
     private const double SmokeDurationSeconds = 20.0;
     private const double HeightScaleMin = 0.85;
     private const double HeightScaleMax = 1.15;
@@ -570,13 +773,12 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
         _settings.PropertyChanged += OnSettingsChanged;
 
-        // Initialize flash cleanup timer
-        _flashCleanupTimer = new DispatcherTimer
+        _animationTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMilliseconds(50) // Check every 50ms
+            Interval = TimeSpan.FromMilliseconds(InterpolationTimerIntervalMs)
         };
-        _flashCleanupTimer.Tick += OnFlashCleanupTick;
-        _flashCleanupTimer.Start();
+        _animationTimer.Tick += OnAnimationTick;
+        _animationTimer.Start();
 
         if (_campathsVm != null)
         {
@@ -595,6 +797,9 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         if (string.IsNullOrWhiteSpace(state.MapName))
             return;
 
+        var sampleTimeUtc = DateTime.UtcNow;
+        UpdateInterpolationDelay(state.Heartbeat, sampleTimeUtc);
+
         bool mapChanged = false;
 
         if (!string.Equals(_currentMap, state.MapName, StringComparison.OrdinalIgnoreCase))
@@ -610,9 +815,11 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             Players.Clear();
             _playerMarkers.Clear();
             DeadPlayers.Clear();
+            Grenades.Clear();
             CampathPaths.Clear();
             ClearCampathHover();
             _deadPlayerMarkers.Clear();
+            _grenadeMarkers.Clear();
             _lastAlivePositions.Clear();
             _playerHeightBuckets.Clear();
             return;
@@ -629,7 +836,9 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             Players.Clear();
             _playerMarkers.Clear();
             DeadPlayers.Clear();
+            Grenades.Clear();
             _deadPlayerMarkers.Clear();
+            _grenadeMarkers.Clear();
             _lastAlivePositions.Clear();
             _playerHeightBuckets.Clear();
         }
@@ -694,14 +903,18 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                     _playerMarkers[p.SteamId] = vm;
                 }
 
+                var targetCanvasX = x * 1024.0 - 18.0;
+                var targetCanvasY = y * 1024.0 - 22.0;
+                var targetRotation = NormalizeDegrees(Math.Atan2(p.Forward.X, p.Forward.Y) * 180.0 / Math.PI);
+                var shouldSnapPosition = mapChanged
+                    || !string.Equals(vm.Level, level, StringComparison.OrdinalIgnoreCase)
+                    || ShouldSnapInterpolation(vm.CanvasX, vm.CanvasY, targetCanvasX, targetCanvasY);
+
                 vm.Fill = brush;
                 vm.Border = border;
                 vm.Slot = p.Slot;
                 vm.RelativeX = x;
                 vm.RelativeY = y;
-                vm.CanvasX = x * 1024.0 - 18.0; // center the 36px marker on the projected point
-                vm.CanvasY = y * 1024.0 - 22.0;
-                vm.Rotation = NormalizeDegrees(Math.Atan2(p.Forward.X, p.Forward.Y) * 180.0 / Math.PI);
                 vm.IsAlive = p.IsAlive;
                 vm.HasBomb = p.HasBomb;
                 vm.IsFocused = p.SteamId == state.FocusedPlayerSteamId;
@@ -712,6 +925,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 vm.Altitude = p.Position.Z;
                 vm.SetHeightScale(ResolveHeightScale(state.MapName, p.Position.Z, level));
                 vm.SetBaseScale(_settings.MarkerScale);
+                vm.PushPositionSample(targetCanvasX, targetCanvasY, targetRotation, sampleTimeUtc, shouldSnapPosition);
 
                 var heightBucket = ResolveHeightBucket(p.SteamId, p.Position.Z);
                 pendingPlayers.Add((vm, heightBucket));
@@ -791,9 +1005,14 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         }
 
         // Process grenades
-        Grenades.Clear();
         Flames.Clear();
-        var presentSmokeKeys = new HashSet<int>(state.Grenades.Where(g => g.Type == "smoke").Select(g => GetPositionHash(g.Position)));
+        var presentSmokeKeys = new HashSet<string>(
+            state.Grenades
+                .Where(g => g.Type == "smoke")
+                .Select(GetSmokeKey),
+            StringComparer.Ordinal);
+        var presentGrenadeKeys = new HashSet<string>(StringComparer.Ordinal);
+        var orderedGrenades = new List<RadarGrenadeViewModel>();
 
         var nowUtc = DateTime.UtcNow;
 
@@ -803,14 +1022,14 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             _lastProcessedHeartbeat = state.Heartbeat;
 
             // Track current smokes to clean up old ones
-            var currentSmokeKeys = new HashSet<int>();
+            var currentSmokeKeys = new HashSet<string>(StringComparer.Ordinal);
 
             // Update smoke trackers
             foreach (var g in state.Grenades)
             {
                 if (g.Type == "smoke")
                 {
-                    int key = GetPositionHash(g.Position);
+                    var key = GetSmokeKey(g);
                     currentSmokeKeys.Add(key);
 
                     if (!_smokeTrackers.TryGetValue(key, out var tracker))
@@ -820,7 +1039,6 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                         {
                             Position = g.Position,
                             LastPosition = g.Position,
-                            StationaryUpdates = 0,
                             IsDetonated = false,
                             HasDetonatedOnce = false
                         };
@@ -833,20 +1051,11 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
                         if (!tracker.IsDetonated && !tracker.HasDetonatedOnce)
                         {
-                            // Only track movement before detonation
-                            if (distMoved < PositionThreshold)
+                            if (distMoved <= 0.0)
                             {
-                                tracker.StationaryUpdates++;
-                                if (tracker.StationaryUpdates >= StationaryUpdatesRequired)
-                                {
-                                    tracker.IsDetonated = true;
-                                    tracker.DetonatedAtUtc ??= nowUtc;
-                                    tracker.HasDetonatedOnce = true;
-                                }
-                            }
-                            else
-                            {
-                                tracker.StationaryUpdates = 0;
+                                tracker.IsDetonated = true;
+                                tracker.DetonatedAtUtc ??= nowUtc;
+                                tracker.HasDetonatedOnce = true;
                             }
                         }
 
@@ -881,18 +1090,17 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             double smokeProgress = 0;
             Vec3 position = g.Position;
             bool isDetonated;
-            int smokeKey = 0;
+            string smokeKey = string.Empty;
 
             if (g.Type == "smoke")
             {
-                smokeKey = GetPositionHash(g.Position);
+                smokeKey = GetSmokeKey(g);
                 if (!_smokeTrackers.TryGetValue(smokeKey, out var tracker))
                 {
                     tracker = new SmokeTracker
                     {
                         Position = g.Position,
                         LastPosition = g.Position,
-                        StationaryUpdates = 0,
                         IsDetonated = false
                     };
                     _smokeTrackers[smokeKey] = tracker;
@@ -965,15 +1173,40 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
             if (shouldAdd)
             {
-                var grenadeVm = new RadarGrenadeViewModel(g.Id, g.Type, iconPath, position, isDetonated, smokeProgress)
-                {
-                    CanvasX = x * 1024.0 - 12.0, // center the 24px icon
-                    CanvasY = y * 1024.0 - 12.0
-                };
+                var grenadeKey = GetGrenadeKey(g, smokeKey);
+                presentGrenadeKeys.Add(grenadeKey);
 
-                Grenades.Add(grenadeVm);
+                if (!_grenadeMarkers.TryGetValue(grenadeKey, out var grenadeVm))
+                {
+                    grenadeVm = new RadarGrenadeViewModel(grenadeKey, g.Type, iconPath, position, isDetonated, smokeProgress);
+                    _grenadeMarkers[grenadeKey] = grenadeVm;
+                }
+
+                var targetCanvasX = x * 1024.0 - 12.0;
+                var targetCanvasY = y * 1024.0 - 12.0;
+                var isMovingProjectile = !isDetonated && g.Type != "inferno";
+                var shouldSnapPosition = mapChanged
+                    || !isMovingProjectile
+                    || !string.Equals(grenadeVm.Type, g.Type, StringComparison.Ordinal)
+                    || grenadeVm.IsDetonated != isDetonated
+                    || ShouldSnapInterpolation(grenadeVm.CanvasX, grenadeVm.CanvasY, targetCanvasX, targetCanvasY);
+
+                grenadeVm.Update(g.Type, iconPath, position, isDetonated, smokeProgress);
+                grenadeVm.PushPositionSample(targetCanvasX, targetCanvasY, sampleTimeUtc, shouldSnapPosition);
+                orderedGrenades.Add(grenadeVm);
             }
         }
+
+        var grenadeKeysToRemove = _grenadeMarkers.Keys
+            .Where(key => !presentGrenadeKeys.Contains(key))
+            .ToList();
+        foreach (var key in grenadeKeysToRemove)
+        {
+            _grenadeMarkers.Remove(key);
+        }
+
+        SyncGrenades(Grenades, orderedGrenades);
+
         var missingSmokeKeys = _smokeTrackers.Keys.Where(k => !presentSmokeKeys.Contains(k)).ToList();
         foreach (var key in missingSmokeKeys)
         {
@@ -1003,12 +1236,19 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         }
     }
 
-    private void OnFlashCleanupTick(object? sender, EventArgs e)
+    private void OnAnimationTick(object? sender, EventArgs e)
     {
-        // Update shooting state for all players
+        var nowUtc = DateTime.UtcNow;
+
         foreach (var player in Players)
         {
+            player.AdvanceInterpolation(nowUtc, _interpolationDelaySeconds);
             player.UpdateShootingState();
+        }
+
+        foreach (var grenade in Grenades)
+        {
+            grenade.AdvanceInterpolation(nowUtc, _interpolationDelaySeconds);
         }
     }
 
@@ -1017,12 +1257,6 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         degrees %= 360.0;
         if (degrees < 0) degrees += 360.0;
         return degrees;
-    }
-
-    private static int GetPositionHash(Vec3 pos)
-    {
-        // Create a hash key from position rounded to avoid floating point issues
-        return ((int)(pos.X / 10.0) * 1000000) + ((int)(pos.Y / 10.0) * 1000) + (int)(pos.Z / 10.0);
     }
 
     private static double GetDistance(Vec3 a, Vec3 b)
@@ -1168,8 +1402,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             _campathsVm.PropertyChanged -= OnCampathsPropertyChanged;
             DetachProfile(_campathsVm.SelectedProfile);
         }
-        _flashCleanupTimer?.Stop();
-        _flashCleanupTimer = null;
+        _animationTimer?.Stop();
+        _animationTimer = null;
         RadarImage?.Dispose();
     }
 
@@ -1543,6 +1777,86 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                 target.Insert(i, desired);
             }
         }
+    }
+
+    private static void SyncGrenades(ObservableCollection<RadarGrenadeViewModel> target, IReadOnlyList<RadarGrenadeViewModel> ordered)
+    {
+        if (ordered.Count == 0)
+        {
+            target.Clear();
+            return;
+        }
+
+        var orderedSet = new HashSet<RadarGrenadeViewModel>(ordered);
+        for (int i = target.Count - 1; i >= 0; i--)
+        {
+            if (!orderedSet.Contains(target[i]))
+            {
+                target.RemoveAt(i);
+            }
+        }
+
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            var desired = ordered[i];
+            if (i < target.Count && ReferenceEquals(target[i], desired))
+            {
+                continue;
+            }
+
+            var existingIndex = target.IndexOf(desired);
+            if (existingIndex >= 0)
+            {
+                target.Move(existingIndex, i);
+            }
+            else
+            {
+                target.Insert(i, desired);
+            }
+        }
+    }
+
+    private void UpdateInterpolationDelay(long heartbeat, DateTime sampleTimeUtc)
+    {
+        if (heartbeat == _lastInterpolatedHeartbeat)
+            return;
+
+        if (_lastSampleTimeUtc != default)
+        {
+            var sampleIntervalSeconds = (sampleTimeUtc - _lastSampleTimeUtc).TotalSeconds;
+            if (sampleIntervalSeconds > 0)
+            {
+                var clamped = Math.Clamp(sampleIntervalSeconds, 0.01, MaxInterpolationDelaySeconds);
+                _interpolationDelaySeconds = _interpolationDelaySeconds <= 0
+                    ? clamped
+                    : (_interpolationDelaySeconds * 0.8) + (clamped * 0.2);
+            }
+        }
+
+        _lastSampleTimeUtc = sampleTimeUtc;
+        _lastInterpolatedHeartbeat = heartbeat;
+    }
+
+    private static bool ShouldSnapInterpolation(double fromX, double fromY, double toX, double toY)
+    {
+        var dx = toX - fromX;
+        var dy = toY - fromY;
+        return (dx * dx) + (dy * dy) >= TeleportSnapDistancePixels * TeleportSnapDistancePixels;
+    }
+
+    private static string GetGrenadeKey(GsiGrenade grenade, string smokeKey)
+    {
+        if (grenade.Type == "smoke")
+        {
+            return smokeKey;
+        }
+
+        return grenade.Id;
+    }
+
+    private static string GetSmokeKey(GsiGrenade grenade)
+    {
+        return grenade.Id;
     }
 
 
