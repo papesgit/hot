@@ -240,6 +240,19 @@ public sealed class HotkeyService
             return true;
         }
 
+        if (binding.TargetKind == HotkeyTargetKind.ExecCommand)
+        {
+            if (string.IsNullOrWhiteSpace(binding.TargetExecCommand))
+                return false;
+
+            var settingsVm = _commandContexts.OfType<SettingsDockViewModel>().FirstOrDefault();
+            if (settingsVm == null)
+                return false;
+
+            _ = settingsVm.ExecuteHotkeyCommandAsync(binding.TargetExecCommand);
+            return true;
+        }
+
         return false;
     }
 
@@ -312,6 +325,7 @@ public sealed class HotkeyService
                 TargetVmixChannel = _rebindTarget.TargetVmixChannel,
                 TargetVmixDuration = _rebindTarget.TargetVmixDuration,
                 TargetVmixExtraQuery = _rebindTarget.TargetVmixExtraQuery,
+                TargetExecCommand = _rebindTarget.TargetExecCommand,
                 DisplayName = _rebindTarget.DisplayName
             };
 

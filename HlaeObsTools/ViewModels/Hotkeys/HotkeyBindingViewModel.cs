@@ -33,6 +33,7 @@ public class HotkeyBindingViewModel : ViewModelBase
     private string? _targetVmixChannel;
     private string? _targetVmixDuration;
     private string? _targetVmixExtraQuery;
+    private string? _targetExecCommand;
     private bool _vmixHasValueParameter;
     private bool _vmixHasInputParameter;
     private bool _vmixHasChannelParameter;
@@ -276,6 +277,16 @@ public class HotkeyBindingViewModel : ViewModelBase
         set => SetProperty(ref _targetVmixExtraQuery, value);
     }
 
+    public string? TargetExecCommand
+    {
+        get => _targetExecCommand;
+        set
+        {
+            if (SetProperty(ref _targetExecCommand, value))
+                OnPropertyChanged(nameof(DisplayLabel));
+        }
+    }
+
     public bool VmixHasValueParameter
     {
         get => _vmixHasValueParameter;
@@ -322,7 +333,7 @@ public class HotkeyBindingViewModel : ViewModelBase
     public string HotkeyDisplay => FormatHotkey(Key, Modifiers);
     public string DisplayLabel => !string.IsNullOrWhiteSpace(DisplayName)
         ? DisplayName
-        : (TargetVmixFunctionName ?? TargetCommandProperty ?? TargetPropertyPath ?? "Unknown");
+        : (TargetExecCommand ?? TargetVmixFunctionName ?? TargetCommandProperty ?? TargetPropertyPath ?? "Unknown");
 
     public static HotkeyBindingViewModel FromData(HotkeyBindingData data)
     {
@@ -354,6 +365,7 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetVmixChannel = data.TargetVmixChannel,
             TargetVmixDuration = data.TargetVmixDuration,
             TargetVmixExtraQuery = data.TargetVmixExtraQuery,
+            TargetExecCommand = data.TargetExecCommand,
             DisplayName = data.DisplayName
         };
     }
@@ -388,6 +400,7 @@ public class HotkeyBindingViewModel : ViewModelBase
             TargetVmixChannel = TargetVmixChannel,
             TargetVmixDuration = TargetVmixDuration,
             TargetVmixExtraQuery = TargetVmixExtraQuery,
+            TargetExecCommand = TargetExecCommand,
             DisplayName = DisplayName
         };
     }

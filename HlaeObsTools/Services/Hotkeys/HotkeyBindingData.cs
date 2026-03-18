@@ -31,5 +31,6 @@ public class HotkeyBindingData
     public string? TargetVmixChannel { get; set; }
     public string? TargetVmixDuration { get; set; }
     public string? TargetVmixExtraQuery { get; set; }
+    public string? TargetExecCommand { get; set; }
     public string? DisplayName { get; set; }
 }

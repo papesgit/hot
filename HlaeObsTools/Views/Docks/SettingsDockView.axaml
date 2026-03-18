@@ -920,6 +920,43 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </StackPanel>
+                        <StackPanel IsVisible="{Binding IsCommandsHotkeyCategorySelected}" Spacing="6">
+                            <TextBlock Text="Command Bindings"
+                                       Foreground="#CCCCCC"
+                                       FontWeight="SemiBold"/>
+                            <Button Content="Add"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding AddCommandHotkeyCommand}" />
+                            <ListBox ItemsSource="{Binding ExecCommandHotkeyBindings}"
+                                     SelectedItem="{Binding SelectedHotkey, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="hk:HotkeyBindingViewModel">
+                                        <Border>
+                                            <Grid ColumnDefinitions="Auto,*,Auto"
+                                                  ColumnSpacing="8">
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding HotkeyDisplay}"
+                                                           Foreground="#E6E6E6"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBox Grid.Column="1" VerticalAlignment="Center"
+                                                         Watermark="spec_show_xray 1"
+                                                         Text="{Binding TargetExecCommand, Mode=TwoWay}" />
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <ToggleSwitch IsChecked="{Binding Enabled}" />
+                                                    <Button Content="Bind"
+                                                            Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="Remove"
+                                                            Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
                         <StackPanel IsVisible="{Binding IsVmixHotkeyCategorySelected}" Spacing="6">
                             <TextBlock Text="vMix Bindings"
                                        Foreground="#CCCCCC"

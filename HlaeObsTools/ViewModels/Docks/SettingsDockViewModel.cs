@@ -115,6 +115,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _removeGsiRelayEndpointCommand;
         private readonly ICommand _refreshVmixStateCommand;
         private readonly ICommand _addVmixHotkeyCommand;
+        private readonly ICommand _addCommandHotkeyCommand;
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort, IReadOnlyList<string> GsiRelayUris);
 
@@ -169,6 +170,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _removeGsiRelayEndpointCommand = new RelayParam<GsiRelayEndpointViewModel>(RemoveGsiRelayEndpoint, endpoint => endpoint != null);
             _refreshVmixStateCommand = new AsyncRelay(RefreshVmixStateAsync);
             _addVmixHotkeyCommand = new Relay(AddVmixHotkey);
+            _addCommandHotkeyCommand = new Relay(AddCommandHotkey);
             _browseMapObjCommand = new AsyncRelay(BrowseMapObjAsync);
             _clearMapObjCommand = new Relay(() => _viewport3DSettings.MapObjPath = string.Empty);
             _cycleForceDeathnoticesCommand = new Relay(CycleForceDeathnoticesMode);
@@ -256,6 +258,7 @@ namespace HlaeObsTools.ViewModels.Docks
             }
             _isLoadingHotkeys = false;
             RefreshCommandHotkeys();
+            RefreshExecCommandHotkeys();
             RefreshVmixHotkeys();
 
             _hotkeyService.BindingCaptured += OnHotkeyBindingCaptured;
@@ -330,6 +333,7 @@ namespace HlaeObsTools.ViewModels.Docks
         public ObservableCollection<HotkeyBindingViewModel> GraphicsHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> AttachHotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> VmixHotkeyBindings { get; } = new();
+        public ObservableCollection<HotkeyBindingViewModel> ExecCommandHotkeyBindings { get; } = new();
         public ObservableCollection<string> VmixFunctionCategories { get; } = new();
         public ObservableCollection<VmixInputInfo> VmixInputOptions { get; } = new();
         public ObservableCollection<GsiRelayEndpointViewModel> GsiRelayEndpoints { get; } = new();
@@ -456,6 +460,7 @@ namespace HlaeObsTools.ViewModels.Docks
             "Campath",
             "Graphics",
             "Attach",
+            "Commands",
             "vMix"
         };
 
@@ -472,6 +477,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 OnPropertyChanged(nameof(IsCampathHotkeyCategorySelected));
                 OnPropertyChanged(nameof(IsGraphicsHotkeyCategorySelected));
                 OnPropertyChanged(nameof(IsAttachHotkeyCategorySelected));
+                OnPropertyChanged(nameof(IsCommandsHotkeyCategorySelected));
                 OnPropertyChanged(nameof(IsVmixHotkeyCategorySelected));
             }
         }
@@ -480,6 +486,7 @@ namespace HlaeObsTools.ViewModels.Docks
         public bool IsCampathHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Campath", StringComparison.Ordinal);
         public bool IsGraphicsHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Graphics", StringComparison.Ordinal);
         public bool IsAttachHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Attach", StringComparison.Ordinal);
+        public bool IsCommandsHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "Commands", StringComparison.Ordinal);
         public bool IsVmixHotkeyCategorySelected => string.Equals(SelectedHotkeyCategory, "vMix", StringComparison.Ordinal);
 
         private string _vmixStateStatusMessage = "vMix state not loaded.";
@@ -520,6 +527,7 @@ namespace HlaeObsTools.ViewModels.Docks
             binding => binding != null);
 
         public ICommand AddVmixHotkeyCommand => _addVmixHotkeyCommand;
+        public ICommand AddCommandHotkeyCommand => _addCommandHotkeyCommand;
         public ICommand RefreshVmixStateCommand => _refreshVmixStateCommand;
 
         private ICommand? _clearHotkeySelectionCommand;
@@ -1009,6 +1017,17 @@ namespace HlaeObsTools.ViewModels.Docks
                     RefreshVmixHotkeys();
                 }
             }
+            else if (sender is HotkeyBindingViewModel execBinding && execBinding.TargetKind == Services.Hotkeys.HotkeyTargetKind.ExecCommand)
+            {
+                if (e.PropertyName == nameof(HotkeyBindingViewModel.TargetExecCommand))
+                {
+                    execBinding.DisplayName = BuildExecCommandDisplayName(execBinding.TargetExecCommand);
+                }
+                else if (e.PropertyName == nameof(HotkeyBindingViewModel.TargetKind))
+                {
+                    RefreshExecCommandHotkeys();
+                }
+            }
 
             if (_isLoadingHotkeys)
                 return;
@@ -1045,6 +1064,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 RefreshCampathHotkeys();
                 RefreshGraphicsHotkeys();
                 RefreshAttachHotkeys();
+                RefreshExecCommandHotkeys();
                 RefreshVmixHotkeys();
                 SyncHotkeysToService();
                 SaveSettings();
@@ -1165,6 +1185,12 @@ namespace HlaeObsTools.ViewModels.Docks
                 return;
             }
 
+            if (binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.ExecCommand)
+            {
+                RefreshExecCommandHotkeys();
+                return;
+            }
+
             if (!CommandHotkeyBindings.Contains(binding))
                 CommandHotkeyBindings.Add(binding);
         }
@@ -1175,6 +1201,7 @@ namespace HlaeObsTools.ViewModels.Docks
             RefreshCampathHotkeys();
             RefreshGraphicsHotkeys();
             RefreshAttachHotkeys();
+            RefreshExecCommandHotkeys();
             RefreshVmixHotkeys();
         }
 
@@ -1188,6 +1215,7 @@ namespace HlaeObsTools.ViewModels.Docks
                     || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsAtlasAction
                     || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.GraphicsInstanceAction
                     || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.AttachPresetSlotAction
+                    || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.ExecCommand
                     || binding.TargetKind == Services.Hotkeys.HotkeyTargetKind.VmixFunction)
                     continue;
 
@@ -1267,6 +1295,19 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
+        private void RefreshExecCommandHotkeys()
+        {
+            ExecCommandHotkeyBindings.Clear();
+            foreach (var binding in HotkeyBindings)
+            {
+                if (binding.TargetKind != Services.Hotkeys.HotkeyTargetKind.ExecCommand)
+                    continue;
+
+                binding.DisplayName = BuildExecCommandDisplayName(binding.TargetExecCommand);
+                ExecCommandHotkeyBindings.Add(binding);
+            }
+        }
+
         private void AddVmixHotkey()
         {
             var category = VmixFunctionCategories.FirstOrDefault() ?? string.Empty;
@@ -1287,6 +1328,27 @@ namespace HlaeObsTools.ViewModels.Docks
             };
 
             ConfigureVmixBinding(binding, keepFunctionIfValid: true);
+            HotkeyBindings.Add(binding);
+            AttachHotkeyBinding(binding);
+            AddToHotkeyLists(binding);
+            SelectedHotkey = binding;
+            SyncHotkeysToService();
+            SaveSettings();
+        }
+
+        private void AddCommandHotkey()
+        {
+            var binding = new HotkeyBindingViewModel
+            {
+                Id = Guid.NewGuid(),
+                Enabled = true,
+                Key = Key.None,
+                Modifiers = KeyModifiers.None,
+                TargetKind = Services.Hotkeys.HotkeyTargetKind.ExecCommand,
+                TargetExecCommand = string.Empty,
+                DisplayName = BuildExecCommandDisplayName(null)
+            };
+
             HotkeyBindings.Add(binding);
             AttachHotkeyBinding(binding);
             AddToHotkeyLists(binding);
@@ -1442,6 +1504,14 @@ namespace HlaeObsTools.ViewModels.Docks
             return string.IsNullOrWhiteSpace(value)
                 ? $"vMix: {functionName}"
                 : $"vMix: {functionName}({value})";
+        }
+
+        private static string BuildExecCommandDisplayName(string? command)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+                return "Command";
+
+            return $"Command: {command}";
         }
 
         private void OnCampathProfileChanged(object? sender, PropertyChangedEventArgs e)
@@ -2137,6 +2207,14 @@ namespace HlaeObsTools.ViewModels.Docks
                 return Task.CompletedTask;
 
             return _ws.SendExecCommandAsync(command);
+        }
+
+        public Task ExecuteHotkeyCommandAsync(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+                return Task.CompletedTask;
+
+            return SendExecCommandAsync(command);
         }
 
         private void SendExecCommand(string command)
