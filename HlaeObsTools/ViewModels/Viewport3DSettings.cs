@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using ValveResourceFormat.Renderer.Materials;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -37,7 +38,7 @@ public sealed class Viewport3DSettings : ViewModelBase
     private int _maxTextureSize = 1024;
     private string _renderMode = "Default";
 
-    public IReadOnlyList<string> RenderModeOptions { get; } = ValveResourceFormat.Renderer.RenderModes.Items
+    public IReadOnlyList<string> RenderModeOptions { get; } = RenderModes.Items
         .Where(mode => !mode.IsHeader)
         .Select(mode => mode.Name)
         .Concat(new[] { "FastUnlit" })

@@ -31,6 +31,10 @@ using HlaeObsTools.ViewModels;
 using SteamDatabase.ValvePak;
 using ValveResourceFormat.IO;
 using ValveResourceFormat.Renderer;
+using ValveResourceFormat.Renderer.Materials;
+using ValveResourceFormat.Renderer.SceneNodes;
+using ValveResourceFormat.Renderer.Utils;
+using ValveResourceFormat.Renderer.World;
 using ValveResourceFormat.ResourceTypes;
 
 namespace HlaeObsTools.Controls;
@@ -3105,7 +3109,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             try
             {
                 _renderer.LoadRendererResources();
-                _renderer.Postprocess.Load();
+                _renderer.Postprocess.Load(1);
                 _renderer.Postprocess.Enabled = _postprocessEnabledCached && IsRenderModeDefault();
                 _renderer.Postprocess.ColorCorrectionEnabled = _colorCorrectionEnabledCached;
                 _renderer.Initialize();
@@ -3154,7 +3158,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             }
 
             _mapHasExternalReferences = worldResource.ExternalReferences != null;
-            var worldLoader = new WorldLoader(world, _renderer.Scene, worldResource.ExternalReferences);
+            var worldLoader = new WorldLoader(world, _renderer.Scene);
+            worldLoader.Load(worldResource.ExternalReferences);
             _renderer.SkyboxScene = worldLoader.SkyboxScene;
             _renderer.Skybox2D = worldLoader.Skybox2D;
 
