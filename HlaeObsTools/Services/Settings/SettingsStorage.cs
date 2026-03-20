@@ -206,4 +206,33 @@ public class FreecamSettingsData
     public double AnalogRightDeadzone { get; set; }
     public double AnalogCurve { get; set; }
     public bool ClampPitch { get; set; }
+
+    public double WalkMoveSpeed { get; set; } = 160.0;
+    public double WalkMoveAcceleration { get; set; } = 800.0;
+    public double WalkMoveDeceleration { get; set; } = 800.0;
+    public double WalkRunMultiplier { get; set; } = 1.8;
+    public double WalkCrouchSpeedMultiplier { get; set; } = 0.6;
+    public double WalkLookHalfTime { get; set; } = 0.150;
+    public double WalkFovHalfTime { get; set; } = 0.40;
+    public double WalkGravity { get; set; } = 800.0;
+    public double WalkJumpSpeed { get; set; } = 280.0;
+    public double WalkHullRadius { get; set; } = 12.0;
+    public double WalkHullHalfHeight { get; set; } = 35.0;
+    public double WalkCrouchHullHalfHeight { get; set; } = 12.0;
+    public double WalkCameraTopInset { get; set; } = 6.0;
+    public double WalkStepHeight { get; set; } = 18.0;
+    public double WalkGroundProbe { get; set; } = 2.0;
+    public double WalkMinGroundNormalZ { get; set; } = 0.55;
+    public bool WalkModeDefaultEnabled { get; set; }
+    public bool HandheldDefaultEnabled { get; set; }
+    public double WalkBobAmplitudeZ { get; set; } = 2.15;
+    public double WalkBobAmplitudeSide { get; set; } = 2.70;
+    public double WalkBobAmplitudeRoll { get; set; } = 1.20;
+    public double WalkBobFrequency { get; set; } = 0.8;
+    public double HandheldShakePosAmplitude { get; set; } = 0.45;
+    public double HandheldShakeAngAmplitude { get; set; } = 0.65;
+    public double HandheldShakeFrequency { get; set; } = 0.4;
+    public double HandheldDriftPosAmplitude { get; set; } = 3.30;
+    public double HandheldDriftAngAmplitude { get; set; } = 2.36;
+    public double HandheldDriftFrequency { get; set; } = 0.15;
 }

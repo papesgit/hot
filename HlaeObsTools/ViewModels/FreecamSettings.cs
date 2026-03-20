@@ -56,6 +56,38 @@ public sealed class FreecamSettings : ViewModelBase
     private double _analogCurve;
     private bool _clampPitch;
 
+    // Walk settings
+    private double _walkMoveSpeed = 160.0;
+    private double _walkMoveAcceleration = 800.0;
+    private double _walkMoveDeceleration = 800.0;
+    private double _walkRunMultiplier = 1.8;
+    private double _walkCrouchSpeedMultiplier = 0.6;
+    private double _walkLookHalfTime = 0.150;
+    private double _walkFovHalfTime = 0.40;
+    private double _walkGravity = 800.0;
+    private double _walkJumpSpeed = 280.0;
+    private double _walkHullRadius = 12.0;
+    private double _walkHullHalfHeight = 35.0;
+    private double _walkCrouchHullHalfHeight = 12.0;
+    private double _walkCameraTopInset = 6.0;
+    private double _walkStepHeight = 18.0;
+    private double _walkGroundProbe = 2.0;
+    private double _walkMinGroundNormalZ = 0.55;
+    private bool _walkModeDefaultEnabled;
+    private bool _handheldDefaultEnabled;
+
+    // Handheld settings
+    private double _walkBobAmplitudeZ = 2.15;
+    private double _walkBobAmplitudeSide = 2.70;
+    private double _walkBobAmplitudeRoll = 1.20;
+    private double _walkBobFrequency = 0.8;
+    private double _handheldShakePosAmplitude = 0.45;
+    private double _handheldShakeAngAmplitude = 0.65;
+    private double _handheldShakeFrequency = 0.4;
+    private double _handheldDriftPosAmplitude = 3.30;
+    private double _handheldDriftAngAmplitude = 2.36;
+    private double _handheldDriftFrequency = 0.15;
+
     #region Mouse Settings
 
     /// <summary>
@@ -142,6 +174,174 @@ public sealed class FreecamSettings : ViewModelBase
     {
         get => _clampPitch;
         set => SetProperty(ref _clampPitch, value);
+    }
+
+    public double WalkMoveSpeed
+    {
+        get => _walkMoveSpeed;
+        set => SetProperty(ref _walkMoveSpeed, value);
+    }
+
+    public double WalkMoveAcceleration
+    {
+        get => _walkMoveAcceleration;
+        set => SetProperty(ref _walkMoveAcceleration, value);
+    }
+
+    public double WalkMoveDeceleration
+    {
+        get => _walkMoveDeceleration;
+        set => SetProperty(ref _walkMoveDeceleration, value);
+    }
+
+    public double WalkRunMultiplier
+    {
+        get => _walkRunMultiplier;
+        set => SetProperty(ref _walkRunMultiplier, value);
+    }
+
+    public double WalkCrouchSpeedMultiplier
+    {
+        get => _walkCrouchSpeedMultiplier;
+        set => SetProperty(ref _walkCrouchSpeedMultiplier, value);
+    }
+
+    public double WalkLookHalfTime
+    {
+        get => _walkLookHalfTime;
+        set => SetProperty(ref _walkLookHalfTime, value);
+    }
+
+    public double WalkFovHalfTime
+    {
+        get => _walkFovHalfTime;
+        set => SetProperty(ref _walkFovHalfTime, value);
+    }
+
+    public double WalkGravity
+    {
+        get => _walkGravity;
+        set => SetProperty(ref _walkGravity, value);
+    }
+
+    public double WalkJumpSpeed
+    {
+        get => _walkJumpSpeed;
+        set => SetProperty(ref _walkJumpSpeed, value);
+    }
+
+    public double WalkHullRadius
+    {
+        get => _walkHullRadius;
+        set => SetProperty(ref _walkHullRadius, value);
+    }
+
+    public double WalkHullHalfHeight
+    {
+        get => _walkHullHalfHeight;
+        set => SetProperty(ref _walkHullHalfHeight, value);
+    }
+
+    public double WalkCrouchHullHalfHeight
+    {
+        get => _walkCrouchHullHalfHeight;
+        set => SetProperty(ref _walkCrouchHullHalfHeight, value);
+    }
+
+    public double WalkCameraTopInset
+    {
+        get => _walkCameraTopInset;
+        set => SetProperty(ref _walkCameraTopInset, value);
+    }
+
+    public double WalkStepHeight
+    {
+        get => _walkStepHeight;
+        set => SetProperty(ref _walkStepHeight, value);
+    }
+
+    public double WalkGroundProbe
+    {
+        get => _walkGroundProbe;
+        set => SetProperty(ref _walkGroundProbe, value);
+    }
+
+    public double WalkMinGroundNormalZ
+    {
+        get => _walkMinGroundNormalZ;
+        set => SetProperty(ref _walkMinGroundNormalZ, value);
+    }
+
+    public bool WalkModeDefaultEnabled
+    {
+        get => _walkModeDefaultEnabled;
+        set => SetProperty(ref _walkModeDefaultEnabled, value);
+    }
+
+    public bool HandheldDefaultEnabled
+    {
+        get => _handheldDefaultEnabled;
+        set => SetProperty(ref _handheldDefaultEnabled, value);
+    }
+
+    public double WalkBobAmplitudeZ
+    {
+        get => _walkBobAmplitudeZ;
+        set => SetProperty(ref _walkBobAmplitudeZ, value);
+    }
+
+    public double WalkBobAmplitudeSide
+    {
+        get => _walkBobAmplitudeSide;
+        set => SetProperty(ref _walkBobAmplitudeSide, value);
+    }
+
+    public double WalkBobAmplitudeRoll
+    {
+        get => _walkBobAmplitudeRoll;
+        set => SetProperty(ref _walkBobAmplitudeRoll, value);
+    }
+
+    public double WalkBobFrequency
+    {
+        get => _walkBobFrequency;
+        set => SetProperty(ref _walkBobFrequency, value);
+    }
+
+    public double HandheldShakePosAmplitude
+    {
+        get => _handheldShakePosAmplitude;
+        set => SetProperty(ref _handheldShakePosAmplitude, value);
+    }
+
+    public double HandheldShakeAngAmplitude
+    {
+        get => _handheldShakeAngAmplitude;
+        set => SetProperty(ref _handheldShakeAngAmplitude, value);
+    }
+
+    public double HandheldShakeFrequency
+    {
+        get => _handheldShakeFrequency;
+        set => SetProperty(ref _handheldShakeFrequency, value);
+    }
+
+    public double HandheldDriftPosAmplitude
+    {
+        get => _handheldDriftPosAmplitude;
+        set => SetProperty(ref _handheldDriftPosAmplitude, value);
+    }
+
+    public double HandheldDriftAngAmplitude
+    {
+        get => _handheldDriftAngAmplitude;
+        set => SetProperty(ref _handheldDriftAngAmplitude, value);
+    }
+
+    public double HandheldDriftFrequency
+    {
+        get => _handheldDriftFrequency;
+        set => SetProperty(ref _handheldDriftFrequency, value);
     }
 
     #endregion
@@ -427,7 +627,35 @@ public sealed class FreecamSettings : ViewModelBase
             AnalogLeftDeadzone = AnalogLeftDeadzone,
             AnalogRightDeadzone = AnalogRightDeadzone,
             AnalogCurve = AnalogCurve,
-            ClampPitch = ClampPitch
+            ClampPitch = ClampPitch,
+            WalkMoveSpeed = WalkMoveSpeed,
+            WalkMoveAcceleration = WalkMoveAcceleration,
+            WalkMoveDeceleration = WalkMoveDeceleration,
+            WalkRunMultiplier = WalkRunMultiplier,
+            WalkCrouchSpeedMultiplier = WalkCrouchSpeedMultiplier,
+            WalkLookHalfTime = WalkLookHalfTime,
+            WalkFovHalfTime = WalkFovHalfTime,
+            WalkGravity = WalkGravity,
+            WalkJumpSpeed = WalkJumpSpeed,
+            WalkHullRadius = WalkHullRadius,
+            WalkHullHalfHeight = WalkHullHalfHeight,
+            WalkCrouchHullHalfHeight = WalkCrouchHullHalfHeight,
+            WalkCameraTopInset = WalkCameraTopInset,
+            WalkStepHeight = WalkStepHeight,
+            WalkGroundProbe = WalkGroundProbe,
+            WalkMinGroundNormalZ = WalkMinGroundNormalZ,
+            WalkModeDefaultEnabled = WalkModeDefaultEnabled,
+            HandheldDefaultEnabled = HandheldDefaultEnabled,
+            WalkBobAmplitudeZ = WalkBobAmplitudeZ,
+            WalkBobAmplitudeSide = WalkBobAmplitudeSide,
+            WalkBobAmplitudeRoll = WalkBobAmplitudeRoll,
+            WalkBobFrequency = WalkBobFrequency,
+            HandheldShakePosAmplitude = HandheldShakePosAmplitude,
+            HandheldShakeAngAmplitude = HandheldShakeAngAmplitude,
+            HandheldShakeFrequency = HandheldShakeFrequency,
+            HandheldDriftPosAmplitude = HandheldDriftPosAmplitude,
+            HandheldDriftAngAmplitude = HandheldDriftAngAmplitude,
+            HandheldDriftFrequency = HandheldDriftFrequency
         };
     }
 
@@ -469,6 +697,34 @@ public sealed class FreecamSettings : ViewModelBase
         AnalogRightDeadzone = data.AnalogRightDeadzone;
         AnalogCurve = data.AnalogCurve;
         ClampPitch = data.ClampPitch;
+        WalkMoveSpeed = data.WalkMoveSpeed;
+        WalkMoveAcceleration = data.WalkMoveAcceleration;
+        WalkMoveDeceleration = data.WalkMoveDeceleration;
+        WalkRunMultiplier = data.WalkRunMultiplier;
+        WalkCrouchSpeedMultiplier = data.WalkCrouchSpeedMultiplier;
+        WalkLookHalfTime = data.WalkLookHalfTime;
+        WalkFovHalfTime = data.WalkFovHalfTime;
+        WalkGravity = data.WalkGravity;
+        WalkJumpSpeed = data.WalkJumpSpeed;
+        WalkHullRadius = data.WalkHullRadius;
+        WalkHullHalfHeight = data.WalkHullHalfHeight;
+        WalkCrouchHullHalfHeight = data.WalkCrouchHullHalfHeight;
+        WalkCameraTopInset = data.WalkCameraTopInset;
+        WalkStepHeight = data.WalkStepHeight;
+        WalkGroundProbe = data.WalkGroundProbe;
+        WalkMinGroundNormalZ = data.WalkMinGroundNormalZ;
+        WalkModeDefaultEnabled = data.WalkModeDefaultEnabled;
+        HandheldDefaultEnabled = data.HandheldDefaultEnabled;
+        WalkBobAmplitudeZ = data.WalkBobAmplitudeZ;
+        WalkBobAmplitudeSide = data.WalkBobAmplitudeSide;
+        WalkBobAmplitudeRoll = data.WalkBobAmplitudeRoll;
+        WalkBobFrequency = data.WalkBobFrequency;
+        HandheldShakePosAmplitude = data.HandheldShakePosAmplitude;
+        HandheldShakeAngAmplitude = data.HandheldShakeAngAmplitude;
+        HandheldShakeFrequency = data.HandheldShakeFrequency;
+        HandheldDriftPosAmplitude = data.HandheldDriftPosAmplitude;
+        HandheldDriftAngAmplitude = data.HandheldDriftAngAmplitude;
+        HandheldDriftFrequency = data.HandheldDriftFrequency;
     }
 
     public void ResetToDefaults()

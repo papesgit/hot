@@ -18,4 +18,15 @@ public struct ViewportFreecamState
     public Quaternion SmoothedOrientation { get; init; }
     public float SmoothedFov { get; init; }
     public float SpeedScalar { get; init; }
+    public bool WalkModeEnabled { get; init; }
+    public bool HandheldEffectsEnabled { get; init; }
+    public Vector3 WalkVelocity { get; init; }
+    public float WalkVerticalVelocity { get; init; }
+    public bool WalkOnGround { get; init; }
+    public float WalkCrouchAmount { get; init; }
+    public float WalkBobPhase { get; init; }
+    public float WalkEffectTime { get; init; }
+    public float WalkTargetPitch { get; init; }
+    public float WalkTargetYaw { get; init; }
+    public float WalkTargetFov { get; init; }
 }

@@ -1548,6 +1548,284 @@
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
+                    <TabItem Header="Walk">
+                        <ScrollViewer>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="12">
+                                    <TextBlock Text="Movement"
+                                               Foreground="#CCCCCC"
+                                               FontWeight="SemiBold"/>
+
+                                    <TextBlock Text="Move Speed"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="10.0" Maximum="500.0" SmallChange="5.0" LargeChange="25.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkMoveSpeed, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkMoveSpeed, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Move Acceleration"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="10.0" Maximum="3000.0" SmallChange="10.0" LargeChange="100.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkMoveAcceleration, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkMoveAcceleration, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Move Deceleration"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="10.0" Maximum="3000.0" SmallChange="10.0" LargeChange="100.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkMoveDeceleration, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkMoveDeceleration, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Run Multiplier"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="1.0" Maximum="4.0" SmallChange="0.05" LargeChange="0.25" Width="200"
+                                                Value="{Binding FreecamSettings.WalkRunMultiplier, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkRunMultiplier, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Crouch Speed Multiplier"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.1" Maximum="1.5" SmallChange="0.05" LargeChange="0.1" Width="200"
+                                                Value="{Binding FreecamSettings.WalkCrouchSpeedMultiplier, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkCrouchSpeedMultiplier, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Gravity"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="100.0" Maximum="2000.0" SmallChange="25.0" LargeChange="100.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkGravity, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkGravity, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Jump Speed"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="50.0" Maximum="600.0" SmallChange="10.0" LargeChange="25.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkJumpSpeed, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkJumpSpeed, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Walk mode uses analog WASD, analog sprint on right-stick X+, and analog crouch on down/right-stick Y-."
+                                               Foreground="#888888"
+                                               FontSize="12"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Spacing="12">
+                                    <TextBlock Text="Smoothing"
+                                               Foreground="#CCCCCC"
+                                               FontWeight="SemiBold"/>
+
+                                    <TextBlock Text="Look Half-time"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Width="200"
+                                                Value="{Binding FreecamSettings.WalkLookHalfTime, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkLookHalfTime, StringFormat={}{0:F3}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="FOV Half-time"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.01" Maximum="1.5" SmallChange="0.01" LargeChange="0.05" Width="200"
+                                                Value="{Binding FreecamSettings.WalkFovHalfTime, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkFovHalfTime, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Collision"
+                                               Foreground="#CCCCCC"
+                                               FontWeight="SemiBold"
+                                               Margin="0,8,0,0"/>
+
+                                    <TextBlock Text="Hull Radius"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="2.0" Maximum="32.0" SmallChange="1.0" LargeChange="2.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkHullRadius, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkHullRadius, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Standing Half-height"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="8.0" Maximum="64.0" SmallChange="1.0" LargeChange="4.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkHullHalfHeight, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkHullHalfHeight, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Crouch Half-height"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="8.0" Maximum="64.0" SmallChange="1.0" LargeChange="4.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkCrouchHullHalfHeight, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkCrouchHullHalfHeight, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Camera Top Inset"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="16.0" SmallChange="0.5" LargeChange="1.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkCameraTopInset, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkCameraTopInset, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Step Height"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="48.0" SmallChange="1.0" LargeChange="2.0" Width="200"
+                                                Value="{Binding FreecamSettings.WalkStepHeight, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkStepHeight, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Ground Probe"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.25" LargeChange="0.5" Width="200"
+                                                Value="{Binding FreecamSettings.WalkGroundProbe, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkGroundProbe, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Ground Normal Z"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.1" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Width="200"
+                                                Value="{Binding FreecamSettings.WalkMinGroundNormalZ, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkMinGroundNormalZ, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.WalkModeDefaultEnabled, Mode=TwoWay}"
+                                                  Content="Walk mode enabled by default"
+                                                  Foreground="#E6E6E6"/>
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="Handheld">
+                        <ScrollViewer>
+                            <Grid Margin="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="12">
+                                    <TextBlock Text="Shake"
+                                               Foreground="#CCCCCC"
+                                               FontWeight="SemiBold"/>
+
+                                    <TextBlock Text="Position Amplitude"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="5.0" SmallChange="0.05" LargeChange="0.25" Width="200"
+                                                Value="{Binding FreecamSettings.HandheldShakePosAmplitude, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.HandheldShakePosAmplitude, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Angle Amplitude"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="5.0" SmallChange="0.05" LargeChange="0.25" Width="200"
+                                                Value="{Binding FreecamSettings.HandheldShakeAngAmplitude, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.HandheldShakeAngAmplitude, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Frequency"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="2.0" SmallChange="0.01" LargeChange="0.05" Width="200"
+                                                Value="{Binding FreecamSettings.HandheldShakeFrequency, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.HandheldShakeFrequency, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Walk bob"
+                                               Foreground="#CCCCCC"
+                                               FontWeight="SemiBold"
+                                               Margin="0,8,0,0"/>
+
+                                    <TextBlock Text="Amplitude Z"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Width="200"
+                                                Value="{Binding FreecamSettings.WalkBobAmplitudeZ, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeZ, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Amplitude Side"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Width="200"
+                                                Value="{Binding FreecamSettings.WalkBobAmplitudeSide, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeSide, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Amplitude Roll"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Width="200"
+                                                Value="{Binding FreecamSettings.WalkBobAmplitudeRoll, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeRoll, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Bob Frequency"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="3.0" SmallChange="0.01" LargeChange="0.05" Width="200"
+                                                Value="{Binding FreecamSettings.WalkBobFrequency, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.WalkBobFrequency, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Spacing="12">
+                                    <TextBlock Text="Drift"
+                                               Foreground="#CCCCCC"
+                                               FontWeight="SemiBold"/>
+
+                                    <TextBlock Text="Position Amplitude"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="10.0" SmallChange="0.05" LargeChange="0.25" Width="200"
+                                                Value="{Binding FreecamSettings.HandheldDriftPosAmplitude, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.HandheldDriftPosAmplitude, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Angle Amplitude"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="10.0" SmallChange="0.05" LargeChange="0.25" Width="200"
+                                                Value="{Binding FreecamSettings.HandheldDriftAngAmplitude, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.HandheldDriftAngAmplitude, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Frequency"
+                                               Foreground="#CCCCCC"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Slider Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Width="200"
+                                                Value="{Binding FreecamSettings.HandheldDriftFrequency, Mode=TwoWay}"/>
+                                        <TextBlock Text="{Binding FreecamSettings.HandheldDriftFrequency, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                    </StackPanel>
+
+                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.HandheldDefaultEnabled, Mode=TwoWay}"
+                                                  Content="Handheld enabled by default for regular freecam"
+                                                  Foreground="#E6E6E6"
+                                                  Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                    </TabItem>
                 </TabControl>
             </TabItem>
 

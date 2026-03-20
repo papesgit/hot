@@ -218,10 +218,26 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private DateTime _freecamLastUpdate;
     private FreecamTransform _freecamTransform;
     private FreecamTransform _freecamSmoothed;
+    private FreecamTransform _freecamOutput;
     private FreecamConfig _freecamConfig = FreecamConfig.Default;
     private FreecamSettings? _freecamSettings;
     private bool _freecamPreviewRollOverrideActive;
     private float _freecamPreviewRollOverride;
+    private bool _freecamWalkModeEnabled;
+    private bool _freecamHandheldEnabled;
+    private Vector3 _freecamWalkVelocity;
+    private float _freecamWalkVerticalVelocity;
+    private bool _freecamWalkOnGround;
+    private bool _freecamWalkJumpLatch;
+    private float _freecamWalkCrouchAmount;
+    private float _freecamWalkBobPhase;
+    private float _freecamWalkEffectTime;
+    private float _freecamHandheldMotionNorm;
+    private float _freecamWalkTargetPitch;
+    private float _freecamWalkTargetYaw;
+    private float _freecamWalkTargetFov;
+    private bool _freecamLastGDown;
+    private bool _freecamLastHDown;
     private bool _externalCameraActive;
     private Vector3 _externalCameraPosition;
     private Quaternion _externalCameraRotation = Quaternion.Identity;
@@ -935,7 +951,18 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             SmoothedUp = Vector3.Normalize(smoothUp),
             SmoothedOrientation = _freecamSmoothed.Orientation,
             SmoothedFov = _freecamSmoothed.Fov,
-            SpeedScalar = _freecamSpeedScalar
+            SpeedScalar = _freecamSpeedScalar,
+            WalkModeEnabled = _freecamWalkModeEnabled,
+            HandheldEffectsEnabled = _freecamHandheldEnabled,
+            WalkVelocity = _freecamWalkVelocity,
+            WalkVerticalVelocity = _freecamWalkVerticalVelocity,
+            WalkOnGround = _freecamWalkOnGround,
+            WalkCrouchAmount = _freecamWalkCrouchAmount,
+            WalkBobPhase = _freecamWalkBobPhase,
+            WalkEffectTime = _freecamWalkEffectTime,
+            WalkTargetPitch = _freecamWalkTargetPitch,
+            WalkTargetYaw = _freecamWalkTargetYaw,
+            WalkTargetFov = _freecamWalkTargetFov
         };
         return true;
     }
@@ -980,6 +1007,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _freecamRollVelocity = 0.0f;
 
         _freecamSmoothed = _freecamTransform;
+        _freecamOutput = _freecamTransform;
         _freecamSmoothedQuat = _freecamSmoothed.Orientation;
         ResetFreecamState();
         if (!wasActive)
@@ -1091,6 +1119,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             Orientation = BuildQuat(pitch, yaw, roll)
         };
         _freecamSmoothed = _freecamTransform;
+        _freecamOutput = _freecamTransform;
         ResetFreecamState();
         _freecamInitialized = true;
     }
@@ -1116,9 +1145,25 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _freecamLastSmoothedPosition = _freecamSmoothed.Position;
         _freecamTransform.Orientation = BuildQuat(_freecamTransform);
         _freecamSmoothed.Orientation = BuildQuat(_freecamSmoothed);
+        _freecamOutput = _freecamSmoothed;
         _freecamRawQuat = _freecamTransform.Orientation;
         _freecamSmoothedQuat = _freecamSmoothed.Orientation;
         _freecamRotVelocity = Vector3.Zero;
+        _freecamWalkModeEnabled = _freecamConfig.WalkModeDefaultEnabled;
+        _freecamHandheldEnabled = _freecamConfig.HandheldDefaultEnabled;
+        _freecamWalkVelocity = Vector3.Zero;
+        _freecamWalkVerticalVelocity = 0f;
+        _freecamWalkOnGround = false;
+        _freecamWalkJumpLatch = false;
+        _freecamWalkCrouchAmount = 0f;
+        _freecamWalkBobPhase = 0f;
+        _freecamWalkEffectTime = 0f;
+        _freecamHandheldMotionNorm = 0f;
+        _freecamWalkTargetPitch = _freecamTransform.Pitch;
+        _freecamWalkTargetYaw = _freecamTransform.Yaw;
+        _freecamWalkTargetFov = _freecamTransform.Fov;
+        _freecamLastGDown = false;
+        _freecamLastHDown = false;
     }
 
     private void ClearFreecamInputState()
@@ -1173,12 +1218,13 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
         else if (_freecamActive)
         {
-            var fovRad = GetSourceVerticalFovRadians(_freecamSmoothed.Fov);
+            var output = _freecamOutput;
+            var fovRad = GetSourceVerticalFovRadians(output.Fov);
             _rendererContext.FieldOfView = RadToDeg(fovRad);
             _renderer.Camera.SetViewportSize(width, height);
-            var forward = GetForwardFromQuat(_freecamSmoothed.Orientation);
-            var up = GetUpFromQuat(_freecamSmoothed.Orientation);
-            _renderer.Camera.SetLocationForwardUp(_freecamSmoothed.Position, forward, up);
+            var forward = GetForwardFromQuat(output.Orientation);
+            var up = GetUpFromQuat(output.Orientation);
+            _renderer.Camera.SetLocationForwardUp(output.Position, forward, up);
         }
         else
         {
@@ -1207,12 +1253,30 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         if (_freecamInputEnabled)
         {
+            UpdateWalkModeToggles();
             UpdateFreecamSpeed(deltaTime, wheel);
-            UpdateFreecamMouseLook(deltaTime);
+        }
+
+        if (_freecamWalkModeEnabled)
+        {
+            UpdateWalkLook(deltaTime, wheel);
+            UpdateWalkMovement(deltaTime);
+
+            _freecamTransform.Roll = 0f;
+            _freecamTransform.Orientation = BuildQuat(_freecamTransform);
+            _freecamRawQuat = _freecamTransform.Orientation;
+            _freecamSmoothed = _freecamTransform;
+            _freecamSmoothed.Orientation = _freecamTransform.Orientation;
+            _freecamSmoothedQuat = _freecamSmoothed.Orientation;
+            _freecamRotVelocity = Vector3.Zero;
+
+            ApplyWalkHandheldEffects(deltaTime);
+            return;
         }
 
         if (_freecamInputEnabled)
         {
+            UpdateFreecamMouseLook(deltaTime);
             UpdateFreecamMovement(deltaTime);
             UpdateFreecamFov(wheel);
         }
@@ -1232,6 +1296,257 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             _freecamSmoothedQuat = _freecamSmoothed.Orientation;
             _freecamRotVelocity = Vector3.Zero;
         }
+
+        ApplyWalkHandheldEffects(deltaTime);
+    }
+
+    private void UpdateWalkModeToggles()
+    {
+        var gDown = IsKeyDown(Key.G);
+        if (gDown && !_freecamLastGDown)
+        {
+            _freecamWalkModeEnabled = !_freecamWalkModeEnabled;
+            _freecamWalkVelocity = Vector3.Zero;
+            _freecamWalkVerticalVelocity = 0f;
+            _freecamWalkOnGround = false;
+            _freecamWalkJumpLatch = false;
+            _freecamWalkBobPhase = 0f;
+            _freecamWalkEffectTime = 0f;
+            _freecamWalkTargetPitch = _freecamTransform.Pitch;
+            _freecamWalkTargetYaw = _freecamTransform.Yaw;
+            _freecamWalkTargetFov = _freecamTransform.Fov;
+        }
+        _freecamLastGDown = gDown;
+
+        var hDown = IsKeyDown(Key.H);
+        if (!_freecamWalkModeEnabled && hDown && !_freecamLastHDown)
+        {
+            _freecamHandheldEnabled = !_freecamHandheldEnabled;
+        }
+        _freecamLastHDown = hDown;
+    }
+
+    private void UpdateWalkLook(float deltaTime, float wheelDelta)
+    {
+        if (deltaTime <= 0f)
+            return;
+
+        var deltaYaw = _freecamInputEnabled ? -_freecamMouseDelta.X * _freecamConfig.MouseSensitivity : 0f;
+        var deltaPitch = _freecamInputEnabled ? _freecamMouseDelta.Y * _freecamConfig.MouseSensitivity : 0f;
+        _freecamMouseDelta = Vector2.Zero;
+
+        _freecamWalkTargetYaw += deltaYaw;
+        _freecamWalkTargetPitch = Clamp(_freecamWalkTargetPitch + deltaPitch, -89f, 89f);
+        _freecamMouseVelocityX = deltaYaw / deltaTime;
+        _freecamMouseVelocityY = deltaPitch / deltaTime;
+
+        var lookHalf = MathF.Max(_freecamConfig.WalkLookHalfTime, 1e-4f);
+        _freecamTransform.Pitch = Clamp(
+            CalcDeltaExpSmooth(deltaTime / lookHalf, _freecamWalkTargetPitch - _freecamTransform.Pitch) + _freecamTransform.Pitch,
+            -89f,
+            89f);
+        _freecamTransform.Yaw = CalcDeltaExpSmooth(deltaTime / lookHalf, _freecamWalkTargetYaw - _freecamTransform.Yaw) + _freecamTransform.Yaw;
+
+        if (_freecamInputEnabled && Math.Abs(wheelDelta) > float.Epsilon && !IsAltDown())
+        {
+            _freecamWalkTargetFov += wheelDelta * _freecamConfig.FovStep;
+            _freecamWalkTargetFov = Clamp(_freecamWalkTargetFov, _freecamConfig.FovMin, _freecamConfig.FovMax);
+        }
+
+        var fovHalf = MathF.Max(_freecamConfig.WalkFovHalfTime, 1e-4f);
+        _freecamTransform.Fov = CalcDeltaExpSmooth(deltaTime / fovHalf, _freecamWalkTargetFov - _freecamTransform.Fov) + _freecamTransform.Fov;
+    }
+
+    private void UpdateWalkMovement(float deltaTime)
+    {
+        var inputActive = _freecamInputEnabled;
+        var analogLX = 0f;
+        var analogLY = 0f;
+        var analogRY = 0f;
+        var analogRX = 0f;
+        var useAnalog = inputActive && TryGetAnalogState(out analogLX, out analogLY, out analogRY, out analogRX);
+        var moveX = useAnalog ? Clamp(analogLX, -1f, 1f) : inputActive ? (IsKeyDown(Key.D) ? 1f : 0f) - (IsKeyDown(Key.A) ? 1f : 0f) : 0f;
+        var moveY = useAnalog ? Clamp(analogLY, -1f, 1f) : inputActive ? (IsKeyDown(Key.W) ? 1f : 0f) - (IsKeyDown(Key.S) ? 1f : 0f) : 0f;
+        var crouchInput = useAnalog ? Clamp(-analogRY, 0f, 1f) : 0f;
+        var sprintInput = useAnalog ? Clamp(analogRX, 0f, 1f) : 0f;
+
+        if (sprintInput <= 0f && inputActive && IsShiftDown())
+            sprintInput = 1f;
+
+        var targetCrouch = useAnalog
+            ? (crouchInput > 0f ? crouchInput : (inputActive && IsCtrlDown() ? 1f : 0f))
+            : (inputActive && IsCtrlDown() ? 1f : 0f);
+        var crouchBlend = 1.0f - MathF.Exp((-MathF.Log(2.0f) * deltaTime) / 0.08f);
+        _freecamWalkCrouchAmount = Lerp(_freecamWalkCrouchAmount, Clamp(targetCrouch, 0f, 1f), crouchBlend);
+
+        var moveMagnitude = MathF.Sqrt(moveX * moveX + moveY * moveY);
+        if (moveMagnitude > 1f)
+        {
+            moveX /= moveMagnitude;
+            moveY /= moveMagnitude;
+        }
+
+        var yawRad = DegToRad(_freecamTransform.Yaw);
+        var forward = new Vector3(MathF.Cos(yawRad), MathF.Sin(yawRad), 0f);
+        var left = new Vector3(-MathF.Sin(yawRad), MathF.Cos(yawRad), 0f);
+
+        var crouchScale = 1f + _freecamWalkCrouchAmount * (_freecamConfig.WalkCrouchSpeedMultiplier - 1f);
+        var runScale = 1f + sprintInput * (_freecamConfig.WalkRunMultiplier - 1f);
+        var walkSpeed = _freecamConfig.WalkMoveSpeed * runScale * crouchScale;
+
+        var desiredVelocity = (forward * moveY) + (left * -moveX);
+        desiredVelocity *= walkSpeed;
+
+        var velocityDelta = desiredVelocity - _freecamWalkVelocity;
+        var desiredPlanar = desiredVelocity.Length();
+        var currentPlanar = _freecamWalkVelocity.Length();
+        var acceleration = desiredPlanar > currentPlanar
+            ? _freecamConfig.WalkMoveAcceleration
+            : _freecamConfig.WalkMoveDeceleration;
+        var maxDelta = MathF.Max(0f, acceleration) * deltaTime;
+        var deltaLength = velocityDelta.Length();
+        if (deltaLength > maxDelta && deltaLength > 0.0001f)
+        {
+            _freecamWalkVelocity += velocityDelta * (maxDelta / deltaLength);
+        }
+        else
+        {
+            _freecamWalkVelocity = desiredVelocity;
+        }
+
+        if (!TryGetWalkPhysics(out var physics))
+        {
+            var verticalVelocity = 0f;
+            if (inputActive && IsKeyDown(Key.Space))
+                verticalVelocity += _freecamConfig.VerticalSpeed;
+            if (inputActive && IsCtrlDown())
+                verticalVelocity -= _freecamConfig.VerticalSpeed;
+
+            _freecamTransform.Position += _freecamWalkVelocity * deltaTime;
+            _freecamTransform.Position += Vector3.UnitZ * (verticalVelocity * deltaTime);
+            _freecamWalkVerticalVelocity = 0f;
+            _freecamWalkOnGround = false;
+            return;
+        }
+
+        var physicsHalfHeight = _freecamConfig.WalkHullHalfHeight;
+        var physicsCameraHeight = MathF.Max(0f, _freecamConfig.WalkHullHalfHeight - _freecamConfig.WalkCameraTopInset);
+        var hullPosition = _freecamTransform.Position - new Vector3(0f, 0f, physicsCameraHeight);
+
+        if (TryWalkHorizontalMove(physics, hullPosition, new Vector3(_freecamWalkVelocity.X * deltaTime, 0f, 0f), _freecamWalkOnGround, physicsHalfHeight, out var movedX))
+            hullPosition = movedX;
+        if (TryWalkHorizontalMove(physics, hullPosition, new Vector3(0f, _freecamWalkVelocity.Y * deltaTime, 0f), _freecamWalkOnGround, physicsHalfHeight, out var movedY))
+            hullPosition = movedY;
+
+        if (_freecamWalkVerticalVelocity <= 0f
+            && ProbeWalkGround(physics, hullPosition, _freecamConfig.WalkGroundProbe, physicsHalfHeight, out var groundTrace)
+            && groundTrace.Hit
+            && groundTrace.HitNormal.Z >= _freecamConfig.WalkMinGroundNormalZ)
+        {
+            _freecamWalkOnGround = true;
+            hullPosition = ResolveWalkTracePosition(groundTrace, hullPosition);
+            if (_freecamWalkVerticalVelocity < 0f)
+                _freecamWalkVerticalVelocity = 0f;
+        }
+        else
+        {
+            _freecamWalkOnGround = false;
+        }
+
+        var jumpPressed = inputActive && IsKeyDown(Key.Space);
+        if (jumpPressed && !_freecamWalkJumpLatch && _freecamWalkOnGround)
+        {
+            _freecamWalkVerticalVelocity = _freecamConfig.WalkJumpSpeed;
+            _freecamWalkOnGround = false;
+        }
+        _freecamWalkJumpLatch = jumpPressed;
+
+        _freecamWalkVerticalVelocity -= _freecamConfig.WalkGravity * deltaTime;
+
+        if (TryTraceWalkHullMove(physics, hullPosition, hullPosition + new Vector3(0f, 0f, _freecamWalkVerticalVelocity * deltaTime), physicsHalfHeight, out var verticalTrace))
+        {
+            hullPosition = ResolveWalkTracePosition(verticalTrace, hullPosition + new Vector3(0f, 0f, _freecamWalkVerticalVelocity * deltaTime));
+            if (verticalTrace.Hit)
+            {
+                if (_freecamWalkVerticalVelocity < 0f)
+                    _freecamWalkOnGround = true;
+                _freecamWalkVerticalVelocity = 0f;
+            }
+        }
+
+        _freecamTransform.Position = hullPosition + new Vector3(0f, 0f, physicsCameraHeight);
+    }
+
+    private void ApplyWalkHandheldEffects(float deltaTime)
+    {
+        _freecamOutput = _freecamSmoothed;
+
+        if (_freecamWalkModeEnabled)
+        {
+            var physicsCameraHeight = MathF.Max(0f, _freecamConfig.WalkHullHalfHeight - _freecamConfig.WalkCameraTopInset);
+            var visualCameraHeight = GetWalkCameraHeight(_freecamWalkCrouchAmount);
+            _freecamOutput.Position += new Vector3(0f, 0f, visualCameraHeight - physicsCameraHeight);
+        }
+
+        var applyHandheld = _freecamWalkModeEnabled || _freecamHandheldEnabled;
+        if (!applyHandheld)
+            return;
+
+        _freecamWalkEffectTime += deltaTime;
+
+        var speedNorm = 1f;
+        if (_freecamWalkModeEnabled)
+        {
+            var speed = _freecamWalkVelocity.Length();
+            var baseSpeed = _freecamConfig.WalkMoveSpeed * MathF.Max(1f, _freecamConfig.WalkRunMultiplier);
+            var targetSpeedNorm = Clamp(speed / baseSpeed, 0f, 1f);
+            var motionBlend = 1.0f - MathF.Exp((-MathF.Log(2.0f) * deltaTime) / 0.06f);
+            _freecamHandheldMotionNorm = Lerp(_freecamHandheldMotionNorm, targetSpeedNorm, motionBlend);
+            speedNorm = _freecamHandheldMotionNorm;
+
+            if (_freecamWalkOnGround && speed > 1f)
+            {
+                _freecamWalkBobPhase += deltaTime * _freecamConfig.WalkBobFrequency * (0.5f + 1.5f * speedNorm) * 2f * MathF.PI;
+            }
+        }
+        else
+        {
+            _freecamHandheldMotionNorm = 1f;
+        }
+
+        var bobSin = MathF.Sin(_freecamWalkBobPhase);
+        var bobCos = MathF.Cos(_freecamWalkBobPhase);
+        var bobZ = _freecamWalkModeEnabled ? bobSin * _freecamConfig.WalkBobAmplitudeZ * speedNorm : 0f;
+        var bobSide = _freecamWalkModeEnabled ? bobCos * _freecamConfig.WalkBobAmplitudeSide * speedNorm : 0f;
+        var bobRoll = _freecamWalkModeEnabled ? bobSin * _freecamConfig.WalkBobAmplitudeRoll * speedNorm : 0f;
+
+        var shakeT = _freecamWalkEffectTime * _freecamConfig.HandheldShakeFrequency;
+        var shakeBaseA = MathF.Sin(shakeT * 9.73f) + 0.6f * MathF.Sin(shakeT * 17.11f + 1.31f);
+        var shakeBaseB = MathF.Sin(shakeT * 11.41f + 0.77f) + 0.5f * MathF.Sin(shakeT * 21.37f + 2.03f);
+        var shakeGain = _freecamWalkModeEnabled
+            ? Clamp(0.2f + 0.8f * speedNorm, 0f, 1.5f)
+            : 0.2f;
+
+        var shakeSide = shakeBaseA * _freecamConfig.HandheldShakePosAmplitude * shakeGain;
+        var shakeUp = shakeBaseB * _freecamConfig.HandheldShakePosAmplitude * 0.75f * shakeGain;
+        var shakePitch = shakeBaseB * _freecamConfig.HandheldShakeAngAmplitude * 0.6f * shakeGain;
+        var shakeYaw = shakeBaseA * _freecamConfig.HandheldShakeAngAmplitude * 0.4f * shakeGain;
+        var shakeRoll = shakeBaseA * _freecamConfig.HandheldShakeAngAmplitude * shakeGain;
+
+        var driftT = _freecamWalkEffectTime * _freecamConfig.HandheldDriftFrequency * 2f * MathF.PI;
+        var driftSide = (MathF.Sin(driftT + 0.4f) + 0.4f * MathF.Sin(driftT * 0.47f + 1.1f)) * _freecamConfig.HandheldDriftPosAmplitude;
+        var driftUp = MathF.Sin(driftT * 0.63f + 2.3f) * _freecamConfig.HandheldDriftPosAmplitude * 0.7f;
+        var driftPitch = MathF.Sin(driftT * 0.71f + 0.9f) * _freecamConfig.HandheldDriftAngAmplitude * 0.7f;
+        var driftYaw = MathF.Sin(driftT * 0.53f + 1.7f) * _freecamConfig.HandheldDriftAngAmplitude * 0.6f;
+        var driftRoll = MathF.Sin(driftT * 0.81f + 0.2f) * _freecamConfig.HandheldDriftAngAmplitude * 0.8f;
+
+        var right = GetRightVector(_freecamOutput.Yaw);
+        _freecamOutput.Position += right * -(bobSide + shakeSide + driftSide);
+        _freecamOutput.Position += new Vector3(0f, 0f, bobZ + shakeUp + driftUp);
+        _freecamOutput.Pitch += shakePitch + driftPitch;
+        _freecamOutput.Yaw += shakeYaw + driftYaw;
+        _freecamOutput.Roll += bobRoll + shakeRoll + driftRoll;
+        _freecamOutput.Orientation = BuildQuat(_freecamOutput);
     }
 
     private void UpdateFreecamMouseLook(float deltaTime)
@@ -1395,7 +1710,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         else
         {
             _freecamLastLateralVelocity = 0f;
-            _freecamLastSmoothedPosition = _freecamTransform.Position;
+            _freecamLastSmoothedPosition = _freecamConfig.SmoothEnabled ? _freecamSmoothed.Position : _freecamTransform.Position;
         }
 
         var combinedRoll = _freecamTargetRoll + dynamicRoll;
@@ -2079,6 +2394,103 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             || _keysDown.Contains(Key.RightAlt);
     }
 
+    private bool TryGetAnalogState(out float analogLX, out float analogLY, out float analogRY, out float analogRX)
+    {
+        analogLX = 0f;
+        analogLY = 0f;
+        analogRY = 0f;
+        analogRX = 0f;
+
+        if (!_freecamInputEnabled || _freecamSettings?.AnalogKeyboardEnabled != true || _inputSender == null)
+            return false;
+
+        return _inputSender.TryGetAnalogState(out var enabled, out analogLX, out analogLY, out analogRY, out analogRX) && enabled;
+    }
+
+    private bool TryGetWalkPhysics(out Rubikon physics)
+    {
+        var physicsWorld = _renderer?.Scene?.PhysicsWorld;
+        if (physicsWorld == null)
+        {
+            physics = null!;
+            return false;
+        }
+
+        physics = physicsWorld;
+        return true;
+    }
+
+    private float GetWalkHalfHeight(float crouchAmount)
+    {
+        var clamped = Clamp(crouchAmount, 0f, 1f);
+        return _freecamConfig.WalkHullHalfHeight
+            + (_freecamConfig.WalkCrouchHullHalfHeight - _freecamConfig.WalkHullHalfHeight) * clamped;
+    }
+
+    private float GetWalkCameraHeight(float crouchAmount)
+    {
+        return MathF.Max(0f, GetWalkHalfHeight(crouchAmount) - _freecamConfig.WalkCameraTopInset);
+    }
+
+    private bool TryTraceWalkHullMove(Rubikon physics, Vector3 from, Vector3 to, float halfHeight, out Rubikon.TraceResult trace)
+    {
+        var aabb = new AABB(
+            new Vector3(-_freecamConfig.WalkHullRadius, -_freecamConfig.WalkHullRadius, -halfHeight),
+            new Vector3(_freecamConfig.WalkHullRadius, _freecamConfig.WalkHullRadius, halfHeight));
+        trace = physics.TraceAABB(from, to, aabb, "player");
+        return true;
+    }
+
+    private bool ProbeWalkGround(Rubikon physics, Vector3 from, float probeDistance, float halfHeight, out Rubikon.TraceResult trace)
+    {
+        return TryTraceWalkHullMove(physics, from, from - new Vector3(0f, 0f, probeDistance), halfHeight, out trace);
+    }
+
+    private static Vector3 ResolveWalkTracePosition(in Rubikon.TraceResult trace, Vector3 fallback)
+    {
+        const float surfaceEpsilon = 0.03125f;
+        return trace.Hit
+            ? trace.HitPosition + trace.HitNormal * surfaceEpsilon
+            : fallback;
+    }
+
+    private bool TryWalkHorizontalMove(Rubikon physics, Vector3 from, Vector3 delta, bool allowStep, float halfHeight, out Vector3 result)
+    {
+        var directTo = from + delta;
+        TryTraceWalkHullMove(physics, from, directTo, halfHeight, out var directTrace);
+        if (!directTrace.Hit)
+        {
+            result = directTo;
+            return true;
+        }
+
+        if (!allowStep || _freecamConfig.WalkStepHeight <= 0f)
+        {
+            result = ResolveWalkTracePosition(directTrace, directTo);
+            return true;
+        }
+
+        TryTraceWalkHullMove(physics, from, from + new Vector3(0f, 0f, _freecamConfig.WalkStepHeight), halfHeight, out var upTrace);
+        if (upTrace.Hit)
+        {
+            result = ResolveWalkTracePosition(directTrace, directTo);
+            return true;
+        }
+
+        var stepUp = ResolveWalkTracePosition(upTrace, from + new Vector3(0f, 0f, _freecamConfig.WalkStepHeight));
+        TryTraceWalkHullMove(physics, stepUp, stepUp + delta, halfHeight, out var forwardTrace);
+        var stepForward = ResolveWalkTracePosition(forwardTrace, stepUp + delta);
+
+        TryTraceWalkHullMove(
+            physics,
+            stepForward,
+            stepForward - new Vector3(0f, 0f, _freecamConfig.WalkStepHeight + _freecamConfig.WalkGroundProbe),
+            halfHeight,
+            out var downTrace);
+        result = ResolveWalkTracePosition(downTrace, stepForward);
+        return true;
+    }
+
     private void LockFreecamCursor()
     {
         if (Bounds.Width <= 0 || Bounds.Height <= 0)
@@ -2492,7 +2904,35 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             HalfRot = (float)_freecamSettings.HalfRot,
             HalfFov = (float)_freecamSettings.HalfFov,
             RotCriticalDamping = _freecamSettings.RotCriticalDamping,
-            RotDampingRatio = (float)_freecamSettings.RotDampingRatio
+            RotDampingRatio = (float)_freecamSettings.RotDampingRatio,
+            WalkMoveSpeed = (float)_freecamSettings.WalkMoveSpeed,
+            WalkMoveAcceleration = (float)_freecamSettings.WalkMoveAcceleration,
+            WalkMoveDeceleration = (float)_freecamSettings.WalkMoveDeceleration,
+            WalkRunMultiplier = (float)_freecamSettings.WalkRunMultiplier,
+            WalkCrouchSpeedMultiplier = (float)_freecamSettings.WalkCrouchSpeedMultiplier,
+            WalkLookHalfTime = (float)_freecamSettings.WalkLookHalfTime,
+            WalkFovHalfTime = (float)_freecamSettings.WalkFovHalfTime,
+            WalkGravity = (float)_freecamSettings.WalkGravity,
+            WalkJumpSpeed = (float)_freecamSettings.WalkJumpSpeed,
+            WalkHullRadius = (float)_freecamSettings.WalkHullRadius,
+            WalkHullHalfHeight = (float)_freecamSettings.WalkHullHalfHeight,
+            WalkCrouchHullHalfHeight = (float)_freecamSettings.WalkCrouchHullHalfHeight,
+            WalkCameraTopInset = (float)_freecamSettings.WalkCameraTopInset,
+            WalkStepHeight = (float)_freecamSettings.WalkStepHeight,
+            WalkGroundProbe = (float)_freecamSettings.WalkGroundProbe,
+            WalkMinGroundNormalZ = (float)_freecamSettings.WalkMinGroundNormalZ,
+            WalkModeDefaultEnabled = _freecamSettings.WalkModeDefaultEnabled,
+            HandheldDefaultEnabled = _freecamSettings.HandheldDefaultEnabled,
+            WalkBobAmplitudeZ = (float)_freecamSettings.WalkBobAmplitudeZ,
+            WalkBobAmplitudeSide = (float)_freecamSettings.WalkBobAmplitudeSide,
+            WalkBobAmplitudeRoll = (float)_freecamSettings.WalkBobAmplitudeRoll,
+            WalkBobFrequency = (float)_freecamSettings.WalkBobFrequency,
+            HandheldShakePosAmplitude = (float)_freecamSettings.HandheldShakePosAmplitude,
+            HandheldShakeAngAmplitude = (float)_freecamSettings.HandheldShakeAngAmplitude,
+            HandheldShakeFrequency = (float)_freecamSettings.HandheldShakeFrequency,
+            HandheldDriftPosAmplitude = (float)_freecamSettings.HandheldDriftPosAmplitude,
+            HandheldDriftAngAmplitude = (float)_freecamSettings.HandheldDriftAngAmplitude,
+            HandheldDriftFrequency = (float)_freecamSettings.HandheldDriftFrequency
         };
     }
 
@@ -5022,7 +5462,35 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
             HalfRot = 0.5f,
             HalfFov = 0.5f,
             RotCriticalDamping = false,
-            RotDampingRatio = 1.0f
+            RotDampingRatio = 1.0f,
+            WalkMoveSpeed = 160.0f,
+            WalkMoveAcceleration = 800.0f,
+            WalkMoveDeceleration = 800.0f,
+            WalkRunMultiplier = 1.8f,
+            WalkCrouchSpeedMultiplier = 0.6f,
+            WalkLookHalfTime = 0.150f,
+            WalkFovHalfTime = 0.40f,
+            WalkGravity = 800.0f,
+            WalkJumpSpeed = 280.0f,
+            WalkHullRadius = 12.0f,
+            WalkHullHalfHeight = 35.0f,
+            WalkCrouchHullHalfHeight = 12.0f,
+            WalkCameraTopInset = 6.0f,
+            WalkStepHeight = 18.0f,
+            WalkGroundProbe = 2.0f,
+            WalkMinGroundNormalZ = 0.55f,
+            WalkModeDefaultEnabled = false,
+            HandheldDefaultEnabled = false,
+            WalkBobAmplitudeZ = 2.15f,
+            WalkBobAmplitudeSide = 2.70f,
+            WalkBobAmplitudeRoll = 1.20f,
+            WalkBobFrequency = 0.8f,
+            HandheldShakePosAmplitude = 0.45f,
+            HandheldShakeAngAmplitude = 0.65f,
+            HandheldShakeFrequency = 0.4f,
+            HandheldDriftPosAmplitude = 3.30f,
+            HandheldDriftAngAmplitude = 2.36f,
+            HandheldDriftFrequency = 0.15f
         };
 
         public float MouseSensitivity { get; init; }
@@ -5050,6 +5518,34 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
         public float HalfFov { get; init; }
         public bool RotCriticalDamping { get; init; }
         public float RotDampingRatio { get; init; }
+        public float WalkMoveSpeed { get; init; }
+        public float WalkMoveAcceleration { get; init; }
+        public float WalkMoveDeceleration { get; init; }
+        public float WalkRunMultiplier { get; init; }
+        public float WalkCrouchSpeedMultiplier { get; init; }
+        public float WalkLookHalfTime { get; init; }
+        public float WalkFovHalfTime { get; init; }
+        public float WalkGravity { get; init; }
+        public float WalkJumpSpeed { get; init; }
+        public float WalkHullRadius { get; init; }
+        public float WalkHullHalfHeight { get; init; }
+        public float WalkCrouchHullHalfHeight { get; init; }
+        public float WalkCameraTopInset { get; init; }
+        public float WalkStepHeight { get; init; }
+        public float WalkGroundProbe { get; init; }
+        public float WalkMinGroundNormalZ { get; init; }
+        public bool WalkModeDefaultEnabled { get; init; }
+        public bool HandheldDefaultEnabled { get; init; }
+        public float WalkBobAmplitudeZ { get; init; }
+        public float WalkBobAmplitudeSide { get; init; }
+        public float WalkBobAmplitudeRoll { get; init; }
+        public float WalkBobFrequency { get; init; }
+        public float HandheldShakePosAmplitude { get; init; }
+        public float HandheldShakeAngAmplitude { get; init; }
+        public float HandheldShakeFrequency { get; init; }
+        public float HandheldDriftPosAmplitude { get; init; }
+        public float HandheldDriftAngAmplitude { get; init; }
+        public float HandheldDriftFrequency { get; init; }
     }
 
     private static bool _bindingsLoaded;

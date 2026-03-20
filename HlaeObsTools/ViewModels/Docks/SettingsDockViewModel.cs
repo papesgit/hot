@@ -2139,6 +2139,90 @@ namespace HlaeObsTools.ViewModels.Docks
                 case nameof(FreecamSettings.ClampPitch):
                     _ = SendFreecamConfigAsync(new { clampPitch = _freecamSettings.ClampPitch });
                     break;
+                case nameof(FreecamSettings.WalkMoveSpeed):
+                    _ = SendFreecamConfigAsync(new { walkMoveSpeed = (float)_freecamSettings.WalkMoveSpeed });
+                    break;
+                case nameof(FreecamSettings.WalkMoveAcceleration):
+                    _ = SendFreecamConfigAsync(new { walkMoveAcceleration = (float)_freecamSettings.WalkMoveAcceleration });
+                    break;
+                case nameof(FreecamSettings.WalkMoveDeceleration):
+                    _ = SendFreecamConfigAsync(new { walkMoveDeceleration = (float)_freecamSettings.WalkMoveDeceleration });
+                    break;
+                case nameof(FreecamSettings.WalkRunMultiplier):
+                    _ = SendFreecamConfigAsync(new { walkRunMultiplier = (float)_freecamSettings.WalkRunMultiplier });
+                    break;
+                case nameof(FreecamSettings.WalkCrouchSpeedMultiplier):
+                    _ = SendFreecamConfigAsync(new { walkCrouchSpeedMultiplier = (float)_freecamSettings.WalkCrouchSpeedMultiplier });
+                    break;
+                case nameof(FreecamSettings.WalkLookHalfTime):
+                    _ = SendFreecamConfigAsync(new { walkLookHalfTime = (float)_freecamSettings.WalkLookHalfTime });
+                    break;
+                case nameof(FreecamSettings.WalkFovHalfTime):
+                    _ = SendFreecamConfigAsync(new { walkFovHalfTime = (float)_freecamSettings.WalkFovHalfTime });
+                    break;
+                case nameof(FreecamSettings.WalkGravity):
+                    _ = SendFreecamConfigAsync(new { walkGravity = (float)_freecamSettings.WalkGravity });
+                    break;
+                case nameof(FreecamSettings.WalkJumpSpeed):
+                    _ = SendFreecamConfigAsync(new { walkJumpSpeed = (float)_freecamSettings.WalkJumpSpeed });
+                    break;
+                case nameof(FreecamSettings.WalkHullRadius):
+                    _ = SendFreecamConfigAsync(new { walkHullRadius = (float)_freecamSettings.WalkHullRadius });
+                    break;
+                case nameof(FreecamSettings.WalkHullHalfHeight):
+                    _ = SendFreecamConfigAsync(new { walkHullHalfHeight = (float)_freecamSettings.WalkHullHalfHeight });
+                    break;
+                case nameof(FreecamSettings.WalkCrouchHullHalfHeight):
+                    _ = SendFreecamConfigAsync(new { walkCrouchHullHalfHeight = (float)_freecamSettings.WalkCrouchHullHalfHeight });
+                    break;
+                case nameof(FreecamSettings.WalkCameraTopInset):
+                    _ = SendFreecamConfigAsync(new { walkCameraTopInset = (float)_freecamSettings.WalkCameraTopInset });
+                    break;
+                case nameof(FreecamSettings.WalkStepHeight):
+                    _ = SendFreecamConfigAsync(new { walkStepHeight = (float)_freecamSettings.WalkStepHeight });
+                    break;
+                case nameof(FreecamSettings.WalkGroundProbe):
+                    _ = SendFreecamConfigAsync(new { walkGroundProbe = (float)_freecamSettings.WalkGroundProbe });
+                    break;
+                case nameof(FreecamSettings.WalkMinGroundNormalZ):
+                    _ = SendFreecamConfigAsync(new { walkMinGroundNormalZ = (float)_freecamSettings.WalkMinGroundNormalZ });
+                    break;
+                case nameof(FreecamSettings.WalkModeDefaultEnabled):
+                    _ = SendFreecamConfigAsync(new { walkModeDefaultEnabled = _freecamSettings.WalkModeDefaultEnabled });
+                    break;
+                case nameof(FreecamSettings.HandheldDefaultEnabled):
+                    _ = SendFreecamConfigAsync(new { handheldDefaultEnabled = _freecamSettings.HandheldDefaultEnabled });
+                    break;
+                case nameof(FreecamSettings.WalkBobAmplitudeZ):
+                    _ = SendFreecamConfigAsync(new { walkBobAmplitudeZ = (float)_freecamSettings.WalkBobAmplitudeZ });
+                    break;
+                case nameof(FreecamSettings.WalkBobAmplitudeSide):
+                    _ = SendFreecamConfigAsync(new { walkBobAmplitudeSide = (float)_freecamSettings.WalkBobAmplitudeSide });
+                    break;
+                case nameof(FreecamSettings.WalkBobAmplitudeRoll):
+                    _ = SendFreecamConfigAsync(new { walkBobAmplitudeRoll = (float)_freecamSettings.WalkBobAmplitudeRoll });
+                    break;
+                case nameof(FreecamSettings.WalkBobFrequency):
+                    _ = SendFreecamConfigAsync(new { walkBobFrequency = (float)_freecamSettings.WalkBobFrequency });
+                    break;
+                case nameof(FreecamSettings.HandheldShakePosAmplitude):
+                    _ = SendFreecamConfigAsync(new { handheldShakePosAmplitude = (float)_freecamSettings.HandheldShakePosAmplitude });
+                    break;
+                case nameof(FreecamSettings.HandheldShakeAngAmplitude):
+                    _ = SendFreecamConfigAsync(new { handheldShakeAngAmplitude = (float)_freecamSettings.HandheldShakeAngAmplitude });
+                    break;
+                case nameof(FreecamSettings.HandheldShakeFrequency):
+                    _ = SendFreecamConfigAsync(new { handheldShakeFrequency = (float)_freecamSettings.HandheldShakeFrequency });
+                    break;
+                case nameof(FreecamSettings.HandheldDriftPosAmplitude):
+                    _ = SendFreecamConfigAsync(new { handheldDriftPosAmplitude = (float)_freecamSettings.HandheldDriftPosAmplitude });
+                    break;
+                case nameof(FreecamSettings.HandheldDriftAngAmplitude):
+                    _ = SendFreecamConfigAsync(new { handheldDriftAngAmplitude = (float)_freecamSettings.HandheldDriftAngAmplitude });
+                    break;
+                case nameof(FreecamSettings.HandheldDriftFrequency):
+                    _ = SendFreecamConfigAsync(new { handheldDriftFrequency = (float)_freecamSettings.HandheldDriftFrequency });
+                    break;
             }
         }
 
@@ -2195,7 +2279,35 @@ namespace HlaeObsTools.ViewModels.Docks
                 halfFov = (float)_freecamSettings.HalfFov,
                 rotCriticalDamping = _freecamSettings.RotCriticalDamping,
                 rotDampingRatio = (float)_freecamSettings.RotDampingRatio,
-                clampPitch = _freecamSettings.ClampPitch
+                clampPitch = _freecamSettings.ClampPitch,
+                walkMoveSpeed = (float)_freecamSettings.WalkMoveSpeed,
+                walkMoveAcceleration = (float)_freecamSettings.WalkMoveAcceleration,
+                walkMoveDeceleration = (float)_freecamSettings.WalkMoveDeceleration,
+                walkRunMultiplier = (float)_freecamSettings.WalkRunMultiplier,
+                walkCrouchSpeedMultiplier = (float)_freecamSettings.WalkCrouchSpeedMultiplier,
+                walkLookHalfTime = (float)_freecamSettings.WalkLookHalfTime,
+                walkFovHalfTime = (float)_freecamSettings.WalkFovHalfTime,
+                walkGravity = (float)_freecamSettings.WalkGravity,
+                walkJumpSpeed = (float)_freecamSettings.WalkJumpSpeed,
+                walkHullRadius = (float)_freecamSettings.WalkHullRadius,
+                walkHullHalfHeight = (float)_freecamSettings.WalkHullHalfHeight,
+                walkCrouchHullHalfHeight = (float)_freecamSettings.WalkCrouchHullHalfHeight,
+                walkCameraTopInset = (float)_freecamSettings.WalkCameraTopInset,
+                walkStepHeight = (float)_freecamSettings.WalkStepHeight,
+                walkGroundProbe = (float)_freecamSettings.WalkGroundProbe,
+                walkMinGroundNormalZ = (float)_freecamSettings.WalkMinGroundNormalZ,
+                walkModeDefaultEnabled = _freecamSettings.WalkModeDefaultEnabled,
+                handheldDefaultEnabled = _freecamSettings.HandheldDefaultEnabled,
+                walkBobAmplitudeZ = (float)_freecamSettings.WalkBobAmplitudeZ,
+                walkBobAmplitudeSide = (float)_freecamSettings.WalkBobAmplitudeSide,
+                walkBobAmplitudeRoll = (float)_freecamSettings.WalkBobAmplitudeRoll,
+                walkBobFrequency = (float)_freecamSettings.WalkBobFrequency,
+                handheldShakePosAmplitude = (float)_freecamSettings.HandheldShakePosAmplitude,
+                handheldShakeAngAmplitude = (float)_freecamSettings.HandheldShakeAngAmplitude,
+                handheldShakeFrequency = (float)_freecamSettings.HandheldShakeFrequency,
+                handheldDriftPosAmplitude = (float)_freecamSettings.HandheldDriftPosAmplitude,
+                handheldDriftAngAmplitude = (float)_freecamSettings.HandheldDriftAngAmplitude,
+                handheldDriftFrequency = (float)_freecamSettings.HandheldDriftFrequency
             };
 
             await _ws.SendCommandAsync("freecam_config", config);
