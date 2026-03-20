@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:svg="using:Avalonia.Svg.Skia"
              x:Class="HlaeObsTools.Views.Docks.NetConsoleDockView"
              x:DataType="vm:NetConsoleDockViewModel">
   <Border Background="#1E1E1E" Padding="10" Focusable="True">
@@ -104,7 +105,7 @@
           </ListBox>
         </Border>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
           <TextBox x:Name="InputBox"
                    Text="{Binding InputText, Mode=TwoWay}"
                    Watermark="Type a console command..."
@@ -116,9 +117,26 @@
           <Button Grid.Column="1"
                   Content="Send"
                   Command="{Binding SendCommand}"
-                  MinWidth="80"
                   Background="#3C6DD2"
                   Foreground="White" />
+          <Button x:Name="SettingsButton"
+                  Grid.Column="2"
+                  Width="26"
+                  Height="26"
+                  Padding="8"
+                  Background="#2A2A2A"
+                  BorderBrush="#3A3A3A">
+            <Button.Flyout>
+              <MenuFlyout Placement="TopEdgeAlignedRight">
+                <MenuItem Header="Filter game events"
+                          ToggleType="CheckBox"
+                          IsChecked="{Binding FilterGameEvents, Mode=TwoWay}" />
+              </MenuFlyout>
+            </Button.Flyout>
+            <svg:Svg Path="avares://HlaeObsTools/Assets/icons/settings.svg"
+                     Width="16"
+                     Height="16" />
+          </Button>
         </Grid>
       </Grid>
     </Grid>

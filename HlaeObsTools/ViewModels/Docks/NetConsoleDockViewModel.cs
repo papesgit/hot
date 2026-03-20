@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -30,6 +31,8 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private readonly DispatcherTimer _logFlushTimer;
     private readonly StringBuilder _incomingBuffer = new();
     private readonly object _incomingBufferLock = new();
+    private static readonly Regex GameEventStartRegex = new("^Game event \"[^\"]+\", Tick \\d+:$", RegexOptions.Compiled);
+    private static readonly Regex GameEventFieldRegex = new("^- \"[^\"]+\" = \".*\"$", RegexOptions.Compiled);
 
     private Cs2NetConsoleClient? _client;
     private string _currentHost = "127.0.0.1";
@@ -45,6 +48,8 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private bool _suppressSuggestionRefresh;
     private int _historyIndex = -1;
     private bool _suppressHistoryReset;
+    private bool _filterGameEvents = true;
+    private bool _isSkippingGameEventBlock;
 
     public NetConsoleDockViewModel()
     {
@@ -104,6 +109,18 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     {
         get => _statusText;
         private set => SetProperty(ref _statusText, value);
+    }
+
+    public bool FilterGameEvents
+    {
+        get => _filterGameEvents;
+        set
+        {
+            if (SetProperty(ref _filterGameEvents, value) && !value)
+            {
+                _isSkippingGameEventBlock = false;
+            }
+        }
     }
 
     public bool IsHistoryActive => _historyIndex != -1;
@@ -323,7 +340,7 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     {
         var normalized = message.Replace("\r\n", "\n", StringComparison.Ordinal)
                                 .Replace("\r", "\n", StringComparison.Ordinal);
-        var lines = ExtractCompleteLines(normalized);
+        var lines = FilterIncomingLines(ExtractCompleteLines(normalized));
 
         if (lines.Count > 0)
         {
@@ -510,6 +527,36 @@ public class NetConsoleDockViewModel : Tool, IDisposable
 
             return lines;
         }
+    }
+
+    private List<string> FilterIncomingLines(List<string> lines)
+    {
+        if (!FilterGameEvents || lines.Count == 0)
+            return lines;
+
+        var filtered = new List<string>(lines.Count);
+        foreach (var line in lines)
+        {
+            if (GameEventStartRegex.IsMatch(line))
+            {
+                _isSkippingGameEventBlock = true;
+                continue;
+            }
+
+            if (_isSkippingGameEventBlock)
+            {
+                if (GameEventFieldRegex.IsMatch(line))
+                {
+                    continue;
+                }
+
+                _isSkippingGameEventBlock = false;
+            }
+
+            filtered.Add(line);
+        }
+
+        return filtered;
     }
 
     private void FlushIncomingBuffer()
