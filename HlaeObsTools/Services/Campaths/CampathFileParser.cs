@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Numerics;
+using System.Xml;
 using System.Xml.Linq;
 using HlaeObsTools.Services.Gsi;
 
@@ -32,6 +33,53 @@ public sealed class CampathFile
 /// </summary>
 public static class CampathFileParser
 {
+    public const long MaxInspectionFileSizeBytes = 256 * 1024;
+
+    public static bool LooksLikeCampath(string path)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return false;
+
+            var fileInfo = new FileInfo(path);
+            if (fileInfo.Length <= 0 || fileInfo.Length > MaxInspectionFileSizeBytes)
+                return false;
+
+            var settings = new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Prohibit,
+                IgnoreComments = true,
+                IgnoreWhitespace = true
+            };
+
+            using var stream = File.OpenRead(path);
+            using var reader = XmlReader.Create(stream, settings);
+
+            if (!reader.Read())
+                return false;
+
+            reader.MoveToContent();
+            if (reader.NodeType != XmlNodeType.Element || !reader.Name.Equals("campath", StringComparison.Ordinal))
+                return false;
+
+            if (reader.IsEmptyElement)
+                return false;
+
+            while (reader.Read())
+            {
+                if (reader.NodeType == XmlNodeType.Element && reader.Name.Equals("points", StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public static CampathFile? Parse(string path)
     {
         try

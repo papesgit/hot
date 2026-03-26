@@ -240,18 +240,7 @@ public class CampathsDockViewModel : Tool
 
     private static bool IsSupportedCampathFile(string path)
     {
-        if (string.IsNullOrWhiteSpace(path))
-            return false;
-
-        var extension = Path.GetExtension(path);
-        if (string.IsNullOrWhiteSpace(extension))
-            return true;
-
-        return extension.Equals(".campath", StringComparison.OrdinalIgnoreCase)
-               || extension.Equals(".txt", StringComparison.OrdinalIgnoreCase)
-               || extension.Equals(".cam", StringComparison.OrdinalIgnoreCase)
-               || extension.Equals(".path", StringComparison.OrdinalIgnoreCase)
-               || extension.Equals(".xml", StringComparison.OrdinalIgnoreCase);
+        return CampathFileParser.LooksLikeCampath(path);
     }
 
     public async Task AddGroupAsync()
@@ -339,11 +328,17 @@ public class CampathsDockViewModel : Tool
             return;
 
         var path = await BrowseFileAsync("Select campath file");
-        if (!string.IsNullOrWhiteSpace(path))
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        if (!IsSupportedCampathFile(path))
         {
-            item.FilePath = path;
-            Save();
+            Console.WriteLine($"Selected file '{path}' is not a supported campath file.");
+            return;
         }
+
+        item.FilePath = path;
+        Save();
     }
 
     public async Task BrowseImageAsync(CampathItemViewModel? item)
