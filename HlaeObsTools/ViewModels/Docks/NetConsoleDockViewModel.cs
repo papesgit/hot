@@ -4,14 +4,18 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.Media;
 using Dock.Model.Mvvm.Controls;
+using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.NetConsole;
+using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -21,19 +25,28 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private const int MaxLogFlushBatch = 200;
     private const int MaxSuggestions = 50;
 
-    private readonly ObservableCollection<string> _logLines = new();
+    private readonly ObservableCollection<NetConsoleLogLineViewModel> _logLines = new();
     private readonly ObservableCollection<ConsoleCommandInfo> _suggestions = new();
     private readonly Lazy<IReadOnlyList<ConsoleCommandInfo>> _allCommands = new(LoadCommands);
     private readonly DelegateCommand _toggleConnectionCommand;
     private readonly DelegateCommand _sendCommand;
     private readonly List<string> _history = new();
-    private readonly ConcurrentQueue<string> _pendingLogLines = new();
+    private readonly ConcurrentQueue<NetConsoleLogLineViewModel> _pendingLogLines = new();
     private readonly DispatcherTimer _logFlushTimer;
     private readonly StringBuilder _incomingBuffer = new();
     private readonly object _incomingBufferLock = new();
+    private readonly object _playerTeamLookupLock = new();
+    private readonly GsiServer? _gsiServer;
+    private Dictionary<string, string> _playerTeamsByName = new(StringComparer.Ordinal);
+    private Dictionary<string, string> _playerTeamsByNormalizedName = new(StringComparer.Ordinal);
     private static readonly Regex GameEventStartRegex = new("^Game event \"[^\"]+\", Tick \\d+:$", RegexOptions.Compiled);
     private static readonly Regex GameEventFieldRegex = new("^- \"[^\"]+\" = \".*\"$", RegexOptions.Compiled);
     private static readonly Regex UnknownNetMessageRegex = new("^Unknown net message \\d+!$", RegexOptions.Compiled);
+    private const string AllChatPrefix = " [ALL] ";
+    private static readonly IBrush DefaultLogBrush = new SolidColorBrush(Color.Parse("#E0E0E0"));
+    private static readonly IBrush CtChatBrush = new SolidColorBrush(Color.Parse("#6EB4FF"));
+    private static readonly IBrush TChatBrush = new SolidColorBrush(Color.Parse("#FF9B4A"));
+    private static readonly IBrush FallbackChatBrush = new SolidColorBrush(Color.Parse("#7FD6B5"));
 
     private Cs2NetConsoleClient? _client;
     private string _currentHost = "127.0.0.1";
@@ -53,8 +66,9 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private bool _filterUnknownNetMessages = true;
     private bool _isSkippingGameEventBlock;
 
-    public NetConsoleDockViewModel()
+    public NetConsoleDockViewModel(GsiServer? gsiServer = null)
     {
+        _gsiServer = gsiServer;
         Title = "Console";
         CanClose = false;
         CanFloat = true;
@@ -68,9 +82,14 @@ public class NetConsoleDockViewModel : Tool, IDisposable
             Interval = TimeSpan.FromMilliseconds(50)
         };
         _logFlushTimer.Tick += (_, _) => FlushPendingLogs();
+
+        if (_gsiServer != null)
+        {
+            _gsiServer.GameStateUpdated += OnGameStateUpdated;
+        }
     }
 
-    public ObservableCollection<string> LogLines => _logLines;
+    public ObservableCollection<NetConsoleLogLineViewModel> LogLines => _logLines;
     public ObservableCollection<ConsoleCommandInfo> Suggestions => _suggestions;
 
     public bool HasSuggestions => _suggestions.Count > 0;
@@ -389,10 +408,130 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         foreach (var line in lines)
         {
             var content = string.IsNullOrWhiteSpace(line) ? "<empty>" : line;
-            _pendingLogLines.Enqueue($"[{timestamp:HH:mm:ss}] [{prefix}] {content}");
+            _pendingLogLines.Enqueue(new NetConsoleLogLineViewModel(
+                $"[{timestamp:HH:mm:ss}] [{prefix}] {content}",
+                ResolveLogBrush(prefix, content)));
         }
 
         StartLogFlushTimer();
+    }
+
+    private IBrush ResolveLogBrush(string prefix, string content)
+    {
+        if (!prefix.Equals("IN", StringComparison.Ordinal))
+            return DefaultLogBrush;
+
+        if (!TryGetAllChatSpeaker(content, out var playerName))
+            return DefaultLogBrush;
+
+        if (!TryResolvePlayerTeam(playerName, out var team))
+            return FallbackChatBrush;
+
+        if (string.Equals(team, "CT", StringComparison.OrdinalIgnoreCase))
+            return CtChatBrush;
+
+        if (string.Equals(team, "T", StringComparison.OrdinalIgnoreCase))
+            return TChatBrush;
+
+        return FallbackChatBrush;
+    }
+
+    private static bool TryGetAllChatSpeaker(string line, out string playerName)
+    {
+        playerName = string.Empty;
+
+        if (string.IsNullOrEmpty(line) || !line.StartsWith(AllChatPrefix, StringComparison.Ordinal))
+            return false;
+
+        var separatorIndex = line.IndexOf(':', AllChatPrefix.Length);
+        if (separatorIndex <= AllChatPrefix.Length)
+            return false;
+
+        playerName = line.Substring(AllChatPrefix.Length, separatorIndex - AllChatPrefix.Length).Trim();
+        return !string.IsNullOrEmpty(playerName);
+    }
+
+    private bool TryResolvePlayerTeam(string playerName, out string team)
+    {
+        lock (_playerTeamLookupLock)
+        {
+            if (_playerTeamsByName.TryGetValue(playerName, out var exactTeam) && exactTeam != null)
+            {
+                team = exactTeam;
+                return true;
+            }
+
+            var normalized = NormalizePlayerName(playerName);
+            if (_playerTeamsByNormalizedName.TryGetValue(normalized, out var normalizedTeam) && normalizedTeam != null)
+            {
+                team = normalizedTeam;
+                return true;
+            }
+        }
+
+        team = string.Empty;
+        return false;
+    }
+
+    private void OnGameStateUpdated(object? sender, GsiGameState state)
+    {
+        var byName = new Dictionary<string, string>(StringComparer.Ordinal);
+        var normalizedCandidates = new Dictionary<string, string>(StringComparer.Ordinal);
+        var duplicateNormalizedNames = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var player in state.Players)
+        {
+            if (string.IsNullOrWhiteSpace(player.Name) || string.IsNullOrWhiteSpace(player.Team))
+                continue;
+
+            byName[player.Name] = player.Team;
+
+            var normalized = NormalizePlayerName(player.Name);
+            if (string.IsNullOrEmpty(normalized))
+                continue;
+
+            if (normalizedCandidates.TryGetValue(normalized, out var existingTeam))
+            {
+                if (!string.Equals(existingTeam, player.Team, StringComparison.OrdinalIgnoreCase)
+                    || !duplicateNormalizedNames.Contains(normalized))
+                {
+                    duplicateNormalizedNames.Add(normalized);
+                }
+            }
+            else
+            {
+                normalizedCandidates[normalized] = player.Team;
+            }
+        }
+
+        foreach (var duplicate in duplicateNormalizedNames)
+        {
+            normalizedCandidates.Remove(duplicate);
+        }
+
+        lock (_playerTeamLookupLock)
+        {
+            _playerTeamsByName = byName;
+            _playerTeamsByNormalizedName = normalizedCandidates;
+        }
+    }
+
+    private static string NormalizePlayerName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return string.Empty;
+
+        var builder = new StringBuilder(name.Length);
+        foreach (var ch in name.Trim())
+        {
+            var category = CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (char.IsControl(ch) || category == UnicodeCategory.Format)
+                continue;
+
+            builder.Append(char.ToUpperInvariant(ch));
+        }
+
+        return builder.ToString();
     }
 
     private void UpdateSuggestions(string text)
@@ -671,6 +810,11 @@ public class NetConsoleDockViewModel : Tool, IDisposable
 
         _client = null;
 
+        if (_gsiServer != null)
+        {
+            _gsiServer.GameStateUpdated -= OnGameStateUpdated;
+        }
+
         if (_logFlushTimer.IsEnabled)
         {
             RunOnUi(() => _logFlushTimer.Stop());
@@ -720,6 +864,30 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         }
 
         return list.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+}
+
+public sealed class NetConsoleLogLineViewModel : ViewModelBase
+{
+    private string _text;
+    private IBrush _foreground;
+
+    public NetConsoleLogLineViewModel(string text, IBrush foreground)
+    {
+        _text = text;
+        _foreground = foreground;
+    }
+
+    public string Text
+    {
+        get => _text;
+        set => SetProperty(ref _text, value);
+    }
+
+    public IBrush Foreground
+    {
+        get => _foreground;
+        set => SetProperty(ref _foreground, value);
     }
 }
 

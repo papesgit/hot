@@ -63,7 +63,8 @@
           </ListBox.Styles>
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding}"
+              <TextBlock Text="{Binding Text}"
+                         Foreground="{Binding Foreground}"
                          FontFamily="Consolas, 'Cascadia Mono', monospace"
                          Margin="0"
                          TextWrapping="Wrap" />

@@ -133,7 +133,7 @@ public partial class NetConsoleDockView : UserControl
         if (LogListBox?.SelectedItems is not { Count: > 0 } selected)
             return;
 
-        var text = string.Join(Environment.NewLine, selected.Cast<string>());
+        var text = string.Join(Environment.NewLine, selected.Cast<NetConsoleLogLineViewModel>().Select(line => line.Text));
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard == null)
             return;

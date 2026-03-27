@@ -219,7 +219,7 @@ public class MainDockFactory : Factory, IDisposable
         var bottomRight = new CampathsDockViewModel { Id = "BottomRight", Title = "Campaths" };
         var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings, bottomRight, _webSocketClient) { Id = "TopLeft", Title = "Radar" };
         _videoDisplayVm = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
-        var topRight = new NetConsoleDockViewModel { Id = "TopRight", Title = "Console" };
+        var topRight = new NetConsoleDockViewModel(_gsiServer) { Id = "TopRight", Title = "Console" };
         _graphicsDockVm = new GraphicsDockViewModel(_graphicsService, _settingsStorage, _storedSettings)
         {
             Id = "Graphics",
