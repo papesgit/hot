@@ -131,6 +131,9 @@
                 <MenuItem Header="Filter game events"
                           ToggleType="CheckBox"
                           IsChecked="{Binding FilterGameEvents, Mode=TwoWay}" />
+                <MenuItem Header="Filter unknown net messages"
+                          ToggleType="CheckBox"
+                          IsChecked="{Binding FilterUnknownNetMessages, Mode=TwoWay}" />
               </MenuFlyout>
             </Button.Flyout>
             <svg:Svg Path="avares://HlaeObsTools/Assets/icons/settings.svg"

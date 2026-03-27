@@ -33,6 +33,7 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private readonly object _incomingBufferLock = new();
     private static readonly Regex GameEventStartRegex = new("^Game event \"[^\"]+\", Tick \\d+:$", RegexOptions.Compiled);
     private static readonly Regex GameEventFieldRegex = new("^- \"[^\"]+\" = \".*\"$", RegexOptions.Compiled);
+    private static readonly Regex UnknownNetMessageRegex = new("^Unknown net message \\d+!$", RegexOptions.Compiled);
 
     private Cs2NetConsoleClient? _client;
     private string _currentHost = "127.0.0.1";
@@ -49,6 +50,7 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private int _historyIndex = -1;
     private bool _suppressHistoryReset;
     private bool _filterGameEvents = true;
+    private bool _filterUnknownNetMessages = true;
     private bool _isSkippingGameEventBlock;
 
     public NetConsoleDockViewModel()
@@ -121,6 +123,12 @@ public class NetConsoleDockViewModel : Tool, IDisposable
                 _isSkippingGameEventBlock = false;
             }
         }
+    }
+
+    public bool FilterUnknownNetMessages
+    {
+        get => _filterUnknownNetMessages;
+        set => SetProperty(ref _filterUnknownNetMessages, value);
     }
 
     public bool IsHistoryActive => _historyIndex != -1;
@@ -531,19 +539,24 @@ public class NetConsoleDockViewModel : Tool, IDisposable
 
     private List<string> FilterIncomingLines(List<string> lines)
     {
-        if (!FilterGameEvents || lines.Count == 0)
+        if (lines.Count == 0)
             return lines;
 
         var filtered = new List<string>(lines.Count);
         foreach (var line in lines)
         {
-            if (GameEventStartRegex.IsMatch(line))
+            if (FilterUnknownNetMessages && UnknownNetMessageRegex.IsMatch(line))
+            {
+                continue;
+            }
+
+            if (FilterGameEvents && GameEventStartRegex.IsMatch(line))
             {
                 _isSkippingGameEventBlock = true;
                 continue;
             }
 
-            if (_isSkippingGameEventBlock)
+            if (FilterGameEvents && _isSkippingGameEventBlock)
             {
                 if (GameEventFieldRegex.IsMatch(line))
                 {
