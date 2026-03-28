@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HlaeObsTools.ViewModels"
+        xmlns:conv="using:HlaeObsTools.Converters"
+        xmlns:svg="using:Avalonia.Svg.Skia"
+        x:Class="HlaeObsTools.Views.SplashScreenWindow"
+        x:DataType="vm:StartupProgressViewModel"
+        Width="460"
+        Height="260"
+        CanResize="False"
+        SizeToContent="Manual"
+        SystemDecorations="None"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent">
+    <Window.Resources>
+        <conv:ProgressBarWidthConverter x:Key="ProgressBarWidthConverter" />
+    </Window.Resources>
+
+    <Border Padding="24"
+            Background="#0F0F0F"
+            BorderBrush="#242424"
+            BorderThickness="1"
+            CornerRadius="14">
+        <Grid RowDefinitions="Auto,Auto,20,4,Auto,*"
+              RowSpacing="8">
+            <Grid Grid.Row="0"
+                  Margin="0,8,0,0">
+                <Viewbox Width="220"
+                         Height="110"
+                         Stretch="Uniform"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center">
+                    <svg:Svg Path="avares://HlaeObsTools/Assets/icons/hot.svg"
+                             Css="path { fill: #ECECEC; }" />
+                </Viewbox>
+            </Grid>
+
+            <StackPanel Grid.Row="1"
+                        Spacing="5"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,2,0,0">
+                <TextBlock Text="{Binding StatusText}"
+                           Foreground="#E7E7E7"
+                           FontSize="13"
+                           HorizontalAlignment="Left"
+                           TextAlignment="Left" />
+            </StackPanel>
+
+            <Grid Grid.Row="2"
+                  ClipToBounds="True">
+                <TextBlock Text="{Binding DetailText}"
+                           Foreground="#B7B7B7"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           MaxHeight="20"
+                           VerticalAlignment="Top"
+                           HorizontalAlignment="Stretch"
+                           TextAlignment="Left" />
+            </Grid>
+
+            <Border Grid.Row="3"
+                    Background="#1E1E1E"
+                    Height="4"
+                    HorizontalAlignment="Stretch">
+                <Rectangle Fill="#D6D6D6"
+                           HorizontalAlignment="Left">
+                    <Rectangle.Width>
+                        <MultiBinding Converter="{StaticResource ProgressBarWidthConverter}">
+                            <Binding Path="ProgressFraction" />
+                            <Binding Path="Bounds.Width" RelativeSource="{RelativeSource AncestorType=Border}" />
+                        </MultiBinding>
+                    </Rectangle.Width>
+                </Rectangle>
+            </Border>
+
+            <TextBlock Grid.Row="4"
+                       Text="{Binding ProgressPercentText}"
+                       Foreground="#8F8F8F"
+                       FontSize="11"
+                       HorizontalAlignment="Left" />
+        </Grid>
+    </Border>
+</Window>

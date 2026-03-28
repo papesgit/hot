@@ -7,6 +7,7 @@
         x:Class="HlaeObsTools.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="HLAE Observer Tools"
+        Icon="/Assets/icons/app.ico"
         Width="1600"
         Height="900"
         MinWidth="800"

@@ -158,8 +158,23 @@ public class MainDockFactory : Factory, IDisposable
     public override IProportionalDock CreateProportionalDock() => new ProportionalDock();
     public override IProportionalDockSplitter CreateProportionalDockSplitter() => new ProportionalDockSplitter();
 
+    public async Task<IRootDock> CreateLayoutAsync(Func<string, string, double, Task> reportProgressAsync)
+    {
+        return await CreateLayoutCoreAsync(reportProgressAsync);
+    }
+
     public override IRootDock CreateLayout()
     {
+        return CreateLayoutCoreAsync(null).GetAwaiter().GetResult();
+    }
+
+    private async Task<IRootDock> CreateLayoutCoreAsync(Func<string, string, double, Task>? reportProgressAsync)
+    {
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Preparing shared settings...", "Creating the runtime settings models used across the workspace.", 3);
+        }
+
         // Shared settings for radar customization
         var radarSettings = new RadarSettings
         {
@@ -216,15 +231,44 @@ public class MainDockFactory : Factory, IDisposable
         };
 
         // Create the docks (top-right hosts the CS2 console)
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Creating campaths dock...", "Preparing campath profiles, groups, and editor integration.", 4);
+        }
+
         var bottomRight = new CampathsDockViewModel { Id = "BottomRight", Title = "Campaths" };
+
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Creating radar dock...", "Initializing radar state and player tracking models.", 5);
+        }
+
         var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings, bottomRight, _webSocketClient) { Id = "TopLeft", Title = "Radar" };
+
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Creating video display dock...", "Preparing the video stream and overlay host view models.", 6);
+        }
+
         _videoDisplayVm = new VideoDisplayDockViewModel { Id = "TopCenter", Title = "Video Stream" };
+
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Creating console and graphics docks...", "Preparing console integration and graphics control models.", 7);
+        }
+
         var topRight = new NetConsoleDockViewModel(_gsiServer, _settingsStorage, _storedSettings) { Id = "TopRight", Title = "Console" };
         _graphicsDockVm = new GraphicsDockViewModel(_graphicsService, _settingsStorage, _storedSettings)
         {
             Id = "Graphics",
             Title = "Graphics"
         };
+
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Creating settings dock...", "Loading configuration editors, hotkeys, and attach preset tools.", 8);
+        }
+
         var bottomLeft = new SettingsDockViewModel(
             radarSettings,
             hudSettings,
@@ -247,8 +291,19 @@ public class MainDockFactory : Factory, IDisposable
             videoDisplayDockViewModel: _videoDisplayVm,
             graphicsProducerClient: _producerClient)
         { Id = "BottomLeft", Title = "Settings" };
+
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Creating 3D viewport dock...", "Preparing viewport state, freecam integration, and campath editing.", 9);
+        }
+
         var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer) { Id = "BottomCenter", Title = "3D Viewport" };
         bottomCenter.SetInputSender(_inputSender);
+
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Wiring services and hotkeys...", "Connecting dock models to shared services, input, and overlay state.", 10);
+        }
 
         // Inject WebSocket and UDP services into video display
         _videoDisplayVm.SetWebSocketClient(_webSocketClient);
@@ -275,6 +330,11 @@ public class MainDockFactory : Factory, IDisposable
         // Start GSI listener on all interfaces with configured port
         _gsiServer.Start(_storedSettings.GsiPort, "/gsi/");
         bottomRight.SetWebSocketClient(_webSocketClient);
+
+        if (reportProgressAsync != null)
+        {
+            await reportProgressAsync("Building workspace layout...", "Creating dock containers, rows, and the root workspace shell.", 11);
+        }
 
         // Wrap tools in ToolDocks for proper docking behavior
         // Top-left: Controls - 1:1 aspect ratio (roughly square)

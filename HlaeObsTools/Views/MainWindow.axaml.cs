@@ -17,10 +17,15 @@ public partial class MainWindow : Window
     private bool _isHotkeyBindingMode;
 
     public MainWindow()
+        : this(new MainWindowViewModel())
+    {
+    }
+
+    public MainWindow(MainWindowViewModel viewModel)
     {
         InitializeComponent();
-        DataContext = new MainWindowViewModel();
-        if (DataContext is MainWindowViewModel vm)
+        DataContext = viewModel;
+        if (DataContext is MainWindowViewModel vm && vm.HotkeyService != null)
         {
             SetHotkeyOverlaySource(vm.HotkeyService);
         }
