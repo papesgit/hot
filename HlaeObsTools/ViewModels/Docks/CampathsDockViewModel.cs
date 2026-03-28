@@ -35,7 +35,10 @@ public enum CampathPopulateSource
 
 public class CampathsDockViewModel : Tool
 {
+    private const int ThumbnailDecodeWidth = 256;
     private readonly CampathStorage _storage = new();
+    private readonly Dictionary<string, Task<Avalonia.Media.Imaging.Bitmap?>> _thumbnailCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SemaphoreSlim _thumbnailLoadLimiter = new(2);
     private readonly DelegateCommand _addProfileCommand;
     private readonly DelegateCommand _removeProfileCommand;
     private readonly DelegateCommand _addCampathCommand;
@@ -63,6 +66,7 @@ public class CampathsDockViewModel : Tool
     private ObservableCollection<CampathProfileViewModel> _profiles = new();
     private CampathProfileViewModel? _selectedProfile;
     private double _scale = 1.0;
+    private CancellationTokenSource? _thumbnailLoadCts;
 
     public CampathsDockViewModel()
     {
@@ -106,6 +110,7 @@ public class CampathsDockViewModel : Tool
             _addCampathCommand.RaiseCanExecuteChanged();
             _populateFromFolderCommand.RaiseCanExecuteChanged();
             _addGroupCommand.RaiseCanExecuteChanged();
+            StartSelectedProfileThumbnailLoading();
         }
     }
 
@@ -278,6 +283,78 @@ public class CampathsDockViewModel : Tool
         OnPropertyChanged(nameof(Scale));
     }
 
+    private void StartSelectedProfileThumbnailLoading()
+    {
+        _thumbnailLoadCts?.Cancel();
+        _thumbnailLoadCts?.Dispose();
+        _thumbnailLoadCts = null;
+
+        foreach (var profile in Profiles)
+        {
+            if (!ReferenceEquals(profile, SelectedProfile))
+            {
+                foreach (var campath in profile.Campaths)
+                {
+                    campath.ClearThumbnail();
+                }
+            }
+        }
+
+        if (SelectedProfile == null)
+            return;
+
+        var cts = new CancellationTokenSource();
+        _thumbnailLoadCts = cts;
+        _ = LoadProfileThumbnailsAsync(SelectedProfile, cts.Token);
+    }
+
+    private async Task LoadProfileThumbnailsAsync(CampathProfileViewModel profile, CancellationToken cancellationToken)
+    {
+        foreach (var campath in profile.Campaths)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await campath.LoadThumbnailAsync(GetThumbnailAsync, cancellationToken);
+        }
+    }
+
+    private Task<Avalonia.Media.Imaging.Bitmap?> GetThumbnailAsync(string? imagePath, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
+            return Task.FromResult<Avalonia.Media.Imaging.Bitmap?>(null);
+
+        if (_thumbnailCache.TryGetValue(imagePath, out var cached))
+            return cached;
+
+        var task = LoadThumbnailCoreAsync(imagePath);
+        _thumbnailCache[imagePath] = task;
+        return task;
+    }
+
+    private async Task<Avalonia.Media.Imaging.Bitmap?> LoadThumbnailCoreAsync(string imagePath)
+    {
+        await _thumbnailLoadLimiter.WaitAsync();
+        try
+        {
+            return await Task.Run(() =>
+            {
+                using var stream = File.OpenRead(imagePath);
+                return Avalonia.Media.Imaging.Bitmap.DecodeToWidth(
+                    stream,
+                    ThumbnailDecodeWidth,
+                    Avalonia.Media.Imaging.BitmapInterpolationMode.HighQuality);
+            });
+        }
+        catch
+        {
+            _thumbnailCache.Remove(imagePath);
+            return null;
+        }
+        finally
+        {
+            _thumbnailLoadLimiter.Release();
+        }
+    }
+
     private void InsertProfileSorted(CampathProfileViewModel profile)
     {
         var insertIndex = 0;
@@ -363,6 +440,7 @@ public class CampathsDockViewModel : Tool
         {
             item.ImagePath = path;
             Save();
+            RequestThumbnailReload(item);
         }
     }
 
@@ -456,6 +534,7 @@ public class CampathsDockViewModel : Tool
                 item.ImagePath = imagePath;
             }
             Save();
+            RequestThumbnailReload(item);
             return;
         }
 
@@ -470,7 +549,24 @@ public class CampathsDockViewModel : Tool
                 item.ImagePath = imagePath;
             }
             Save();
+            RequestThumbnailReload(item);
         }, DispatcherPriority.Background);
+    }
+
+    private void RequestThumbnailReload(CampathItemViewModel item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.ImagePath))
+        {
+            _thumbnailCache.Remove(item.ImagePath);
+        }
+
+        item.RefreshThumbnail();
+
+        if (SelectedProfile == null || !SelectedProfile.Campaths.Contains(item))
+            return;
+
+        var token = _thumbnailLoadCts?.Token ?? CancellationToken.None;
+        _ = item.LoadThumbnailAsync(GetThumbnailAsync, token);
     }
 
     private static bool SaveFrameToPng(VideoFrame frame, string path)
@@ -1063,7 +1159,6 @@ public class CampathProfileViewModel : ViewModelBase
 
 public class CampathItemViewModel : ViewModelBase
 {
-    private const int ThumbnailDecodeWidth = 256;
     private string _name;
     private string? _filePath;
     private string? _imagePath;
@@ -1082,7 +1177,6 @@ public class CampathItemViewModel : ViewModelBase
         _filePath = data.FilePath;
         _imagePath = data.ImagePath;
         _offset = data.Offset;
-        UpdateThumbnail();
     }
 
     public Guid Id { get; }
@@ -1106,7 +1200,7 @@ public class CampathItemViewModel : ViewModelBase
         {
             if (SetProperty(ref _imagePath, value))
             {
-                UpdateThumbnail();
+                ClearThumbnail();
             }
         }
     }
@@ -1186,21 +1280,32 @@ public class CampathItemViewModel : ViewModelBase
         }
     }
 
-    private void UpdateThumbnail()
+    public async Task LoadThumbnailAsync(Func<string?, CancellationToken, Task<Avalonia.Media.Imaging.Bitmap?>> thumbnailLoader, CancellationToken cancellationToken)
     {
+        if (Thumbnail != null)
+            return;
+
+        var imagePath = _imagePath;
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return;
+
         try
         {
-            Thumbnail?.Dispose();
-            Thumbnail = null;
+            var bitmap = await thumbnailLoader(imagePath, cancellationToken);
+            if (cancellationToken.IsCancellationRequested || !string.Equals(imagePath, _imagePath, StringComparison.OrdinalIgnoreCase))
+                return;
 
-            if (!string.IsNullOrWhiteSpace(_imagePath) && File.Exists(_imagePath))
+            if (Dispatcher.UIThread.CheckAccess())
             {
-                using var stream = File.OpenRead(_imagePath);
-                Thumbnail = Avalonia.Media.Imaging.Bitmap.DecodeToWidth(
-                    stream,
-                    ThumbnailDecodeWidth,
-                    Avalonia.Media.Imaging.BitmapInterpolationMode.HighQuality);
+                Thumbnail = bitmap;
             }
+            else
+            {
+                await Dispatcher.UIThread.InvokeAsync(() => Thumbnail = bitmap);
+            }
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch
         {
@@ -1208,9 +1313,14 @@ public class CampathItemViewModel : ViewModelBase
         }
     }
 
+    public void ClearThumbnail()
+    {
+        Thumbnail = null;
+    }
+
     public void RefreshThumbnail()
     {
-        UpdateThumbnail();
+        ClearThumbnail();
     }
 }
 
