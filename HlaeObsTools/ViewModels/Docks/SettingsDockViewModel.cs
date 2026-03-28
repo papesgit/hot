@@ -64,6 +64,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly Viewport3DSettings _viewport3DSettings;
         private readonly CampathEditorViewModel _campathEditor;
         private readonly SettingsStorage _settingsStorage;
+        private readonly AppSettingsData _storedSettings;
         private readonly HlaeWebSocketClient? _ws;
         private readonly Func<NetworkSettingsData, Task>? _applyNetworkSettingsAsync;
         private readonly VmixSettings _vmixSettings;
@@ -150,6 +151,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
             // Initialize network fields
             var settings = storedSettings ?? new AppSettingsData();
+            _storedSettings = settings;
             _webSocketHost = settings.WebSocketHost;
             _webSocketPort = settings.WebSocketPort;
             _graphicsProducerPort = settings.GraphicsProducerPort;
@@ -1591,6 +1593,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 UdpPort = UdpPort,
                 RtpPort = RtpPort,
                 GsiPort = GsiPort,
+                NetConsoleHostPort = _storedSettings.NetConsoleHostPort,
                 GsiRelayUris = gsiRelayUris,
                 MapObjPath = _viewport3DSettings.MapObjPath,
                 ViewportUseLegacyD3D11 = _viewport3DSettings.UseLegacyD3D11Viewport,

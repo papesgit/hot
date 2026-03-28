@@ -15,6 +15,7 @@ using Avalonia.Media;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.NetConsole;
+using HlaeObsTools.Services.Settings;
 using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.ViewModels.Docks;
@@ -37,6 +38,8 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private readonly object _incomingBufferLock = new();
     private readonly object _playerTeamLookupLock = new();
     private readonly GsiServer? _gsiServer;
+    private readonly SettingsStorage? _settingsStorage;
+    private readonly AppSettingsData? _settings;
     private Dictionary<string, string> _playerTeamsByName = new(StringComparer.Ordinal);
     private Dictionary<string, string> _playerTeamsByNormalizedName = new(StringComparer.Ordinal);
     private static readonly Regex GameEventStartRegex = new("^Game event \"[^\"]+\", Tick \\d+:$", RegexOptions.Compiled);
@@ -66,13 +69,20 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private bool _filterUnknownNetMessages = true;
     private bool _isSkippingGameEventBlock;
 
-    public NetConsoleDockViewModel(GsiServer? gsiServer = null)
+    public NetConsoleDockViewModel(GsiServer? gsiServer = null, SettingsStorage? settingsStorage = null, AppSettingsData? settings = null)
     {
         _gsiServer = gsiServer;
+        _settingsStorage = settingsStorage;
+        _settings = settings;
         Title = "Console";
         CanClose = false;
         CanFloat = true;
         CanPin = true;
+
+        if (!string.IsNullOrWhiteSpace(settings?.NetConsoleHostPort))
+        {
+            _hostPortText = settings.NetConsoleHostPort;
+        }
 
         _toggleConnectionCommand = new DelegateCommand(_ => ToggleConnectionAsync(), _ => CanToggleConnection);
         _sendCommand = new DelegateCommand(_ => SendAsync(), _ => IsConnected && !IsConnecting);
@@ -97,7 +107,17 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     public string HostPortText
     {
         get => _hostPortText;
-        set => SetProperty(ref _hostPortText, value);
+        set
+        {
+            if (!SetProperty(ref _hostPortText, value))
+                return;
+
+            if (_settings != null && _settingsStorage != null)
+            {
+                _settings.NetConsoleHostPort = value;
+                _settingsStorage.Save(_settings);
+            }
+        }
     }
 
     public string InputText
