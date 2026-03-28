@@ -12,12 +12,16 @@
         <DataTemplate x:Key="EventTemplate" x:DataType="local:AttachPresetAnimationEventViewModel">
             <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,8">
                 <StackPanel Spacing="8">
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="Time" Foreground="#AAAAAA" VerticalAlignment="Center"/>
                             <TextBox Width="90"
                                      Text="{Binding Time, Mode=TwoWay, Converter={StaticResource Double0}}"
                                      IsEnabled="{Binding !IsBaseKeyframe}"/>
+                            <TextBlock Text="Warning: duplicate kf times!"
+                                       Foreground="#E6C84F"
+                                       VerticalAlignment="Center"
+                                       IsVisible="{Binding HasDuplicateKeyframeTime}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
@@ -28,23 +32,13 @@
                         </StackPanel>
 
                         <Button Grid.Column="2"
-                                Content="▲"
-                                Width="32"
-                                Click="MoveEventUp_Click"
-                                IsEnabled="{Binding !IsBaseKeyframe}"/>
-                        <Button Grid.Column="3"
-                                Content="▼"
-                                Width="32"
-                                Click="MoveEventDown_Click"
-                                IsEnabled="{Binding !IsBaseKeyframe}"/>
-                        <Button Grid.Column="4"
                                 Content="Delete"
                                 Click="DeleteEvent_Click"
                                 IsEnabled="{Binding !IsBaseKeyframe}"/>
                     </Grid>
 
                     <StackPanel IsVisible="{Binding IsKeyframe}" Spacing="8">
-                        <TextBlock Text="Δ Position (camera space)"
+                        <TextBlock Text="Delta Position (camera space)"
                                    Foreground="#CCCCCC"/>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBox Width="80" Watermark="X" Text="{Binding DeltaPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
@@ -52,7 +46,7 @@
                             <TextBox Width="80" Watermark="Z" Text="{Binding DeltaPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                         </StackPanel>
 
-                        <TextBlock Text="Δ Rotation (deg)"
+                        <TextBlock Text="Delta Rotation (deg)"
                                    Foreground="#CCCCCC"/>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBox Width="80" Watermark="Pitch" Text="{Binding DeltaPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
@@ -77,8 +71,10 @@
 
                         <TextBlock Text="FOV (absolute)"
                                    Foreground="#CCCCCC"/>
-                        <TextBox Width="100" Watermark="(base)" Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}"
-                                HorizontalAlignment="Left" />
+                        <TextBox Width="100"
+                                 Watermark="(base)"
+                                 Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}"
+                                 HorizontalAlignment="Left" />
                     </StackPanel>
 
                     <StackPanel IsVisible="{Binding IsTransition}" Spacing="8">
@@ -113,28 +109,28 @@
             <Border BorderBrush="#333" BorderThickness="1" Padding="10" IsVisible="{Binding HasPreset}">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" RowDefinitions="Auto,Auto">
                     <TextBlock Text="{Binding Preset.Title}"
-                                Foreground="#E6E6E6"
-                                FontSize="14"
-                                FontWeight="SemiBold"/>
+                               Foreground="#E6E6E6"
+                               FontSize="14"
+                               FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding Preset.AnimationSummary}"
-                            Foreground="#888888"
-                            FontSize="12"
-                            Grid.Column="1"/>
+                               Foreground="#888888"
+                               FontSize="12"
+                               Grid.Column="1"/>
 
                     <StackPanel Orientation="Horizontal" Spacing="8" Grid.ColumnSpan="2" Grid.Row="1">
                         <Button Content="Add keyframe" Command="{Binding AddKeyframeCommand}" />
                         <Button Content="Add transition" Command="{Binding AddTransitionCommand}" />
                     </StackPanel>
-                    <ToggleSwitch   Grid.Column="2"
-                                    Grid.RowSpan="2"
-                                    IsChecked="{Binding Preset.AnimationEnabled, Mode=TwoWay}"
-                                    Content="Enabled"
-                                    Foreground="#E6E6E6"/>
+                    <ToggleSwitch Grid.Column="2"
+                                  Grid.RowSpan="2"
+                                  IsChecked="{Binding Preset.AnimationEnabled, Mode=TwoWay}"
+                                  Content="Enabled"
+                                  Foreground="#E6E6E6"/>
                 </Grid>
             </Border>
 
             <Border BorderBrush="#333" BorderThickness="1" Padding="10" IsVisible="{Binding !HasPreset}">
-                <TextBlock Text="Select an attach preset and click “Animation” to edit its timeline."
+                <TextBlock Text="Select an attach preset and click &quot;Animation&quot; to edit its timeline."
                            Foreground="#888888"/>
             </Border>
 

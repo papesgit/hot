@@ -33,8 +33,6 @@ public sealed class AttachPresetAnimationDockViewModel : Tool
     public ICommand AddKeyframeCommand { get; }
     public ICommand AddTransitionCommand { get; }
     public ICommand DeleteEventCommand { get; }
-    public ICommand MoveEventUpCommand { get; }
-    public ICommand MoveEventDownCommand { get; }
 
     public AttachPresetAnimationDockViewModel()
     {
@@ -42,8 +40,6 @@ public sealed class AttachPresetAnimationDockViewModel : Tool
         AddKeyframeCommand = new Relay(_ => AddKeyframe(), _ => HasPreset);
         AddTransitionCommand = new Relay(_ => AddTransition(), _ => HasPreset && !HasTransition);
         DeleteEventCommand = new Relay(o => DeleteEvent(o as AttachPresetAnimationEventViewModel), o => CanDelete(o as AttachPresetAnimationEventViewModel));
-        MoveEventUpCommand = new Relay(o => MoveEvent(o as AttachPresetAnimationEventViewModel, -1), o => CanMove(o as AttachPresetAnimationEventViewModel, -1));
-        MoveEventDownCommand = new Relay(o => MoveEvent(o as AttachPresetAnimationEventViewModel, +1), o => CanMove(o as AttachPresetAnimationEventViewModel, +1));
     }
 
     public void OpenPreset(AttachPresetViewModel preset)
@@ -70,7 +66,7 @@ public sealed class AttachPresetAnimationDockViewModel : Tool
             Time = time,
             Order = order
         };
-        Preset.AnimationEvents.Add(vm);
+        InsertEvent(vm);
         RefreshTransitionState();
     }
 
@@ -94,7 +90,7 @@ public sealed class AttachPresetAnimationDockViewModel : Tool
             TransitionDuration = 0.0,
             TransitionEasing = HudSettings.AttachmentPresetAnimationTransitionEasing.Smoothstep
         };
-        Preset.AnimationEvents.Add(vm);
+        InsertEvent(vm);
         RefreshTransitionState();
     }
 
@@ -109,6 +105,34 @@ public sealed class AttachPresetAnimationDockViewModel : Tool
         return max + 1;
     }
 
+    private void InsertEvent(AttachPresetAnimationEventViewModel vm)
+    {
+        if (Preset == null)
+            return;
+
+        var insertIndex = Preset.AnimationEvents.Count;
+        for (var i = 0; i < Preset.AnimationEvents.Count; i++)
+        {
+            var current = Preset.AnimationEvents[i];
+            if (current.IsBaseKeyframe)
+                continue;
+
+            if (current.Time > vm.Time)
+            {
+                insertIndex = i;
+                break;
+            }
+
+            if (Math.Abs(current.Time - vm.Time) < 0.0001 && vm.IsTransition && current.IsKeyframe)
+            {
+                insertIndex = i;
+                break;
+            }
+        }
+
+        Preset.AnimationEvents.Insert(insertIndex, vm);
+    }
+
     private static bool CanDelete(AttachPresetAnimationEventViewModel? e)
     {
         return e != null && !e.IsBaseKeyframe;
@@ -119,26 +143,6 @@ public sealed class AttachPresetAnimationDockViewModel : Tool
         if (Preset == null || e == null) return;
         if (!CanDelete(e)) return;
         Preset.AnimationEvents.Remove(e);
-        RefreshTransitionState();
-    }
-
-    private bool CanMove(AttachPresetAnimationEventViewModel? e, int dir)
-    {
-        if (Preset == null || e == null) return false;
-        if (e.IsBaseKeyframe) return false;
-        var idx = Preset.AnimationEvents.IndexOf(e);
-        var next = idx + dir;
-        return idx >= 0 && next >= 0 && next < Preset.AnimationEvents.Count;
-    }
-
-    private void MoveEvent(AttachPresetAnimationEventViewModel? e, int dir)
-    {
-        if (Preset == null || e == null) return;
-        if (!CanMove(e, dir)) return;
-
-        var idx = Preset.AnimationEvents.IndexOf(e);
-        var next = idx + dir;
-        Preset.AnimationEvents.Move(idx, next);
         RefreshTransitionState();
     }
 

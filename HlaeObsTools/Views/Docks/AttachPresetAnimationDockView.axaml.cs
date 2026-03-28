@@ -13,16 +13,6 @@ public partial class AttachPresetAnimationDockView : UserControl
         InitializeComponent();
     }
 
-    private void MoveEventUp_Click(object? sender, RoutedEventArgs e)
-    {
-        ExecuteItemCommand(sender, vm => vm.MoveEventUpCommand);
-    }
-
-    private void MoveEventDown_Click(object? sender, RoutedEventArgs e)
-    {
-        ExecuteItemCommand(sender, vm => vm.MoveEventDownCommand);
-    }
-
     private void DeleteEvent_Click(object? sender, RoutedEventArgs e)
     {
         ExecuteItemCommand(sender, vm => vm.DeleteEventCommand);

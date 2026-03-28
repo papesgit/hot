@@ -62,6 +62,7 @@ public sealed class AttachPresetViewModel : ViewModelBase
         _animationEvents.CollectionChanged += (_, _) =>
         {
             HookAnimationEventChanges();
+            UpdateDuplicateKeyframeWarnings();
             OnPropertyChanged(nameof(AnimationSummary));
         };
     }
@@ -239,10 +240,21 @@ public sealed class AttachPresetViewModel : ViewModelBase
 
     public void EnsureBaseKeyframe()
     {
-        if (_animationEvents.Count > 0 && _animationEvents[0].IsBaseKeyframe)
+        var baseKeyframe = _animationEvents.FirstOrDefault(e => e.IsBaseKeyframe);
+        if (baseKeyframe == null)
+        {
+            _animationEvents.Insert(0, new AttachPresetAnimationEventViewModel(isBaseKeyframe: true));
+            OnPropertyChanged(nameof(AnimationSummary));
             return;
+        }
 
-        _animationEvents.Insert(0, new AttachPresetAnimationEventViewModel(isBaseKeyframe: true));
+        var index = _animationEvents.IndexOf(baseKeyframe);
+        if (index > 0)
+        {
+            _animationEvents.Move(index, 0);
+        }
+
+        NormalizeAnimationEvents();
         OnPropertyChanged(nameof(AnimationSummary));
     }
 
@@ -253,7 +265,7 @@ public sealed class AttachPresetViewModel : ViewModelBase
         _animationEvents.Clear();
         EnsureBaseKeyframe();
 
-        foreach (var e in animation.Events.OrderBy(e => e.Time).ThenBy(e => e.Order))
+        foreach (var e in animation.Events.OrderBy(EventSortKey))
         {
             // Base keyframe is implicit and uneditable.
             if (e.Type == HudSettings.AttachmentPresetAnimationEventType.Keyframe && e.Time == 0.0 && e.Order == 0)
@@ -281,14 +293,14 @@ public sealed class AttachPresetViewModel : ViewModelBase
         }
 
         HookAnimationEventChanges();
+        NormalizeAnimationEvents();
         OnPropertyChanged(nameof(AnimationSummary));
     }
 
     private HudSettings.AttachmentPresetAnimation ToAnimationModel()
     {
-        EnsureBaseKeyframe();
-
         var events = _animationEvents
+            .OrderBy(EventSortKey)
             .Select(e => new HudSettings.AttachmentPresetAnimationEvent
             {
                 Type = e.Type == AttachPresetAnimationEventType.Transition
@@ -328,6 +340,84 @@ public sealed class AttachPresetViewModel : ViewModelBase
 
     private void OnAnimationEventChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(AttachPresetAnimationEventViewModel.Time))
+        {
+            NormalizeAnimationEvents();
+        }
+
         OnPropertyChanged(nameof(AnimationSummary));
+    }
+
+    private void NormalizeAnimationEvents()
+    {
+        if (_animationEvents.Count <= 1)
+        {
+            UpdateDuplicateKeyframeWarnings();
+            return;
+        }
+
+        var ordered = _animationEvents
+            .OrderBy(EventSortKey)
+            .ToList();
+
+        for (var targetIndex = 0; targetIndex < ordered.Count; targetIndex++)
+        {
+            var currentIndex = _animationEvents.IndexOf(ordered[targetIndex]);
+            if (currentIndex != targetIndex)
+            {
+                _animationEvents.Move(currentIndex, targetIndex);
+            }
+        }
+
+        var nextOrderByTime = new Dictionary<double, int>();
+        foreach (var ev in _animationEvents)
+        {
+            if (!nextOrderByTime.TryGetValue(ev.Time, out var nextOrder))
+            {
+                nextOrder = 0;
+            }
+
+            ev.Order = nextOrder;
+            nextOrderByTime[ev.Time] = nextOrder + 1;
+        }
+        
+        UpdateDuplicateKeyframeWarnings();
+    }
+
+    private void UpdateDuplicateKeyframeWarnings()
+    {
+        var duplicateKeyframeTimes = _animationEvents
+            .Where(e => e.IsKeyframe)
+            .GroupBy(e => e.Time)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToHashSet();
+
+        foreach (var ev in _animationEvents)
+        {
+            ev.HasDuplicateKeyframeTime = ev.IsKeyframe
+                && !ev.IsBaseKeyframe
+                && duplicateKeyframeTimes.Contains(ev.Time);
+        }
+    }
+    private static (int Group, double Time, int TypeOrder, int Order) EventSortKey(AttachPresetAnimationEventViewModel e)
+    {
+        return (
+            e.IsBaseKeyframe ? 0 : 1,
+            e.IsBaseKeyframe ? 0.0 : e.Time,
+            e.IsTransition ? 0 : 1,
+            e.Order
+        );
+    }
+
+    private static (int Group, double Time, int TypeOrder, int Order) EventSortKey(HudSettings.AttachmentPresetAnimationEvent e)
+    {
+        var isBaseKeyframe = e.Type == HudSettings.AttachmentPresetAnimationEventType.Keyframe && e.Time == 0.0 && e.Order == 0;
+        return (
+            isBaseKeyframe ? 0 : 1,
+            isBaseKeyframe ? 0.0 : e.Time,
+            e.Type == HudSettings.AttachmentPresetAnimationEventType.Transition ? 0 : 1,
+            e.Order
+        );
     }
 }

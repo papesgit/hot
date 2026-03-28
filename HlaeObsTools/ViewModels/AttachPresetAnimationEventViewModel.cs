@@ -32,6 +32,7 @@ public sealed class AttachPresetAnimationEventViewModel : ViewModelBase
         = HudSettings.AttachmentPresetAnimationKeyframeCurve.Linear;
     private HudSettings.AttachmentPresetAnimationKeyframeEase _keyframeEasingMode
         = HudSettings.AttachmentPresetAnimationKeyframeEase.EaseInOut;
+    private bool _hasDuplicateKeyframeTime;
 
     public AttachPresetAnimationEventViewModel()
         : this(isBaseKeyframe: false)
@@ -99,8 +100,8 @@ public sealed class AttachPresetAnimationEventViewModel : ViewModelBase
         get => _time;
         set
         {
-            if (IsBaseKeyframe) value = 0.0;
-            if (SetProperty(ref _time, Math.Max(0.0, value)))
+            var coercedValue = IsBaseKeyframe ? 0.0 : Math.Max(0.0, value);
+            if (SetProperty(ref _time, coercedValue))
             {
                 OnPropertyChanged(nameof(DisplayTime));
             }
@@ -157,4 +158,10 @@ public sealed class AttachPresetAnimationEventViewModel : ViewModelBase
 
     public bool UsesKeyframeEasingMode =>
         IsKeyframe && KeyframeEasingCurve != HudSettings.AttachmentPresetAnimationKeyframeCurve.Linear;
+
+    public bool HasDuplicateKeyframeTime
+    {
+        get => _hasDuplicateKeyframeTime;
+        set => SetProperty(ref _hasDuplicateKeyframeTime, value);
+    }
 }
