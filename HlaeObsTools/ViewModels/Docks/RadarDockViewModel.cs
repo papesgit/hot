@@ -454,6 +454,86 @@ public sealed class RadarDeadPlayerViewModel : ViewModelBase
     }
 }
 
+public sealed class RadarDroppedDefuserViewModel : ViewModelBase
+{
+    private double _canvasX;
+    private double _canvasY;
+    private double _markerScale = 1.0;
+    private double _baseScale = 1.0;
+    private double _heightScale = 1.0;
+
+    public RadarDroppedDefuserViewModel(string id)
+    {
+        Id = id;
+    }
+
+    public string Id { get; }
+    public double Altitude { get; set; }
+
+    public double CanvasX
+    {
+        get => _canvasX;
+        set
+        {
+            if (SetProperty(ref _canvasX, value))
+            {
+                OnPropertyChanged(nameof(ScaledCanvasX));
+            }
+        }
+    }
+
+    public double CanvasY
+    {
+        get => _canvasY;
+        set
+        {
+            if (SetProperty(ref _canvasY, value))
+            {
+                OnPropertyChanged(nameof(ScaledCanvasY));
+            }
+        }
+    }
+
+    public double MarkerScale
+    {
+        get => _markerScale;
+        private set
+        {
+            if (SetProperty(ref _markerScale, value))
+            {
+                OnPropertyChanged(nameof(ScaledCanvasX));
+                OnPropertyChanged(nameof(ScaledCanvasY));
+            }
+        }
+    }
+
+    public double ScaledCanvasX => CanvasX - 8.0 * (MarkerScale - 1.0);
+    public double ScaledCanvasY => CanvasY - 8.0 * (MarkerScale - 1.0);
+
+    public void SetBaseScale(double scale)
+    {
+        if (Math.Abs(_baseScale - scale) < 0.0001)
+            return;
+
+        _baseScale = scale;
+        UpdateMarkerScale();
+    }
+
+    public void SetHeightScale(double scale)
+    {
+        if (Math.Abs(_heightScale - scale) < 0.0001)
+            return;
+
+        _heightScale = scale;
+        UpdateMarkerScale();
+    }
+
+    private void UpdateMarkerScale()
+    {
+        MarkerScale = _baseScale * _heightScale;
+    }
+}
+
 public sealed class FlameViewModel : ViewModelBase
 {
     private double _canvasX;
@@ -734,6 +814,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private readonly Dictionary<string, PlayerWeaponState> _playerWeaponStates = new();
     private readonly Dictionary<string, RadarPlayerViewModel> _playerMarkers = new();
     private readonly Dictionary<string, RadarDeadPlayerViewModel> _deadPlayerMarkers = new();
+    private readonly Dictionary<string, RadarDroppedDefuserViewModel> _droppedDefuserMarkers = new();
     private readonly Dictionary<string, RadarGrenadeViewModel> _grenadeMarkers = new();
     private readonly Dictionary<string, Vec3> _lastAlivePositions = new();
     private readonly Dictionary<string, int> _playerHeightBuckets = new();
@@ -762,6 +843,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
     public ObservableCollection<RadarPlayerViewModel> Players { get; } = new();
     public ObservableCollection<RadarDeadPlayerViewModel> DeadPlayers { get; } = new();
+    public ObservableCollection<RadarDroppedDefuserViewModel> DroppedDefusers { get; } = new();
     public ObservableCollection<RadarGrenadeViewModel> Grenades { get; } = new();
     public ObservableCollection<RadarDetonationViewModel> Detonations { get; } = new();
     public ObservableCollection<FlameViewModel> Flames { get; } = new();
@@ -862,11 +944,13 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             Players.Clear();
             _playerMarkers.Clear();
             DeadPlayers.Clear();
+            DroppedDefusers.Clear();
             Grenades.Clear();
             Detonations.Clear();
             CampathPaths.Clear();
             ClearCampathHover();
             _deadPlayerMarkers.Clear();
+            _droppedDefuserMarkers.Clear();
             _grenadeMarkers.Clear();
             _lastAlivePositions.Clear();
             _playerHeightBuckets.Clear();
@@ -884,9 +968,11 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             Players.Clear();
             _playerMarkers.Clear();
             DeadPlayers.Clear();
+            DroppedDefusers.Clear();
             Grenades.Clear();
             Detonations.Clear();
             _deadPlayerMarkers.Clear();
+            _droppedDefuserMarkers.Clear();
             _grenadeMarkers.Clear();
             _lastAlivePositions.Clear();
             _playerHeightBuckets.Clear();
@@ -1052,6 +1138,41 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
             SyncPlayers(Players, orderedPlayers);
         }
+
+        var orderedDroppedDefusers = new List<RadarDroppedDefuserViewModel>();
+        var presentDroppedDefuserIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var droppedDefuser in state.DroppedDefusers)
+        {
+            if (!_projector.TryProject(state.MapName, droppedDefuser.Position, out var x, out var y, out var level))
+            {
+                continue;
+            }
+
+            presentDroppedDefuserIds.Add(droppedDefuser.Id);
+
+            if (!_droppedDefuserMarkers.TryGetValue(droppedDefuser.Id, out var defuserVm))
+            {
+                defuserVm = new RadarDroppedDefuserViewModel(droppedDefuser.Id);
+                _droppedDefuserMarkers[droppedDefuser.Id] = defuserVm;
+            }
+
+            defuserVm.CanvasX = x * 1024.0 + 2.0;
+            defuserVm.CanvasY = y * 1024.0 - 18.0;
+            defuserVm.Altitude = droppedDefuser.Position.Z;
+            defuserVm.SetHeightScale(ResolveHeightScale(state.MapName, droppedDefuser.Position.Z, level));
+            defuserVm.SetBaseScale(_settings.MarkerScale);
+            orderedDroppedDefusers.Add(defuserVm);
+        }
+
+        var droppedDefusersToRemove = _droppedDefuserMarkers.Keys
+            .Where(id => !presentDroppedDefuserIds.Contains(id))
+            .ToList();
+        foreach (var droppedDefuserId in droppedDefusersToRemove)
+        {
+            _droppedDefuserMarkers.Remove(droppedDefuserId);
+        }
+
+        SyncDroppedDefusers(DroppedDefusers, orderedDroppedDefusers);
 
         // Process grenades
         Flames.Clear();
@@ -1486,6 +1607,10 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             {
                 dead.SetBaseScale(_settings.MarkerScale);
             }
+            foreach (var droppedDefuser in DroppedDefusers)
+            {
+                droppedDefuser.SetBaseScale(_settings.MarkerScale);
+            }
         }
         else if (e.PropertyName == nameof(RadarSettings.UseAltPlayerBinds))
         {
@@ -1506,6 +1631,10 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             foreach (var dead in DeadPlayers)
             {
                 dead.SetHeightScale(ResolveHeightScale(_currentMap, dead.Altitude, null));
+            }
+            foreach (var droppedDefuser in DroppedDefusers)
+            {
+                droppedDefuser.SetHeightScale(ResolveHeightScale(_currentMap, droppedDefuser.Altitude, null));
             }
         }
     }
@@ -1855,6 +1984,43 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         }
 
         var orderedSet = new HashSet<RadarGrenadeViewModel>(ordered);
+        for (int i = target.Count - 1; i >= 0; i--)
+        {
+            if (!orderedSet.Contains(target[i]))
+            {
+                target.RemoveAt(i);
+            }
+        }
+
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            var desired = ordered[i];
+            if (i < target.Count && ReferenceEquals(target[i], desired))
+            {
+                continue;
+            }
+
+            var existingIndex = target.IndexOf(desired);
+            if (existingIndex >= 0)
+            {
+                target.Move(existingIndex, i);
+            }
+            else
+            {
+                target.Insert(i, desired);
+            }
+        }
+    }
+
+    private static void SyncDroppedDefusers(ObservableCollection<RadarDroppedDefuserViewModel> target, IReadOnlyList<RadarDroppedDefuserViewModel> ordered)
+    {
+        if (ordered.Count == 0)
+        {
+            target.Clear();
+            return;
+        }
+
+        var orderedSet = new HashSet<RadarDroppedDefuserViewModel>(ordered);
         for (int i = target.Count - 1; i >= 0; i--)
         {
             if (!orderedSet.Contains(target[i]))

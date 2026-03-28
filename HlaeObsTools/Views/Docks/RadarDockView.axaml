@@ -142,6 +142,39 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
+          <ItemsControl ItemsSource="{Binding DroppedDefusers}"
+                        Width="1024"
+                        Height="1024"
+                        IsHitTestVisible="False"
+                        x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding ScaledCanvasX}" />
+                <Setter Property="Canvas.Top" Value="{Binding ScaledCanvasY}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RadarDroppedDefuserViewModel">
+                <Canvas Width="16"
+                        Height="16"
+                        RenderTransformOrigin="0.5,0.5">
+                  <Canvas.RenderTransform>
+                    <ScaleTransform ScaleX="{Binding MarkerScale}"
+                                    ScaleY="{Binding MarkerScale}" />
+                  </Canvas.RenderTransform>
+                  <svg:Svg Path="avares://HlaeObsTools/Assets/hud/weapons/defuser.svg"
+                           Width="16"
+                           Height="16" />
+                </Canvas>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
           <ItemsControl ItemsSource="{Binding Players}"
                         Width="1024"
                         Height="1024"

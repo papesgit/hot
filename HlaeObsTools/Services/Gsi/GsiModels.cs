@@ -60,6 +60,13 @@ public sealed class GsiBombState
     public Vec3 Position { get; init; }
 }
 
+public sealed class GsiDroppedDefuser
+{
+    public string Id { get; init; } = string.Empty;
+    public string? DroppedBySteamId { get; init; }
+    public Vec3 Position { get; init; }
+}
+
 public sealed class GsiGrenade
 {
     public string Id { get; init; } = string.Empty;
@@ -87,6 +94,7 @@ public sealed class GsiGameState
     public string RawJson { get; init; } = string.Empty;
     public string MapName { get; init; } = string.Empty;
     public IReadOnlyList<GsiPlayer> Players { get; init; } = Array.Empty<GsiPlayer>();
+    public IReadOnlyList<GsiDroppedDefuser> DroppedDefusers { get; set; } = Array.Empty<GsiDroppedDefuser>();
     public IReadOnlyList<GsiGrenade> Grenades { get; init; } = Array.Empty<GsiGrenade>();
     public GsiBombState? Bomb { get; init; }
     public string? FocusedPlayerSteamId { get; init; }

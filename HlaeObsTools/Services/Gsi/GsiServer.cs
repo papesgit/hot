@@ -33,6 +33,13 @@ public sealed record GsiRelayEndpointHealth(
 /// </summary>
 public sealed class GsiServer : IDisposable
 {
+    private sealed class PlayerDefuserTracker
+    {
+        public bool WasAlive { get; set; }
+        public bool HadDefuser { get; set; }
+        public Vec3 LastAlivePosition { get; set; }
+    }
+
     private sealed class RelayEnvelope
     {
         public required byte[] RawBody { get; init; }
@@ -59,14 +66,20 @@ public sealed class GsiServer : IDisposable
 
     private readonly object _lifecycleLock = new();
     private readonly object _relayLock = new();
+    private readonly object _trackingLock = new();
     private readonly CancellationTokenSource _relayShutdownCts = new();
     private readonly HttpClient _relayHttpClient = CreateRelayHttpClient();
     private Dictionary<string, RelayEndpointState> _relayEndpointStates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, PlayerDefuserTracker> _playerDefuserTrackers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, GsiDroppedDefuser> _droppedDefusers = new(StringComparer.Ordinal);
     private IHost? _host;
     private CancellationTokenSource? _cts;
     private Task? _runTask;
     private long _heartbeat;
     private long _lastRequestUtcTicks;
+    private long _nextDroppedDefuserId;
+    private string? _lastTrackedMapName;
+    private string? _lastTrackedRoundPhase;
     private static readonly Dictionary<string, int> LastKnownObserverSlots = new(StringComparer.Ordinal);
     private static readonly HashSet<string> HopByHopRelayHeaders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -327,6 +340,11 @@ public sealed class GsiServer : IDisposable
         finally
         {
             cts?.Dispose();
+            lock (_trackingLock)
+            {
+                ResetDroppedDefuserTracking();
+                _lastTrackedMapName = null;
+            }
         }
     }
 
@@ -357,6 +375,7 @@ public sealed class GsiServer : IDisposable
             var state = ParseState(body, currentHeartbeat);
             if (state != null)
             {
+                state = ApplyDroppedDefuserTracking(state);
                 GameStateUpdated?.Invoke(this, state);
             }
 
@@ -534,6 +553,98 @@ public sealed class GsiServer : IDisposable
         {
             Timeout = Timeout.InfiniteTimeSpan
         };
+    }
+
+    private GsiGameState ApplyDroppedDefuserTracking(GsiGameState state)
+    {
+        lock (_trackingLock)
+        {
+            if (!string.Equals(_lastTrackedMapName, state.MapName, StringComparison.OrdinalIgnoreCase))
+            {
+                ResetDroppedDefuserTracking();
+                _lastTrackedMapName = state.MapName;
+            }
+
+            var currentPhase = state.RoundPhase;
+            var wasFreezetime = string.Equals(_lastTrackedRoundPhase, "freezetime", StringComparison.OrdinalIgnoreCase);
+            var isFreezetime = string.Equals(currentPhase, "freezetime", StringComparison.OrdinalIgnoreCase);
+            if (!wasFreezetime && isFreezetime)
+            {
+                _droppedDefusers.Clear();
+            }
+
+            var currentPlayerIds = new HashSet<string>(state.Players.Select(p => p.SteamId), StringComparer.Ordinal);
+            var stalePlayerIds = _playerDefuserTrackers.Keys
+                .Where(id => !currentPlayerIds.Contains(id))
+                .ToList();
+            foreach (var stalePlayerId in stalePlayerIds)
+            {
+                _playerDefuserTrackers.Remove(stalePlayerId);
+            }
+
+            var shouldInferMidRoundTransitions = !isFreezetime && !string.IsNullOrWhiteSpace(currentPhase);
+
+            foreach (var player in state.Players)
+            {
+                var hadPreviousSnapshot = _playerDefuserTrackers.TryGetValue(player.SteamId, out var tracker);
+                tracker ??= new PlayerDefuserTracker();
+
+                if (hadPreviousSnapshot)
+                {
+                    if (tracker.WasAlive && !player.IsAlive && tracker.HadDefuser && shouldInferMidRoundTransitions)
+                    {
+                        var dropId = $"defuser-{Interlocked.Increment(ref _nextDroppedDefuserId)}";
+                        var dropPosition = tracker.LastAlivePosition != default ? tracker.LastAlivePosition : player.Position;
+                        _droppedDefusers[dropId] = new GsiDroppedDefuser
+                        {
+                            Id = dropId,
+                            DroppedBySteamId = player.SteamId,
+                            Position = dropPosition
+                        };
+                    }
+
+                    if (!tracker.HadDefuser && player.HasDefuseKit && player.IsAlive && shouldInferMidRoundTransitions)
+                    {
+                        var closest = _droppedDefusers
+                            .OrderBy(kvp => GetDistanceSquared(kvp.Value.Position, player.Position))
+                            .FirstOrDefault();
+
+                        if (!string.IsNullOrEmpty(closest.Key))
+                        {
+                            _droppedDefusers.Remove(closest.Key);
+                        }
+                    }
+                }
+
+                tracker.WasAlive = player.IsAlive;
+                tracker.HadDefuser = player.HasDefuseKit;
+                if (player.IsAlive)
+                {
+                    tracker.LastAlivePosition = player.Position;
+                }
+
+                _playerDefuserTrackers[player.SteamId] = tracker;
+            }
+
+            _lastTrackedRoundPhase = currentPhase;
+            state.DroppedDefusers = _droppedDefusers.Values.ToArray();
+            return state;
+        }
+    }
+
+    private void ResetDroppedDefuserTracking()
+    {
+        _playerDefuserTrackers.Clear();
+        _droppedDefusers.Clear();
+        _lastTrackedRoundPhase = null;
+    }
+
+    private static double GetDistanceSquared(Vec3 a, Vec3 b)
+    {
+        var dx = a.X - b.X;
+        var dy = a.Y - b.Y;
+        var dz = a.Z - b.Z;
+        return (dx * dx) + (dy * dy) + (dz * dz);
     }
 
     private static GsiGameState? ParseState(string body, long heartbeat)
