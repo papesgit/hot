@@ -1063,6 +1063,7 @@ public class CampathProfileViewModel : ViewModelBase
 
 public class CampathItemViewModel : ViewModelBase
 {
+    private const int ThumbnailDecodeWidth = 256;
     private string _name;
     private string? _filePath;
     private string? _imagePath;
@@ -1195,7 +1196,10 @@ public class CampathItemViewModel : ViewModelBase
             if (!string.IsNullOrWhiteSpace(_imagePath) && File.Exists(_imagePath))
             {
                 using var stream = File.OpenRead(_imagePath);
-                Thumbnail = new Avalonia.Media.Imaging.Bitmap(stream);
+                Thumbnail = Avalonia.Media.Imaging.Bitmap.DecodeToWidth(
+                    stream,
+                    ThumbnailDecodeWidth,
+                    Avalonia.Media.Imaging.BitmapInterpolationMode.HighQuality);
             }
         }
         catch
