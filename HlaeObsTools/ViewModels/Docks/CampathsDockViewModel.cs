@@ -100,10 +100,7 @@ public class CampathsDockViewModel : Tool
         get => _selectedProfile;
         set
         {
-            if (SetProperty(ref _selectedProfile, value) && value != null)
-            {
-                Scale = value.Scale;
-            }
+            SetProperty(ref _selectedProfile, value);
 
             _removeProfileCommand.RaiseCanExecuteChanged();
             _addCampathCommand.RaiseCanExecuteChanged();
@@ -117,9 +114,8 @@ public class CampathsDockViewModel : Tool
         get => _scale;
         set
         {
-            if (SetProperty(ref _scale, value) && SelectedProfile != null)
+            if (SetProperty(ref _scale, value))
             {
-                SelectedProfile.Scale = value;
                 Save();
             }
         }
@@ -159,7 +155,7 @@ public class CampathsDockViewModel : Tool
             return;
 
         var profileVm = new CampathProfileViewModel(new CampathProfileData { Name = name });
-        Profiles.Add(profileVm);
+        InsertProfileSorted(profileVm);
         SelectedProfile = profileVm;
         Save();
     }
@@ -261,7 +257,8 @@ public class CampathsDockViewModel : Tool
         var data = new CampathStorageData
         {
             Profiles = Profiles.Select(p => p.ToData()).ToList(),
-            SelectedProfileId = SelectedProfile?.Id
+            SelectedProfileId = SelectedProfile?.Id,
+            Scale = Scale
         };
 
         _storage.Save(data);
@@ -270,12 +267,27 @@ public class CampathsDockViewModel : Tool
     private void Load()
     {
         var data = _storage.Load();
-        Profiles = new ObservableCollection<CampathProfileViewModel>(data.Profiles.Select(p => new CampathProfileViewModel(p)));
+        _scale = data.Scale
+            ?? data.Profiles.Select(p => p.Scale).FirstOrDefault(scale => scale.HasValue)
+            ?? 1.0;
+        Profiles = new ObservableCollection<CampathProfileViewModel>(
+            data.Profiles
+                .Select(p => new CampathProfileViewModel(p))
+                .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase));
         SelectedProfile = Profiles.FirstOrDefault(p => p.Id == data.SelectedProfileId) ?? Profiles.FirstOrDefault();
-        if (SelectedProfile != null)
+        OnPropertyChanged(nameof(Scale));
+    }
+
+    private void InsertProfileSorted(CampathProfileViewModel profile)
+    {
+        var insertIndex = 0;
+        while (insertIndex < Profiles.Count
+               && StringComparer.OrdinalIgnoreCase.Compare(Profiles[insertIndex].Name, profile.Name) <= 0)
         {
-            Scale = SelectedProfile.Scale;
+            insertIndex++;
         }
+
+        Profiles.Insert(insertIndex, profile);
     }
 
     // The view wires these to actual UI dialogs to avoid viewmodel knowing about UI
@@ -970,13 +982,11 @@ public class CampathProfileViewModel : ViewModelBase
     private readonly ObservableCollection<CampathItemViewModel> _campaths;
     private readonly ObservableCollection<CampathGroupViewModel> _groups;
     private string _name;
-    private double _scale;
 
     public CampathProfileViewModel(CampathProfileData data)
     {
         Id = data.Id;
         _name = data.Name;
-        _scale = data.Scale;
         _campaths = new ObservableCollection<CampathItemViewModel>(data.Campaths.Select(c => new CampathItemViewModel(c)));
         _groups = new ObservableCollection<CampathGroupViewModel>(data.Groups.Select(g => new CampathGroupViewModel(g)));
     }
@@ -987,12 +997,6 @@ public class CampathProfileViewModel : ViewModelBase
     {
         get => _name;
         set => SetProperty(ref _name, value);
-    }
-
-    public double Scale
-    {
-        get => _scale;
-        set => SetProperty(ref _scale, value);
     }
 
     public ObservableCollection<CampathItemViewModel> Campaths => _campaths;
@@ -1031,7 +1035,6 @@ public class CampathProfileViewModel : ViewModelBase
         {
             Id = Id,
             Name = Name,
-            Scale = Scale,
             Campaths = Campaths.Select(c => c.ToData()).ToList(),
             Groups = Groups.Select(g => g.ToData()).ToList()
         };
