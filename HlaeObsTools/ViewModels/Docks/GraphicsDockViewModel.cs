@@ -92,6 +92,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         AnimInInstanceCommand = new Relay<GraphicsInstanceViewModel>(instance => _ = TriggerInstanceAsync(instance, "animIn"));
         AnimOutInstanceCommand = new Relay<GraphicsInstanceViewModel>(instance => _ = TriggerInstanceAsync(instance, "animOut"));
         RefreshImagesCommand = new Relay(async () => await RefreshAvailableImagesAsync());
+        GetCurrentCameraPositionCommand = new Relay(async () => await GetCurrentCameraTransformAsync(copyPosition: true, copyRotation: false));
+        GetCurrentCameraRotationCommand = new Relay(async () => await GetCurrentCameraTransformAsync(copyPosition: false, copyRotation: true));
 
         AddAtlasCommand = new Relay(AddAtlas);
         RemoveAtlasCommand = new Relay(() =>
@@ -309,6 +311,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public ICommand AnimInInstanceCommand { get; }
     public ICommand AnimOutInstanceCommand { get; }
     public ICommand RefreshImagesCommand { get; }
+    public ICommand GetCurrentCameraPositionCommand { get; }
+    public ICommand GetCurrentCameraRotationCommand { get; }
     public ICommand AddAtlasCommand { get; }
     public ICommand RemoveAtlasCommand { get; }
     public ICommand AddRegionCommand { get; }
@@ -491,6 +495,39 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
         _selectedInstanceImageFile = ResolveImageFile(currentSelection);
         OnPropertyChanged(nameof(SelectedInstanceImageFile));
+    }
+
+    private async Task GetCurrentCameraTransformAsync(bool copyPosition, bool copyRotation)
+    {
+        if (SelectedInstance == null)
+            return;
+
+        var camera = await _graphicsService.GetCurrentCameraTransformAsync();
+        if (camera == null)
+        {
+            StatusText = "Camera unavailable";
+            return;
+        }
+
+        if (copyPosition)
+        {
+            SelectedInstance.PosX = camera.PosX;
+            SelectedInstance.PosY = camera.PosY;
+            SelectedInstance.PosZ = camera.PosZ;
+        }
+
+        if (copyRotation)
+        {
+            SelectedInstance.Pitch = camera.Pitch;
+            SelectedInstance.Yaw = camera.Yaw;
+            SelectedInstance.Roll = camera.Roll;
+        }
+
+        StatusText = copyPosition && copyRotation
+            ? "Camera transform captured"
+            : copyPosition
+                ? "Camera position captured"
+                : "Camera rotation captured";
     }
 
     private async Task SetAllInstancesVisibleAsync(bool visible)

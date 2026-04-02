@@ -356,7 +356,7 @@
                 <CheckBox IsChecked="{Binding SelectedInstance.AttachUseRoll}" Content="Use Roll" VerticalAlignment="Bottom"/>
               </StackPanel>
 
-              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+              <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="6">
                 <StackPanel Spacing="2">
                   <TextBlock Text="Pos X" Foreground="#B0B0B0" />
                   <controls:ScrubbyNumericField
@@ -381,10 +381,13 @@
                       Step="0.1"
                       PixelsPerStep="6"/>
                 </StackPanel>
-              </Grid>
+                <Button Grid.Column="3"
+                        Content="Get"
+                        Command="{Binding GetCurrentCameraPositionCommand}"
+                        VerticalAlignment="Bottom"
+                        MinWidth="56"/>
 
-              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
-                <StackPanel Spacing="2">
+                <StackPanel Grid.Row="1" Spacing="2">
                   <TextBlock Text="Pitch" Foreground="#B0B0B0" />
                   <controls:ScrubbyNumericField
                       Value="{Binding SelectedInstance.Pitch, Mode=TwoWay}"
@@ -392,7 +395,7 @@
                       Step="1"
                       PixelsPerStep="6"/>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="2">
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
                   <TextBlock Text="Yaw" Foreground="#B0B0B0" />
                   <controls:ScrubbyNumericField
                       Value="{Binding SelectedInstance.Yaw, Mode=TwoWay}"
@@ -400,7 +403,7 @@
                       Step="1"
                       PixelsPerStep="6"/>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Spacing="2">
+                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="2">
                   <TextBlock Text="Roll" Foreground="#B0B0B0" />
                   <controls:ScrubbyNumericField
                       Value="{Binding SelectedInstance.Roll, Mode=TwoWay}"
@@ -408,6 +411,12 @@
                       Step="1"
                       PixelsPerStep="6"/>
                 </StackPanel>
+                <Button Grid.Row="1"
+                        Grid.Column="3"
+                        Content="Get"
+                        Command="{Binding GetCurrentCameraRotationCommand}"
+                        VerticalAlignment="Bottom"
+                        MinWidth="56"/>
               </Grid>
 
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">

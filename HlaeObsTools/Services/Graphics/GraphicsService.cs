@@ -23,6 +23,7 @@ public sealed class GraphicsService : IDisposable
     private readonly HashSet<string> _producerAtlases = new(StringComparer.OrdinalIgnoreCase);
     private readonly GsiExtrasTracker _gsiExtrasTracker = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<IReadOnlyList<string>>> _pendingImageListRequests = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<GraphicsCameraTransform?>> _pendingCameraRequests = new(StringComparer.Ordinal);
 
     public event EventHandler? ProfileChanged;
     public event EventHandler<GraphicsVisibilityEvent>? InstancesVisibilityChanged;
@@ -123,6 +124,30 @@ public sealed class GraphicsService : IDisposable
         finally
         {
             _pendingImageListRequests.TryRemove(requestId, out _);
+        }
+    }
+
+    public async Task<GraphicsCameraTransform?> GetCurrentCameraTransformAsync()
+    {
+        if (!_webSocket.IsConnected)
+            return null;
+
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<GraphicsCameraTransform?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingCameraRequests[requestId] = tcs;
+
+        try
+        {
+            await _webSocket.SendCommandAsync("gfx.camera.get", new { requestId });
+            var completed = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task;
+            if (!completed)
+                return null;
+
+            return await tcs.Task;
+        }
+        finally
+        {
+            _pendingCameraRequests.TryRemove(requestId, out _);
         }
     }
 
@@ -413,30 +438,57 @@ public sealed class GraphicsService : IDisposable
             var root = doc.RootElement;
             if (!root.TryGetProperty("type", out var typeProp))
                 return;
-            if (!string.Equals(typeProp.GetString(), "gfx.image.list", StringComparison.Ordinal))
-                return;
+            var type = typeProp.GetString();
             if (!root.TryGetProperty("requestId", out var requestIdProp))
                 return;
 
             var requestId = requestIdProp.GetString();
             if (string.IsNullOrWhiteSpace(requestId))
                 return;
-            if (!_pendingImageListRequests.TryRemove(requestId, out var tcs))
-                return;
 
-            var result = Array.Empty<string>();
-            if (root.TryGetProperty("images", out var imagesProp) && imagesProp.ValueKind == JsonValueKind.Array)
+            if (string.Equals(type, "gfx.image.list", StringComparison.Ordinal))
             {
-                result = imagesProp
-                    .EnumerateArray()
-                    .Where(item => item.ValueKind == JsonValueKind.String)
-                    .Select(item => item.GetString())
-                    .Where(item => !string.IsNullOrWhiteSpace(item))
-                    .Cast<string>()
-                    .ToArray();
+                if (!_pendingImageListRequests.TryRemove(requestId, out var imageTcs))
+                    return;
+
+                var result = Array.Empty<string>();
+                if (root.TryGetProperty("images", out var imagesProp) && imagesProp.ValueKind == JsonValueKind.Array)
+                {
+                    result = imagesProp
+                        .EnumerateArray()
+                        .Where(item => item.ValueKind == JsonValueKind.String)
+                        .Select(item => item.GetString())
+                        .Where(item => !string.IsNullOrWhiteSpace(item))
+                        .Cast<string>()
+                        .ToArray();
+                }
+
+                imageTcs.TrySetResult(result);
+                return;
             }
 
-            tcs.TrySetResult(result);
+            if (string.Equals(type, "gfx.camera.get", StringComparison.Ordinal))
+            {
+                if (!_pendingCameraRequests.TryRemove(requestId, out var cameraTcs))
+                    return;
+
+                if (root.TryGetProperty("pos", out var posProp) && posProp.ValueKind == JsonValueKind.Array && posProp.GetArrayLength() == 3
+                    && root.TryGetProperty("ang", out var angProp) && angProp.ValueKind == JsonValueKind.Array && angProp.GetArrayLength() == 3)
+                {
+                    cameraTcs.TrySetResult(new GraphicsCameraTransform(
+                        posProp[0].GetDouble(),
+                        posProp[1].GetDouble(),
+                        posProp[2].GetDouble(),
+                        angProp[0].GetDouble(),
+                        angProp[1].GetDouble(),
+                        angProp[2].GetDouble()
+                    ));
+                }
+                else
+                {
+                    cameraTcs.TrySetResult(null);
+                }
+            }
         }
         catch
         {
@@ -455,3 +507,4 @@ public sealed class GraphicsService : IDisposable
 }
 
 public sealed record GraphicsVisibilityEvent(IReadOnlyList<string> InstanceNames, bool Visible);
+public sealed record GraphicsCameraTransform(double PosX, double PosY, double PosZ, double Pitch, double Yaw, double Roll);
