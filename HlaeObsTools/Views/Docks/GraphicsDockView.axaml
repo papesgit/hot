@@ -82,11 +82,12 @@
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" Margin="4">
-                  <StackPanel Orientation="Vertical">
-                  <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" />
-                  <TextBlock Text="{Binding Width}" Foreground="#9AA5B1" />
+                  <StackPanel Orientation="Vertical" Spacing="4">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" />
+                    <TextBlock Text="{Binding Width}" Foreground="#9AA5B1" />
                   </StackPanel>
-                  <StackPanel Orientation="Vertical" Grid.Column="1" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
                   <Button Content="AnimIn"
                           Command="{Binding DataContext.AnimInAtlasCommand, ElementName=Root}"
                           CommandParameter="{Binding}"
@@ -97,6 +98,7 @@
                           CommandParameter="{Binding}"
                           hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
                           hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
+                  </StackPanel>
                   </StackPanel>
                   <Button Grid.Column="4"
                           Content="Reload"
@@ -124,11 +126,12 @@
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Margin="4">
-                  <StackPanel Orientation="Vertical">
-                  <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" />
-                  <TextBlock Text="{Binding Atlas}" Foreground="#9AA5B1" />
+                  <StackPanel Orientation="Vertical" Spacing="4">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" />
+                    <TextBlock Text="{Binding SourceSummary}" MaxWidth="150" Foreground="#9AA5B1" />
                   </StackPanel>
-                  <StackPanel Orientation="Vertical" Grid.Column="1" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
                   <Button Content="AnimIn"
                           Command="{Binding DataContext.AnimInInstanceCommand, ElementName=Root}"
                           CommandParameter="{Binding}"
@@ -139,6 +142,7 @@
                           CommandParameter="{Binding}"
                           hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}"
                           hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
+                  </StackPanel>
                   </StackPanel>
                   <ToggleSwitch Grid.Column="4"
                                 IsChecked="{Binding Visible}"
@@ -273,26 +277,53 @@
                 <TextBlock Text="Name" Foreground="#B0B0B0" />
                 <TextBox Text="{Binding SelectedInstance.Name, Mode=TwoWay}" Watermark="Name" />
               </StackPanel>
-              <TextBlock Text="Atlas" Foreground="#B0B0B0" />
-              <ComboBox ItemsSource="{Binding Atlases}"
-                        SelectedItem="{Binding SelectedInstanceAtlas}"
-                        MinWidth="160">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Name}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <TextBlock Text="Region" Foreground="#B0B0B0" />
-              <ComboBox ItemsSource="{Binding SelectedInstanceAtlas.Regions}"
-                        SelectedItem="{Binding SelectedInstanceRegion}"
-                        MinWidth="160">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Id}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
+              <StackPanel Spacing="2">
+                <TextBlock Text="Source" Foreground="#B0B0B0" />
+                <ComboBox ItemsSource="{Binding InstanceSourceOptions}"
+                          SelectedItem="{Binding SelectedInstanceSource}"
+                          MinWidth="160">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsAtlasSourceSelected}">
+                <StackPanel Spacing="2" Width="180">
+                  <TextBlock Text="Atlas" Foreground="#B0B0B0" />
+                  <ComboBox ItemsSource="{Binding Atlases}"
+                            SelectedItem="{Binding SelectedInstanceAtlas}"
+                            MinWidth="160">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="2" Width="180">
+                  <TextBlock Text="Region" Foreground="#B0B0B0" />
+                  <ComboBox ItemsSource="{Binding SelectedInstanceAtlas.Regions}"
+                            SelectedItem="{Binding SelectedInstanceRegion}"
+                            MinWidth="160">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Id}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+              </StackPanel>
+              <StackPanel Spacing="2" IsVisible="{Binding IsImageSourceSelected}">
+                <TextBlock Text="Image" Foreground="#B0B0B0" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <ComboBox ItemsSource="{Binding AvailableImages}"
+                            SelectedItem="{Binding SelectedInstanceImageFile}"
+                            MinWidth="220" />
+                  <Button Content="Refresh" Command="{Binding RefreshImagesCommand}" />
+                </StackPanel>
+              </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <StackPanel Orientation="Vertical" Spacing="2">
                   <TextBlock Text="Attach Slot" VerticalAlignment="Center" Foreground="#B0B0B0" />

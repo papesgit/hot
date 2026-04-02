@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,6 +24,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private GraphicsInstanceViewModel? _selectedInstance;
     private GraphicsAtlasViewModel? _selectedInstanceAtlas;
     private GraphicsRegionViewModel? _selectedInstanceRegion;
+    private GraphicsInstanceSourceOption? _selectedInstanceSource;
+    private string? _selectedInstanceImageFile;
     private AttachSlotOption? _selectedInstanceAttachSlot;
     private AttachAttachmentOption? _selectedInstanceAttachment;
     private string _selectedProfileName = "default";
@@ -32,6 +35,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
     public ObservableCollection<GraphicsAtlasViewModel> Atlases { get; } = new();
     public ObservableCollection<GraphicsInstanceViewModel> Instances { get; } = new();
+    public ObservableCollection<GraphicsInstanceSourceOption> InstanceSourceOptions { get; } = new();
+    public ObservableCollection<string> AvailableImages { get; } = new();
     public ObservableCollection<AttachSlotOption> AttachSlotOptions { get; } = new();
     public ObservableCollection<AttachAttachmentOption> AttachAttachmentOptions { get; } = new();
     public ObservableCollection<string> Profiles { get; } = new();
@@ -48,6 +53,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         CanPin = true;
 
         _isEnabled = settings.GraphicsEnabled;
+        InstanceSourceOptions.Add(new GraphicsInstanceSourceOption("Atlas", GraphicsInstanceSourceType.Atlas));
+        InstanceSourceOptions.Add(new GraphicsInstanceSourceOption("Image", GraphicsInstanceSourceType.Image));
         AttachSlotOptions.Add(new AttachSlotOption("None", -1));
         for (var i = 0; i < 9; i++)
         {
@@ -84,6 +91,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         AnimOutAtlasCommand = new Relay<GraphicsAtlasViewModel>(atlas => _ = TriggerAtlasAsync(atlas, "animOut"));
         AnimInInstanceCommand = new Relay<GraphicsInstanceViewModel>(instance => _ = TriggerInstanceAsync(instance, "animIn"));
         AnimOutInstanceCommand = new Relay<GraphicsInstanceViewModel>(instance => _ = TriggerInstanceAsync(instance, "animOut"));
+        RefreshImagesCommand = new Relay(async () => await RefreshAvailableImagesAsync());
 
         AddAtlasCommand = new Relay(AddAtlas);
         RemoveAtlasCommand = new Relay(() =>
@@ -113,6 +121,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             _graphicsService.Profile.Instances.Remove(instance.Model);
             SelectedInstance = Instances.FirstOrDefault();
         });
+
+        _ = RefreshAvailableImagesAsync();
     }
 
     public bool IsSetupView
@@ -158,10 +168,33 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         {
             if (!SetProperty(ref _selectedInstance, value))
                 return;
+            SelectedInstanceSource = ResolveInstanceSource(_selectedInstance?.SourceType ?? GraphicsInstanceSourceType.Atlas);
             SelectedInstanceAtlas = ResolveAtlasByName(_selectedInstance?.Atlas);
+            _selectedInstanceImageFile = ResolveImageFile(_selectedInstance?.ImageFile);
+            OnPropertyChanged(nameof(SelectedInstanceImageFile));
             SelectedInstanceAttachSlot = ResolveAttachSlot(_selectedInstance?.AttachSlot ?? -1);
             SelectedInstanceAttachment = ResolveAttachmentName(_selectedInstance?.AttachAttachmentName);
             SelectedInstanceRegion = ResolveRegionById(SelectedInstanceAtlas, _selectedInstance?.Region);
+        }
+    }
+
+    public GraphicsInstanceSourceOption? SelectedInstanceSource
+    {
+        get => _selectedInstanceSource;
+        set
+        {
+            if (!SetProperty(ref _selectedInstanceSource, value))
+                return;
+            if (SelectedInstance != null)
+            {
+                SelectedInstance.SourceType = value?.Value ?? GraphicsInstanceSourceType.Atlas;
+                foreach (var atlas in Atlases)
+                {
+                    UpdateAtlasInstancesVisibilityState(atlas);
+                }
+            }
+            OnPropertyChanged(nameof(IsAtlasSourceSelected));
+            OnPropertyChanged(nameof(IsImageSourceSelected));
         }
     }
 
@@ -175,8 +208,26 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             if (SelectedInstance != null)
             {
                 SelectedInstance.Atlas = value?.Name ?? string.Empty;
+                foreach (var atlas in Atlases)
+                {
+                    UpdateAtlasInstancesVisibilityState(atlas);
+                }
             }
             SelectedInstanceRegion = ResolveRegionById(_selectedInstanceAtlas, _selectedInstance?.Region);
+        }
+    }
+
+    public string? SelectedInstanceImageFile
+    {
+        get => _selectedInstanceImageFile;
+        set
+        {
+            if (!SetProperty(ref _selectedInstanceImageFile, value))
+                return;
+            if (SelectedInstance != null)
+            {
+                SelectedInstance.ImageFile = value ?? string.Empty;
+            }
         }
     }
 
@@ -241,6 +292,10 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         }
     }
 
+    public bool IsAtlasSourceSelected => SelectedInstanceSource?.Value == GraphicsInstanceSourceType.Atlas;
+
+    public bool IsImageSourceSelected => SelectedInstanceSource?.Value == GraphicsInstanceSourceType.Image;
+
     public ICommand ShowSetupCommand { get; }
     public ICommand ShowLiveCommand { get; }
     public ICommand ApplyCommand { get; }
@@ -253,6 +308,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public ICommand AnimOutAtlasCommand { get; }
     public ICommand AnimInInstanceCommand { get; }
     public ICommand AnimOutInstanceCommand { get; }
+    public ICommand RefreshImagesCommand { get; }
     public ICommand AddAtlasCommand { get; }
     public ICommand RemoveAtlasCommand { get; }
     public ICommand AddRegionCommand { get; }
@@ -318,8 +374,10 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         var instance = new GraphicsInstance
         {
             Name = name,
+            SourceType = GraphicsInstanceSourceType.Atlas,
             Atlas = SelectedAtlas?.Name ?? string.Empty,
-            Region = SelectedRegion?.Id ?? "full"
+            Region = SelectedRegion?.Id ?? "full",
+            ImageFile = AvailableImages.FirstOrDefault() ?? string.Empty
         };
         _graphicsService.Profile.Instances.Add(instance);
         var vm = new GraphicsInstanceViewModel(instance, OnInstanceVisibleChanged);
@@ -396,6 +454,18 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         return atlas.Regions.FirstOrDefault(region => region.Id == id) ?? atlas.Regions.FirstOrDefault();
     }
 
+    private GraphicsInstanceSourceOption? ResolveInstanceSource(GraphicsInstanceSourceType sourceType)
+    {
+        return InstanceSourceOptions.FirstOrDefault(option => option.Value == sourceType) ?? InstanceSourceOptions.FirstOrDefault();
+    }
+
+    private string? ResolveImageFile(string? imageFile)
+    {
+        if (string.IsNullOrWhiteSpace(imageFile))
+            return AvailableImages.FirstOrDefault();
+        return AvailableImages.FirstOrDefault(image => string.Equals(image, imageFile, StringComparison.OrdinalIgnoreCase)) ?? imageFile;
+    }
+
     private AttachSlotOption? ResolveAttachSlot(int slot)
     {
         return AttachSlotOptions.FirstOrDefault(option => option.Value == slot) ?? AttachSlotOptions.FirstOrDefault();
@@ -406,6 +476,21 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         if (string.IsNullOrWhiteSpace(name))
             return AttachAttachmentOptions.FirstOrDefault();
         return AttachAttachmentOptions.FirstOrDefault(option => option.Value == name) ?? AttachAttachmentOptions.FirstOrDefault();
+    }
+
+    public async Task RefreshAvailableImagesAsync()
+    {
+        var images = await _graphicsService.ListAvailableImagesAsync();
+        var currentSelection = SelectedInstance?.ImageFile;
+
+        AvailableImages.Clear();
+        foreach (var image in images.OrderBy(image => image, StringComparer.OrdinalIgnoreCase))
+        {
+            AvailableImages.Add(image);
+        }
+
+        _selectedInstanceImageFile = ResolveImageFile(currentSelection);
+        OnPropertyChanged(nameof(SelectedInstanceImageFile));
     }
 
     private async Task SetAllInstancesVisibleAsync(bool visible)
@@ -425,7 +510,9 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
     private async Task SetAtlasInstancesVisibleAsync(GraphicsAtlasViewModel atlas, bool visible)
     {
-        var related = Instances.Where(inst => inst.Atlas == atlas.Name).ToList();
+        var related = Instances
+            .Where(inst => inst.SourceType == GraphicsInstanceSourceType.Atlas && inst.Atlas == atlas.Name)
+            .ToList();
         _suppressApply = true;
         foreach (var inst in related)
         {
@@ -442,6 +529,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         instance.Visible = visible;
         _suppressApply = false;
         await _graphicsService.UpdateInstanceVisibilityAsync(instance.Name, visible);
+        if (instance.SourceType != GraphicsInstanceSourceType.Atlas)
+            return;
         var atlas = Atlases.FirstOrDefault(a => a.Name == instance.Atlas);
         if (atlas != null)
         {
@@ -451,7 +540,9 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
     private void UpdateAtlasInstancesVisibilityState(GraphicsAtlasViewModel atlas)
     {
-        var related = Instances.Where(inst => inst.Atlas == atlas.Name).ToList();
+        var related = Instances
+            .Where(inst => inst.SourceType == GraphicsInstanceSourceType.Atlas && inst.Atlas == atlas.Name)
+            .ToList();
         if (related.Count == 0)
         {
             atlas.SetInstancesVisibleInternal(false);
@@ -580,6 +671,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         if (_suppressApply)
             return;
         _ = _graphicsService.UpdateInstanceVisibilityAsync(instance.Name, instance.Visible);
+        if (instance.SourceType != GraphicsInstanceSourceType.Atlas)
+            return;
         var atlas = Atlases.FirstOrDefault(a => a.Name == instance.Atlas);
         if (atlas != null)
         {
@@ -608,6 +701,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                 if (vm == null)
                     continue;
                 vm.SetVisibleInternal(e.Visible);
+                if (vm.SourceType != GraphicsInstanceSourceType.Atlas)
+                    continue;
                 var atlas = Atlases.FirstOrDefault(a => a.Name == vm.Atlas);
                 if (atlas != null)
                 {
@@ -830,17 +925,55 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             set { Model.Name = value; OnPropertyChanged(); }
         }
 
+        public GraphicsInstanceSourceType SourceType
+        {
+            get => Model.SourceType;
+            set
+            {
+                if (Model.SourceType == value)
+                    return;
+                Model.SourceType = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SourceSummary));
+            }
+        }
+
         public string Atlas
         {
             get => Model.Atlas;
-            set { Model.Atlas = value; OnPropertyChanged(); }
+            set
+            {
+                Model.Atlas = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SourceSummary));
+            }
         }
 
         public string Region
         {
             get => Model.Region;
-            set { Model.Region = value; OnPropertyChanged(); }
+            set
+            {
+                Model.Region = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SourceSummary));
+            }
         }
+
+        public string ImageFile
+        {
+            get => Model.ImageFile;
+            set
+            {
+                Model.ImageFile = value ?? string.Empty;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SourceSummary));
+            }
+        }
+
+        public string SourceSummary => SourceType == GraphicsInstanceSourceType.Image
+            ? $"I: {ImageFile}"
+            : $"A: {Atlas} / {Region}";
 
         public int AttachSlot
         {
@@ -952,6 +1085,18 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             get => Model.DepthWrite;
             set { Model.DepthWrite = value; OnPropertyChanged(); }
         }
+    }
+
+    public sealed class GraphicsInstanceSourceOption
+    {
+        public GraphicsInstanceSourceOption(string label, GraphicsInstanceSourceType value)
+        {
+            Label = label;
+            Value = value;
+        }
+
+        public string Label { get; }
+        public GraphicsInstanceSourceType Value { get; }
     }
 
     public sealed class AttachSlotOption

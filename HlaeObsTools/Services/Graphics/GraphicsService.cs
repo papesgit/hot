@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.WebSocket;
@@ -20,6 +22,7 @@ public sealed class GraphicsService : IDisposable
     private readonly int _targetFps;
     private readonly HashSet<string> _producerAtlases = new(StringComparer.OrdinalIgnoreCase);
     private readonly GsiExtrasTracker _gsiExtrasTracker = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<IReadOnlyList<string>>> _pendingImageListRequests = new(StringComparer.Ordinal);
 
     public event EventHandler? ProfileChanged;
     public event EventHandler<GraphicsVisibilityEvent>? InstancesVisibilityChanged;
@@ -33,6 +36,7 @@ public sealed class GraphicsService : IDisposable
         _targetFps = targetFps;
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
         _webSocket.Connected += OnWebSocketConnected;
+        _webSocket.MessageReceived += OnWebSocketMessageReceived;
         _producerClient.Connected += OnProducerConnected;
         _producerClient.TriggerCompleted += OnProducerTriggerCompleted;
     }
@@ -96,6 +100,30 @@ public sealed class GraphicsService : IDisposable
         if (!_enabled)
             return Task.CompletedTask;
         return _producerClient.ReloadAtlasAsync(atlasName);
+    }
+
+    public async Task<IReadOnlyList<string>> ListAvailableImagesAsync()
+    {
+        if (!_webSocket.IsConnected)
+            return Array.Empty<string>();
+
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<IReadOnlyList<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingImageListRequests[requestId] = tcs;
+
+        try
+        {
+            await _webSocket.SendCommandAsync("gfx.image.list", new { requestId });
+            var completed = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task;
+            if (!completed)
+                return Array.Empty<string>();
+
+            return await tcs.Task;
+        }
+        finally
+        {
+            _pendingImageListRequests.TryRemove(requestId, out _);
+        }
     }
 
     public async Task ApplyProfileAsync()
@@ -170,19 +198,33 @@ public sealed class GraphicsService : IDisposable
                 }
                 : null;
 
-            await _webSocket.SendCommandAsync("gfx.instance.create", new
+            var payload = new Dictionary<string, object?>
             {
-                name = inst.Name,
-                atlas = inst.Atlas,
-                region = inst.Region,
-                attach = attachPayload,
-                pos = new[] { inst.PosX, inst.PosY, inst.PosZ },
-                ang = new[] { inst.Pitch, inst.Yaw, inst.Roll },
-                scale = new[] { inst.ScaleX, inst.ScaleY },
-                visible = inst.Visible,
-                depthTest = inst.DepthTest,
-                depthWrite = inst.DepthWrite
-            });
+                ["name"] = inst.Name,
+                ["attach"] = attachPayload,
+                ["pos"] = new[] { inst.PosX, inst.PosY, inst.PosZ },
+                ["ang"] = new[] { inst.Pitch, inst.Yaw, inst.Roll },
+                ["scale"] = new[] { inst.ScaleX, inst.ScaleY },
+                ["visible"] = inst.Visible,
+                ["depthTest"] = inst.DepthTest,
+                ["depthWrite"] = inst.DepthWrite
+            };
+
+            if (inst.SourceType == GraphicsInstanceSourceType.Image)
+            {
+                if (string.IsNullOrWhiteSpace(inst.ImageFile))
+                    continue;
+                payload["imageFile"] = inst.ImageFile;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(inst.Atlas) || string.IsNullOrWhiteSpace(inst.Region))
+                    continue;
+                payload["atlas"] = inst.Atlas;
+                payload["region"] = inst.Region;
+            }
+
+            await _webSocket.SendCommandAsync("gfx.instance.create", payload);
         }
 
         var toRemove = _producerAtlases.Where(name => !activeAtlases.Contains(name)).ToList();
@@ -229,7 +271,23 @@ public sealed class GraphicsService : IDisposable
         if (string.IsNullOrWhiteSpace(instanceName))
             return Task.CompletedTask;
         var instance = _profile.Instances.FirstOrDefault(i => i.Name == instanceName);
-        if (instance == null || string.IsNullOrWhiteSpace(instance.Atlas) || string.IsNullOrWhiteSpace(instance.Region))
+        if (instance == null)
+            return Task.CompletedTask;
+        if (instance.SourceType == GraphicsInstanceSourceType.Image)
+        {
+            if (string.Equals(action, "animIn", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = UpdateInstanceVisibilityAsync(instance.Name, true);
+                RaiseInstancesVisibilityChanged(new[] { instance.Name }, true);
+            }
+            else if (string.Equals(action, "animOut", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = UpdateInstanceVisibilityAsync(instance.Name, false);
+                RaiseInstancesVisibilityChanged(new[] { instance.Name }, false);
+            }
+            return Task.CompletedTask;
+        }
+        if (string.IsNullOrWhiteSpace(instance.Atlas) || string.IsNullOrWhiteSpace(instance.Region))
             return Task.CompletedTask;
         if (string.Equals(action, "animIn", StringComparison.OrdinalIgnoreCase))
         {
@@ -246,6 +304,7 @@ public sealed class GraphicsService : IDisposable
         if (string.IsNullOrWhiteSpace(atlasName))
             return;
         var instances = _profile.Instances
+            .Where(i => i.SourceType == GraphicsInstanceSourceType.Atlas)
             .Where(i => string.Equals(i.Atlas, atlasName, StringComparison.OrdinalIgnoreCase))
             .ToList();
         var regions = instances
@@ -346,10 +405,50 @@ public sealed class GraphicsService : IDisposable
         InstancesVisibilityChanged?.Invoke(this, new GraphicsVisibilityEvent(list, visible));
     }
 
+    private void OnWebSocketMessageReceived(object? sender, string message)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(message);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("type", out var typeProp))
+                return;
+            if (!string.Equals(typeProp.GetString(), "gfx.image.list", StringComparison.Ordinal))
+                return;
+            if (!root.TryGetProperty("requestId", out var requestIdProp))
+                return;
+
+            var requestId = requestIdProp.GetString();
+            if (string.IsNullOrWhiteSpace(requestId))
+                return;
+            if (!_pendingImageListRequests.TryRemove(requestId, out var tcs))
+                return;
+
+            var result = Array.Empty<string>();
+            if (root.TryGetProperty("images", out var imagesProp) && imagesProp.ValueKind == JsonValueKind.Array)
+            {
+                result = imagesProp
+                    .EnumerateArray()
+                    .Where(item => item.ValueKind == JsonValueKind.String)
+                    .Select(item => item.GetString())
+                    .Where(item => !string.IsNullOrWhiteSpace(item))
+                    .Cast<string>()
+                    .ToArray();
+            }
+
+            tcs.TrySetResult(result);
+        }
+        catch
+        {
+            // Ignore unrelated or malformed websocket messages.
+        }
+    }
+
     public void Dispose()
     {
         _gsiServer.GameStateUpdated -= OnGameStateUpdated;
         _webSocket.Connected -= OnWebSocketConnected;
+        _webSocket.MessageReceived -= OnWebSocketMessageReceived;
         _producerClient.Connected -= OnProducerConnected;
         _producerClient.TriggerCompleted -= OnProducerTriggerCompleted;
     }

@@ -14,6 +14,12 @@ public enum GraphicsAlphaMode
     Straight
 }
 
+public enum GraphicsInstanceSourceType
+{
+    Atlas,
+    Image
+}
+
 public sealed class GraphicsProfile
 {
     public List<GraphicsAtlas> Atlases { get; set; } = new();
@@ -47,8 +53,10 @@ public sealed class GraphicsRegion
 public sealed class GraphicsInstance
 {
     public string Name { get; set; } = string.Empty;
+    public GraphicsInstanceSourceType SourceType { get; set; } = GraphicsInstanceSourceType.Atlas;
     public string Atlas { get; set; } = string.Empty;
     public string Region { get; set; } = string.Empty;
+    public string ImageFile { get; set; } = string.Empty;
     public int AttachSlot { get; set; } = -1;
     public string AttachAttachmentName { get; set; } = string.Empty;
     public bool AttachUseYaw { get; set; }
