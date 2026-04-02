@@ -38,6 +38,7 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
     private double _campathPlaybackProgress;
     private int _pendingAttachSourceObserverSlot;
     private int _pendingAttachPresetIndex = -1;
+    private int _pendingAttachPageIndex = -1;
     private string _hudPromptText = string.Empty;
     private DateTime _lastUiUpdateUtc;
 
@@ -60,8 +61,6 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         ["hegrenade"] = 5
     };
 
-    private const int DefaultPlayerActionCount = 5;
-    private const string AttachActionId = "player_action_attach";
     private const double KillfeedLifetimeSeconds = 8.0;
     private const double KillfeedFadeSeconds = 1.0;
 
@@ -241,6 +240,13 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
                 entry.ShowAttackerSlot = show;
             }
         }
+        else if (e.PropertyName == nameof(HudSettings.AttachPresetPages))
+        {
+            foreach (var vm in _hudPlayerCache.Values)
+            {
+                ConfigurePlayerRadialActions(vm);
+            }
+        }
     }
 
     private void OnCampathsPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -300,27 +306,15 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private static IEnumerable<HudPlayerActionOption> CreateDefaultPlayerActions()
+    private IEnumerable<HudPlayerActionOption> CreateAttachPageActions()
     {
-        var options = new List<HudPlayerActionOption>
-        {
-            new HudPlayerActionOption(AttachActionId, "Attach", 0, hasSubMenu: true)
-        };
-
-        options.AddRange(
-            Enumerable.Range(1, DefaultPlayerActionCount - 1)
-                .Select(i => new HudPlayerActionOption($"player_action_{i + 1}", $"Action {i + 1}", i))
-        );
-
-        return options;
+        return Enumerable.Range(0, HudSettings.AttachPresetPageCount)
+            .Select(i => new HudPlayerActionOption($"attach_page_{i + 1}", _hudSettings.GetAttachPresetPageName(i), i, hasSubMenu: true));
     }
 
     private void ConfigurePlayerRadialActions(HudPlayerCardViewModel player)
     {
-        if (player.RadialActions.Count == 0)
-        {
-            player.SetRadialActions(CreateDefaultPlayerActions());
-        }
+        player.SetRadialActions(CreateAttachPageActions());
 
         player.PlayerActionRequested -= OnPlayerActionRequested;
         player.PlayerActionRequested += OnPlayerActionRequested;
@@ -537,22 +531,22 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
             CancelPendingAttachTargetSelection();
         }
 
-        // Attach action opens submenu; presets execute immediately.
-        if (option.Id == AttachActionId)
+        if (!player.IsInAttachSubMenu)
         {
-            player.OpenAttachSubMenu(_hudSettings.GetActiveAttachPresets());
+            player.OpenAttachSubMenu(option.Index, _hudSettings.GetAttachPresets(option.Index));
             return;
         }
 
         if (player.IsInAttachSubMenu)
         {
+            var pageIndex = player.AttachSubMenuPageIndex;
             var presetIndex = option.Index;
-            var preset = _hudSettings.GetActiveAttachPresets().ElementAtOrDefault(presetIndex);
+            var preset = _hudSettings.GetAttachPresets(pageIndex).ElementAtOrDefault(presetIndex);
             if (preset == null) return;
 
             if (PresetRequiresTarget(preset))
             {
-                BeginAwaitAttachTargetSelection(player.ObserverSlot, presetIndex);
+                BeginAwaitAttachTargetSelection(player.ObserverSlot, pageIndex, presetIndex);
                 player.CloseAttachSubMenu();
                 return;
             }
@@ -568,7 +562,7 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         if (!_isAwaitingAttachTarget) return;
         if (sender is not HudPlayerCardViewModel targetPlayer) return;
 
-        var preset = _hudSettings.GetActiveAttachPresets().ElementAtOrDefault(_pendingAttachPresetIndex);
+        var preset = _hudSettings.GetAttachPresets(_pendingAttachPageIndex).ElementAtOrDefault(_pendingAttachPresetIndex);
         if (preset == null)
         {
             CancelPendingAttachTargetSelection();
@@ -582,9 +576,10 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         CancelPendingAttachTargetSelection();
     }
 
-    private void BeginAwaitAttachTargetSelection(int sourceObserverSlot, int presetIndex)
+    private void BeginAwaitAttachTargetSelection(int sourceObserverSlot, int pageIndex, int presetIndex)
     {
         _pendingAttachSourceObserverSlot = sourceObserverSlot;
+        _pendingAttachPageIndex = pageIndex;
         _pendingAttachPresetIndex = presetIndex;
         _isAwaitingAttachTarget = true;
 
@@ -596,6 +591,7 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
     {
         _isAwaitingAttachTarget = false;
         _pendingAttachSourceObserverSlot = 0;
+        _pendingAttachPageIndex = -1;
         _pendingAttachPresetIndex = -1;
         SetAttachTargetSelectionMode(false);
         HudPromptText = string.Empty;

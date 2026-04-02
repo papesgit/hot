@@ -1,10 +1,11 @@
+using System;
 using Avalonia;
 using Avalonia.Media;
 using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.ViewModels.Hud;
 
-public sealed class HudPlayerActionOption : ViewModelBase
+public sealed class HudPlayerActionOption : ViewModelBase, IEquatable<HudPlayerActionOption>
 {
     private readonly int _index;
     private readonly string _id;
@@ -85,6 +86,28 @@ public sealed class HudPlayerActionOption : ViewModelBase
     public void SetHighlighted(bool isHighlighted)
     {
         IsHighlighted = isHighlighted;
+    }
+
+    public bool Equals(HudPlayerActionOption? other)
+    {
+        if (other == null)
+            return false;
+
+        return _index == other._index
+            && string.Equals(_id, other._id, System.StringComparison.Ordinal)
+            && string.Equals(_displayName, other._displayName, System.StringComparison.Ordinal)
+            && string.Equals(_description, other._description, System.StringComparison.Ordinal)
+            && _hasSubMenu == other._hasSubMenu;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is HudPlayerActionOption other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(_index, _id, _displayName, _description, _hasSubMenu);
     }
 
     private void UpdateFillBrush()

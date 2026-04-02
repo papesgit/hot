@@ -156,7 +156,7 @@
                              Fill="{Binding RadialCenterBrush}" />
 
                     <TextBlock x:Name="RadialCenterLabel"
-                               Text="Cancel"
+                               Text="{Binding RadialCenterLabel}"
                                Foreground="#E6E6E6"
                                FontWeight="SemiBold"
                                FontSize="12"

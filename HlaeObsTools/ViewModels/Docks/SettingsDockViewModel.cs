@@ -53,6 +53,19 @@ namespace HlaeObsTools.ViewModels.Docks
         }
     }
 
+    public sealed class AttachPresetPageOptionViewModel : ViewModelBase
+    {
+        private string _name = string.Empty;
+
+        public int Index { get; init; }
+
+        public string Name
+        {
+            get => _name;
+            set => SetProperty(ref _name, value ?? string.Empty);
+        }
+    }
+
     /// <summary>
     /// Settings dock for configuring UI options like radar markers and camera paths.
     /// </summary>
@@ -307,6 +320,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
             _activeAttachPresetPage = _hudSettings.ActiveAttachPresetPage;
 
+            RefreshAttachPresetPageOptions();
             LoadAttachPresets();
             RefreshAttachHotkeys();
             _radarSettings.PropertyChanged += OnRadarSettingsChanged;
@@ -879,8 +893,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         #region ==== Actions / Attach Presets ====
 
-        public IReadOnlyList<string> AttachPresetPageOptions { get; } =
-            Enumerable.Range(1, 5).Select(i => $"Page {i}").ToList();
+        public ObservableCollection<AttachPresetPageOptionViewModel> AttachPresetPageOptions { get; } = new();
 
         private int _activeAttachPresetPage;
         public int ActiveAttachPresetPage
@@ -889,11 +902,30 @@ namespace HlaeObsTools.ViewModels.Docks
             set
             {
                 if (_activeAttachPresetPage == value) return;
-                _activeAttachPresetPage = Math.Clamp(value, 0, 4);
+                _activeAttachPresetPage = Math.Clamp(value, 0, HudSettings.AttachPresetPageCount - 1);
                 _hudSettings.ActiveAttachPresetPage = _activeAttachPresetPage;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CurrentAttachPresetPageName));
                 LoadAttachPresets();
                 RefreshAttachHotkeys();
+                SaveSettings();
+            }
+        }
+
+        public string CurrentAttachPresetPageName
+        {
+            get => _hudSettings.AttachPresetPages.ElementAtOrDefault(_activeAttachPresetPage)?.Name ?? string.Empty;
+            set
+            {
+                var normalized = value?.Trim() ?? string.Empty;
+                var current = _hudSettings.AttachPresetPages.ElementAtOrDefault(_activeAttachPresetPage)?.Name ?? string.Empty;
+                if (string.Equals(current, normalized, StringComparison.Ordinal))
+                    return;
+
+                _hudSettings.SetAttachPresetPageName(_activeAttachPresetPage, normalized);
+                RefreshAttachPresetPageOptions();
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ActiveAttachPresetPageName));
                 SaveSettings();
             }
         }
@@ -954,7 +986,39 @@ namespace HlaeObsTools.ViewModels.Docks
             var page = _hudSettings.AttachPresetPages[pageIndex];
             if (index >= page.Presets.Count) return;
             page.Presets[index] = vm.ToModel();
+            _hudSettings.NotifyAttachPresetPagesChanged();
             SaveSettings();
+        }
+
+        private void RefreshAttachPresetPageOptions()
+        {
+            for (var index = 0; index < HudSettings.AttachPresetPageCount; index++)
+            {
+                var pageName = _hudSettings.GetAttachPresetPageName(index);
+                if (index < AttachPresetPageOptions.Count)
+                {
+                    if (!string.Equals(AttachPresetPageOptions[index].Name, pageName, StringComparison.Ordinal))
+                    {
+                        AttachPresetPageOptions[index].Name = pageName;
+                    }
+                }
+                else
+                {
+                    AttachPresetPageOptions.Add(new AttachPresetPageOptionViewModel
+                    {
+                        Index = index,
+                        Name = pageName
+                    });
+                }
+            }
+
+            while (AttachPresetPageOptions.Count > HudSettings.AttachPresetPageCount)
+            {
+                AttachPresetPageOptions.RemoveAt(AttachPresetPageOptions.Count - 1);
+            }
+
+            OnPropertyChanged(nameof(CurrentAttachPresetPageName));
+            OnPropertyChanged(nameof(ActiveAttachPresetPageName));
         }
 
         public async Task ExecuteAttachPresetHotkeyActionAsync(int pageIndex, int presetIndex, int observerSlot)
@@ -1571,7 +1635,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         public string ActiveCampathProfileName => _campathsDockViewModel?.SelectedProfile?.Name ?? "No profile selected";
         public string ActiveGraphicsProfileName => _graphicsDockViewModel?.SelectedProfileName ?? "No profile selected";
-        public string ActiveAttachPresetPageName => $"Attach Page {Math.Clamp(_hudSettings.ActiveAttachPresetPage + 1, 1, 5)}";
+        public string ActiveAttachPresetPageName => _hudSettings.GetAttachPresetPageName(_hudSettings.ActiveAttachPresetPage);
 
         private void SaveSettings()
         {
@@ -2019,6 +2083,11 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             if (_suppressSettingsSave)
                 return;
+
+            if (e.PropertyName == nameof(HudSettings.AttachPresetPages))
+            {
+                RefreshAttachPresetPageOptions();
+            }
 
             SaveSettings();
         }

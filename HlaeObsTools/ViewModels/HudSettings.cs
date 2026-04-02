@@ -11,6 +11,9 @@ namespace HlaeObsTools.ViewModels;
 /// </summary>
 public sealed class HudSettings : ViewModelBase
 {
+    public const int AttachPresetPageCount = 5;
+    public const int AttachPresetCountPerPage = 5;
+
     public record AttachmentPreset
     {
         public string Name { get; init; } = string.Empty;
@@ -38,6 +41,7 @@ public sealed class HudSettings : ViewModelBase
 
     public record AttachmentPresetPage
     {
+        public string Name { get; init; } = string.Empty;
         public List<AttachmentPreset> Presets { get; init; } = new();
     }
 
@@ -152,15 +156,19 @@ public sealed class HudSettings : ViewModelBase
     /// <summary>
     /// Attach action preset pages (5 pages x 5 slots).
     /// </summary>
-    public List<AttachmentPresetPage> AttachPresetPages { get; } = Enumerable.Range(0, 5)
-        .Select(_ => new AttachmentPresetPage { Presets = Enumerable.Range(0, 5).Select(_ => new AttachmentPreset()).ToList() })
+    public List<AttachmentPresetPage> AttachPresetPages { get; } = Enumerable.Range(0, AttachPresetPageCount)
+        .Select(_ => new AttachmentPresetPage
+        {
+            Name = string.Empty,
+            Presets = Enumerable.Range(0, AttachPresetCountPerPage).Select(_ => new AttachmentPreset()).ToList()
+        })
         .ToList();
 
     private int _activeAttachPresetPage;
     public int ActiveAttachPresetPage
     {
         get => _activeAttachPresetPage;
-        set => SetProperty(ref _activeAttachPresetPage, Math.Clamp(value, 0, 4));
+        set => SetProperty(ref _activeAttachPresetPage, Math.Clamp(value, 0, AttachPresetPageCount - 1));
     }
 
     public IReadOnlyList<AttachmentPreset> GetActiveAttachPresets()
@@ -168,6 +176,44 @@ public sealed class HudSettings : ViewModelBase
         var pageIndex = Math.Clamp(ActiveAttachPresetPage, 0, AttachPresetPages.Count - 1);
         var page = AttachPresetPages.ElementAtOrDefault(pageIndex);
         return page?.Presets ?? new List<AttachmentPreset>();
+    }
+
+    public IReadOnlyList<AttachmentPreset> GetAttachPresets(int pageIndex)
+    {
+        var clampedPageIndex = Math.Clamp(pageIndex, 0, AttachPresetPages.Count - 1);
+        var page = AttachPresetPages.ElementAtOrDefault(clampedPageIndex);
+        return page?.Presets ?? new List<AttachmentPreset>();
+    }
+
+    public string GetAttachPresetPageName(int pageIndex)
+    {
+        var clampedPageIndex = Math.Clamp(pageIndex, 0, AttachPresetPageCount - 1);
+        var page = AttachPresetPages.ElementAtOrDefault(clampedPageIndex);
+        if (page == null || string.IsNullOrWhiteSpace(page.Name))
+        {
+            return $"Page {clampedPageIndex + 1}";
+        }
+
+        return page.Name;
+    }
+
+    public void SetAttachPresetPageName(int pageIndex, string? name)
+    {
+        if (pageIndex < 0 || pageIndex >= AttachPresetPages.Count)
+            return;
+
+        var normalizedName = name?.Trim() ?? string.Empty;
+        var page = AttachPresetPages[pageIndex];
+        if (string.Equals(page.Name, normalizedName, System.StringComparison.Ordinal))
+            return;
+
+        AttachPresetPages[pageIndex] = page with { Name = normalizedName };
+        NotifyAttachPresetPagesChanged();
+    }
+
+    public void NotifyAttachPresetPagesChanged()
+    {
+        OnPropertyChanged(nameof(AttachPresetPages));
     }
 
     public void ApplyAttachPresetPages(IEnumerable<AttachmentPresetPageData> pages, IEnumerable<AttachmentPresetData>? legacyPresets = null)
@@ -184,26 +230,34 @@ public sealed class HudSettings : ViewModelBase
         {
             var presets = page.Presets ?? new List<AttachmentPresetData>();
             var mapped = presets.Select(FromData).ToList();
-            while (mapped.Count < 5)
+            while (mapped.Count < AttachPresetCountPerPage)
             {
                 mapped.Add(new AttachmentPreset());
             }
-            AttachPresetPages.Add(new AttachmentPresetPage { Presets = mapped });
+            AttachPresetPages.Add(new AttachmentPresetPage
+            {
+                Name = page.Name ?? string.Empty,
+                Presets = mapped
+            });
         }
 
-        while (AttachPresetPages.Count < 5)
+        while (AttachPresetPages.Count < AttachPresetPageCount)
         {
             AttachPresetPages.Add(new AttachmentPresetPage
             {
-                Presets = Enumerable.Range(0, 5).Select(_ => new AttachmentPreset()).ToList()
+                Name = string.Empty,
+                Presets = Enumerable.Range(0, AttachPresetCountPerPage).Select(_ => new AttachmentPreset()).ToList()
             });
         }
+
+        NotifyAttachPresetPagesChanged();
     }
 
     public IEnumerable<AttachmentPresetPageData> ToAttachPresetPageData()
     {
         return AttachPresetPages.Select(page => new AttachmentPresetPageData
         {
+            Name = page.Name,
             Presets = (page.Presets ?? new List<AttachmentPreset>())
                 .Select(ToData)
                 .ToList()

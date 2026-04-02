@@ -175,6 +175,7 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     private readonly ObservableCollection<HudPlayerActionOption> _attachSubMenuOptions = new();
     private readonly ReadOnlyObservableCollection<HudPlayerActionOption> _attachSubMenuOptionsReadonly;
     private HudPlayerActionOption? _hoveredAttachOption;
+    private int _attachSubMenuPageIndex = -1;
     private static readonly string[] AltBindLabels = { "Q", "E", "R", "T", "Z" };
 
     public HudPlayerCardViewModel(string steamId)
@@ -368,6 +369,7 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
             if (SetProperty(ref _isInAttachSubMenu, value))
             {
                 OnPropertyChanged(nameof(CurrentRadialItems));
+                OnPropertyChanged(nameof(RadialCenterLabel));
             }
         }
     }
@@ -389,6 +391,10 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         get => _radialCenterBrush;
         private set => SetProperty(ref _radialCenterBrush, value);
     }
+
+    public string RadialCenterLabel => "Cancel";
+
+    public int AttachSubMenuPageIndex => _attachSubMenuPageIndex;
 
     public event EventHandler<HudPlayerActionRequestedEventArgs>? PlayerActionRequested;
     public event EventHandler? AttachTargetSelected;
@@ -495,8 +501,9 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         AttachTargetSelected?.Invoke(this, EventArgs.Empty);
     }
 
-    public void OpenAttachSubMenu(IEnumerable<HlaeObsTools.ViewModels.HudSettings.AttachmentPreset> presets)
+    public void OpenAttachSubMenu(int pageIndex, IEnumerable<HlaeObsTools.ViewModels.HudSettings.AttachmentPreset> presets)
     {
+        _attachSubMenuPageIndex = pageIndex;
         var options = presets
             .Select((preset, i) =>
             {
@@ -505,12 +512,17 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
             })
             .ToList();
         SyncCollection(_attachSubMenuOptions, options);
+        foreach (var option in _attachSubMenuOptions)
+        {
+            option.SetAccentBrush(AccentBrush);
+        }
         IsInAttachSubMenu = true;
         OnPropertyChanged(nameof(CurrentRadialItems));
     }
 
     public void CloseAttachSubMenu()
     {
+        _attachSubMenuPageIndex = -1;
         IsInAttachSubMenu = false;
         _attachSubMenuOptions.Clear();
         OnPropertyChanged(nameof(CurrentRadialItems));

@@ -120,6 +120,7 @@ public class AppSettingsData
 
 public class AttachmentPresetPageData
 {
+    public string Name { get; set; } = string.Empty;
     public List<AttachmentPresetData> Presets { get; set; } = new();
 }
 

@@ -554,39 +554,50 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Actions">
-                <TabControl Margin="10">
-                    <TabItem Header="Attach">
-                        <ScrollViewer>
-                            <StackPanel Margin="10" Spacing="12">
-                                <TextBlock Text="Attach Presets"
-                                           Foreground="#CCCCCC"
-                                           FontWeight="SemiBold"/>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Page" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                                    <ComboBox Width="160"
-                                              ItemsSource="{Binding AttachPresetPageOptions}"
-                                              SelectedIndex="{Binding ActiveAttachPresetPage, Mode=TwoWay}"/>
-                                </StackPanel>
-                                <ItemsControl ItemsSource="{Binding AttachPresets}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,8">
-                                                <StackPanel Spacing="6">
-                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                                        <StackPanel Spacing="2">
-                                                            <TextBlock Text="{Binding Title}" Foreground="#E6E6E6" FontWeight="SemiBold"/>
-                                                            <TextBlock Text="{Binding AnimationSummary}" Foreground="#888888" FontSize="12"/>
-                                                        </StackPanel>
-                                                        <Button Grid.Column="1"
-                                                                Content="Animation"
-                                                                Click="OpenAnimationEditor_Click"
-                                                                HorizontalAlignment="Right"/>
-                                                    </Grid>
-                                                    <TextBlock Text="Execute preset on slot"
-                                                               Foreground="#AAAAAA"
-                                                               FontSize="12"/>
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+            <TabItem Header="Attach">
+                <ScrollViewer>
+                    <StackPanel Margin="10" Spacing="12">
+                        <TextBlock Text="Attach Presets"
+                                   Foreground="#CCCCCC"
+                                   FontWeight="SemiBold"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Page" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                            <ComboBox Width="180"
+                                      ItemsSource="{Binding AttachPresetPageOptions}"
+                                      SelectedIndex="{Binding ActiveAttachPresetPage, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBlock Text="Name" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                            <TextBox Width="220"
+                                     Watermark="Page name"
+                                     Text="{Binding CurrentAttachPresetPageName, Mode=TwoWay}"/>
+                        </StackPanel>
+                        <TextBlock Text="The player-card radial now opens attach pages first, then the presets on the selected page."
+                                   Foreground="#888888"
+                                   FontSize="12"/>
+                        <ItemsControl ItemsSource="{Binding AttachPresets}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#333" BorderThickness="1" Padding="8" Margin="0,0,0,8">
+                                        <StackPanel Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="{Binding Title}" Foreground="#E6E6E6" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding AnimationSummary}" Foreground="#888888" FontSize="12"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1"
+                                                        Content="Animation"
+                                                        Click="OpenAnimationEditor_Click"
+                                                        HorizontalAlignment="Right"/>
+                                            </Grid>
+                                            <TextBlock Text="Execute preset on slot"
+                                                       Foreground="#AAAAAA"
+                                                       FontSize="12"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
                                                         <Button Content="1"
                                                                 Command="{Binding DataContext.ExecuteAttachPresetSlot1Command, ElementName=Root}"
                                                                 CommandParameter="{Binding}"
@@ -657,98 +668,75 @@
                                                                 hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
                                                                 hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
                                                                 hotkeys:HotkeyTarget.AttachSlot="9"/>
-                                                    </StackPanel>
-                                                    <TextBlock Text="Preset Name" Foreground="#AAAAAA" FontSize="12"/>
-                                                    <TextBox Width="300"
-                                                             Watermark="Preset name"
-                                                             Text="{Binding Name, Mode=TwoWay}"
-                                                             HorizontalAlignment="Left" />
-                                                    <TextBlock Text="Attachment" Foreground="#AAAAAA" FontSize="12"/>
-                                                    <ComboBox ItemsSource="{Binding AttachmentOptions}"
-                                                              SelectedItem="{Binding AttachmentName, Mode=TwoWay}"
-                                                              Width="300"
-                                                              HorizontalAlignment="Left"/>
+                                            </StackPanel>
+                                            <TextBlock Text="Preset Name" Foreground="#AAAAAA" FontSize="12"/>
+                                            <TextBox Width="300"
+                                                     Watermark="Preset name"
+                                                     Text="{Binding Name, Mode=TwoWay}"
+                                                     HorizontalAlignment="Left" />
+                                            <TextBlock Text="Attachment" Foreground="#AAAAAA" FontSize="12"/>
+                                            <ComboBox ItemsSource="{Binding AttachmentOptions}"
+                                                      SelectedItem="{Binding AttachmentName, Mode=TwoWay}"
+                                                      Width="300"
+                                                      HorizontalAlignment="Left"/>
 
-                                                    <TextBlock Text="Position Offset" Foreground="#AAAAAA" FontSize="12"/>
-                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                        <TextBox Width="80" Watermark="X" Text="{Binding OffsetPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                        <TextBox Width="80" Watermark="Y" Text="{Binding OffsetPosY, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                        <TextBox Width="80" Watermark="Z" Text="{Binding OffsetPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                    </StackPanel>
+                                            <TextBlock Text="Position Offset" Foreground="#AAAAAA" FontSize="12"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBox Width="80" Watermark="X" Text="{Binding OffsetPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" Watermark="Y" Text="{Binding OffsetPosY, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" Watermark="Z" Text="{Binding OffsetPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                            </StackPanel>
 
-                                                    <TextBlock Text="Rotation Offset (deg)" Foreground="#AAAAAA" FontSize="12"/>
-                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                        <TextBox Width="80" Watermark="Pitch" Text="{Binding OffsetPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                        <TextBox Width="80" Watermark="Yaw" Text="{Binding OffsetYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                        <TextBox Width="80" Watermark="Roll" Text="{Binding OffsetRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                    </StackPanel>
+                                            <TextBlock Text="Rotation Offset (deg)" Foreground="#AAAAAA" FontSize="12"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBox Width="80" Watermark="Pitch" Text="{Binding OffsetPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" Watermark="Yaw" Text="{Binding OffsetYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" Watermark="Roll" Text="{Binding OffsetRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                            </StackPanel>
 
-                                                    <TextBlock Text="Rotation Basis" Foreground="#AAAAAA" FontSize="12"/>
-                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                        <ComboBox Width="80"
-                                                            ItemsSource="{Binding RotationBasisOptions}"
-                                                            SelectedItem="{Binding RotationBasisPitch, Mode=TwoWay}"/>
-                                                        <ComboBox Width="80"
-                                                            ItemsSource="{Binding RotationBasisOptions}"
-                                                            SelectedItem="{Binding RotationBasisYaw, Mode=TwoWay}"/>
-                                                        <ComboBox Width="80"
-                                                            ItemsSource="{Binding RotationBasisOptions}"
-                                                            SelectedItem="{Binding RotationBasisRoll, Mode=TwoWay}"/>
-                                                    </StackPanel>
+                                            <TextBlock Text="Rotation Basis" Foreground="#AAAAAA" FontSize="12"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <ComboBox Width="80"
+                                                    ItemsSource="{Binding RotationBasisOptions}"
+                                                    SelectedItem="{Binding RotationBasisPitch, Mode=TwoWay}"/>
+                                                <ComboBox Width="80"
+                                                    ItemsSource="{Binding RotationBasisOptions}"
+                                                    SelectedItem="{Binding RotationBasisYaw, Mode=TwoWay}"/>
+                                                <ComboBox Width="80"
+                                                    ItemsSource="{Binding RotationBasisOptions}"
+                                                    SelectedItem="{Binding RotationBasisRoll, Mode=TwoWay}"/>
+                                            </StackPanel>
 
-                                                    <TextBlock Text="Rotation Reference" Foreground="#AAAAAA" FontSize="12"/>
-                                                    <ComboBox Width="200"
-                                                              ItemsSource="{Binding RotationReferenceOptions}"
-                                                              SelectedItem="{Binding RotationReference, Mode=TwoWay}"/>
+                                            <TextBlock Text="Rotation Reference" Foreground="#AAAAAA" FontSize="12"/>
+                                            <ComboBox Width="200"
+                                                      ItemsSource="{Binding RotationReferenceOptions}"
+                                                      SelectedItem="{Binding RotationReference, Mode=TwoWay}"/>
 
-                                                    <TextBlock Text="Rotation Axis Lock (world)" Foreground="#AAAAAA" FontSize="12"/>
-                                                    <StackPanel Orientation="Horizontal" Spacing="12">
-                                                        <ToggleSwitch Content="Pitch"
-                                                                      IsChecked="{Binding RotationLockPitch, Mode=TwoWay}"
-                                                            hotkeys:HotkeyTarget.Path="RotationLockPitch"
-                                                                      Foreground="#E6E6E6"/>
-                                                        <ToggleSwitch Content="Yaw"
-                                                                      IsChecked="{Binding RotationLockYaw, Mode=TwoWay}"
-                                                            hotkeys:HotkeyTarget.Path="RotationLockYaw"
-                                                                      Foreground="#E6E6E6"/>
-                                                        <ToggleSwitch Content="Roll"
-                                                                      IsChecked="{Binding RotationLockRoll, Mode=TwoWay}"
-                                                            hotkeys:HotkeyTarget.Path="RotationLockRoll"
-                                                                      Foreground="#E6E6E6"/>
-                                                    </StackPanel>
+                                            <TextBlock Text="Rotation Axis Lock (world)" Foreground="#AAAAAA" FontSize="12"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                                <ToggleSwitch Content="Pitch"
+                                                              IsChecked="{Binding RotationLockPitch, Mode=TwoWay}"
+                                                    hotkeys:HotkeyTarget.Path="RotationLockPitch"
+                                                              Foreground="#E6E6E6"/>
+                                                <ToggleSwitch Content="Yaw"
+                                                              IsChecked="{Binding RotationLockYaw, Mode=TwoWay}"
+                                                    hotkeys:HotkeyTarget.Path="RotationLockYaw"
+                                                              Foreground="#E6E6E6"/>
+                                                <ToggleSwitch Content="Roll"
+                                                              IsChecked="{Binding RotationLockRoll, Mode=TwoWay}"
+                                                    hotkeys:HotkeyTarget.Path="RotationLockRoll"
+                                                              Foreground="#E6E6E6"/>
+                                            </StackPanel>
 
-                                                    <TextBlock Text="FOV" Foreground="#AAAAAA" FontSize="12"/>
-                                                    <TextBox Width="100" Watermark="90" HorizontalAlignment="Left" Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                </StackPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-
-                    <TabItem Header="Action 2">
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Placeholder for Action 2" Foreground="#888888"/>
-                        </StackPanel>
-                    </TabItem>
-                    <TabItem Header="Action 3">
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Placeholder for Action 3" Foreground="#888888"/>
-                        </StackPanel>
-                    </TabItem>
-                    <TabItem Header="Action 4">
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Placeholder for Action 4" Foreground="#888888"/>
-                        </StackPanel>
-                    </TabItem>
-                    <TabItem Header="Action 5">
-                        <StackPanel Margin="10">
-                            <TextBlock Text="Placeholder for Action 5" Foreground="#888888"/>
-                        </StackPanel>
-                    </TabItem>
-                </TabControl>
+                                            <TextBlock Text="FOV" Foreground="#AAAAAA" FontSize="12"/>
+                                            <TextBox Width="100" Watermark="90" HorizontalAlignment="Left" Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
 
             <TabItem Header="Hotkeys">
