@@ -64,6 +64,10 @@ function calcAdr(extras, steamId) {
   return Math.round(total / rounds.length);
 }
 
+function mapObserverSlot(rawSlot) {
+  return rawSlot === 9 ? 0 : rawSlot + 1;
+}
+
 document.querySelectorAll(".card").forEach(cardEl => {
   const gfx = cardEl.dataset.gfx;
   const refs = createCardDOM(cardEl);
@@ -97,8 +101,7 @@ function updateCards(gsi, extras) {
 
     const entry = players.find(p => {
       const rawSlot = p.player.observer_slot;
-      const mapped = extras?.observerSlotMapped?.[p.steamId];
-      const resolved = mapped ?? rawSlot;
+      const resolved = typeof rawSlot === "number" ? mapObserverSlot(rawSlot) : rawSlot;
       return resolved === slot;
     });
 

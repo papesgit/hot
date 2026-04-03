@@ -6,13 +6,10 @@ namespace HlaeObsTools.Services.Graphics;
 
 public sealed class GsiExtrasTracker
 {
-    private string? _lastKnownMapName;
+    private string? _currentMapName;
     private readonly Dictionary<string, Dictionary<int, int>> _roundDamages = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, int> _moneyAtStartOfRound = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, int> _lastKnownPlayerObserverSlot = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, int> _observerSlotMapped = new(StringComparer.OrdinalIgnoreCase);
-    private GsiBombPlantedCountdown? _lastKnownBombPlantedCountdown;
-    private string? _lastRoundPhase;
+    private int? _lastCtScore;
+    private int? _lastTScore;
 
     public GsiExtrasSnapshot Update(string rawJson)
     {
@@ -24,22 +21,12 @@ public sealed class GsiExtrasTracker
             using var doc = JsonDocument.Parse(rawJson);
             var root = doc.RootElement;
 
-            var mapChanged = UpdateLastKnownMapName(root);
-            UpdateLastKnownBombPlantedCountdown(root);
-            UpdateLastKnownPlayerObserverSlot(root);
-
-            var roundPhase = GetRoundPhase(root);
-            var wasFreezetime = string.Equals(_lastRoundPhase, "freezetime", StringComparison.OrdinalIgnoreCase);
-            var isFreezetime = string.Equals(roundPhase, "freezetime", StringComparison.OrdinalIgnoreCase);
-            _lastRoundPhase = roundPhase;
-
-            if (!wasFreezetime && isFreezetime)
-            {
-                UpdateMoneyAtStartOfRound(root);
-            }
-
             var playerActivity = GetPlayerActivity(root);
-            if (mapChanged || string.Equals(playerActivity, "menu", StringComparison.OrdinalIgnoreCase))
+            var mapChanged = UpdateCurrentMapName(root);
+            var matchRestarted = DetectMatchRestart(root);
+            if (mapChanged ||
+                matchRestarted ||
+                string.Equals(playerActivity, "menu", StringComparison.OrdinalIgnoreCase))
             {
                 _roundDamages.Clear();
             }
@@ -56,73 +43,41 @@ public sealed class GsiExtrasTracker
         return BuildSnapshot();
     }
 
-    private bool UpdateLastKnownMapName(JsonElement root)
+    private bool UpdateCurrentMapName(JsonElement root)
     {
         var mapName = GetString(root, "map", "name");
-        var mapChanged = !string.IsNullOrWhiteSpace(mapName) &&
-                         !string.Equals(mapName, _lastKnownMapName, StringComparison.OrdinalIgnoreCase);
-        if (!string.IsNullOrWhiteSpace(mapName))
-            _lastKnownMapName = mapName;
-        return mapChanged;
+        if (string.IsNullOrWhiteSpace(mapName))
+            return false;
+
+        var changed = !string.Equals(mapName, _currentMapName, StringComparison.OrdinalIgnoreCase);
+        _currentMapName = mapName;
+        return changed;
     }
 
-    private void UpdateLastKnownBombPlantedCountdown(JsonElement root)
+    private bool DetectMatchRestart(JsonElement root)
     {
-        if (!TryGetObject(root, "bomb", out var bomb))
-        {
-            _lastKnownBombPlantedCountdown = null;
-            return;
-        }
+        if (!TryGetObject(root, "map", out var map))
+            return false;
 
-        var state = GetString(bomb, "state");
-        if (string.Equals(state, "defusing", StringComparison.OrdinalIgnoreCase))
-            return;
+        var hasCtScore = TryGetNestedInt(map, "team_ct", "score", out var ctScore);
+        var hasTScore = TryGetNestedInt(map, "team_t", "score", out var tScore);
 
-        if (!string.Equals(state, "planted", StringComparison.OrdinalIgnoreCase))
-        {
-            _lastKnownBombPlantedCountdown = null;
-            return;
-        }
+        var scoreResetToZero = hasCtScore && hasTScore &&
+                               ctScore == 0 && tScore == 0 &&
+                               ((_lastCtScore ?? 0) != 0 || (_lastTScore ?? 0) != 0);
 
-        var countdown = GetDouble(bomb, "countdown");
-        if (!countdown.HasValue)
-            return;
+        var stillZeroZeroAfterRound = hasCtScore && hasTScore &&
+                                      ctScore == 0 && tScore == 0 &&
+                                      _roundDamages.Count > 0 &&
+                                      TryGetInt(map, "round", out var rawRound) &&
+                                      rawRound > 0;
 
-        _lastKnownBombPlantedCountdown = new GsiBombPlantedCountdown
-        {
-            UnixTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            Value = countdown.Value
-        };
-    }
+        if (hasCtScore)
+            _lastCtScore = ctScore;
+        if (hasTScore)
+            _lastTScore = tScore;
 
-    private void UpdateLastKnownPlayerObserverSlot(JsonElement root)
-    {
-        if (!TryGetObject(root, "allplayers", out var players))
-            return;
-
-        foreach (var playerProp in players.EnumerateObject())
-        {
-            if (!TryGetInt(playerProp.Value, "observer_slot", out var slot))
-                continue;
-            _lastKnownPlayerObserverSlot[playerProp.Name] = slot;
-            _observerSlotMapped[playerProp.Name] = MapObserverSlot(slot);
-        }
-    }
-
-    private void UpdateMoneyAtStartOfRound(JsonElement root)
-    {
-        if (!TryGetObject(root, "allplayers", out var players))
-            return;
-
-        _moneyAtStartOfRound.Clear();
-        foreach (var playerProp in players.EnumerateObject())
-        {
-            if (!TryGetObject(playerProp.Value, "state", out var state))
-                continue;
-            if (!TryGetInt(state, "money", out var money))
-                continue;
-            _moneyAtStartOfRound[playerProp.Name] = money;
-        }
+        return scoreResetToZero || stillZeroZeroAfterRound;
     }
 
     private void UpdateRoundDamages(JsonElement root)
@@ -130,6 +85,7 @@ public sealed class GsiExtrasTracker
         var roundNumber = GetRoundNumber(root);
         if (!roundNumber.HasValue)
             return;
+        var isRoundOver = IsRoundOver(root);
 
         if (!TryGetObject(root, "allplayers", out var players))
             return;
@@ -147,7 +103,7 @@ public sealed class GsiExtrasTracker
                 _roundDamages[playerProp.Name] = perRound;
             }
 
-            if (dmg != 0 || !perRound.ContainsKey(roundNumber.Value))
+            if (dmg != 0 || isRoundOver || perRound.ContainsKey(roundNumber.Value))
             {
                 perRound[roundNumber.Value] = dmg;
             }
@@ -168,18 +124,10 @@ public sealed class GsiExtrasTracker
         return roundNumber;
     }
 
-    private static int MapObserverSlot(int rawSlot)
-    {
-        if (rawSlot == 9) return 0;
-        return rawSlot + 1;
-    }
-
-    private static string? GetRoundPhase(JsonElement root)
+    private static bool IsRoundOver(JsonElement root)
     {
         var phase = GetString(root, "phase_countdowns", "phase");
-        if (!string.IsNullOrWhiteSpace(phase))
-            return phase;
-        return GetString(root, "round", "phase");
+        return string.Equals(phase, "over", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? GetPlayerActivity(JsonElement root)
@@ -191,19 +139,8 @@ public sealed class GsiExtrasTracker
     {
         return new GsiExtrasSnapshot
         {
-            UnixTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            LastKnownMapName = _lastKnownMapName,
-            LastKnownBombPlantedCountdown = _lastKnownBombPlantedCountdown,
-            MoneyAtStartOfRound = Clone(_moneyAtStartOfRound),
-            LastKnownPlayerObserverSlot = Clone(_lastKnownPlayerObserverSlot),
-            ObserverSlotMapped = Clone(_observerSlotMapped),
             RoundDamages = CloneNested(_roundDamages)
         };
-    }
-
-    private static Dictionary<string, int> Clone(Dictionary<string, int> source)
-    {
-        return new Dictionary<string, int>(source, StringComparer.OrdinalIgnoreCase);
     }
 
     private static Dictionary<string, Dictionary<int, int>> CloneNested(Dictionary<string, Dictionary<int, int>> source)
@@ -238,22 +175,6 @@ public sealed class GsiExtrasTracker
         return GetString(obj, child);
     }
 
-    private static double? GetDouble(JsonElement root, string name)
-    {
-        if (root.TryGetProperty(name, out var prop))
-        {
-            if (prop.ValueKind == JsonValueKind.Number && prop.TryGetDouble(out var val))
-                return val;
-            if (prop.ValueKind == JsonValueKind.String &&
-                double.TryParse(prop.GetString(), System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out var parsed))
-            {
-                return parsed;
-            }
-        }
-        return null;
-    }
-
     private static bool TryGetInt(JsonElement root, string name, out int value)
     {
         value = 0;
@@ -269,21 +190,15 @@ public sealed class GsiExtrasTracker
         }
         return false;
     }
+
+    private static bool TryGetNestedInt(JsonElement root, string parent, string child, out int value)
+    {
+        value = 0;
+        return TryGetObject(root, parent, out var obj) && TryGetInt(obj, child, out value);
+    }
 }
 
 public sealed class GsiExtrasSnapshot
 {
-    public long UnixTimestamp { get; init; }
-    public string? LastKnownMapName { get; init; }
-    public GsiBombPlantedCountdown? LastKnownBombPlantedCountdown { get; init; }
-    public Dictionary<string, int> MoneyAtStartOfRound { get; init; } = new();
-    public Dictionary<string, int> LastKnownPlayerObserverSlot { get; init; } = new();
-    public Dictionary<string, int> ObserverSlotMapped { get; init; } = new();
     public Dictionary<string, Dictionary<int, int>> RoundDamages { get; init; } = new();
-}
-
-public sealed class GsiBombPlantedCountdown
-{
-    public long UnixTimestamp { get; init; }
-    public double Value { get; init; }
 }
