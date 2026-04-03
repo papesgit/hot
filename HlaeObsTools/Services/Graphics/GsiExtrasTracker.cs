@@ -137,20 +137,29 @@ public sealed class GsiExtrasTracker
 
     private GsiExtrasSnapshot BuildSnapshot()
     {
+        var playerDamageStats = new Dictionary<string, GsiPlayerDamageStats>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (steamId, perRound) in _roundDamages)
+        {
+            if (perRound.Count == 0)
+                continue;
+
+            var totalDamage = 0;
+            foreach (var damage in perRound.Values)
+            {
+                totalDamage += damage;
+            }
+
+            playerDamageStats[steamId] = new GsiPlayerDamageStats
+            {
+                TotalDamage = totalDamage,
+                Adr = (double)totalDamage / perRound.Count
+            };
+        }
+
         return new GsiExtrasSnapshot
         {
-            RoundDamages = CloneNested(_roundDamages)
+            PlayerDamageStats = playerDamageStats
         };
-    }
-
-    private static Dictionary<string, Dictionary<int, int>> CloneNested(Dictionary<string, Dictionary<int, int>> source)
-    {
-        var result = new Dictionary<string, Dictionary<int, int>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (key, value) in source)
-        {
-            result[key] = new Dictionary<int, int>(value);
-        }
-        return result;
     }
 
     private static bool TryGetObject(JsonElement root, string name, out JsonElement obj)
@@ -200,5 +209,11 @@ public sealed class GsiExtrasTracker
 
 public sealed class GsiExtrasSnapshot
 {
-    public Dictionary<string, Dictionary<int, int>> RoundDamages { get; init; } = new();
+    public Dictionary<string, GsiPlayerDamageStats> PlayerDamageStats { get; init; } = new();
+}
+
+public sealed class GsiPlayerDamageStats
+{
+    public double Adr { get; init; }
+    public int TotalDamage { get; init; }
 }

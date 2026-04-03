@@ -55,13 +55,8 @@ function setCardValues(cardEl, refs, { name, k, a, d, adr, meta, teamClass }) {
 }
 
 function calcAdr(extras, steamId) {
-  if (!extras || !extras.roundDamages || !extras.roundDamages[steamId]) return null;
-  const perRound = extras.roundDamages[steamId];
-  const rounds = Object.keys(perRound);
-  if (rounds.length === 0) return null;
-  let total = 0;
-  for (const key of rounds) total += perRound[key];
-  return Math.round(total / rounds.length);
+  const adr = extras?.playerDamageStats?.[steamId]?.adr;
+  return typeof adr === "number" ? Math.round(adr) : null;
 }
 
 function mapObserverSlot(rawSlot) {
