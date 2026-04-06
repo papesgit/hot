@@ -21,6 +21,8 @@ public sealed class GraphicsService : IDisposable
     private bool _enabled;
     private readonly int _targetFps;
     private readonly HashSet<string> _producerAtlases = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _appliedAtlasState = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _appliedInstanceState = new(StringComparer.OrdinalIgnoreCase);
     private readonly GsiExtrasTracker _gsiExtrasTracker = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<IReadOnlyList<string>>> _pendingImageListRequests = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, TaskCompletionSource<GraphicsCameraTransform?>> _pendingCameraRequests = new(StringComparer.Ordinal);
@@ -156,15 +158,44 @@ public sealed class GraphicsService : IDisposable
         if (!_enabled)
             return;
 
-        await ClearRemoteAsync(_profile);
+        var desiredAtlases = _profile.Atlases
+            .Where(IsValidAtlas)
+            .ToList();
+        var desiredAtlasState = desiredAtlases.ToDictionary(a => a.Name, GetAtlasStateKey, StringComparer.OrdinalIgnoreCase);
 
-        var activeAtlases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var atlas in _profile.Atlases)
+        var desiredInstances = _profile.Instances
+            .Where(IsValidInstance)
+            .ToList();
+        var desiredInstanceState = desiredInstances.ToDictionary(i => i.Name, GetInstanceStateKey, StringComparer.OrdinalIgnoreCase);
+
+        var instancesToDestroy = _appliedInstanceState
+            .Where(pair => !desiredInstanceState.TryGetValue(pair.Key, out var desiredState) || !string.Equals(pair.Value, desiredState, StringComparison.Ordinal))
+            .Select(pair => pair.Key)
+            .ToList();
+        foreach (var name in instancesToDestroy)
         {
-            if (!atlas.Enabled)
+            await DestroyRemoteInstanceAsync(name);
+            _appliedInstanceState.Remove(name);
+        }
+
+        var atlasesToDestroy = _appliedAtlasState
+            .Where(pair => !desiredAtlasState.TryGetValue(pair.Key, out var desiredState) || !string.Equals(pair.Value, desiredState, StringComparison.Ordinal))
+            .Select(pair => pair.Key)
+            .ToList();
+        foreach (var name in atlasesToDestroy)
+        {
+            await DestroyRemoteAtlasAsync(name);
+            _appliedAtlasState.Remove(name);
+        }
+
+        foreach (var atlas in desiredAtlases)
+        {
+            if (_appliedAtlasState.TryGetValue(atlas.Name, out var appliedState) &&
+                desiredAtlasState.TryGetValue(atlas.Name, out var desiredState) &&
+                string.Equals(appliedState, desiredState, StringComparison.Ordinal))
+            {
                 continue;
-            if (string.IsNullOrWhiteSpace(atlas.HtmlPath) || !File.Exists(atlas.HtmlPath))
-                continue;
+            }
 
             var info = await _producerClient.CreateAtlasAsync(new ProducerAtlasRequest
             {
@@ -181,7 +212,6 @@ public sealed class GraphicsService : IDisposable
             if (info == null || string.IsNullOrWhiteSpace(info.Handle))
                 continue;
 
-            activeAtlases.Add(atlas.Name);
             _producerAtlases.Add(atlas.Name);
 
             await _webSocket.SendCommandAsync("gfx.atlas.create", new
@@ -208,55 +238,22 @@ public sealed class GraphicsService : IDisposable
                     defaultSize = new[] { region.DefaultWidth, region.DefaultHeight }
                 });
             }
+
+            _appliedAtlasState[atlas.Name] = desiredAtlasState[atlas.Name];
         }
 
-        foreach (var inst in _profile.Instances)
+        foreach (var inst in desiredInstances)
         {
-            var attachPayload = inst.AttachSlot >= 0
-                ? new
-                {
-                    slot = inst.AttachSlot,
-                    useYaw = inst.AttachUseYaw,
-                    usePitch = inst.AttachUsePitch,
-                    useRoll = inst.AttachUseRoll,
-                    attachment = inst.AttachAttachmentName
-                }
-                : null;
-
-            var payload = new Dictionary<string, object?>
+            if (_appliedInstanceState.TryGetValue(inst.Name, out var appliedState) &&
+                desiredInstanceState.TryGetValue(inst.Name, out var desiredState) &&
+                string.Equals(appliedState, desiredState, StringComparison.Ordinal))
             {
-                ["name"] = inst.Name,
-                ["attach"] = attachPayload,
-                ["pos"] = new[] { inst.PosX, inst.PosY, inst.PosZ },
-                ["ang"] = new[] { inst.Pitch, inst.Yaw, inst.Roll },
-                ["scale"] = new[] { inst.ScaleX, inst.ScaleY },
-                ["visible"] = inst.Visible,
-                ["depthTest"] = inst.DepthTest,
-                ["depthWrite"] = inst.DepthWrite
-            };
-
-            if (inst.SourceType == GraphicsInstanceSourceType.Image)
-            {
-                if (string.IsNullOrWhiteSpace(inst.ImageFile))
-                    continue;
-                payload["imageFile"] = inst.ImageFile;
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(inst.Atlas) || string.IsNullOrWhiteSpace(inst.Region))
-                    continue;
-                payload["atlas"] = inst.Atlas;
-                payload["region"] = inst.Region;
+                continue;
             }
 
-            await _webSocket.SendCommandAsync("gfx.instance.create", payload);
-        }
+            await _webSocket.SendCommandAsync("gfx.instance.create", BuildInstancePayload(inst));
 
-        var toRemove = _producerAtlases.Where(name => !activeAtlases.Contains(name)).ToList();
-        foreach (var name in toRemove)
-        {
-            await _producerClient.DestroyAtlasAsync(name);
-            _producerAtlases.Remove(name);
+            _appliedInstanceState[inst.Name] = desiredInstanceState[inst.Name];
         }
     }
 
@@ -352,21 +349,37 @@ public sealed class GraphicsService : IDisposable
 
     private async Task ClearRemoteAsync()
     {
-        await ClearRemoteAsync(_profile);
+        foreach (var name in _appliedInstanceState.Keys.ToList())
+        {
+            await DestroyRemoteInstanceAsync(name);
+        }
+        _appliedInstanceState.Clear();
+
+        foreach (var name in _appliedAtlasState.Keys.ToList())
+        {
+            await DestroyRemoteAtlasAsync(name);
+        }
+        _appliedAtlasState.Clear();
     }
 
-    private async Task ClearRemoteAsync(GraphicsProfile profile)
+    private async Task DestroyRemoteInstanceAsync(string name)
     {
         if (!_webSocket.IsConnected)
             return;
+        await _webSocket.SendCommandAsync("gfx.instance.destroy", new { name });
+    }
 
-        foreach (var inst in profile.Instances)
+    private async Task DestroyRemoteAtlasAsync(string name)
+    {
+        if (_webSocket.IsConnected)
         {
-            await _webSocket.SendCommandAsync("gfx.instance.destroy", new { name = inst.Name });
+            await _webSocket.SendCommandAsync("gfx.atlas.destroy", new { name });
         }
-        foreach (var atlas in profile.Atlases)
+
+        if (_producerAtlases.Contains(name))
         {
-            await _webSocket.SendCommandAsync("gfx.atlas.destroy", new { name = atlas.Name });
+            await _producerClient.DestroyAtlasAsync(name);
+            _producerAtlases.Remove(name);
         }
     }
 
@@ -377,6 +390,75 @@ public sealed class GraphicsService : IDisposable
             await _producerClient.DestroyAtlasAsync(name);
             _producerAtlases.Remove(name);
         }
+    }
+
+    private static bool IsValidAtlas(GraphicsAtlas atlas)
+    {
+        return atlas.Enabled &&
+               !string.IsNullOrWhiteSpace(atlas.Name) &&
+               !string.IsNullOrWhiteSpace(atlas.HtmlPath) &&
+               File.Exists(atlas.HtmlPath);
+    }
+
+    private static bool IsValidInstance(GraphicsInstance inst)
+    {
+        if (string.IsNullOrWhiteSpace(inst.Name))
+            return false;
+
+        return inst.SourceType switch
+        {
+            GraphicsInstanceSourceType.Image => !string.IsNullOrWhiteSpace(inst.ImageFile),
+            GraphicsInstanceSourceType.Atlas => !string.IsNullOrWhiteSpace(inst.Atlas) && !string.IsNullOrWhiteSpace(inst.Region),
+            _ => false
+        };
+    }
+
+    private static string GetAtlasStateKey(GraphicsAtlas atlas)
+    {
+        return JsonSerializer.Serialize(atlas);
+    }
+
+    private static string GetInstanceStateKey(GraphicsInstance inst)
+    {
+        return JsonSerializer.Serialize(inst);
+    }
+
+    private static Dictionary<string, object?> BuildInstancePayload(GraphicsInstance inst)
+    {
+        var attachPayload = inst.AttachSlot >= 0
+            ? new
+            {
+                slot = inst.AttachSlot,
+                useYaw = inst.AttachUseYaw,
+                usePitch = inst.AttachUsePitch,
+                useRoll = inst.AttachUseRoll,
+                attachment = inst.AttachAttachmentName
+            }
+            : null;
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["name"] = inst.Name,
+            ["attach"] = attachPayload,
+            ["pos"] = new[] { inst.PosX, inst.PosY, inst.PosZ },
+            ["ang"] = new[] { inst.Pitch, inst.Yaw, inst.Roll },
+            ["scale"] = new[] { inst.ScaleX, inst.ScaleY },
+            ["visible"] = inst.Visible,
+            ["depthTest"] = inst.DepthTest,
+            ["depthWrite"] = inst.DepthWrite
+        };
+
+        if (inst.SourceType == GraphicsInstanceSourceType.Image)
+        {
+            payload["imageFile"] = inst.ImageFile;
+        }
+        else
+        {
+            payload["atlas"] = inst.Atlas;
+            payload["region"] = inst.Region;
+        }
+
+        return payload;
     }
 
     private void OnGameStateUpdated(object? sender, GsiGameState e)
