@@ -300,6 +300,11 @@ namespace HlaeObsTools.ViewModels.Docks
                 _ws.Connected += OnWebSocketConnected;
                 _ws.MessageReceived += OnWebSocketMessage;
                 _ws.Disconnected += OnWebSocketDisconnected;
+
+                if (_ws.IsConnected)
+                {
+                    ApplyConnectedWebSocketState();
+                }
             }
 
             AttachPresetAnimationEditor = new AttachPresetAnimationDockViewModel();
@@ -842,9 +847,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         private void OnWebSocketConnected(object? sender, EventArgs e)
         {
-            SendAltPlayerBindsMode();
-            _ = SendAllFreecamConfigAsync();
-            RefreshNetworkHealth();
+            ApplyConnectedWebSocketState();
         }
 
         private void OnWebSocketDisconnected(object? sender, EventArgs e)
@@ -888,6 +891,13 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             if (_ws == null) return;
             _ = _ws.SendCommandAsync("spectator_bindings_mode", new { useAlt = _radarSettings.UseAltPlayerBinds });
+        }
+
+        private void ApplyConnectedWebSocketState()
+        {
+            SendAltPlayerBindsMode();
+            _ = SendAllFreecamConfigAsync();
+            RefreshNetworkHealth();
         }
         #endregion
 
