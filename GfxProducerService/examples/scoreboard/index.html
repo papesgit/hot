@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scoreboard</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+  <div id="scoreboard" data-gfx="scoreboard">
+    <div class="header">
+      <div class="team-header ct" data-ref="ctName">Counter-Terrorists</div>
+      <div class="team-header t" data-ref="tName">Terrorists</div>
+    </div>
+
+    <div class="col-headers">
+      <div class="col-header-side ct">
+        <div class="col name">Player</div>
+        <div class="col stat">K</div>
+        <div class="col stat">A</div>
+        <div class="col stat">D</div>
+        <div class="col stat">ADR</div>
+        <div class="col stat">OP K/D</div>
+        <div class="col stat">Dmg</div>
+      </div>
+      <div class="col-header-side t">
+        <div class="col stat">Dmg</div>
+        <div class="col stat">OP K/D</div>
+        <div class="col stat">ADR</div>
+        <div class="col stat">K</div>
+        <div class="col stat">A</div>
+        <div class="col stat">D</div>
+        <div class="col name">Player</div>
+      </div>
+    </div>
+
+    <div class="players">
+      <div class="team-players ct" data-ref="ctPlayers"></div>
+      <div class="team-players t" data-ref="tPlayers"></div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
