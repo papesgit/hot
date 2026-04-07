@@ -295,12 +295,8 @@ window.addEventListener("gsi:update", (e) => {
 const animOutTimers = new Map();
 
 function notifyDone(action, target) {
-  if (window.hotNotify && window.hotNotify.TriggerDone) {
-    window.hotNotify.TriggerDone(action, target);
-    return;
-  }
-  if (window.CefSharp && typeof CefSharp.PostMessage === "function") {
-    CefSharp.PostMessage({ type: "hotNotify", action, target });
+  if (window.hotNotify && window.hotNotify.triggerDone) {
+    window.hotNotify.triggerDone(action, target);
   }
 }
 
@@ -327,8 +323,3 @@ window.hotTrigger = (action, target) => {
     }, 420));
   }
 };
-
-document.addEventListener("hot:trigger", (e) => {
-  const { action, target } = e.detail || {};
-  window.hotTrigger(action, target);
-});

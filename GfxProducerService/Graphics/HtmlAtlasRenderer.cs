@@ -21,7 +21,7 @@ public sealed class HtmlAtlasRenderer : IDisposable
             _owner = owner;
         }
 
-        public void TriggerDone(string action, string target)
+        public void triggerDone(string action, string target)
         {
             if (string.IsNullOrWhiteSpace(action))
                 return;
@@ -84,6 +84,7 @@ public sealed class HtmlAtlasRenderer : IDisposable
 
         _browser.JavascriptObjectRepository.Register("hotNotify", _hotNotifyBridge);
         _browser.JavascriptMessageReceived += OnJavascriptMessageReceived;
+        _browser.FrameLoadEnd += OnFrameLoadEnd;
 
         _browser.Paint += OnPaint;
 
@@ -193,6 +194,21 @@ public sealed class HtmlAtlasRenderer : IDisposable
         tcs?.TrySetResult(true);
     }
 
+    private void OnFrameLoadEnd(object? sender, FrameLoadEndEventArgs e)
+    {
+        if (!e.Frame.IsMain)
+            return;
+
+        try
+        {
+            e.Frame.ExecuteJavaScriptAsync(BuildHotNotifyBootstrapScript());
+        }
+        catch
+        {
+            // ignore bootstrap injection failures
+        }
+    }
+
     private async Task RenderLoopAsync(CancellationToken token)
     {
         var frameDelay = TimeSpan.FromMilliseconds(1000.0 / _targetFps);
@@ -260,6 +276,20 @@ public sealed class HtmlAtlasRenderer : IDisposable
   const evt = new CustomEvent('hot:trigger', {{ detail: {{ action, target }} }});
   document.dispatchEvent(evt);
 }})();";
+    }
+
+    private static string BuildHotNotifyBootstrapScript()
+    {
+        return @"(function() {
+  if (!window.CefSharp || typeof window.CefSharp.BindObjectAsync !== 'function') {
+    return;
+  }
+
+  if (!window.hotNotifyReady) {
+    window.hotNotifyReady = window.CefSharp.BindObjectAsync('hotNotify')
+      .catch(() => null);
+  }
+})();";
     }
 
     private void RaiseTriggerCompleted(string action, string target)
@@ -335,6 +365,7 @@ public sealed class HtmlAtlasRenderer : IDisposable
         if (_browser != null)
         {
             _browser.Paint -= OnPaint;
+            _browser.FrameLoadEnd -= OnFrameLoadEnd;
             _browser.JavascriptMessageReceived -= OnJavascriptMessageReceived;
             _browser.Dispose();
             _browser = null;
