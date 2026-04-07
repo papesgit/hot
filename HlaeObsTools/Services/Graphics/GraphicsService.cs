@@ -397,7 +397,18 @@ public sealed class GraphicsService : IDisposable
         return atlas.Enabled &&
                !string.IsNullOrWhiteSpace(atlas.Name) &&
                !string.IsNullOrWhiteSpace(atlas.HtmlPath) &&
-               File.Exists(atlas.HtmlPath);
+               IsSupportedHtmlPath(atlas.HtmlPath);
+    }
+
+    private static bool IsSupportedHtmlPath(string htmlPath)
+    {
+        if (Uri.TryCreate(htmlPath, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        {
+            return true;
+        }
+
+        return File.Exists(htmlPath);
     }
 
     private static bool IsValidInstance(GraphicsInstance inst)
