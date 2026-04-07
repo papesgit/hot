@@ -639,6 +639,13 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
                         delta_pos = new { x = ev.DeltaPosX, y = ev.DeltaPosY, z = ev.DeltaPosZ },
                         delta_angles = new { pitch = ev.DeltaPitch, yaw = ev.DeltaYaw, roll = ev.DeltaRoll },
                         fov = ev.Fov,
+                        rotation_sampling = ToRotationSampling(ev.RotationSampling),
+                        follow_attachment = new
+                        {
+                            pitch = ev.FollowAttachmentPitch,
+                            yaw = ev.FollowAttachmentYaw,
+                            roll = ev.FollowAttachmentRoll
+                        },
                         easing_curve = ToKeyframeEasingCurve(ev.KeyframeEasingCurve),
                         easing_mode = ToKeyframeEasingMode(ev.KeyframeEasingMode)
                     };
@@ -708,6 +715,13 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
             HudSettings.AttachmentPresetAnimationKeyframeEase.EaseInOut => "easeinout",
             _ => "easeinout"
         };
+    }
+
+    private static string ToRotationSampling(HudSettings.AttachmentPresetAnimationRotationSampling sampling)
+    {
+        return sampling == HudSettings.AttachmentPresetAnimationRotationSampling.FreezeAtSegmentStart
+            ? "freeze_at_segment_start"
+            : "live";
     }
 
     private static string ToRotationReference(HudSettings.AttachmentPresetRotationReference reference)

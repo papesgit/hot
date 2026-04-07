@@ -267,9 +267,32 @@ public sealed class AttachPresetViewModel : ViewModelBase
 
         foreach (var e in animation.Events.OrderBy(EventSortKey))
         {
-            // Base keyframe is implicit and uneditable.
-            if (e.Type == HudSettings.AttachmentPresetAnimationEventType.Keyframe && e.Time == 0.0 && e.Order == 0)
+            var isBaseKeyframe = e.Type == HudSettings.AttachmentPresetAnimationEventType.Keyframe
+                && e.Time == 0.0
+                && e.Order == 0;
+            if (isBaseKeyframe)
+            {
+                var baseVm = _animationEvents.FirstOrDefault(x => x.IsBaseKeyframe);
+                if (baseVm != null)
+                {
+                    baseVm.DeltaPosX = e.DeltaPosX;
+                    baseVm.DeltaPosY = e.DeltaPosY;
+                    baseVm.DeltaPosZ = e.DeltaPosZ;
+                    baseVm.DeltaPitch = e.DeltaPitch;
+                    baseVm.DeltaYaw = e.DeltaYaw;
+                    baseVm.DeltaRoll = e.DeltaRoll;
+                    baseVm.Fov = e.Fov;
+                    baseVm.RotationSampling = e.RotationSampling;
+                    baseVm.FollowAttachmentPitch = e.FollowAttachmentPitch;
+                    baseVm.FollowAttachmentYaw = e.FollowAttachmentYaw;
+                    baseVm.FollowAttachmentRoll = e.FollowAttachmentRoll;
+                    baseVm.TransitionDuration = e.TransitionDuration;
+                    baseVm.TransitionEasing = e.TransitionEasing ?? HudSettings.AttachmentPresetAnimationTransitionEasing.Smoothstep;
+                    baseVm.KeyframeEasingCurve = e.KeyframeEasingCurve ?? HudSettings.AttachmentPresetAnimationKeyframeCurve.Linear;
+                    baseVm.KeyframeEasingMode = e.KeyframeEasingMode ?? HudSettings.AttachmentPresetAnimationKeyframeEase.EaseInOut;
+                }
                 continue;
+            }
 
             _animationEvents.Add(new AttachPresetAnimationEventViewModel
             {
@@ -285,6 +308,10 @@ public sealed class AttachPresetViewModel : ViewModelBase
                 DeltaYaw = e.DeltaYaw,
                 DeltaRoll = e.DeltaRoll,
                 Fov = e.Fov,
+                RotationSampling = e.RotationSampling,
+                FollowAttachmentPitch = e.FollowAttachmentPitch,
+                FollowAttachmentYaw = e.FollowAttachmentYaw,
+                FollowAttachmentRoll = e.FollowAttachmentRoll,
                 TransitionDuration = e.TransitionDuration,
                 TransitionEasing = e.TransitionEasing ?? HudSettings.AttachmentPresetAnimationTransitionEasing.Smoothstep,
                 KeyframeEasingCurve = e.KeyframeEasingCurve ?? HudSettings.AttachmentPresetAnimationKeyframeCurve.Linear,
@@ -315,6 +342,10 @@ public sealed class AttachPresetViewModel : ViewModelBase
                 DeltaYaw = e.IsKeyframe ? e.DeltaYaw : null,
                 DeltaRoll = e.IsKeyframe ? e.DeltaRoll : null,
                 Fov = e.IsKeyframe ? e.Fov : null,
+                RotationSampling = e.IsKeyframe ? e.RotationSampling : HudSettings.AttachmentPresetAnimationRotationSampling.Live,
+                FollowAttachmentPitch = e.IsKeyframe && e.FollowAttachmentPitch,
+                FollowAttachmentYaw = e.IsKeyframe && e.FollowAttachmentYaw,
+                FollowAttachmentRoll = e.IsKeyframe && e.FollowAttachmentRoll,
                 TransitionDuration = e.IsTransition ? e.TransitionDuration : null,
                 TransitionEasing = e.IsTransition ? e.TransitionEasing : null,
                 KeyframeEasingCurve = e.IsKeyframe ? e.KeyframeEasingCurve : null,

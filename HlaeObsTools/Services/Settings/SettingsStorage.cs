@@ -166,6 +166,10 @@ public class AttachmentPresetAnimationEventData
     public double? DeltaRoll { get; set; }
 
     public double? Fov { get; set; }
+    public string? RotationSampling { get; set; } // "live" | "freeze_at_segment_start"
+    public bool? FollowAttachmentPitch { get; set; }
+    public bool? FollowAttachmentYaw { get; set; }
+    public bool? FollowAttachmentRoll { get; set; }
 
     public double? TransitionDuration { get; set; }
     public string? TransitionEasing { get; set; } // "linear" | "smoothstep" | "easeinoutcubic"

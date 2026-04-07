@@ -52,6 +52,30 @@
                             <TextBox Width="80" Watermark="Pitch" Text="{Binding DeltaPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                             <TextBox Width="80" Watermark="Yaw" Text="{Binding DeltaYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                             <TextBox Width="80" Watermark="Roll" Text="{Binding DeltaRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                            <TextBox Width="100"
+                                    Watermark="FOV(base)"
+                                    Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}"
+                                    HorizontalAlignment="Left" />
+                        </StackPanel>
+
+                        <TextBlock Text="Follow attachment rotation"
+                                   Foreground="#CCCCCC"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <ToggleSwitch Content="Pitch"
+                                          IsChecked="{Binding FollowAttachmentPitch, Mode=TwoWay}"
+                                          Foreground="#E6E6E6"/>
+                            <ToggleSwitch Content="Yaw"
+                                          IsChecked="{Binding FollowAttachmentYaw, Mode=TwoWay}"
+                                          Foreground="#E6E6E6"/>
+                            <ToggleSwitch Content="Roll"
+                                          IsChecked="{Binding FollowAttachmentRoll, Mode=TwoWay}"
+                                          Foreground="#E6E6E6"/>
+                            <StackPanel Orientation="Vertical" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="Rotation sampling" Foreground="#ffffff" VerticalAlignment="Top"/>
+                                <ComboBox MaxWidth="220" MinWidth="90"
+                                        ItemsSource="{x:Static local:AttachPresetAnimationEventViewModel.RotationSamplingOptions}"
+                                        SelectedItem="{Binding RotationSampling, Mode=TwoWay}"/>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -69,12 +93,6 @@
                                       SelectedItem="{Binding KeyframeEasingMode, Mode=TwoWay}"/>
                         </StackPanel>
 
-                        <TextBlock Text="FOV (absolute)"
-                                   Foreground="#CCCCCC"/>
-                        <TextBox Width="100"
-                                 Watermark="(base)"
-                                 Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}"
-                                 HorizontalAlignment="Left" />
                     </StackPanel>
 
                     <StackPanel IsVisible="{Binding IsTransition}" Spacing="8">

@@ -90,6 +90,12 @@ public sealed class HudSettings : ViewModelBase
         EaseInOut
     }
 
+    public enum AttachmentPresetAnimationRotationSampling
+    {
+        Live,
+        FreezeAtSegmentStart
+    }
+
     public record AttachmentPresetAnimationEvent
     {
         public AttachmentPresetAnimationEventType Type { get; init; } = AttachmentPresetAnimationEventType.Keyframe;
@@ -105,6 +111,11 @@ public sealed class HudSettings : ViewModelBase
         public double? DeltaRoll { get; init; }
 
         public double? Fov { get; init; }
+        public AttachmentPresetAnimationRotationSampling RotationSampling { get; init; }
+            = AttachmentPresetAnimationRotationSampling.Live;
+        public bool FollowAttachmentPitch { get; init; } = true;
+        public bool FollowAttachmentYaw { get; init; } = true;
+        public bool FollowAttachmentRoll { get; init; } = true;
 
         public double? TransitionDuration { get; init; }
         public AttachmentPresetAnimationTransitionEasing? TransitionEasing { get; init; }
@@ -339,6 +350,10 @@ public sealed class HudSettings : ViewModelBase
                 DeltaYaw = e.DeltaYaw,
                 DeltaRoll = e.DeltaRoll,
                 Fov = e.Fov,
+                RotationSampling = ParseRotationSampling(e.RotationSampling),
+                FollowAttachmentPitch = e.FollowAttachmentPitch ?? true,
+                FollowAttachmentYaw = e.FollowAttachmentYaw ?? true,
+                FollowAttachmentRoll = e.FollowAttachmentRoll ?? true,
                 TransitionDuration = e.TransitionDuration,
                 TransitionEasing = ParseTransitionEasing(e.TransitionEasing),
                 KeyframeEasingCurve = ParseKeyframeEasingCurve(e.KeyframeEasingCurve),
@@ -376,6 +391,10 @@ public sealed class HudSettings : ViewModelBase
                     DeltaYaw = e.DeltaYaw,
                     DeltaRoll = e.DeltaRoll,
                     Fov = e.Fov,
+                    RotationSampling = ToRotationSampling(e.RotationSampling),
+                    FollowAttachmentPitch = e.FollowAttachmentPitch,
+                    FollowAttachmentYaw = e.FollowAttachmentYaw,
+                    FollowAttachmentRoll = e.FollowAttachmentRoll,
                     TransitionDuration = e.TransitionDuration,
                     TransitionEasing = ToTransitionEasing(e.TransitionEasing),
                     KeyframeEasingCurve = ToKeyframeEasingCurve(e.KeyframeEasingCurve),
@@ -461,6 +480,23 @@ public sealed class HudSettings : ViewModelBase
             AttachmentPresetAnimationKeyframeEase.EaseInOut => "ease_in_out",
             _ => "ease_in_out"
         };
+    }
+
+    private static AttachmentPresetAnimationRotationSampling ParseRotationSampling(string? sampling)
+    {
+        if (string.Equals(sampling, "freeze_at_segment_start", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return AttachmentPresetAnimationRotationSampling.FreezeAtSegmentStart;
+        }
+
+        return AttachmentPresetAnimationRotationSampling.Live;
+    }
+
+    private static string ToRotationSampling(AttachmentPresetAnimationRotationSampling sampling)
+    {
+        return sampling == AttachmentPresetAnimationRotationSampling.FreezeAtSegmentStart
+            ? "freeze_at_segment_start"
+            : "live";
     }
 
     private static AttachmentPresetRotationReference ParseRotationReference(string? reference)

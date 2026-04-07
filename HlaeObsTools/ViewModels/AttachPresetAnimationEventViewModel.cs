@@ -32,6 +32,11 @@ public sealed class AttachPresetAnimationEventViewModel : ViewModelBase
         = HudSettings.AttachmentPresetAnimationKeyframeCurve.Linear;
     private HudSettings.AttachmentPresetAnimationKeyframeEase _keyframeEasingMode
         = HudSettings.AttachmentPresetAnimationKeyframeEase.EaseInOut;
+    private HudSettings.AttachmentPresetAnimationRotationSampling _rotationSampling
+        = HudSettings.AttachmentPresetAnimationRotationSampling.Live;
+    private bool _followAttachmentPitch = true;
+    private bool _followAttachmentYaw = true;
+    private bool _followAttachmentRoll = true;
     private bool _hasDuplicateKeyframeTime;
 
     public AttachPresetAnimationEventViewModel()
@@ -71,6 +76,12 @@ public sealed class AttachPresetAnimationEventViewModel : ViewModelBase
         HudSettings.AttachmentPresetAnimationKeyframeEase.EaseIn,
         HudSettings.AttachmentPresetAnimationKeyframeEase.EaseOut,
         HudSettings.AttachmentPresetAnimationKeyframeEase.EaseInOut
+    };
+
+    public static HudSettings.AttachmentPresetAnimationRotationSampling[] RotationSamplingOptions { get; } =
+    {
+        HudSettings.AttachmentPresetAnimationRotationSampling.Live,
+        HudSettings.AttachmentPresetAnimationRotationSampling.FreezeAtSegmentStart
     };
 
     public AttachPresetAnimationEventType Type
@@ -125,6 +136,30 @@ public sealed class AttachPresetAnimationEventViewModel : ViewModelBase
     public double? DeltaRoll { get => _deltaRoll; set => SetProperty(ref _deltaRoll, value); }
 
     public double? Fov { get => _fov; set => SetProperty(ref _fov, value); }
+
+    public HudSettings.AttachmentPresetAnimationRotationSampling RotationSampling
+    {
+        get => _rotationSampling;
+        set => SetProperty(ref _rotationSampling, value);
+    }
+
+    public bool FollowAttachmentPitch
+    {
+        get => _followAttachmentPitch;
+        set => SetProperty(ref _followAttachmentPitch, value);
+    }
+
+    public bool FollowAttachmentYaw
+    {
+        get => _followAttachmentYaw;
+        set => SetProperty(ref _followAttachmentYaw, value);
+    }
+
+    public bool FollowAttachmentRoll
+    {
+        get => _followAttachmentRoll;
+        set => SetProperty(ref _followAttachmentRoll, value);
+    }
 
     public double? TransitionDuration
     {
