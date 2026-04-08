@@ -16,6 +16,7 @@ class Program
         => AppBuilder.Configure<App>()
             .UseWin32()
             .UseSkia()  // Use Skia with DirectX interop
+            .UseHarfBuzz()
             .WithInterFont()
             .LogToTrace();
 }

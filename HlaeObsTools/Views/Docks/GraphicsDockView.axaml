@@ -183,21 +183,21 @@
               </StackPanel>
               <StackPanel Spacing="2">
                 <TextBlock Text="Name" Foreground="#B0B0B0" />
-                <TextBox Text="{Binding SelectedAtlas.Name, Mode=TwoWay}" Watermark="Name" />
+                <TextBox Text="{Binding SelectedAtlas.Name, Mode=TwoWay}" PlaceholderText="Name" />
               </StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                 <StackPanel Spacing="2">
                   <TextBlock Text="Width" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedAtlas.Width, Mode=TwoWay}" Watermark="Width" />
+                  <TextBox Text="{Binding SelectedAtlas.Width, Mode=TwoWay}" PlaceholderText="Width" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="Height" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedAtlas.Height, Mode=TwoWay}" Watermark="Height" />
+                  <TextBox Text="{Binding SelectedAtlas.Height, Mode=TwoWay}" PlaceholderText="Height" />
                 </StackPanel>
               </Grid>
               <StackPanel Spacing="2">
                 <TextBlock Text="HTML Path" Foreground="#B0B0B0" />
-                <TextBox Text="{Binding SelectedAtlas.HtmlPath, Mode=TwoWay}" Watermark="HTML path" />
+                <TextBox Text="{Binding SelectedAtlas.HtmlPath, Mode=TwoWay}" PlaceholderText="HTML path" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="Enabled" VerticalAlignment="Center" Foreground="#B0B0B0" />
@@ -224,36 +224,36 @@
               </StackPanel>
               <StackPanel Spacing="2">
                 <TextBlock Text="Region Id" Foreground="#B0B0B0" />
-                <TextBox Text="{Binding SelectedRegion.Id, Mode=TwoWay}" Watermark="Region Id" />
+                <TextBox Text="{Binding SelectedRegion.Id, Mode=TwoWay}" PlaceholderText="Region Id" />
               </StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                 <StackPanel Spacing="2">
                   <TextBlock Text="U0" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.U0, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="U0" />
+                  <TextBox Text="{Binding SelectedRegion.U0, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="U0" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="V0" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.V0, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="V0" />
+                  <TextBox Text="{Binding SelectedRegion.V0, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="V0" />
                 </StackPanel>
               </Grid>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                 <StackPanel Spacing="2">
                   <TextBlock Text="U1" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.U1, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="U1" />
+                  <TextBox Text="{Binding SelectedRegion.U1, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="U1" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="V1" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.V1, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="V1" />
+                  <TextBox Text="{Binding SelectedRegion.V1, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="V1" />
                 </StackPanel>
               </Grid>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                 <StackPanel Spacing="2">
                   <TextBlock Text="Default Width" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.DefaultWidth, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Default W" />
+                  <TextBox Text="{Binding SelectedRegion.DefaultWidth, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="Default W" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="Default Height" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.DefaultHeight, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Default H" />
+                  <TextBox Text="{Binding SelectedRegion.DefaultHeight, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="Default H" />
                 </StackPanel>
               </Grid>
             </StackPanel>
@@ -277,7 +277,7 @@
               </StackPanel>
               <StackPanel Spacing="2">
                 <TextBlock Text="Name" Foreground="#B0B0B0" />
-                <TextBox Text="{Binding SelectedInstance.Name, Mode=TwoWay}" Watermark="Name" />
+                <TextBox Text="{Binding SelectedInstance.Name, Mode=TwoWay}" PlaceholderText="Name" />
               </StackPanel>
               <StackPanel Spacing="2">
                 <TextBlock Text="Source" Foreground="#B0B0B0" />
@@ -422,11 +422,11 @@
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                 <StackPanel Spacing="2">
                   <TextBlock Text="Scale X" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedInstance.ScaleX, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Scale X" />
+                  <TextBox Text="{Binding SelectedInstance.ScaleX, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="Scale X" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="Scale Y" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedInstance.ScaleY, Mode=TwoWay, Converter={StaticResource DoubleText}}" Watermark="Scale Y" />
+                  <TextBox Text="{Binding SelectedInstance.ScaleY, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="Scale Y" />
                 </StackPanel>
               </Grid>
               <StackPanel Orientation="Horizontal" Spacing="8">

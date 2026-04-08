@@ -25,7 +25,7 @@ public static class DialogHelpers
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
 
-        var textBox = new TextBox { Margin = new Thickness(0, 6, 0, 6), Watermark = placeholder };
+        var textBox = new TextBox { Margin = new Thickness(0, 6, 0, 6), PlaceholderText = placeholder };
         var okButton = new Button { Content = "OK", IsDefault = true, Width = 80 };
         var cancelButton = new Button { Content = "Cancel", IsCancel = true, Width = 80 };
 

@@ -14,7 +14,6 @@ using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Rendering;
 using HlaeObsTools.ViewModels.Hud;
 
 namespace HlaeObsTools.Views.Docks;
@@ -171,7 +170,7 @@ public partial class VideoDisplayDockView : UserControl
     {
         if (_parentWindow != null) return;
 
-        _parentWindow = this.GetVisualRoot() as Window;
+        _parentWindow = TopLevel.GetTopLevel(this) as Window;
         if (_parentWindow != null)
         {
             _parentWindow.PositionChanged += OnParentWindowPositionChanged;
@@ -598,7 +597,7 @@ public partial class VideoDisplayDockView : UserControl
             screenTopLeft = new PixelPoint((int)topLeft.X, (int)topLeft.Y);
         }
 
-        double scale = (this.VisualRoot as IRenderRoot)?.RenderScaling ?? 1.0;
+        double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
         int w = (int)Math.Round(rect.Width * scale);
         int h = (int)Math.Round(rect.Height * scale);
 

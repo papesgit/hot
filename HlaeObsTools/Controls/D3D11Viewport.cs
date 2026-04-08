@@ -2687,7 +2687,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
         if (b.Width <= 0 || b.Height <= 0)
             return;
 
-        double scale = (VisualRoot as Avalonia.Rendering.IRenderRoot)?.RenderScaling ?? 1.0;
+        double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
         int x = (int)Math.Round(b.X * scale);
         int y = (int)Math.Round(b.Y * scale);
         int w = (int)Math.Round(b.Width * scale);
@@ -2840,7 +2840,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
 
     private Point ClientToLocalPoint(int x, int y)
     {
-        double scale = (VisualRoot as Avalonia.Rendering.IRenderRoot)?.RenderScaling ?? 1.0;
+        double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
         return new Point(x / scale, y / scale);
     }
 
@@ -3687,7 +3687,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
         _d2dTarget = null;
 
         using var surface = backBuffer.QueryInterface<IDXGISurface>();
-        double scale = (VisualRoot as Avalonia.Rendering.IRenderRoot)?.RenderScaling ?? 1.0;
+        double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
         float dpi = (float)(96.0 * scale);
         var props = new BitmapProperties1(
             new Vortice.DCommon.PixelFormat(Format.B8G8R8A8_UNorm, Vortice.DCommon.AlphaMode.Premultiplied),

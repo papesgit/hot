@@ -126,7 +126,7 @@
                                                 VerticalAlignment="Center"/>
                                         <TextBox Grid.Column="1"
                                                  Text="{Binding Uri, Mode=TwoWay}"
-                                                 Watermark="http://127.0.0.1:1349/api/gsi"/>
+                                                 PlaceholderText="http://127.0.0.1:1349/api/gsi"/>
                                         <Button Grid.Column="2"
                                                 Content="Remove"
                                                 Command="{Binding DataContext.RemoveGsiRelayEndpointCommand, ElementName=Root}"
@@ -399,7 +399,7 @@
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBox Width="320"
                                     Text="{Binding Viewport3DSettings.MapObjPath, Mode=TwoWay}"
-                                    Watermark="path\\to\\map.vmap_c, map.vpk, or map.obj"/>
+                                    PlaceholderText="path\\to\\map.vmap_c, map.vpk, or map.obj"/>
                             <Button Content="Browse"
                                     Command="{Binding BrowseMapObjCommand}"/>
                             <Button Content="Clear"
@@ -414,7 +414,7 @@
                                 Margin="0,10,0,0"/>
                         <TextBox Width="120"
                                 Text="{Binding Viewport3DSettings.ViewportMouseScale, Mode=TwoWay}"
-                                Watermark="1.0"
+                                PlaceholderText="1.0"
                                 HorizontalAlignment="Left" />
 
                         <TextBlock Text="Viewport FPS cap (0 = uncapped)"
@@ -423,7 +423,7 @@
                                 Margin="0,10,0,0"/>
                         <TextBox Width="120"
                                 Text="{Binding Viewport3DSettings.ViewportFpsCap, Mode=TwoWay}"
-                                Watermark="60"
+                                PlaceholderText="60"
                                 HorizontalAlignment="Left" />
 
                         <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ShowFps, Mode=TwoWay}"
@@ -501,7 +501,7 @@
                                     Margin="0,10,0,0"/>
                             <TextBox Width="120"
                                     Text="{Binding Viewport3DSettings.MapScale, Mode=TwoWay}"
-                                    Watermark="1.0"
+                                    PlaceholderText="1.0"
                                     HorizontalAlignment="Left" />
 
                             <TextBlock Text="Map rotation (deg)"
@@ -509,9 +509,9 @@
                                     FontWeight="SemiBold"
                                     Margin="0,10,0,0"/>
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBox Width="80" Watermark="Yaw" Text="{Binding Viewport3DSettings.MapYaw, Mode=TwoWay}" />
-                                <TextBox Width="80" Watermark="Pitch" Text="{Binding Viewport3DSettings.MapPitch, Mode=TwoWay}" />
-                                <TextBox Width="80" Watermark="Roll" Text="{Binding Viewport3DSettings.MapRoll, Mode=TwoWay}" />
+                                <TextBox Width="80" PlaceholderText="Yaw" Text="{Binding Viewport3DSettings.MapYaw, Mode=TwoWay}" />
+                                <TextBox Width="80" PlaceholderText="Pitch" Text="{Binding Viewport3DSettings.MapPitch, Mode=TwoWay}" />
+                                <TextBox Width="80" PlaceholderText="Roll" Text="{Binding Viewport3DSettings.MapRoll, Mode=TwoWay}" />
                             </StackPanel>
 
                             <TextBlock Text="Map offset"
@@ -519,9 +519,9 @@
                                     FontWeight="SemiBold"
                                     Margin="0,10,0,0"/>
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBox Width="80" Watermark="X" Text="{Binding Viewport3DSettings.MapOffsetX, Mode=TwoWay}" />
-                                <TextBox Width="80" Watermark="Y" Text="{Binding Viewport3DSettings.MapOffsetY, Mode=TwoWay}" />
-                                <TextBox Width="80" Watermark="Z" Text="{Binding Viewport3DSettings.MapOffsetZ, Mode=TwoWay}" />
+                                <TextBox Width="80" PlaceholderText="X" Text="{Binding Viewport3DSettings.MapOffsetX, Mode=TwoWay}" />
+                                <TextBox Width="80" PlaceholderText="Y" Text="{Binding Viewport3DSettings.MapOffsetY, Mode=TwoWay}" />
+                                <TextBox Width="80" PlaceholderText="Z" Text="{Binding Viewport3DSettings.MapOffsetZ, Mode=TwoWay}" />
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
@@ -532,7 +532,7 @@
                                             FontWeight="SemiBold"/>
                                     <TextBox Width="120"
                                             Text="{Binding Viewport3DSettings.PinScale, Mode=TwoWay}"
-                                            Watermark="1.0"/>
+                                            PlaceholderText="1.0"/>
                                 </StackPanel>
 
                                 <StackPanel Orientation="Vertical" Spacing="4">
@@ -541,7 +541,7 @@
                                             FontWeight="SemiBold"/>
                                     <TextBox Width="120"
                                             Text="{Binding Viewport3DSettings.PinOffsetZ, Mode=TwoWay}"
-                                            Watermark="Z"/>
+                                            PlaceholderText="Z"/>
                                 </StackPanel>
 
                             </StackPanel>
@@ -573,7 +573,7 @@
                             </ComboBox>
                             <TextBlock Text="Name" Foreground="#AAAAAA" VerticalAlignment="Center"/>
                             <TextBox Width="220"
-                                     Watermark="Page name"
+                                     PlaceholderText="Page name"
                                      Text="{Binding CurrentAttachPresetPageName, Mode=TwoWay}"/>
                         </StackPanel>
                         <TextBlock Text="The player-card radial now opens attach pages first, then the presets on the selected page."
@@ -671,7 +671,7 @@
                                             </StackPanel>
                                             <TextBlock Text="Preset Name" Foreground="#AAAAAA" FontSize="12"/>
                                             <TextBox Width="300"
-                                                     Watermark="Preset name"
+                                                     PlaceholderText="Preset name"
                                                      Text="{Binding Name, Mode=TwoWay}"
                                                      HorizontalAlignment="Left" />
                                             <TextBlock Text="Attachment" Foreground="#AAAAAA" FontSize="12"/>
@@ -682,16 +682,16 @@
 
                                             <TextBlock Text="Position Offset" Foreground="#AAAAAA" FontSize="12"/>
                                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBox Width="80" Watermark="X" Text="{Binding OffsetPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                <TextBox Width="80" Watermark="Y" Text="{Binding OffsetPosY, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                <TextBox Width="80" Watermark="Z" Text="{Binding OffsetPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" PlaceholderText="X" Text="{Binding OffsetPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" PlaceholderText="Y" Text="{Binding OffsetPosY, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" PlaceholderText="Z" Text="{Binding OffsetPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                                             </StackPanel>
 
                                             <TextBlock Text="Rotation Offset (deg)" Foreground="#AAAAAA" FontSize="12"/>
                                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBox Width="80" Watermark="Pitch" Text="{Binding OffsetPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                <TextBox Width="80" Watermark="Yaw" Text="{Binding OffsetYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                <TextBox Width="80" Watermark="Roll" Text="{Binding OffsetRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" PlaceholderText="Pitch" Text="{Binding OffsetPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" PlaceholderText="Yaw" Text="{Binding OffsetYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox Width="80" PlaceholderText="Roll" Text="{Binding OffsetRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                                             </StackPanel>
 
                                             <TextBlock Text="Rotation Basis" Foreground="#AAAAAA" FontSize="12"/>
@@ -729,7 +729,7 @@
                                             </StackPanel>
 
                                             <TextBlock Text="FOV" Foreground="#AAAAAA" FontSize="12"/>
-                                            <TextBox Width="100" Watermark="90" HorizontalAlignment="Left" Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                            <TextBox Width="100" PlaceholderText="90" HorizontalAlignment="Left" Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -928,7 +928,7 @@
                                                            FontWeight="SemiBold"
                                                            VerticalAlignment="Center"/>
                                                 <TextBox Grid.Column="1" VerticalAlignment="Center"
-                                                         Watermark="spec_show_xray 1"
+                                                         PlaceholderText="spec_show_xray 1"
                                                          Text="{Binding TargetExecCommand, Mode=TwoWay}" />
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                     <ToggleSwitch IsChecked="{Binding Enabled}" />
@@ -1017,7 +1017,7 @@
                                                                   ItemsSource="{Binding DataContext.VmixInputOptions, ElementName=Root}"
                                                                   SelectedItem="{Binding SelectedVmixInput, Mode=TwoWay}" />
                                                         <TextBox Width="80"
-                                                                 Watermark="#"
+                                                                 PlaceholderText="#"
                                                                  Text="{Binding TargetVmixInputNumber, Mode=TwoWay}" />
                                                     </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasChannelParameter}">
@@ -1036,7 +1036,7 @@
                                                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasCustomParameter}">
                                                         <TextBlock Text="Extra" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
                                                         <TextBox Width="360"
-                                                                 Watermark="key=value&amp;key2=value2"
+                                                                 PlaceholderText="key=value&amp;key2=value2"
                                                                  Text="{Binding TargetVmixExtraQuery, Mode=TwoWay}" />
                                                     </StackPanel>
                                                 </StackPanel>

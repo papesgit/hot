@@ -41,19 +41,19 @@
                         <TextBlock Text="Delta Position (camera space)"
                                    Foreground="#CCCCCC"/>
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBox Width="80" Watermark="X" Text="{Binding DeltaPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                            <TextBox Width="80" Watermark="Y" Text="{Binding DeltaPosY, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                            <TextBox Width="80" Watermark="Z" Text="{Binding DeltaPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                            <TextBox Width="80" PlaceholderText="X" Text="{Binding DeltaPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                            <TextBox Width="80" PlaceholderText="Y" Text="{Binding DeltaPosY, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                            <TextBox Width="80" PlaceholderText="Z" Text="{Binding DeltaPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                         </StackPanel>
 
                         <TextBlock Text="Delta Rotation (deg)"
                                    Foreground="#CCCCCC"/>
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBox Width="80" Watermark="Pitch" Text="{Binding DeltaPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                            <TextBox Width="80" Watermark="Yaw" Text="{Binding DeltaYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                            <TextBox Width="80" Watermark="Roll" Text="{Binding DeltaRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                            <TextBox Width="80" PlaceholderText="Pitch" Text="{Binding DeltaPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                            <TextBox Width="80" PlaceholderText="Yaw" Text="{Binding DeltaYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                            <TextBox Width="80" PlaceholderText="Roll" Text="{Binding DeltaRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                             <TextBox Width="100"
-                                    Watermark="FOV(base)"
+                                    PlaceholderText="FOV(base)"
                                     Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}"
                                     HorizontalAlignment="Left" />
                         </StackPanel>

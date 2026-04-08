@@ -122,7 +122,7 @@ public partial class DockHostWindow : Window, IHostWindow
         }
     }
 
-    public void SetLayout(IDock? dock)
+    public void SetLayout(IDock dock)
     {
         if (DockControl != null)
         {
@@ -162,7 +162,30 @@ public partial class DockHostWindow : Window, IHostWindow
         RefreshHotkeyOverlay();
     }
 
-    private void OnInputElementGotFocus(object? sender, GotFocusEventArgs e)
+    public void SetWindowState(DockWindowState windowState)
+    {
+        WindowState = windowState switch
+        {
+            DockWindowState.Normal => WindowState.Normal,
+            DockWindowState.Minimized => WindowState.Minimized,
+            DockWindowState.Maximized => WindowState.Maximized,
+            DockWindowState.FullScreen => WindowState.FullScreen,
+            _ => WindowState.Normal
+        };
+    }
+
+    public DockWindowState GetWindowState()
+    {
+        return WindowState switch
+        {
+            WindowState.Minimized => DockWindowState.Minimized,
+            WindowState.Maximized => DockWindowState.Maximized,
+            WindowState.FullScreen => DockWindowState.FullScreen,
+            _ => DockWindowState.Normal
+        };
+    }
+
+    private void OnInputElementGotFocus(object? sender, FocusChangedEventArgs e)
     {
         _suppressHotkeys = IsTextInputElement(e.Source);
         _keyboardSuppressionHandler?.Invoke(_suppressHotkeys);

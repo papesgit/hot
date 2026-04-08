@@ -7,7 +7,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Platform;
 using Avalonia.Controls.Primitives;
 using Avalonia.Platform;
-using Avalonia.Rendering;
 using System.IO;
 using System.Collections.Generic;
 using Vortice.Mathematics;
@@ -581,7 +580,7 @@ public class D3DSharedTextureHost : NativeControlHost
         _targetWidth = targetW;
         _targetHeight = targetH;
 
-        double scale = (this.VisualRoot as IRenderRoot)?.RenderScaling ?? 1.0;
+        double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
 
         int x = (int)Math.Round((b.X + (b.Width - targetW) / 2) * scale);
         int y = (int)Math.Round((b.Y + (b.Height - targetH) / 2) * scale);

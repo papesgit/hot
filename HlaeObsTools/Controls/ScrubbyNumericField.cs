@@ -291,7 +291,7 @@ namespace HlaeObsTools.Controls
             PseudoClasses.Set(PseudoHover, false);
         }
 
-        protected override void OnGotFocus(GotFocusEventArgs e)
+        protected override void OnGotFocus(FocusChangedEventArgs e)
         {
             base.OnGotFocus(e);
             PseudoClasses.Set(PseudoFocus, true);
@@ -303,7 +303,7 @@ namespace HlaeObsTools.Controls
             }
         }
 
-        protected override void OnLostFocus(RoutedEventArgs e)
+        protected override void OnLostFocus(FocusChangedEventArgs e)
         {
             base.OnLostFocus(e);
             PseudoClasses.Set(PseudoFocus, false);

@@ -109,7 +109,7 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
           <TextBox x:Name="InputBox"
                    Text="{Binding InputText, Mode=TwoWay}"
-                   Watermark="Type a console command..."
+                   PlaceholderText="Type a console command..."
                    Background="#2A2A2A"
                    Foreground="#E0E0E0"
                    BorderBrush="#3A3A3A"

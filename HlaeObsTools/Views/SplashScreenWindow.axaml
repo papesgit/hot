@@ -9,7 +9,7 @@
         Height="260"
         CanResize="False"
         SizeToContent="Manual"
-        SystemDecorations="None"
+        WindowDecorations="None"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterScreen"
         Background="Transparent"

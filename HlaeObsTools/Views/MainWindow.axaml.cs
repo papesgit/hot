@@ -3,6 +3,10 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+#if DEBUG
+using Dock.Avalonia.Diagnostics;
+using Dock.Avalonia.Diagnostics.Controls;
+#endif
 using HlaeObsTools.Services.Hotkeys;
 using HlaeObsTools.ViewModels;
 using System;
@@ -15,6 +19,10 @@ public partial class MainWindow : Window
     private HotkeyService? _hotkeyService;
     private Control? _hotkeyHoveredControl;
     private bool _isHotkeyBindingMode;
+#if DEBUG
+    private IDisposable? _dockDebugOverlaySubscription;
+    private IDisposable? _dockDebugWindowSubscription;
+#endif
 
     public MainWindow()
         : this(new MainWindowViewModel())
@@ -34,6 +42,12 @@ public partial class MainWindow : Window
         AddHandler(InputElement.PointerMovedEvent, OnPointerMoved, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         Deactivated += OnWindowDeactivated;
         AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel, true);
+
+#if DEBUG
+        _dockDebugOverlaySubscription = this.AttachDockDebugOverlay();
+        _dockDebugWindowSubscription = this.AttachDockDebug(
+            () => (DataContext as MainWindowViewModel)?.Layout);
+#endif
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -70,7 +84,7 @@ public partial class MainWindow : Window
         Close();
     }
 
-    private void OnInputElementGotFocus(object? sender, GotFocusEventArgs e)
+    private void OnInputElementGotFocus(object? sender, FocusChangedEventArgs e)
     {
         _suppressHotkeys = IsTextInputElement(e.Source);
         UpdateKeyboardSuppression(_suppressHotkeys);
@@ -215,6 +229,13 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+#if DEBUG
+        _dockDebugOverlaySubscription?.Dispose();
+        _dockDebugOverlaySubscription = null;
+        _dockDebugWindowSubscription?.Dispose();
+        _dockDebugWindowSubscription = null;
+#endif
+
         if (_hotkeyService != null)
         {
             _hotkeyService.BindingModeChanged -= OnHotkeyBindingModeChanged;

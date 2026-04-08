@@ -109,7 +109,7 @@ public class RtpSwapchainHost : NativeControlHost
         if (b.Width <= 0 || b.Height <= 0)
             return;
 
-        double scale = (this.VisualRoot as Avalonia.Rendering.IRenderRoot)?.RenderScaling ?? 1.0;
+        double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
         int baseX = (int)Math.Round(b.X * scale);
         int baseY = (int)Math.Round(b.Y * scale);
         int baseW = (int)Math.Round(b.Width * scale);

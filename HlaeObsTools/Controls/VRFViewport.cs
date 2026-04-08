@@ -740,7 +740,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private Point ClientToLocalPoint(int x, int y)
     {
-        double scale = (VisualRoot as Avalonia.Rendering.IRenderRoot)?.RenderScaling ?? 1.0;
+        double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
         return new Point(x / scale, y / scale);
     }
 

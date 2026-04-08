@@ -32,10 +32,12 @@ public partial class CampathsDockView : UserControl
     private Point? _campathPressPoint;
     private bool _campathDragInitiated;
     private IPointer? _campathPointer;
+    private PointerPressedEventArgs? _campathPressEvent;
     private CampathGroupViewModel? _groupPressed;
     private Point? _groupPressPoint;
     private bool _groupDragInitiated;
     private IPointer? _groupPointer;
+    private PointerPressedEventArgs? _groupPressEvent;
     private Button? _populateProfileButton;
     private FlyoutBase? _populateSourceFlyout;
     private TaskCompletionSource<CampathPopulateSource?>? _populateSourceTcs;
@@ -197,6 +199,7 @@ public partial class CampathsDockView : UserControl
             _campathPressPoint = e.GetPosition(this);
             _campathDragInitiated = false;
             _campathPointer = e.Pointer;
+            _campathPressEvent = e;
             _campathPointer.Capture(control);
             e.Handled = true;
         }
@@ -227,7 +230,10 @@ public partial class CampathsDockView : UserControl
             var item = new DataTransferItem();
             item.Set(CampathDragFormat, campathVm.Id.ToString("D"));
             data.Add(item);
-            await DragDrop.DoDragDropAsync(e, data, DragDropEffects.Move);
+            if (_campathPressEvent != null)
+            {
+                await DragDrop.DoDragDropAsync(_campathPressEvent, data, DragDropEffects.Move);
+            }
             ResetCampathPointerState(control);
         }
     }
@@ -255,6 +261,7 @@ public partial class CampathsDockView : UserControl
         _campathPressedItem = null;
         _campathPressPoint = null;
         _campathDragInitiated = false;
+        _campathPressEvent = null;
         if (_campathPointer != null)
         {
             _campathPointer.Capture(null);
@@ -337,6 +344,7 @@ public partial class CampathsDockView : UserControl
             _groupPressPoint = e.GetPosition(this);
             _groupDragInitiated = false;
             _groupPointer = e.Pointer;
+            _groupPressEvent = e;
             _groupPointer.Capture(control);
             e.Handled = true;
         }
@@ -367,7 +375,10 @@ public partial class CampathsDockView : UserControl
             var item = new DataTransferItem();
             item.Set(GroupDragFormat, groupVm.Id.ToString("D"));
             data.Add(item);
-            await DragDrop.DoDragDropAsync(e, data, DragDropEffects.Move);
+            if (_groupPressEvent != null)
+            {
+                await DragDrop.DoDragDropAsync(_groupPressEvent, data, DragDropEffects.Move);
+            }
             ResetGroupPointerState(control);
         }
     }
@@ -419,6 +430,7 @@ public partial class CampathsDockView : UserControl
         _groupPressed = null;
         _groupPressPoint = null;
         _groupDragInitiated = false;
+        _groupPressEvent = null;
         if (_groupPointer != null)
         {
             _groupPointer.Capture(null);
