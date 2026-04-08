@@ -33,8 +33,20 @@
         <DataTemplate DataType="vm:SettingsDockViewModel">
             <views:SettingsDockView/>
         </DataTemplate>
+        <DataTemplate DataType="vm:CampathsDockViewModel">
+            <views:CampathsDockView/>
+        </DataTemplate>
+        <DataTemplate DataType="vm:NetConsoleDockViewModel">
+            <views:NetConsoleDockView/>
+        </DataTemplate>
+        <DataTemplate DataType="vm:GraphicsDockViewModel">
+            <views:GraphicsDockView/>
+        </DataTemplate>
         <DataTemplate DataType="vm:Viewport3DDockViewModel">
             <views:Viewport3DDockView/>
+        </DataTemplate>
+        <DataTemplate DataType="vm:AttachPresetAnimationDockViewModel">
+            <views:AttachPresetAnimationDockView/>
         </DataTemplate>
     </Application.DataTemplates>
 </Application>
