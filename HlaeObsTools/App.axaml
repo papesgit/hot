@@ -14,8 +14,13 @@
     </Application.Styles>
 
     <Application.Resources>
-        <conv:RelativeToCanvasConverter x:Key="RelativeToCanvasConverter" />
-        <conv:BooleanNegationConverter x:Key="BooleanNegationConverter" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://HlaeObsTools/Themes/DockHostWindow.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <conv:RelativeToCanvasConverter x:Key="RelativeToCanvasConverter" />
+            <conv:BooleanNegationConverter x:Key="BooleanNegationConverter" />
+        </ResourceDictionary>
     </Application.Resources>
 
     <Application.DataTemplates>

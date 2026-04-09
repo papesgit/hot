@@ -1,18 +1,19 @@
+using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Dock.Avalonia.Controls;
-using Dock.Model.Controls;
-using Dock.Model.Core;
-using System;
 using HlaeObsTools.Services.Hotkeys;
 
 namespace HlaeObsTools.Views;
 
-public partial class DockHostWindow : Window, IHostWindow
+public class DockHostWindow : HostWindow
 {
     private Action<bool>? _keyboardSuppressionHandler;
     private Func<KeyEventArgs, bool>? _hotkeyKeyDownHandler;
@@ -22,113 +23,21 @@ public partial class DockHostWindow : Window, IHostWindow
     private bool _isHotkeyBindingMode;
     private bool _suppressHotkeys;
 
+    private Canvas? _hotkeyOverlayCanvas;
+    private Border? _hotkeyHoverOutline;
+    private Border? _hotkeyStatusPanel;
+    private TextBlock? _hotkeyStatusText;
+    private bool _isResolvingOverlayParts;
+
     public DockHostWindow()
     {
-        InitializeComponent();
         AddHandler(InputElement.GotFocusEvent, OnInputElementGotFocus, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         AddHandler(InputElement.PointerMovedEvent, OnPointerMoved, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         Deactivated += OnWindowDeactivated;
         AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel, true);
     }
 
-    public IDockWindow? Window { get; set; }
-
-    public IDockManager? DockManager { get; set; }
-
-    public IHostWindowState? HostWindowState { get; set; }
-
-    public bool IsTracked { get; set; }
-
-    public IDockable? DockableViewModel
-    {
-        get => DockControl?.DataContext as IDockable;
-        set
-        {
-            if (DockControl != null)
-            {
-                DockControl.DataContext = value;
-            }
-        }
-    }
-
-    public bool OnClose()
-    {
-        // Allow the window to close
-        return true;
-    }
-
-    public void OnClosed()
-    {
-        if (_hotkeyService != null)
-        {
-            _hotkeyService.BindingModeChanged -= OnHotkeyBindingModeChanged;
-            _hotkeyService.StatusChanged -= OnHotkeyStatusChanged;
-            _hotkeyService.HoverTargetChanged -= OnHotkeyHoverTargetChanged;
-        }
-    }
-
-    public void Present(bool isDialog)
-    {
-        if (!isDialog)
-        {
-            Show();
-        }
-        else
-        {
-            if (Owner is Window ownerWindow)
-            {
-                ShowDialog(ownerWindow);
-            }
-            else
-            {
-                ShowDialog(null!);
-            }
-        }
-    }
-
-    public void Exit()
-    {
-        Close();
-    }
-
-    public void SetPosition(double x, double y)
-    {
-        Position = new PixelPoint((int)x, (int)y);
-    }
-
-    public void GetPosition(out double x, out double y)
-    {
-        x = Position.X;
-        y = Position.Y;
-    }
-
-    public void SetSize(double width, double height)
-    {
-        Width = width;
-        Height = height;
-    }
-
-    public void GetSize(out double width, out double height)
-    {
-        width = Width;
-        height = Height;
-    }
-
-    public void SetTitle(string? title)
-    {
-        if (!string.IsNullOrEmpty(title))
-        {
-            Title = title;
-        }
-    }
-
-    public void SetLayout(IDock dock)
-    {
-        if (DockControl != null)
-        {
-            DockControl.Layout = dock;
-        }
-    }
+    protected override Type StyleKeyOverride => typeof(DockHostWindow);
 
     public void SetKeyboardSuppressionHandler(Action<bool> handler)
     {
@@ -153,7 +62,11 @@ public partial class DockHostWindow : Window, IHostWindow
         _hotkeyService = hotkeyService;
         _hotkeyHoveredControl = hotkeyService.HoveredControl;
         _isHotkeyBindingMode = hotkeyService.IsBindingMode;
-        HotkeyStatusText.Text = hotkeyService.StatusMessage;
+
+        if (_hotkeyStatusText != null)
+        {
+            _hotkeyStatusText.Text = hotkeyService.StatusMessage;
+        }
 
         hotkeyService.BindingModeChanged += OnHotkeyBindingModeChanged;
         hotkeyService.StatusChanged += OnHotkeyStatusChanged;
@@ -162,27 +75,53 @@ public partial class DockHostWindow : Window, IHostWindow
         RefreshHotkeyOverlay();
     }
 
-    public void SetWindowState(DockWindowState windowState)
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
-        WindowState = windowState switch
-        {
-            DockWindowState.Normal => WindowState.Normal,
-            DockWindowState.Minimized => WindowState.Minimized,
-            DockWindowState.Maximized => WindowState.Maximized,
-            DockWindowState.FullScreen => WindowState.FullScreen,
-            _ => WindowState.Normal
-        };
+        base.OnApplyTemplate(e);
+
+        Dispatcher.UIThread.Post(ResolveOverlayParts, DispatcherPriority.Loaded);
     }
 
-    public DockWindowState GetWindowState()
+    protected override void OnOpened(EventArgs e)
     {
-        return WindowState switch
+        base.OnOpened(e);
+        Dispatcher.UIThread.Post(ResolveOverlayParts, DispatcherPriority.Loaded);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        if (_hotkeyService != null)
         {
-            WindowState.Minimized => DockWindowState.Minimized,
-            WindowState.Maximized => DockWindowState.Maximized,
-            WindowState.FullScreen => DockWindowState.FullScreen,
-            _ => DockWindowState.Normal
-        };
+            _hotkeyService.BindingModeChanged -= OnHotkeyBindingModeChanged;
+            _hotkeyService.StatusChanged -= OnHotkeyStatusChanged;
+            _hotkeyService.HoverTargetChanged -= OnHotkeyHoverTargetChanged;
+        }
+
+        base.OnClosed(e);
+    }
+
+    private void ResolveOverlayParts()
+    {
+        if (_isResolvingOverlayParts)
+            return;
+
+        _isResolvingOverlayParts = true;
+        try
+        {
+            _hotkeyOverlayCanvas = this.GetVisualDescendants().OfType<Canvas>().FirstOrDefault(x => x.Name == "PART_HotkeyOverlayCanvas");
+            _hotkeyHoverOutline = this.GetVisualDescendants().OfType<Border>().FirstOrDefault(x => x.Name == "PART_HotkeyHoverOutline");
+            _hotkeyStatusPanel = this.GetVisualDescendants().OfType<Border>().FirstOrDefault(x => x.Name == "PART_HotkeyStatusPanel");
+            _hotkeyStatusText = this.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(x => x.Name == "PART_HotkeyStatusText");
+
+            if (_hotkeyService != null && _hotkeyStatusText != null)
+            {
+                _hotkeyStatusText.Text = _hotkeyService.StatusMessage;
+            }
+        }
+        finally
+        {
+            _isResolvingOverlayParts = false;
+        }
     }
 
     private void OnInputElementGotFocus(object? sender, FocusChangedEventArgs e)
@@ -229,7 +168,11 @@ public partial class DockHostWindow : Window, IHostWindow
 
     private void OnHotkeyStatusChanged(object? sender, string status)
     {
-        HotkeyStatusText.Text = status ?? string.Empty;
+        if (_hotkeyStatusText != null)
+        {
+            _hotkeyStatusText.Text = status ?? string.Empty;
+        }
+
         RefreshHotkeyOverlay();
     }
 
@@ -247,24 +190,32 @@ public partial class DockHostWindow : Window, IHostWindow
             return;
         }
 
-        HotkeyStatusPanel.IsVisible = _isHotkeyBindingMode;
+        if (_hotkeyStatusPanel == null || _hotkeyHoverOutline == null || _hotkeyOverlayCanvas == null)
+        {
+            ResolveOverlayParts();
+        }
+
+        if (_hotkeyStatusPanel == null || _hotkeyHoverOutline == null)
+            return;
+
+        _hotkeyStatusPanel.IsVisible = _isHotkeyBindingMode;
         if (!_isHotkeyBindingMode)
         {
-            HotkeyHoverOutline.IsVisible = false;
+            _hotkeyHoverOutline.IsVisible = false;
             return;
         }
 
         if (!TryGetOverlayBounds(_hotkeyHoveredControl, out var x, out var y, out var width, out var height))
         {
-            HotkeyHoverOutline.IsVisible = false;
+            _hotkeyHoverOutline.IsVisible = false;
             return;
         }
 
-        Canvas.SetLeft(HotkeyHoverOutline, x);
-        Canvas.SetTop(HotkeyHoverOutline, y);
-        HotkeyHoverOutline.Width = width;
-        HotkeyHoverOutline.Height = height;
-        HotkeyHoverOutline.IsVisible = true;
+        Canvas.SetLeft(_hotkeyHoverOutline, x);
+        Canvas.SetTop(_hotkeyHoverOutline, y);
+        _hotkeyHoverOutline.Width = width;
+        _hotkeyHoverOutline.Height = height;
+        _hotkeyHoverOutline.IsVisible = true;
     }
 
     private bool TryGetOverlayBounds(Control? control, out double x, out double y, out double width, out double height)
@@ -274,13 +225,13 @@ public partial class DockHostWindow : Window, IHostWindow
         width = 0;
         height = 0;
 
-        if (control == null || !control.IsVisible)
+        if (control == null || !control.IsVisible || _hotkeyOverlayCanvas == null)
             return false;
 
         if (!ReferenceEquals(TopLevel.GetTopLevel(control), this))
             return false;
 
-        var topLeft = Avalonia.VisualExtensions.TranslatePoint(control, default, HotkeyOverlayCanvas);
+        var topLeft = Avalonia.VisualExtensions.TranslatePoint(control, default, _hotkeyOverlayCanvas);
         if (topLeft == null)
             return false;
 
@@ -294,13 +245,5 @@ public partial class DockHostWindow : Window, IHostWindow
         width = bounds.Width + (padding * 2);
         height = bounds.Height + (padding * 2);
         return true;
-    }
-
-    public void SetActive()
-    {
-        if (WindowState == WindowState.Minimized)
-            WindowState = WindowState.Normal;
-
-        Activate();
     }
 }
