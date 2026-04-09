@@ -2,8 +2,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:HlaeObsTools.ViewModels"
         xmlns:dock="using:Dock.Avalonia.Controls"
-        xmlns:vmd="using:HlaeObsTools.ViewModels.Docks"
-        xmlns:vd="using:HlaeObsTools.Views.Docks"
         x:Class="HlaeObsTools.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="HLAE Observer Tools"
@@ -15,48 +13,6 @@
         WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="40">
-
-    <Window.DataTemplates>
-        <!-- Data template for VideoDisplayDockViewModel -->
-        <DataTemplate DataType="vmd:VideoDisplayDockViewModel">
-            <vd:VideoDisplayDockView />
-        </DataTemplate>
-
-        <!-- Data template for RadarDockViewModel -->
-        <DataTemplate DataType="vmd:RadarDockViewModel">
-            <vd:RadarDockView />
-        </DataTemplate>
-
-        <!-- Data template for SettingsDockViewModel -->
-        <DataTemplate DataType="vmd:SettingsDockViewModel">
-            <vd:SettingsDockView />
-        </DataTemplate>
-
-        <!-- Data template for CampathsDockViewModel -->
-        <DataTemplate DataType="vmd:CampathsDockViewModel">
-            <vd:CampathsDockView />
-        </DataTemplate>
-
-        <!-- Data template for NetConsoleDockViewModel -->
-        <DataTemplate DataType="vmd:NetConsoleDockViewModel">
-            <vd:NetConsoleDockView />
-        </DataTemplate>
-
-        <!-- Data template for GraphicsDockViewModel -->
-        <DataTemplate DataType="vmd:GraphicsDockViewModel">
-            <vd:GraphicsDockView />
-        </DataTemplate>
-
-        <!-- Data template for Viewport3DDockViewModel -->
-        <DataTemplate DataType="vmd:Viewport3DDockViewModel">
-            <vd:Viewport3DDockView />
-        </DataTemplate>
-
-        <!-- Data template for AttachPresetAnimationDockViewModel -->
-        <DataTemplate DataType="vmd:AttachPresetAnimationDockViewModel">
-            <vd:AttachPresetAnimationDockView />
-        </DataTemplate>
-    </Window.DataTemplates>
 
     <Grid Name="RootGrid" RowDefinitions="Auto,*">
         <!-- Custom Title Bar -->

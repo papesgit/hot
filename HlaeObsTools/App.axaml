@@ -1,7 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
-             xmlns:views="using:HlaeObsTools.Views.Docks"
+             xmlns:local="using:HlaeObsTools"
              xmlns:conv="using:HlaeObsTools.Converters"
              x:Class="HlaeObsTools.App"
              RequestedThemeVariant="Dark">
@@ -20,33 +19,6 @@
     </Application.Resources>
 
     <Application.DataTemplates>
-        <!-- Map ViewModels to Views -->
-        <DataTemplate DataType="vm:VideoDisplayDockViewModel">
-            <views:VideoDisplayDockView/>
-        </DataTemplate>
-        <DataTemplate DataType="vm:PlaceholderDockViewModel">
-            <views:PlaceholderDockView/>
-        </DataTemplate>
-        <DataTemplate DataType="vm:RadarDockViewModel">
-            <views:RadarDockView/>
-        </DataTemplate>
-        <DataTemplate DataType="vm:SettingsDockViewModel">
-            <views:SettingsDockView/>
-        </DataTemplate>
-        <DataTemplate DataType="vm:CampathsDockViewModel">
-            <views:CampathsDockView/>
-        </DataTemplate>
-        <DataTemplate DataType="vm:NetConsoleDockViewModel">
-            <views:NetConsoleDockView/>
-        </DataTemplate>
-        <DataTemplate DataType="vm:GraphicsDockViewModel">
-            <views:GraphicsDockView/>
-        </DataTemplate>
-        <DataTemplate DataType="vm:Viewport3DDockViewModel">
-            <views:Viewport3DDockView/>
-        </DataTemplate>
-        <DataTemplate DataType="vm:AttachPresetAnimationDockViewModel">
-            <views:AttachPresetAnimationDockView/>
-        </DataTemplate>
+        <local:ViewLocator />
     </Application.DataTemplates>
 </Application>
