@@ -7,7 +7,7 @@ public sealed class StartupProgressViewModel : ViewModelBase
     private string _statusText = "Starting application...";
     private string _detailText = "Preparing startup sequence.";
     private double _progressValue;
-    private double _progressMaximum = 16;
+    private double _progressMaximum = 17;
 
     public string StatusText
     {

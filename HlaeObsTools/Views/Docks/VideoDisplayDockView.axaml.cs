@@ -20,6 +20,7 @@ namespace HlaeObsTools.Views.Docks;
 
 public partial class VideoDisplayDockView : UserControl
 {
+    private static TaskCompletionSource s_startupReadyTcs = CreateStartupReadyTaskCompletionSource();
     private Point? _lockedCursorCenter;
     private bool _isRightButtonDown;
     private INotifyPropertyChanged? _currentVmNotifier;
@@ -43,6 +44,12 @@ public partial class VideoDisplayDockView : UserControl
     public VideoDisplayDockView()
     {
         InitializeComponent();
+
+        if (PlayPauseButton != null)
+        {
+            // Dock content ready signal
+            PlayPauseButton.AttachedToVisualTree += OnPlayPauseButtonAttachedToVisualTree;
+        }
 
         if (VideoContainer != null)
         {
@@ -114,6 +121,36 @@ public partial class VideoDisplayDockView : UserControl
             }
         };
         _analogSprintTimer.Start();
+    }
+
+    public static void ResetStartupReadySignal()
+    {
+        s_startupReadyTcs = CreateStartupReadyTaskCompletionSource();
+    }
+
+    public static Task WaitForStartupReadyAsync()
+    {
+        return s_startupReadyTcs.Task;
+    }
+
+    private static TaskCompletionSource CreateStartupReadyTaskCompletionSource()
+    {
+        return new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    private void OnPlayPauseButtonAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null)
+        {
+            s_startupReadyTcs.TrySetResult();
+            return;
+        }
+
+        topLevel.RequestAnimationFrame(_ =>
+        {
+            s_startupReadyTcs.TrySetResult();
+        });
     }
 
     private void UpdateHudOverlayPosition()

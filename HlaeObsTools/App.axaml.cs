@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using HlaeObsTools.Services.Graphics;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.Views;
+using HlaeObsTools.Views.Docks;
 using System;
 using System.Threading.Tasks;
 
@@ -35,6 +36,8 @@ public partial class App : Application
 
     private void StartDesktopApp(IClassicDesktopStyleApplicationLifetime desktop)
     {
+        VideoDisplayDockView.ResetStartupReadySignal();
+
         var progress = new StartupProgressViewModel();
         var splashScreen = new SplashScreenWindow
         {
@@ -66,9 +69,18 @@ public partial class App : Application
 
                 await ReportStartupProgressAsync(progress, "Initializing main window...", "Opening the main shell and preparing the first layout pass.", 15);
 
+                mainWindow.ShowInTaskbar = false;
+                mainWindow.WindowState = WindowState.Minimized;
                 mainWindow.Show();
 
-                await ReportStartupProgressAsync(progress, "Rendering interface...", "Waiting for the first visible frame of the main workspace.", 16);
+                await ReportStartupProgressAsync(progress, "Finalizing workspace...", "Waiting for dock content to finalize.", 16);
+                await VideoDisplayDockView.WaitForStartupReadyAsync();
+
+                await ReportStartupProgressAsync(progress, "Completing startup...", "Opening main window.", 17);
+
+                mainWindow.ShowInTaskbar = true;
+                mainWindow.WindowState = WindowState.Normal;
+                mainWindow.Activate();
             }
             catch (Exception)
             {
