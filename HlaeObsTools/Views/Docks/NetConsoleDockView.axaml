@@ -139,7 +139,8 @@
             </Button.Flyout>
             <svg:Svg Path="avares://HlaeObsTools/Assets/icons/settings.svg"
                      Width="16"
-                     Height="16" />
+                     Height="16"
+                     IsHitTestVisible="False" />
           </Button>
         </Grid>
       </Grid>
