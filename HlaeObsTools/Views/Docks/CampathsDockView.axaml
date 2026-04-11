@@ -18,7 +18,7 @@
     <Border Grid.Row="0"
             Grid.ColumnSpan="2"
             x:Name="TopControlsHost"
-            Background="rgba(16, 16, 17, 1)"
+            Background="#121212"
             Padding="10,0">
       <WrapPanel Orientation="Horizontal"
                  VerticalAlignment="Center"
@@ -58,14 +58,27 @@
         <StackPanel Orientation="Horizontal"
                     Spacing="4"
                     VerticalAlignment="Center"
-                    Margin="0,4,8,4">
+                    Margin="0,0,8,0">
           <TextBlock Text="Scale"
                      Foreground="#E0E0E0"
                      VerticalAlignment="Center"/>
           <Slider Width="120"
-                  Minimum="0.5"
+                  Minimum="0.4"
                   Maximum="2.0"
-                  Value="{Binding Scale}" />
+                  VerticalAlignment="Center"
+                  Value="{Binding Scale}" >
+            <Slider.Resources>
+              <!-- reduce the extra vertical space the Fluent template reserves -->
+              <GridLength x:Key="SliderPreContentMargin">6</GridLength>
+              <GridLength x:Key="SliderPostContentMargin">6</GridLength>
+              <!-- reduce the slider's measured height -->
+              <x:Double x:Key="SliderHorizontalHeight">20</x:Double>
+              <!-- make the thumb smaller -->
+              <x:Double x:Key="SliderHorizontalThumbWidth">14</x:Double>
+              <x:Double x:Key="SliderHorizontalThumbHeight">14</x:Double>
+            </Slider.Resources>
+          </Slider>
+
         </StackPanel>
       </WrapPanel>
     </Border>
@@ -79,17 +92,17 @@
             Padding="10"
             Focusable="True">
       <!-- Internal layout for groups -->
-      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+      <Grid RowDefinitions="Auto,*" RowSpacing="8">
         <TextBlock Grid.Row="0"
                    Text="Groups"
                    FontWeight="SemiBold"
                    Foreground="#E0E0E0"/>
 
-        <Button Grid.Row="1"
+        <Button Grid.Row="0"
+                HorizontalAlignment="Right"
                 Content="Add Group"
                 Command="{Binding AddGroupCommand}" />
-
-        <ListBox Grid.Row="2"
+        <ListBox Grid.Row="1"
                  ItemsSource="{Binding SelectedProfile.Groups}"
                  Background="Transparent"
                  BorderThickness="0"
@@ -99,7 +112,6 @@
             <DataTemplate>
               <Border Background="#222"
                       Padding="8"
-                      Margin="0,0,0,8"
                       hotkeys:HotkeyTarget.CampathGroupId="{Binding Id}"
                       DragDrop.AllowDrop="True"
                       DragDrop.DragOver="OnGroupDragOver"
@@ -144,9 +156,8 @@
     <!-- Main body (right) -->
     <DockPanel Grid.Row="1"
                Grid.Column="1"
-               Margin="10,0,0,0"
                Focusable="True"
-               Background="rgba(16, 16, 17, 1)">
+               Background="#121212">
 
       <!-- Scrollable campaths area -->
       <ScrollViewer x:Name="CampathScrollViewer"

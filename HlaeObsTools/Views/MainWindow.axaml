@@ -17,9 +17,9 @@
     <Grid Name="RootGrid" RowDefinitions="Auto,*">
         <!-- Custom Title Bar -->
         <Border Grid.Row="0"
-                Background="#2D2D2D"
+                Background="{DynamicResource HotWindowTitleBarBrush}"
                 IsHitTestVisible="True"
-                Height="40"
+                Height="35"
                 PointerPressed="OnTitleBarPointerPressed"
                 DoubleTapped="OnTitleBarDoubleTapped">
             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -48,7 +48,7 @@
                 <!-- Window Title -->
                 <TextBlock Grid.Column="1"
                            Text="{Binding Title}"
-                           Foreground="#E0E0E0"
+                           Foreground="{DynamicResource HotForegroundBrush}"
                            FontSize="13"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
@@ -62,7 +62,7 @@
                             Width="46"
                             Height="40"
                             Background="Transparent"
-                            Foreground="#E0E0E0"
+                            Foreground="{DynamicResource HotForegroundBrush}"
                             BorderThickness="0"
                             FontSize="14"
                             Padding="0"
@@ -72,7 +72,10 @@
                             VerticalContentAlignment="Center">
                         <Button.Styles>
                             <Style Selector="Button:pointerover">
-                                <Setter Property="Background" Value="#3F3F3F" />
+                                <Setter Property="Background" Value="{DynamicResource HotWindowTitleBarHoverBrush}" />
+                            </Style>
+                            <Style Selector="Button:pressed">
+                                <Setter Property="Background" Value="{DynamicResource HotWindowTitleBarPressedBrush}" />
                             </Style>
                         </Button.Styles>
                     </Button>
@@ -80,7 +83,7 @@
                             Width="46"
                             Height="40"
                             Background="Transparent"
-                            Foreground="#E0E0E0"
+                            Foreground="{DynamicResource HotForegroundBrush}"
                             BorderThickness="0"
                             FontSize="14"
                             Padding="0"
@@ -90,7 +93,10 @@
                             VerticalContentAlignment="Center">
                         <Button.Styles>
                             <Style Selector="Button:pointerover">
-                                <Setter Property="Background" Value="#3F3F3F" />
+                                <Setter Property="Background" Value="{DynamicResource HotWindowTitleBarHoverBrush}" />
+                            </Style>
+                            <Style Selector="Button:pressed">
+                                <Setter Property="Background" Value="{DynamicResource HotWindowTitleBarPressedBrush}" />
                             </Style>
                         </Button.Styles>
                     </Button>
@@ -98,7 +104,7 @@
                             Width="46"
                             Height="40"
                             Background="Transparent"
-                            Foreground="#E0E0E0"
+                            Foreground="{DynamicResource HotForegroundBrush}"
                             BorderThickness="0"
                             FontSize="14"
                             Padding="0"
@@ -108,7 +114,10 @@
                             VerticalContentAlignment="Center">
                         <Button.Styles>
                             <Style Selector="Button:pointerover">
-                                <Setter Property="Background" Value="#E81123" />
+                                <Setter Property="Background" Value="{DynamicResource HotWindowCloseHoverBrush}" />
+                            </Style>
+                            <Style Selector="Button:pressed">
+                                <Setter Property="Background" Value="{DynamicResource HotWindowCloseHoverBrush}" />
                             </Style>
                         </Button.Styles>
                     </Button>
@@ -124,9 +133,9 @@
                 <Canvas Name="HotkeyOverlayCanvas">
                     <Border Name="HotkeyHoverOutline"
                             IsVisible="False"
-                            BorderBrush="#FF4CC2FF"
+                            BorderBrush="{DynamicResource HotAccentBrush}"
                             BorderThickness="2"
-                            Background="#334CC2FF"
+                            Background="{DynamicResource HotAccentSoftBrush}"
                             CornerRadius="4"/>
                 </Canvas>
                 <Border Name="HotkeyStatusPanel"
@@ -134,7 +143,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Background="#E6191C22"
-                        BorderBrush="#FF4CC2FF"
+                        BorderBrush="{DynamicResource HotAccentBrush}"
                         BorderThickness="1"
                         CornerRadius="6"
                         Padding="10,6">

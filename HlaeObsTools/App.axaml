@@ -5,12 +5,13 @@
              x:Class="HlaeObsTools.App"
              RequestedThemeVariant="Dark">
     <Application.Styles>
-        <FluentTheme />
+        <FluentTheme DensityStyle="Compact" />
         <StyleInclude Source="avares://HlaeObsTools/Themes/ScrubbyNumericField.axaml"/>
         <Style Selector="Button, ToggleSwitch, CheckBox">
             <Setter Property="Focusable" Value="False"/>
         </Style>
-        <DockFluentTheme />
+        <DockFluentTheme DensityStyle="Compact" />
+        <StyleInclude Source="avares://HlaeObsTools/Themes/HotTheme.axaml"/>
     </Application.Styles>
 
     <Application.Resources>

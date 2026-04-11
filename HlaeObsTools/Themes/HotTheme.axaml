@@ -1,0 +1,95 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:dock="using:Dock.Avalonia.Controls">
+  <Styles.Resources>
+    <SolidColorBrush x:Key="HotWindowTitleBarBrush" Color="#FF1F1F21" />
+    <SolidColorBrush x:Key="HotWindowTitleBarHoverBrush" Color="#FF3A3A3A" />
+    <SolidColorBrush x:Key="HotWindowTitleBarPressedBrush" Color="#FF444444" />
+    <SolidColorBrush x:Key="HotWindowCloseHoverBrush" Color="#FFD13D4A" />
+    <SolidColorBrush x:Key="HotForegroundBrush" Color="#FFE0E0E0" />
+    <SolidColorBrush x:Key="HotForegroundMutedBrush" Color="#FF9AA5B1" />
+    <SolidColorBrush x:Key="HotAccentBrush" Color="#FF8AC6FF" />
+    <SolidColorBrush x:Key="HotAccentSoftBrush" Color="#33233247" />
+
+    <SolidColorBrush x:Key="DockApplicationAccentBrushLow" Color="#FF233247" />
+    <SolidColorBrush x:Key="DockApplicationAccentBrushMed" Color="#FF3C6DD2" />
+    <SolidColorBrush x:Key="DockApplicationAccentBrushHigh" Color="#FF8AC6FF" />
+    <SolidColorBrush x:Key="DockApplicationAccentForegroundBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="DockApplicationAccentBrushIndicator" Color="#FF8AC6FF" />
+
+    <SolidColorBrush x:Key="DockThemeBorderLowBrush" Color="#FF2E2E2E" />
+    <SolidColorBrush x:Key="DockThemeBackgroundBrush" Color="#FF121212" />
+    <SolidColorBrush x:Key="DockThemeAccentBrush" Color="#FF8AC6FF" />
+    <SolidColorBrush x:Key="DockThemeForegroundBrush" Color="#FFE0E0E0" />
+    <SolidColorBrush x:Key="DockThemeControlBackgroundBrush" Color="#FF1E1E1E" />
+
+    <SolidColorBrush x:Key="DockSurfaceWorkbenchBrush" Color="#FF121212" />
+    <SolidColorBrush x:Key="DockSurfaceSidebarBrush" Color="#FF1A1A1A" />
+    <SolidColorBrush x:Key="DockSurfaceEditorBrush" Color="#FF151515" />
+    <SolidColorBrush x:Key="DockSurfacePanelBrush" Color="#FF1E1E1E" />
+    <SolidColorBrush x:Key="DockSurfaceHeaderBrush" Color="#FF242526" />
+    <SolidColorBrush x:Key="DockSurfaceHeaderActiveBrush" Color="#FF2d2e2f" />
+
+    <SolidColorBrush x:Key="DockBorderSubtleBrush" Color="#FF2E2E2E" />
+    <SolidColorBrush x:Key="DockBorderStrongBrush" Color="#FF3A3A3A" />
+    <SolidColorBrush x:Key="DockSeparatorBrush" Color="#FF2E2E2E" />
+    <SolidColorBrush x:Key="DockSplitterIdleBrush" Color="#FF2A2A2A" />
+    <SolidColorBrush x:Key="DockSplitterHoverBrush" Color="#FF3A3A3A" />
+    <SolidColorBrush x:Key="DockSplitterDragBrush" Color="#FF8AC6FF" />
+
+    <SolidColorBrush x:Key="DockTabBackgroundBrush" Color="#00000000" />
+    <SolidColorBrush x:Key="DockTabHoverBackgroundBrush" Color="#FF2A2A2A" />
+    <SolidColorBrush x:Key="DockTabActiveBackgroundBrush" Color="#FF2D2D30" />
+    <SolidColorBrush x:Key="DockTabActiveIndicatorBrush" Color="#FF8AC6FF" />
+    <SolidColorBrush x:Key="DockTabForegroundBrush" Color="#FFCCCCCC" />
+    <SolidColorBrush x:Key="DockTabSelectedForegroundBrush" Color="#FFE0E0E0" />
+    <SolidColorBrush x:Key="DockTabActiveForegroundBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="DockTabCloseHoverBackgroundBrush" Color="#FFD13D4A" />
+    <SolidColorBrush x:Key="DockDocumentTabStripBackgroundBrush" Color="#FF121212" />
+    <SolidColorBrush x:Key="DockDocumentTabSelectedForegroundBrush" Color="#FFE0E0E0" />
+    <SolidColorBrush x:Key="DockDocumentTabPointerOverForegroundBrush" Color="#FFE6E6E6" />
+    <SolidColorBrush x:Key="DockDocumentTabCloseSelectedForegroundBrush" Color="#FFE0E0E0" />
+    <SolidColorBrush x:Key="DockDocumentTabClosePointerOverForegroundBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="DockTargetIndicatorBrush" Color="#668AC6FF" />
+
+    <SolidColorBrush x:Key="DockChromeButtonForegroundBrush" Color="#FFCCCCCC" />
+    <SolidColorBrush x:Key="DockChromeButtonHoverBackgroundBrush" Color="#FF2A2A2A" />
+    <SolidColorBrush x:Key="DockChromeButtonPressedBackgroundBrush" Color="#FF3A3A3A" />
+    <SolidColorBrush x:Key="DockChromeButtonDangerHoverBrush" Color="#FFD13D4A" />
+    <SolidColorBrush x:Key="DockChromeGripBrush" Color="#00000000" />
+    <SolidColorBrush x:Key="DockToolChromeIconBrush" Color="#FFCCCCCC" />
+    <SolidColorBrush x:Key="DockDocumentContentBorderBrush" Color="#FF2E2E2E" />
+
+    <sys:Double x:Key="DockFontSizeNormal">12</sys:Double>
+    <sys:Double x:Key="DockCornerRadiusSmall">3</sys:Double>
+    <sys:Double x:Key="DockHeaderHeight">24</sys:Double>
+    <sys:Double x:Key="DockTabHeight">24</sys:Double>
+    <sys:Double x:Key="DockToolChromeDividerThickness">0</sys:Double>
+    <sys:Double x:Key="DockChromeGripHeight">4</sys:Double>
+    <Thickness x:Key="DockToolChromeHeaderMargin">8,0</Thickness>
+    <Thickness x:Key="DockToolChromeTitleMargin">0,4,8,4</Thickness>
+    <Thickness x:Key="DockDocumentContentBorderThickness">1</Thickness>
+  </Styles.Resources>
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource DockSurfaceWorkbenchBrush}" />
+  </Style>
+
+  <Style Selector="dock|ToolChromeControl /template/ Grid#PART_Grip">
+    <Setter Property="Background" Value="{DynamicResource DockSurfaceHeaderBrush}" />
+  </Style>
+
+  <Style Selector="dock|ToolChromeControl:active /template/ Grid#PART_Grip">
+    <Setter Property="Background" Value="{DynamicResource DockSurfaceHeaderActiveBrush}" />
+  </Style>
+
+  <Style Selector="dock|ToolChromeControl /template/ TextBlock#PART_Title">
+    <Setter Property="Foreground" Value="{DynamicResource DockTabForegroundBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="dock|ToolChromeControl:active /template/ TextBlock#PART_Title">
+    <Setter Property="Foreground" Value="{DynamicResource DockTabActiveForegroundBrush}" />
+  </Style>
+</Styles>
