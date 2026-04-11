@@ -31,6 +31,7 @@ public class D3DSharedTextureHost : NativeControlHost
 
     public event EventHandler? RightButtonDown;
     public event EventHandler? RightButtonUp;
+    public event EventHandler? FramePresented;
 
     private IntPtr _hwnd;
     private ID3D11Device? _device;
@@ -296,9 +297,11 @@ public class D3DSharedTextureHost : NativeControlHost
                         if (deviceLock != null)
                             Monitor.Exit(deviceLock);
                     }
+                    bool presented = false;
                     try
                     {
                         _swapChain.Present(0, PresentFlags.None);
+                        presented = true;
                     }
                     catch (SharpGen.Runtime.SharpGenException ex)
                     {
@@ -311,6 +314,11 @@ public class D3DSharedTextureHost : NativeControlHost
                         Log($"Present threw {ex.GetType().Name}: {ex.Message}");
                         ReleaseSwapChain();
                         continue;
+                    }
+
+                    if (presented && _sharedTexture != null)
+                    {
+                        try { FramePresented?.Invoke(this, EventArgs.Empty); } catch { /* ignore subscriber errors */ }
                     }
                 }
                 else

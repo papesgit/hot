@@ -89,6 +89,7 @@ public partial class VideoDisplayDockView : UserControl
             SharedTextureHost.SharedHandleInvalidated += OnSharedHandleInvalidated;
             SharedTextureHost.RightButtonDown += OnSharedTextureRightButtonDown;
             SharedTextureHost.RightButtonUp += OnSharedTextureRightButtonUp;
+            SharedTextureHost.FramePresented += OnSharedTextureFramePresented;
         }
         if (RtpSwapchainAspect != null)
         {
@@ -509,6 +510,17 @@ public partial class VideoDisplayDockView : UserControl
             return;
 
         vm.NotifyOverlayRightButtonUp();
+    }
+
+    private void OnSharedTextureFramePresented(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (DataContext is not VideoDisplayDockViewModel vm || !vm.UseD3DHost)
+                return;
+
+            vm.RecordSharedTextureFramePresented();
+        }, DispatcherPriority.Background);
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)

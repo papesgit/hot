@@ -252,7 +252,13 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             OnPropertyChanged(nameof(CanStop));
             if (_useD3DHost)
             {
+                ResetFrameRateCounter();
                 _ = RequestSharedTextureHandleAsync();
+            }
+            else if (!_isStreaming)
+            {
+                FrameRate = 0;
+                LastFrameReceivedUtc = null;
             }
         }
     }
@@ -382,15 +388,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         LastFrameReceivedUtc = DateTimeOffset.UtcNow;
 
         // Calculate frame rate
-        _frameCount++;
-        var now = DateTime.Now;
-        var elapsed = (now - _lastFrameTime).TotalSeconds;
-        if (elapsed >= 1.0)
-        {
-            FrameRate = _frameCount / elapsed;
-            _frameCount = 0;
-            _lastFrameTime = now;
-        }
+        RecordFrameRateSample();
 
         if (_rtpViewer != null)
         {
@@ -399,6 +397,33 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             return;
         }
         // No Avalonia composited video path anymore; ignore frame when no swapchain.
+    }
+
+    public void RecordSharedTextureFramePresented()
+    {
+        LastFrameReceivedUtc = DateTimeOffset.UtcNow;
+        RecordFrameRateSample();
+    }
+
+    private void RecordFrameRateSample()
+    {
+        _frameCount++;
+        var now = DateTime.Now;
+        var elapsed = (now - _lastFrameTime).TotalSeconds;
+        if (elapsed < 1.0)
+            return;
+
+        FrameRate = _frameCount / elapsed;
+        _frameCount = 0;
+        _lastFrameTime = now;
+    }
+
+    private void ResetFrameRateCounter()
+    {
+        _frameCount = 0;
+        _lastFrameTime = DateTime.Now;
+        FrameRate = 0;
+        LastFrameReceivedUtc = null;
     }
 
     private void UpdateRtpFrameAspect(int width, int height)
