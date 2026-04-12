@@ -557,6 +557,23 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         LastFrameReceivedUtc = null;
         _lastFrameTime = DateTime.Now;
         _frameCount = 0;
+        _ = RequestRtpIdrAsync();
+    }
+
+    private async Task RequestRtpIdrAsync()
+    {
+        if (_webSocketClient == null)
+            return;
+
+        try
+        {
+            await _webSocketClient.SendCommandAsync("rtp.request_idr");
+            Console.WriteLine("RTP IDR requested");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to request RTP IDR: {ex.Message}");
+        }
     }
 
     public double FreecamSpeed
@@ -628,6 +645,10 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private void OnWebSocketConnected(object? sender, EventArgs e)
     {
         _ = RequestSharedTextureHandleAsync();
+        if (_isStreaming)
+        {
+            _ = RequestRtpIdrAsync();
+        }
     }
 
     private Task RequestSharedTextureHandleAsync()
