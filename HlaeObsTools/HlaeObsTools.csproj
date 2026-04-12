@@ -36,11 +36,12 @@
     <PackageReference Include="Dock.Avalonia.Diagnostics" Version="12.0.0.1" />
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.0.0.1" />
     <PackageReference Include="Dock.Model.Mvvm" Version="12.0.0.1" />
-    <PackageReference Include="FFmpeg.AutoGen" Version="8.0.0" />
-    <PackageReference Include="Vortice.Direct3D11" Version="3.6.2" />
-    <PackageReference Include="Vortice.D3DCompiler" Version="3.6.2" />
-    <PackageReference Include="Vortice.DXGI" Version="3.6.2" />
-    <PackageReference Include="Vortice.Direct2D1" Version="3.6.2" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
+    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
+    <PackageReference Include="Vortice.Direct2D1" Version="3.8.3" />
+    <PackageReference Include="GstSharpBundle" Version="1.24.3-preview6" />
+    <PackageReference Include="GstSharpBundle.Windows.X64" Version="1.24.3-preview6" />
     <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.4" />
   </ItemGroup>
 
@@ -55,12 +56,6 @@
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="FFmpeg\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <ItemGroup>

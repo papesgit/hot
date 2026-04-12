@@ -1,114 +1,113 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform;
-using HlaeObsTools.Services.Graphics;
-using HlaeObsTools.Services.Video;
-using SharpGen.Runtime;
-using Vortice.Direct3D11;
-using Vortice.DXGI;
+using GstSharpBundle;
+using HlaeObsTools.Services.Video.RTP;
 
 namespace HlaeObsTools.Controls;
 
 /// <summary>
-/// Native child-window host that renders decoded RTP frames to a D3D11 swapchain.
+/// Native child-window host that renders the RTP stream through GStreamer.
 /// Windows-only; falls back to nothing on other platforms.
 /// </summary>
 public class RtpSwapchainHost : NativeControlHost
 {
     private const string WindowClassName = "HLAE_RTPHost";
-    private const long TargetPlayoutDelayUs = 33_000;
-    private const int MaxQueuedFrames = 3;
+    private const int GStreamerJitterBufferLatencyMs = 5;
+    private static readonly object GStreamerInitLock = new();
+    private static bool s_gstreamerInitialized;
 
     public event EventHandler? RightButtonDown;
     public event EventHandler? RightButtonUp;
     public event EventHandler? FramePresented;
 
     private IntPtr _hwnd;
-    private ID3D11Device? _device;
-    private ID3D11DeviceContext? _context;
-    private IDXGIFactory2? _factory;
-    private object? _deviceLock;
-    private IDXGISwapChain1? _swapChain;
-    private ID3D11Texture2D? _frameTexture;
-    private CancellationTokenSource? _cts;
-    private Task? _renderLoop;
-    private readonly object _frameLock = new();
-    private readonly List<VideoFrame> _frameQueue = new(MaxQueuedFrames + 1);
-    private int _swapWidth;
-    private int _swapHeight;
     private int _layoutX;
     private int _layoutY;
     private int _layoutW;
     private int _layoutH;
     private bool _layoutSet;
-    private bool _firstFrameLogged;
-    private bool _playoutClockSet;
-    private long _playoutBaseSenderUs;
-    private long _playoutBaseLocalUs;
-    private long _lastLogLocalUs;
-    private long _droppedQueuedFrames;
-    private long _droppedLateFrames;
+    private readonly object _gstreamerLock = new();
+    private RtpReceiverConfig? _pendingGStreamerConfig;
+    private Gst.Element? _gstreamerPipeline;
+    private Gst.Bus? _gstreamerBus;
+    private Gst.BusSyncHandler? _gstreamerBusSyncHandler;
+    private Gst.Element? _gstreamerFrameCounter;
+    private readonly Gst.SignalHandler _gstreamerFrameHandoffHandler;
+    private CancellationTokenSource? _gstreamerBusCts;
+    private Task? _gstreamerBusTask;
+
+    public RtpSwapchainHost()
+    {
+        _gstreamerFrameHandoffHandler = OnGStreamerFrameHandoff;
+    }
 
     public void StartRenderer()
     {
-        if (_renderLoop != null || _hwnd == IntPtr.Zero || !OperatingSystem.IsWindows())
-            return;
-
-        _cts = new CancellationTokenSource();
-        _renderLoop = Task.Run(() => RenderLoop(_cts.Token));
+        // Kept for the existing view lifecycle. GStreamer owns rendering now.
     }
 
     public void StopRenderer()
     {
-        _cts?.Cancel();
-        try { _renderLoop?.Wait(TimeSpan.FromSeconds(1)); } catch { /* ignore shutdown races */ }
-        _cts?.Dispose();
-        _cts = null;
-        _renderLoop = null;
-
-        lock (_frameLock)
-        {
-            _frameQueue.Clear();
-            _playoutClockSet = false;
-        }
-
-        ReleaseResources();
-        _firstFrameLogged = false;
-        _lastLogLocalUs = 0;
-        _droppedQueuedFrames = 0;
-        _droppedLateFrames = 0;
+        // Kept for the existing view lifecycle. GStreamer owns rendering now.
     }
 
-    public void PresentFrame(VideoFrame frame)
+    public void StartGStreamer(RtpReceiverConfig config)
     {
-        if (_renderLoop == null || frame.Width <= 0 || frame.Height <= 0)
+        if (!OperatingSystem.IsWindows())
             return;
 
-        lock (_frameLock)
+        lock (_gstreamerLock)
         {
-            if (frame.SourceTimestampUs > 0)
+            _pendingGStreamerConfig = config;
+            if (_hwnd == IntPtr.Zero)
+                return;
+
+            StopGStreamerLocked(clearPendingConfig: false);
+            EnsureGStreamerInitialized();
+
+            var pipelineDescription = BuildGStreamerPipeline(config);
+            _gstreamerPipeline = Gst.Parse.Launch(pipelineDescription);
+            _gstreamerBus = _gstreamerPipeline.Bus;
+            _gstreamerBusSyncHandler = OnGStreamerBusSyncMessage;
+            if (_gstreamerBus != null)
             {
-                int index = _frameQueue.FindIndex(f => f.SourceTimestampUs > frame.SourceTimestampUs);
-                if (index >= 0)
-                    _frameQueue.Insert(index, frame);
-                else
-                    _frameQueue.Add(frame);
-            }
-            else
-            {
-                _frameQueue.Add(frame);
+                _gstreamerBus.SyncHandler = _gstreamerBusSyncHandler;
+                _gstreamerBusCts = new CancellationTokenSource();
+                _gstreamerBusTask = Task.Run(() => MonitorGStreamerBus(_gstreamerBus, _gstreamerBusCts.Token));
             }
 
-            while (_frameQueue.Count > MaxQueuedFrames)
+            var videoSink = (_gstreamerPipeline as Gst.Bin)?.GetByName("videosink");
+            _gstreamerFrameCounter = (_gstreamerPipeline as Gst.Bin)?.GetByName("fpscounter");
+            _gstreamerFrameCounter?.Connect("handoff", _gstreamerFrameHandoffHandler);
+            try
             {
-                _frameQueue.RemoveAt(0);
-                _droppedQueuedFrames++;
+                TrySetGStreamerOverlayWindow(videoSink);
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GStreamer overlay setup error: {ex.Message}");
+            }
+            finally
+            {
+                videoSink?.Dispose();
+            }
+
+            var stateChange = _gstreamerPipeline.SetState(Gst.State.Playing);
+            Console.WriteLine($"GStreamer RTP receiver listening on {config.Address}:{config.Port}; state={stateChange}");
+        }
+    }
+
+    public void StopGStreamer()
+    {
+        lock (_gstreamerLock)
+        {
+            StopGStreamerLocked(clearPendingConfig: true);
         }
     }
 
@@ -163,19 +162,25 @@ public class RtpSwapchainHost : NativeControlHost
 
         _hwnd = CreateChildWindow(parent.Handle);
         RegisterHostWindow(_hwnd, this);
-        StartRenderer();
+        if (_pendingGStreamerConfig != null)
+            StartGStreamer(_pendingGStreamerConfig);
         return new PlatformHandle(_hwnd, "HWND");
     }
 
     protected override void DestroyNativeControlCore(IPlatformHandle control)
     {
-        StopRenderer();
+        lock (_gstreamerLock)
+        {
+            StopGStreamerLocked(clearPendingConfig: false);
+        }
+
         if (_hwnd != IntPtr.Zero)
         {
             UnregisterHostWindow(_hwnd);
             DestroyWindow(_hwnd);
             _hwnd = IntPtr.Zero;
         }
+
         base.DestroyNativeControlCore(control);
     }
 
@@ -185,25 +190,123 @@ public class RtpSwapchainHost : NativeControlHost
         UpdateChildBounds();
     }
 
-    private void RenderLoop(CancellationToken token)
+    private static void EnsureGStreamerInitialized()
     {
-        if (!CreateDeviceAndFactory())
+        lock (GStreamerInitLock)
+        {
+            if (s_gstreamerInitialized)
+                return;
+
+            GStreamerBundle.Initialize();
+            ConfigureGStreamerEnvironment();
+            Gst.Application.Init();
+            s_gstreamerInitialized = true;
+            Console.WriteLine($"GStreamer initialized: {Gst.Application.VersionString()}");
+        }
+    }
+
+    private static void ConfigureGStreamerEnvironment()
+    {
+        var root = Path.Combine(AppContext.BaseDirectory, "gstreamer", MakeGStreamerRuntimeIdentifier());
+        var scannerPath = Path.Combine(root, "libexec", "gstreamer-1.0", "gst-plugin-scanner.exe");
+        var pluginPath = Path.Combine(root, "lib", "gstreamer-1.0");
+
+        if (File.Exists(scannerPath))
+            Environment.SetEnvironmentVariable("GST_PLUGIN_SCANNER", scannerPath, EnvironmentVariableTarget.Process);
+
+        if (Directory.Exists(pluginPath))
+            Environment.SetEnvironmentVariable("GST_PLUGIN_PATH", pluginPath, EnvironmentVariableTarget.Process);
+    }
+
+    private static string MakeGStreamerRuntimeIdentifier()
+    {
+        return RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => "win-x64",
+            Architecture.X86 => "win-x86",
+            Architecture.Arm64 => "win-arm64",
+            _ => throw new PlatformNotSupportedException()
+        };
+    }
+
+    private static string BuildGStreamerPipeline(RtpReceiverConfig config)
+    {
+        var addressPart = string.IsNullOrWhiteSpace(config.Address) || config.Address == "0.0.0.0"
+            ? string.Empty
+            : $"address={config.Address} ";
+
+        return $"udpsrc {addressPart}port={config.Port} " +
+               $"caps=\"application/x-rtp,media=video,encoding-name=H264,payload={config.PayloadType},clock-rate=90000\" ! " +
+               $"rtpjitterbuffer latency={GStreamerJitterBufferLatencyMs} drop-on-latency=true ! " +
+               "rtph264depay ! h264parse ! " +
+               "nvh264dec ! queue max-size-buffers=1 leaky=downstream ! " +
+               "videoconvert ! queue max-size-buffers=1 leaky=downstream ! " +
+               "identity name=fpscounter signal-handoffs=true ! " +
+               "d3d11videosink name=videosink sync=false async=false";
+    }
+
+    private void OnGStreamerFrameHandoff(object o, GLib.SignalArgs args)
+    {
+        FramePresented?.Invoke(this, EventArgs.Empty);
+    }
+
+    private Gst.BusSyncReply OnGStreamerBusSyncMessage(Gst.Bus bus, Gst.Message message)
+    {
+        try
+        {
+            if (Gst.Video.Global.IsVideoOverlayPrepareWindowHandleMessage(message))
+            {
+                TrySetGStreamerOverlayWindow(message.Src);
+                return Gst.BusSyncReply.Drop;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GStreamer overlay setup error: {ex.Message}");
+        }
+
+        return Gst.BusSyncReply.Pass;
+    }
+
+    private void TrySetGStreamerOverlayWindow(GLib.Object? element)
+    {
+        if (_hwnd == IntPtr.Zero || element == null)
             return;
 
-        Console.WriteLine("RTP host render loop started");
+        var overlay = Gst.Video.VideoOverlayAdapter.GetObject(element);
+        if (overlay == null)
+            return;
+
+        overlay.WindowHandle = _hwnd;
+        overlay.HandleEvents(false);
+        overlay.Expose();
+    }
+
+    private void MonitorGStreamerBus(Gst.Bus bus, CancellationToken token)
+    {
         while (!token.IsCancellationRequested)
         {
+            Gst.Message? message = null;
             try
             {
-                var frame = DequeueFrameForPlayout();
-                if (frame == null)
-                {
-                    Task.Delay(1, token).Wait(token);
+                message = bus.TimedPopFiltered(100_000_000, Gst.MessageType.Error | Gst.MessageType.Warning | Gst.MessageType.Eos);
+                if (message == null)
                     continue;
-                }
 
-                EnsureSwapchain(frame.Width, frame.Height);
-                UploadAndPresent(frame);
+                if (message.Type == Gst.MessageType.Error)
+                {
+                    message.ParseError(out var error, out var debug);
+                    Console.WriteLine($"GStreamer RTP error: {error.Message}; {debug}");
+                }
+                else if (message.Type == Gst.MessageType.Warning)
+                {
+                    message.ParseWarning(out var error, out var debug);
+                    Console.WriteLine($"GStreamer RTP warning: {error}; {debug}");
+                }
+                else if (message.Type == Gst.MessageType.Eos)
+                {
+                    Console.WriteLine("GStreamer RTP stream ended.");
+                }
             }
             catch (OperationCanceledException)
             {
@@ -211,232 +314,50 @@ public class RtpSwapchainHost : NativeControlHost
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"RTP host render error: {ex.Message}");
-            }
-        }
-    }
-
-    private VideoFrame? DequeueFrameForPlayout()
-    {
-        long nowUs = StopwatchUs();
-        lock (_frameLock)
-        {
-            if (_frameQueue.Count == 0)
-                return null;
-
-            var first = _frameQueue[0];
-            if (first.SourceTimestampUs <= 0)
-            {
-                _frameQueue.RemoveAt(0);
-                return first;
-            }
-
-            if (!_playoutClockSet || first.SourceTimestampUs + 250_000 < _playoutBaseSenderUs)
-            {
-                _playoutBaseSenderUs = first.SourceTimestampUs;
-                _playoutBaseLocalUs = nowUs + TargetPlayoutDelayUs;
-                _playoutClockSet = true;
-            }
-
-            VideoFrame? ready = null;
-            while (_frameQueue.Count > 0)
-            {
-                var candidate = _frameQueue[0];
-                long dueUs = _playoutBaseLocalUs + (candidate.SourceTimestampUs - _playoutBaseSenderUs);
-                if (dueUs > nowUs)
-                    break;
-
-                ready = candidate;
-                _frameQueue.RemoveAt(0);
-                if (_frameQueue.Count > 0)
-                    _droppedLateFrames++;
-            }
-
-            return ready;
-        }
-    }
-
-    private void UploadAndPresent(VideoFrame frame)
-    {
-        if (_context == null || _swapChain == null || _device == null)
-            return;
-
-        EnsureFrameTexture(frame.Width, frame.Height);
-        if (_frameTexture == null)
-            return;
-
-        var deviceLock = _deviceLock;
-        if (deviceLock != null)
-            Monitor.Enter(deviceLock);
-        try
-        {
-            var mapped = _context.Map(_frameTexture, 0, MapMode.WriteDiscard, Vortice.Direct3D11.MapFlags.None);
-            try
-            {
-                unsafe
-                {
-                    byte* destBase = (byte*)mapped.DataPointer;
-                    fixed (byte* srcBase = frame.Data)
-                    {
-                        if (!_firstFrameLogged)
-                        {
-                            Console.WriteLine($"RTP host first frame: {frame.Width}x{frame.Height} stride={frame.Stride} rowPitch={mapped.RowPitch}");
-                            _firstFrameLogged = true;
-                        }
-
-                        for (int y = 0; y < frame.Height; y++)
-                        {
-                            Buffer.MemoryCopy(
-                                srcBase + y * frame.Stride,
-                                destBase + y * mapped.RowPitch,
-                                mapped.RowPitch,
-                                frame.Stride);
-                        }
-                    }
-                }
+                if (!token.IsCancellationRequested)
+                    Console.WriteLine($"GStreamer RTP bus monitor error: {ex.Message}");
             }
             finally
             {
-                _context.Unmap(_frameTexture, 0);
+                message?.Dispose();
             }
+        }
+    }
 
-            using var backBuffer = _swapChain.GetBuffer<ID3D11Texture2D>(0);
-            _context.CopyResource(backBuffer, _frameTexture);
-            _swapChain.Present(0, PresentFlags.None);
-        }
-        catch (SharpGenException ex)
+    private void StopGStreamerLocked(bool clearPendingConfig)
+    {
+        if (clearPendingConfig)
+            _pendingGStreamerConfig = null;
+
+        _gstreamerBusCts?.Cancel();
+        if (_gstreamerPipeline != null)
         {
-            Console.WriteLine($"RTP host D3D error hr=0x{ex.HResult:X8}: {ex.Message}");
-            ReleaseSwapChain();
-            return;
-        }
-        finally
-        {
-            if (deviceLock != null)
-                Monitor.Exit(deviceLock);
+            try { _gstreamerPipeline.SetState(Gst.State.Null); } catch { /* ignore shutdown races */ }
         }
 
-        FramePresented?.Invoke(this, EventArgs.Empty);
-        LogLatency(frame);
-    }
+        try { _gstreamerBusTask?.Wait(TimeSpan.FromSeconds(1)); } catch { /* ignore shutdown races */ }
+        _gstreamerBusCts?.Dispose();
+        _gstreamerBusCts = null;
+        _gstreamerBusTask = null;
 
-    private void LogLatency(VideoFrame frame)
-    {
-        if (frame.SourceTimestampUs <= 0)
-            return;
-
-        long localUs = StopwatchUs();
-        if (localUs - _lastLogLocalUs < 1_000_000)
-            return;
-
-        long wallUs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000;
-        var presentMs = Math.Max(0, (wallUs - frame.SourceTimestampUs) / 1000.0);
-        var captureToReceiveMs = frame.ReceivedTimestampUs > 0
-            ? Math.Max(0, (frame.ReceivedTimestampUs - frame.SourceTimestampUs) / 1000.0)
-            : double.NaN;
-
-        int queued;
-        lock (_frameLock)
+        if (_gstreamerBus != null)
         {
-            queued = _frameQueue.Count;
+            try { _gstreamerBus.SyncHandler = null; } catch { /* ignore shutdown races */ }
+            _gstreamerBus.Dispose();
+            _gstreamerBus = null;
         }
 
-        Console.WriteLine($"RTP present latency: {presentMs:F2} ms (capture->receive: {captureToReceiveMs:F2} ms, queued={queued}, dropQueue={_droppedQueuedFrames}, dropLate={_droppedLateFrames})");
-        _lastLogLocalUs = localUs;
-    }
-
-    private bool CreateDeviceAndFactory()
-    {
-        if (_device != null)
-            return true;
-
-        var service = D3D11DeviceService.Instance;
-        if (!service.IsReady)
-            return false;
-
-        _device = service.Device;
-        _context = service.Context;
-        _factory = service.Factory;
-        _deviceLock = service.ContextLock;
-        return _factory != null;
-    }
-
-    private void EnsureSwapchain(int width, int height)
-    {
-        if (_factory == null || _device == null || _hwnd == IntPtr.Zero)
-            return;
-
-        if (_swapChain != null && _swapWidth == width && _swapHeight == height)
-            return;
-
-        ReleaseSwapChain();
-        var desc = new SwapChainDescription1
+        if (_gstreamerFrameCounter != null)
         {
-            Width = (uint)width,
-            Height = (uint)height,
-            Format = Format.B8G8R8A8_UNorm,
-            BufferCount = 2,
-            BufferUsage = Usage.RenderTargetOutput,
-            SampleDescription = new SampleDescription(1, 0),
-            Scaling = Scaling.Stretch,
-            SwapEffect = SwapEffect.FlipDiscard,
-            AlphaMode = AlphaMode.Ignore
-        };
+            try { _gstreamerFrameCounter.Disconnect("handoff", _gstreamerFrameHandoffHandler); } catch { /* ignore shutdown races */ }
+            _gstreamerFrameCounter.Dispose();
+            _gstreamerFrameCounter = null;
+        }
 
-        _swapChain = _factory.CreateSwapChainForHwnd(_device, _hwnd, desc);
-        _swapWidth = width;
-        _swapHeight = height;
-        UpdateChildBounds();
+        _gstreamerBusSyncHandler = null;
+        _gstreamerPipeline?.Dispose();
+        _gstreamerPipeline = null;
     }
-
-    private void EnsureFrameTexture(int width, int height)
-    {
-        if (_frameTexture != null &&
-            _frameTexture.Description.Width == width &&
-            _frameTexture.Description.Height == height)
-            return;
-
-        _frameTexture?.Dispose();
-        _frameTexture = null;
-        if (_device == null)
-            return;
-
-        var desc = new Texture2DDescription
-        {
-            Width = (uint)width,
-            Height = (uint)height,
-            MipLevels = 1,
-            ArraySize = 1,
-            Format = Format.B8G8R8A8_UNorm,
-            SampleDescription = new SampleDescription(1, 0),
-            Usage = ResourceUsage.Dynamic,
-            BindFlags = BindFlags.ShaderResource,
-            CPUAccessFlags = CpuAccessFlags.Write,
-            MiscFlags = ResourceOptionFlags.None
-        };
-        _frameTexture = _device.CreateTexture2D(desc);
-    }
-
-    private void ReleaseResources()
-    {
-        _frameTexture?.Dispose();
-        _frameTexture = null;
-        ReleaseSwapChain();
-        _context = null;
-        _device = null;
-        _factory = null;
-        _deviceLock = null;
-    }
-
-    private void ReleaseSwapChain()
-    {
-        _swapChain?.Dispose();
-        _swapChain = null;
-        _swapWidth = 0;
-        _swapHeight = 0;
-    }
-
-    private static long StopwatchUs() => Stopwatch.GetTimestamp() * 1_000_000L / Stopwatch.Frequency;
 
     private static ushort _wndClass;
     private static readonly object ClassLock = new();

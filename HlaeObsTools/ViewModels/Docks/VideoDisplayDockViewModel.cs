@@ -1,5 +1,4 @@
 using Dock.Model.Mvvm.Controls;
-using HlaeObsTools.Services.Video;
 using HlaeObsTools.Services.Video.RTP;
 using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.Services.Input;
@@ -26,7 +25,6 @@ public enum FreecamInitMode
 /// </summary>
 public class VideoDisplayDockViewModel : Tool, IDisposable
 {
-    private IVideoSource? _videoSource;
     private bool _isStreaming;
     private string _statusText = "Not Connected";
     private double _frameRate;
@@ -117,7 +115,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     public event EventHandler<bool>? FreecamStateChanged;
     public event EventHandler<bool>? FreecamSprintStateChanged;
-    public event EventHandler<VideoFrame>? RtpFrameReceived;
+    public event EventHandler<RtpReceiverConfig>? RtpStreamRequested;
+    public event EventHandler? RtpStreamStopRequested;
     public event EventHandler? FreecamInputLockRequested;
     public event EventHandler? FreecamInputReleaseRequested;
     public double RtpFrameAspect
@@ -211,6 +210,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     {
         _rtpConfig = config;
     }
+
+    public RtpReceiverConfig RtpConfig => _rtpConfig;
 
     public void RequestFreecamInputLock()
     {
@@ -343,17 +344,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     public void StopStream()
     {
-        if (_videoSource != null)
-        {
-            if (_videoSource is RtpVideoReceiver receiver)
-            {
-                receiver.FrameReceived -= OnFrameReceived;
-            }
-
-            _videoSource.Stop();
-            _videoSource.Dispose();
-            _videoSource = null;
-        }
+        RtpStreamStopRequested?.Invoke(this, EventArgs.Empty);
 
         IsStreaming = false;
         StatusText = "Not Connected";
@@ -361,18 +352,13 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         LastFrameReceivedUtc = null;
     }
 
-    private void OnFrameReceived(object? sender, VideoFrame frame)
+    public void RecordSharedTextureFramePresented()
     {
         LastFrameReceivedUtc = DateTimeOffset.UtcNow;
-
-        // Calculate frame rate
         RecordFrameRateSample();
-
-        UpdateRtpFrameAspect(frame.Width, frame.Height);
-        RtpFrameReceived?.Invoke(this, frame);
     }
 
-    public void RecordSharedTextureFramePresented()
+    public void RecordRtpFramePresented()
     {
         LastFrameReceivedUtc = DateTimeOffset.UtcNow;
         RecordFrameRateSample();
@@ -563,13 +549,10 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     private void StartRtpInternal(RtpReceiverConfig? config = null)
     {
-        var receiver = new RtpVideoReceiver(config ?? _rtpConfig);
-        receiver.FrameReceived += OnFrameReceived;
-        receiver.Start();
-
-        _videoSource = receiver;
         IsStreaming = true;
         var activeConfig = config ?? _rtpConfig;
+        _rtpConfig = activeConfig;
+        RtpStreamRequested?.Invoke(this, activeConfig);
         StatusText = $"Connected - {activeConfig.Address}:{activeConfig.Port}";
         LastFrameReceivedUtc = null;
         _lastFrameTime = DateTime.Now;
