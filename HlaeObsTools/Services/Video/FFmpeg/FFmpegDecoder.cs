@@ -16,7 +16,10 @@ public unsafe class FFmpegDecoder : IDisposable
     private SwsContext* _swsContext;
     private byte* _rgbBuffer;
     private int _rgbBufferSize;
+    private byte[][]? _managedFrameBuffers;
+    private int _managedFrameBufferIndex;
     private bool _disposed;
+    private const int ManagedFrameBufferCount = 8;
 
     public int Width { get; private set; }
     public int Height { get; private set; }
@@ -136,6 +139,12 @@ public unsafe class FFmpegDecoder : IDisposable
         Stride = Width * 4; // BGRA = 4 bytes per pixel
         _rgbBufferSize = Stride * Height;
         _rgbBuffer = (byte*)Marshal.AllocHGlobal(_rgbBufferSize);
+        _managedFrameBuffers = new byte[ManagedFrameBufferCount][];
+        for (int i = 0; i < _managedFrameBuffers.Length; i++)
+        {
+            _managedFrameBuffers[i] = new byte[_rgbBufferSize];
+        }
+        _managedFrameBufferIndex = 0;
 
         // Setup BGRA frame
         _frameRgb->width = Width;
@@ -162,8 +171,13 @@ public unsafe class FFmpegDecoder : IDisposable
             _frameRgb->data,
             _frameRgb->linesize);
 
-        // Copy RGB data to managed array
-        var frameData = new byte[_rgbBufferSize];
+        // Copy RGB data to a reusable managed buffer ring. The presentation queue is shallow,
+        // so eight buffers avoids per-frame LOH allocations without overwriting queued frames.
+        if (_managedFrameBuffers == null || _managedFrameBuffers.Length == 0)
+            throw new InvalidOperationException("Managed frame buffers are not initialized.");
+
+        var frameData = _managedFrameBuffers[_managedFrameBufferIndex];
+        _managedFrameBufferIndex = (_managedFrameBufferIndex + 1) % _managedFrameBuffers.Length;
         Marshal.Copy((IntPtr)_rgbBuffer, frameData, 0, _rgbBufferSize);
 
         return new VideoFrame

@@ -33,8 +33,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     private DateTime _lastFrameTime;
     private DateTimeOffset? _lastFrameReceivedUtc;
     private int _frameCount;
-    private RtpSwapchainViewer? _rtpViewer;
-    private IntPtr _rtpParentHwnd;
     private double _rtpFrameAspect;
 
 
@@ -119,7 +117,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     public event EventHandler<bool>? FreecamStateChanged;
     public event EventHandler<bool>? FreecamSprintStateChanged;
-    public event EventHandler<IntPtr>? RtpViewerWindowChanged;
+    public event EventHandler<VideoFrame>? RtpFrameReceived;
     public event EventHandler? FreecamInputLockRequested;
     public event EventHandler? FreecamInputReleaseRequested;
     public double RtpFrameAspect
@@ -214,11 +212,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         _rtpConfig = config;
     }
 
-    public void SetRtpParentWindowHandle(IntPtr hwnd)
-    {
-        _rtpParentHwnd = hwnd;
-    }
-
     public void RequestFreecamInputLock()
     {
         FreecamInputLockRequested?.Invoke(this, EventArgs.Empty);
@@ -232,11 +225,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     public void RequestFreecamInputRelease()
     {
         FreecamInputReleaseRequested?.Invoke(this, EventArgs.Empty);
-    }
-
-    public void UpdateRtpViewerBounds(int x, int y, int width, int height)
-    {
-        _rtpViewer?.SetHostedBounds(x, y, width, height);
     }
 
     public bool UseD3DHost
@@ -367,16 +355,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             _videoSource = null;
         }
 
-        if (_rtpViewer != null)
-        {
-            _rtpViewer.RightButtonDown -= OnRtpViewerRightButtonDown;
-            _rtpViewer.RightButtonUp -= OnRtpViewerRightButtonUp;
-        }
-        _rtpViewer?.Stop();
-        _rtpViewer?.Dispose();
-        _rtpViewer = null;
-        RtpViewerWindowChanged?.Invoke(this, IntPtr.Zero);
-
         IsStreaming = false;
         StatusText = "Not Connected";
         FrameRate = 0;
@@ -390,13 +368,8 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         // Calculate frame rate
         RecordFrameRateSample();
 
-        if (_rtpViewer != null)
-        {
-            UpdateRtpFrameAspect(frame.Width, frame.Height);
-            _rtpViewer.PresentFrame(frame);
-            return;
-        }
-        // No Avalonia composited video path anymore; ignore frame when no swapchain.
+        UpdateRtpFrameAspect(frame.Width, frame.Height);
+        RtpFrameReceived?.Invoke(this, frame);
     }
 
     public void RecordSharedTextureFramePresented()
@@ -590,21 +563,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     private void StartRtpInternal(RtpReceiverConfig? config = null)
     {
-        _rtpViewer?.Stop();
-        _rtpViewer?.Dispose();
-        _rtpViewer = new RtpSwapchainViewer(_rtpParentHwnd);
-        _rtpViewer.RightButtonDown += OnRtpViewerRightButtonDown;
-        _rtpViewer.RightButtonUp += OnRtpViewerRightButtonUp;
-        _rtpViewer.Start();
-        if (_rtpViewer.IsRunning && _rtpViewer.Hwnd != IntPtr.Zero)
-        {
-            RtpViewerWindowChanged?.Invoke(this, _rtpViewer.Hwnd);
-        }
-        else
-        {
-            RtpViewerWindowChanged?.Invoke(this, IntPtr.Zero);
-        }
-
         var receiver = new RtpVideoReceiver(config ?? _rtpConfig);
         receiver.FrameReceived += OnFrameReceived;
         receiver.Start();
@@ -616,34 +574,6 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
         LastFrameReceivedUtc = null;
         _lastFrameTime = DateTime.Now;
         _frameCount = 0;
-    }
-
-    private void OnRtpViewerRightButtonDown(object? sender, EventArgs e)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (_useD3DHost || !IsStreaming)
-                return;
-
-            if (_hudOverlayWindow != null && _hudOverlayWindow.IsVisible)
-                return;
-
-            NotifyOverlayRightButtonDown();
-        }, DispatcherPriority.Background);
-    }
-
-    private void OnRtpViewerRightButtonUp(object? sender, EventArgs e)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (_useD3DHost || !IsStreaming)
-                return;
-
-            if (_hudOverlayWindow != null && _hudOverlayWindow.IsVisible)
-                return;
-
-            NotifyOverlayRightButtonUp();
-        }, DispatcherPriority.Background);
     }
 
     public double FreecamSpeed

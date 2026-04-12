@@ -14,6 +14,7 @@ using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using System.Threading;
 using System.Threading.Tasks;
+using HlaeObsTools.Services.Video;
 using HlaeObsTools.ViewModels.Hud;
 
 namespace HlaeObsTools.Views.Docks;
@@ -97,7 +98,8 @@ public partial class VideoDisplayDockView : UserControl
         }
         if (RtpSwapchainHost != null)
         {
-            RtpSwapchainHost.ContainerHandleChanged += OnRtpContainerHandleChanged;
+            RtpSwapchainHost.RightButtonDown += OnRtpRightButtonDown;
+            RtpSwapchainHost.RightButtonUp += OnRtpRightButtonUp;
             RtpSwapchainHost.AttachedToVisualTree += (_, _) => UpdateRtpSwapchainBounds();
             RtpSwapchainHost.DetachedFromVisualTree += (_, _) => UpdateRtpSwapchainBounds();
         }
@@ -196,14 +198,6 @@ public partial class VideoDisplayDockView : UserControl
         }
     }
 
-    private void OnRtpContainerHandleChanged(object? sender, IntPtr hwnd)
-    {
-        if (DataContext is not VideoDisplayDockViewModel vm)
-            return;
-
-        vm.SetRtpParentWindowHandle(hwnd);
-    }
-
     private void SubscribeToWindowEvents()
     {
         if (_parentWindow != null) return;
@@ -295,16 +289,6 @@ public partial class VideoDisplayDockView : UserControl
         {
             vm.HideHudOverlay();
         }
-    }
-
-    private void OnRtpViewerWindowChanged(object? sender, IntPtr hwnd)
-    {
-        if (RtpSwapchainHost != null)
-        {
-            RtpSwapchainHost.SetChildHwnd(hwnd);
-            RtpSwapchainHost.UpdateChildBounds();
-        }
-        UpdateRtpSwapchainBounds();
     }
 
     private void OnOverlayRightButtonDown(object? sender, EventArgs e)
@@ -404,6 +388,7 @@ public partial class VideoDisplayDockView : UserControl
             }
             else
             {
+                RtpSwapchainHost?.StartRenderer();
                 vm.StartStream();
             }
         }
@@ -415,6 +400,7 @@ public partial class VideoDisplayDockView : UserControl
         {
             vm.StopStream();
             SharedTextureHost?.StopRenderer();
+            RtpSwapchainHost?.StopRenderer();
         }
     }
 
@@ -510,6 +496,33 @@ public partial class VideoDisplayDockView : UserControl
             return;
 
         vm.NotifyOverlayRightButtonUp();
+    }
+
+    private void OnRtpRightButtonDown(object? sender, EventArgs e)
+    {
+        if (DataContext is not VideoDisplayDockViewModel vm || vm.UseD3DHost || !vm.IsStreaming)
+            return;
+
+        if (IsHudOverlayVisible(vm))
+            return;
+
+        vm.NotifyOverlayRightButtonDown();
+    }
+
+    private void OnRtpRightButtonUp(object? sender, EventArgs e)
+    {
+        if (DataContext is not VideoDisplayDockViewModel vm || vm.UseD3DHost || !vm.IsStreaming)
+            return;
+
+        if (IsHudOverlayVisible(vm))
+            return;
+
+        vm.NotifyOverlayRightButtonUp();
+    }
+
+    private void OnRtpFrameReceived(object? sender, VideoFrame frame)
+    {
+        RtpSwapchainHost?.PresentFrame(frame);
     }
 
     private void OnSharedTextureFramePresented(object? sender, EventArgs e)
@@ -650,7 +663,6 @@ public partial class VideoDisplayDockView : UserControl
         int w = (int)Math.Round(rect.Width * scale);
         int h = (int)Math.Round(rect.Height * scale);
 
-        vm.UpdateRtpViewerBounds(0, 0, w, h);
         RtpSwapchainHost.SetContainerLayout(0, 0, w, h);
         RtpSwapchainHost.SetChildLayout(0, 0, w, h);
         RtpSwapchainHost.UpdateChildBounds();
@@ -837,7 +849,7 @@ public partial class VideoDisplayDockView : UserControl
         if (_currentViewModel != null)
         {
             UnsubscribeFromOverlayEvents(_currentViewModel);
-            _currentViewModel.RtpViewerWindowChanged -= OnRtpViewerWindowChanged;
+            _currentViewModel.RtpFrameReceived -= OnRtpFrameReceived;
             _currentViewModel = null;
         }
 
@@ -852,12 +864,8 @@ public partial class VideoDisplayDockView : UserControl
         {
             _currentViewModel = vm;
             SubscribeToOverlayEvents(vm);
-            vm.RtpViewerWindowChanged += OnRtpViewerWindowChanged;
+            vm.RtpFrameReceived += OnRtpFrameReceived;
             SubscribeToHudOverlay(vm.HudOverlay);
-            if (RtpSwapchainHost != null && RtpSwapchainHost.ContainerHwnd != IntPtr.Zero)
-            {
-                vm.SetRtpParentWindowHandle(RtpSwapchainHost.ContainerHwnd);
-            }
             UpdateRtpSwapchainBounds();
 
             if (vm.UseD3DHost)
@@ -883,6 +891,7 @@ public partial class VideoDisplayDockView : UserControl
             {
                 if (vm.UseD3DHost)
                 {
+                    RtpSwapchainHost?.StopRenderer();
                     SharedTextureHost?.StartRenderer();
                     SharedTextureHost?.SetSharedTextureHandle(vm.SharedTextureHandle);
                     if (vm.IsStreaming) vm.StopStream();
@@ -891,6 +900,7 @@ public partial class VideoDisplayDockView : UserControl
                 else
                 {
                     SharedTextureHost?.StopRenderer();
+                    RtpSwapchainHost?.StartRenderer();
                     UpdateHudOverlayVisibility();
                 }
             }
