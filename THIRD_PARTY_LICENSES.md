@@ -140,6 +140,26 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ---
 
+## GStreamer / GstSharpBundle
+
+This application redistributes GStreamer runtime binaries through the
+GstSharpBundle.Windows.X64 NuGet package.
+
+- Project: GStreamer
+- Website: https://gstreamer.freedesktop.org/
+- Source: https://gitlab.freedesktop.org/gstreamer/gstreamer
+- License: GNU LGPL 2.1 or later, with individual plugin/component licenses as applicable
+- Bundle: GstSharpBundle / GstSharpBundle.Windows.X64
+- Bundle Source: https://github.com/aligungr/GstSharpBundle
+- Bundle License: GNU LGPL 2.1
+
+The GStreamer runtime binaries are used as dynamically loaded native libraries.
+Users may replace the distributed GStreamer binaries with compatible modified
+versions for debugging or modification purposes. No technical restriction is
+intended to prevent such replacement.
+
+---
+
 ## Additional NuGet Dependencies
 
 This application uses the following third-party libraries:
@@ -148,7 +168,6 @@ This application uses the following third-party libraries:
 - Svg.Controls.Skia.Avalonia - MIT License - https://github.com/wieslawsoltes/Svg.Skia
 - Vortice.Windows - MIT License - https://github.com/amerkoleci/Vortice.Windows
 - OpenTK - MIT License - https://github.com/opentk/opentk
-- FFmpeg.AutoGen - MIT License - https://github.com/Ruslan-B/FFmpeg.AutoGen
 - Inter Font - SIL Open Font License 1.1 - https://rsms.me/inter/
 
 These components are licensed under their respective licenses as linked above.
