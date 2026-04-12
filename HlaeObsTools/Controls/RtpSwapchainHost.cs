@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform;
 using GstSharpBundle;
-using HlaeObsTools.Services.Video.RTP;
+using HlaeObsTools.Services.Video;
 
 namespace HlaeObsTools.Controls;
 
@@ -238,9 +238,8 @@ public class RtpSwapchainHost : NativeControlHost
         return $"udpsrc {addressPart}port={config.Port} " +
                $"caps=\"application/x-rtp,media=video,encoding-name=H264,payload={config.PayloadType},clock-rate=90000\" ! " +
                $"rtpjitterbuffer latency={GStreamerJitterBufferLatencyMs} drop-on-latency=true ! " +
-               "rtph264depay ! h264parse ! " +
-               "nvh264dec ! queue max-size-buffers=1 leaky=downstream ! " +
-               "videoconvert ! queue max-size-buffers=1 leaky=downstream ! " +
+               "rtph264depay ! h264parse config-interval=-1 ! " +
+               "d3d11h264dec ! queue max-size-buffers=1 leaky=downstream ! " +
                "identity name=fpscounter signal-handoffs=true ! " +
                "d3d11videosink name=videosink sync=false async=false";
     }
