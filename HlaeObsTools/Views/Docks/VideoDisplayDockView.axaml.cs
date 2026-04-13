@@ -14,7 +14,7 @@ using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using System.Threading;
 using System.Threading.Tasks;
-using HlaeObsTools.Services.Video.RTP;
+using HlaeObsTools.Services.Video;
 using HlaeObsTools.ViewModels.Hud;
 
 namespace HlaeObsTools.Views.Docks;

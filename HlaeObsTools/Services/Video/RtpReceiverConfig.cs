@@ -1,4 +1,4 @@
-namespace HlaeObsTools.Services.Video.RTP;
+namespace HlaeObsTools.Services.Video;
 
 /// <summary>
 /// Configuration for the RTP video receiver.

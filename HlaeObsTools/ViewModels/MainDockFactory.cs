@@ -21,6 +21,7 @@ using HlaeObsTools.ViewModels.Hud;
 using HlaeObsTools.Services.Vmix;
 using HlaeObsTools.Services.Graphics;
 using HlaeObsTools.Services.Hotkeys;
+using HlaeObsTools.Services.Video;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -135,7 +136,7 @@ public class MainDockFactory : Factory, IDisposable
 
         if (_videoDisplayVm != null)
         {
-            _videoDisplayVm.SetRtpConfig(new Services.Video.RTP.RtpReceiverConfig
+            _videoDisplayVm.SetRtpConfig(new RtpReceiverConfig
             {
                 Address = "0.0.0.0",
                 Port = data.RtpPort
@@ -322,7 +323,7 @@ public class MainDockFactory : Factory, IDisposable
         _hotkeyService.RegisterCommandContext(_graphicsDockVm);
         _hotkeyService.RegisterCommandContext(bottomLeft.AttachPresetAnimationEditor);
         ConfigureAnalogInput(freecamSettings);
-        _videoDisplayVm.SetRtpConfig(new Services.Video.RTP.RtpReceiverConfig
+        _videoDisplayVm.SetRtpConfig(new RtpReceiverConfig
         {
             Address = "0.0.0.0",
             Port = _storedSettings.RtpPort

@@ -15,7 +15,6 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Campaths;
-using HlaeObsTools.Services.Video;
 using HlaeObsTools.Services.WebSocket;
 using System.Diagnostics;
 using System.Text.Json;
@@ -569,7 +568,7 @@ public class CampathsDockViewModel : Tool
         _ = item.LoadThumbnailAsync(GetThumbnailAsync, token);
     }
 
-    private static bool SaveFrameToPng(VideoFrame frame, string path)
+    private static bool SaveFrameToPng(CapturedFrame frame, string path)
     {
         try
         {
@@ -585,7 +584,7 @@ public class CampathsDockViewModel : Tool
         }
     }
 
-    private static WriteableBitmap CreateBitmapFromFrame(VideoFrame frame)
+    private static WriteableBitmap CreateBitmapFromFrame(CapturedFrame frame)
     {
         var bitmap = new WriteableBitmap(
             new PixelSize(frame.Width, frame.Height),
@@ -643,7 +642,7 @@ public class CampathsDockViewModel : Tool
         }
     }
 
-    private async Task<VideoFrame?> CaptureSharedTextureFrameAsync()
+    private async Task<CapturedFrame?> CaptureSharedTextureFrameAsync()
     {
         var handle = await GetSharedTextureHandleAsync();
         if (handle == IntPtr.Zero)
@@ -758,14 +757,7 @@ public class CampathsDockViewModel : Tool
                     SwapRedBlue(data, y * rowSize, rowSize);
                 }
 
-                return new VideoFrame
-                {
-                    Data = data,
-                    Width = width,
-                    Height = height,
-                    Stride = rowSize,
-                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                };
+                return new CapturedFrame(data, width, height, rowSize);
             }
             finally
             {
@@ -791,6 +783,8 @@ public class CampathsDockViewModel : Tool
             buffer[i + 2] = r;
         }
     }
+
+    private sealed record CapturedFrame(byte[] Data, int Width, int Height, int Stride);
 
     private static bool TryParseHandle(JsonElement handleProp, out long handleValue)
     {
