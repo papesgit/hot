@@ -11,7 +11,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <ApplicationIcon>Assets\icons\app.ico</ApplicationIcon>
-    <Version>0.2.3</Version>
+    <Version>0.3.0</Version>
     <FileVersion>$(Version).0</FileVersion>
     <AssemblyInformationalVersion>$(Version)</AssemblyInformationalVersion>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
