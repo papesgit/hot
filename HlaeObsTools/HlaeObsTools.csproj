@@ -46,11 +46,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\external\ValveResourceFormat\ValveResourceFormat\ValveResourceFormat.csproj">
-      <SetConfiguration>Configuration=Release</SetConfiguration>
     </ProjectReference>
 
     <ProjectReference Include="..\external\ValveResourceFormat\Renderer\Renderer.csproj">
-      <SetConfiguration>Configuration=Release</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -75,4 +73,16 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
+  
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <Content Include="..\external\ValveResourceFormat\ValveResourceFormat.slnx"
+            Link="ValveResourceFormat.slnx"
+            CopyToOutputDirectory="PreserveNewest" />
+
+    <Content Include="..\external\ValveResourceFormat\Renderer\Shaders\**\*">
+      <LinkBase>Renderer\Shaders</LinkBase>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
