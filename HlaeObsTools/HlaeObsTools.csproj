@@ -41,7 +41,6 @@
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
     <PackageReference Include="Vortice.Direct2D1" Version="3.8.3" />
     <PackageReference Include="GstSharpBundle" Version="1.24.3-preview6" />
-    <PackageReference Include="GstSharpBundle.Windows.X64" Version="1.24.3-preview6" />
     <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.4" />
   </ItemGroup>
 
@@ -67,5 +66,13 @@
       <Link>licenses\THIRD_PARTY_LICENSES.md</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\external\gstreamer\**\*">
+      <TargetPath>gstreamer\win-x64\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 </Project>

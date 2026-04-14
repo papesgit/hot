@@ -142,14 +142,14 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ## GStreamer / GstSharpBundle
 
-This application redistributes GStreamer runtime binaries through the
-GstSharpBundle.Windows.X64 NuGet package.
+This application redistributes a trimmed GStreamer runtime for RTP video playback.
+The .NET bindings are provided by GstSharpBundle.
 
 - Project: GStreamer
 - Website: https://gstreamer.freedesktop.org/
 - Source: https://gitlab.freedesktop.org/gstreamer/gstreamer
 - License: GNU LGPL 2.1 or later, with individual plugin/component licenses as applicable
-- Bundle: GstSharpBundle / GstSharpBundle.Windows.X64
+- Bundle: GstSharpBundle
 - Bundle Source: https://github.com/aligungr/GstSharpBundle
 - Bundle License: GNU LGPL 2.1
 
