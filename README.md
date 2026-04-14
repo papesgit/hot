@@ -64,3 +64,10 @@ and are not covered by the included LICENSE. See `THIRD_PARTY_LICENSES.md` for d
 Thanks to the HLAE team, this project would not be possible without their decades long contributions to the Counter-Strike scene.
 
 Thanks to @drweissbrot , his cs-hud repo helped greatly in designing the radar and hud.
+
+
+## Donate
+
+If you'd like to support the development of this project, consider donating on GitHub Sponsors:  
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github)](https://github.com/sponsors/papesgit)
