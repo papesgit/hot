@@ -1,4 +1,5 @@
 using Avalonia;
+using HlaeObsTools.Services.Logging;
 using System;
 
 namespace HlaeObsTools;
@@ -8,6 +9,8 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        ConsoleLogFile.Install();
+
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }

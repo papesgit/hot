@@ -5,6 +5,7 @@ using Dock.Model.Mvvm.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
@@ -108,9 +109,26 @@ public class MainDockFactory : Factory, IDisposable
 
     private void OnHlaeMessage(object? sender, string json)
     {
-        // Handle messages from HLAE (state updates, events, etc.)
-        Console.WriteLine($"HLAE message: {json}");
+        if (IsHlaeErrorMessage(json))
+        {
+            Console.WriteLine($"HLAE error message: {json}");
+        }
         // TODO: Parse JSON and update UI state
+    }
+
+    private static bool IsHlaeErrorMessage(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("ok", out var ok)
+                && ok.ValueKind == JsonValueKind.False;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private async Task ApplyNetworkSettingsAsync(SettingsDockViewModel.NetworkSettingsData data)

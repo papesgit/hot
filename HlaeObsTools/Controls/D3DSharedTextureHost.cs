@@ -28,6 +28,7 @@ public class D3DSharedTextureHost : NativeControlHost
 {
     private const int KeyedMutexAcquireTimeoutMs = 200;
     private const int DxgiErrorWaitTimeout = unchecked((int)0x887A0027);
+    private static readonly string LogPath = GetLogPath();
 
     public event EventHandler? RightButtonDown;
     public event EventHandler? RightButtonUp;
@@ -510,11 +511,34 @@ public class D3DSharedTextureHost : NativeControlHost
         try
         {
             Console.WriteLine(line);
-            File.AppendAllText("shared_texture_host.log", line + Environment.NewLine);
+            File.AppendAllText(LogPath, line + Environment.NewLine);
         }
         catch
         {
             // ignore logging failures
+        }
+    }
+
+    private static string GetLogPath()
+    {
+        try
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, "shared_texture_host.log");
+            File.WriteAllText(path, string.Empty);
+            return path;
+        }
+        catch
+        {
+            var path = Path.Combine(Path.GetTempPath(), "shared_texture_host.log");
+            try
+            {
+                File.WriteAllText(path, string.Empty);
+            }
+            catch
+            {
+                // Logging is best-effort only.
+            }
+            return path;
         }
     }
 

@@ -3720,12 +3720,21 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         try
         {
             var path = Path.Combine(AppContext.BaseDirectory, "gl_viewport.log");
-            using var _ = File.AppendText(path);
+            File.WriteAllText(path, string.Empty);
             return path;
         }
         catch
         {
-            return Path.Combine(Path.GetTempPath(), "gl_viewport.log");
+            var path = Path.Combine(Path.GetTempPath(), "gl_viewport.log");
+            try
+            {
+                File.WriteAllText(path, string.Empty);
+            }
+            catch
+            {
+                // Logging failures are reported by LogMessage.
+            }
+            return path;
         }
     }
 
