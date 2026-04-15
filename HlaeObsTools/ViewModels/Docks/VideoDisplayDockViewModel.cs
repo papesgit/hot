@@ -5,6 +5,7 @@ using HlaeObsTools.Services.Input;
 using System;
 using System.Diagnostics;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Threading;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -400,47 +401,91 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
     /// <summary>
     /// Show the HUD overlay window (called when using D3DHost mode)
     /// </summary>
-    public void ShowHudOverlay()
+    public void ShowHudOverlay(Window? owner = null)
     {
         if (_isDisposing)
             return;
 
-        if (_hudOverlayWindow == null)
+        var overlayWindow = _hudOverlayWindow ?? CreateHudOverlayWindow();
+
+        if (overlayWindow.IsVisible && owner != null && overlayWindow.Owner != owner)
         {
-            _hudOverlayWindow = new HudOverlayWindow
-            {
-                DataContext = _hudOverlay
-            };
-
-            // Subscribe to canvas size changes for speed scale updates
-            var canvas = _hudOverlayWindow.GetSpeedScaleCanvas();
-            if (canvas != null)
-            {
-                canvas.SizeChanged += (_, _) => OnPropertyChanged(nameof(FreecamSpeed));
-            }
-
-            // Subscribe to mouse events for freecam control
-            _hudOverlayWindow.RightButtonDown += OnOverlayRightButtonDown;
-            _hudOverlayWindow.RightButtonUp += OnOverlayRightButtonUp;
-
-            // Subscribe to keyboard events for shift key detection
-            _hudOverlayWindow.ShiftKeyChanged += OnOverlayShiftKeyChanged;
+            ReleaseHudOverlayWindow(overlayWindow);
+            overlayWindow.Close();
+            overlayWindow = CreateHudOverlayWindow();
         }
 
-        if (!_hudOverlayWindow.IsVisible)
+        if (!overlayWindow.IsVisible)
         {
-            // Show with main window as owner so the overlay is only topmost relative to it
-            if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            var showOwner = owner;
+            if (showOwner == null
+                && Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
             {
-                if (desktop.MainWindow == null || !desktop.MainWindow.IsVisible)
+                showOwner = desktop.MainWindow;
+            }
+
+            if (showOwner != null)
+            {
+                if (!showOwner.IsVisible)
                     return;
-                _hudOverlayWindow.Show(desktop.MainWindow);
+                overlayWindow.Show(showOwner);
             }
             else
             {
-                _hudOverlayWindow.Show();
+                overlayWindow.Show();
             }
         }
+    }
+
+    private HudOverlayWindow CreateHudOverlayWindow()
+    {
+        var window = new HudOverlayWindow
+        {
+            DataContext = _hudOverlay
+        };
+        _hudOverlayWindow = window;
+
+        // Subscribe to canvas size changes for speed scale updates
+        var canvas = window.GetSpeedScaleCanvas();
+        if (canvas != null)
+        {
+            canvas.SizeChanged += OnOverlaySpeedScaleCanvasSizeChanged;
+        }
+
+        // Subscribe to mouse events for freecam control
+        window.RightButtonDown += OnOverlayRightButtonDown;
+        window.RightButtonUp += OnOverlayRightButtonUp;
+
+        // Subscribe to keyboard events for shift key detection
+        window.ShiftKeyChanged += OnOverlayShiftKeyChanged;
+        window.Closed += OnHudOverlayWindowClosed;
+        return window;
+    }
+
+    private void OnHudOverlayWindowClosed(object? sender, EventArgs e)
+    {
+        if (sender is HudOverlayWindow window)
+            ReleaseHudOverlayWindow(window);
+    }
+
+    private void ReleaseHudOverlayWindow(HudOverlayWindow window)
+    {
+        var canvas = window.GetSpeedScaleCanvas();
+        if (canvas != null)
+            canvas.SizeChanged -= OnOverlaySpeedScaleCanvasSizeChanged;
+
+        window.RightButtonDown -= OnOverlayRightButtonDown;
+        window.RightButtonUp -= OnOverlayRightButtonUp;
+        window.ShiftKeyChanged -= OnOverlayShiftKeyChanged;
+        window.Closed -= OnHudOverlayWindowClosed;
+
+        if (ReferenceEquals(_hudOverlayWindow, window))
+            _hudOverlayWindow = null;
+    }
+
+    private void OnOverlaySpeedScaleCanvasSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(FreecamSpeed));
     }
 
     private void OnOverlayRightButtonDown(object? sender, EventArgs e)
@@ -530,8 +575,12 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
             _speedWebSocketClient.Connected -= OnWebSocketConnected;
         }
         _hudOverlay?.Dispose();
-        _hudOverlayWindow?.Close();
-        _hudOverlayWindow = null;
+        if (_hudOverlayWindow != null)
+        {
+            var window = _hudOverlayWindow;
+            ReleaseHudOverlayWindow(window);
+            window.Close();
+        }
         StopStream();
     }
 

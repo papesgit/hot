@@ -145,7 +145,10 @@ public partial class HudOverlayWindow : Window
         lock (WndProcLock)
         {
             if (WndProcMap.ContainsKey(hwnd))
+            {
+                OwnerMap[hwnd] = ownerHwnd;
                 return;
+            }
 
             if (_wndProc == null)
             {

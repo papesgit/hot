@@ -41,6 +41,7 @@ public partial class VideoDisplayDockView : UserControl
     private bool _lastSprintActive;
     private Window? _parentWindow;
     private DispatcherTimer? _analogSprintTimer;
+    private VideoDisplayDockViewModel? _overlayEventsViewModel;
 
     public VideoDisplayDockView()
     {
@@ -65,15 +66,24 @@ public partial class VideoDisplayDockView : UserControl
         }
         this.AttachedToVisualTree += (_, _) =>
         {
+            if (_currentViewModel != null)
+                SubscribeToOverlayEvents(_currentViewModel);
             UpdateSharedTextureAspectSize();
             UpdateRtpSwapchainAspectSize();
             UpdateSpeedScaleRegionSize();
+            UpdateHudOverlayVisibility();
             UpdateHudOverlayPosition();
             UpdateRtpSwapchainBounds();
             SubscribeToWindowEvents();
         };
         this.DetachedFromVisualTree += (_, _) =>
         {
+            if (_currentViewModel != null)
+                UnsubscribeFromOverlayEvents(_currentViewModel);
+            if (_isRightButtonDown || _lockedCursorCenter.HasValue)
+                EndFreecam();
+            if (_currentViewModel != null)
+                _currentViewModel.HideHudOverlay();
             UnsubscribeFromWindowEvents();
         };
         var canvas = HudContent?.GetSpeedScaleCanvas();
@@ -223,22 +233,33 @@ public partial class VideoDisplayDockView : UserControl
 
     private void SubscribeToOverlayEvents(VideoDisplayDockViewModel vm)
     {
+        if (_overlayEventsViewModel == vm)
+            return;
+
+        if (_overlayEventsViewModel != null)
+            UnsubscribeFromOverlayEvents(_overlayEventsViewModel);
+
         vm.OverlayRightButtonDown += OnOverlayRightButtonDown;
         vm.OverlayRightButtonUp += OnOverlayRightButtonUp;
         vm.OverlayShiftKeyChanged += OnOverlayShiftKeyChanged;
         vm.FreecamSprintStateChanged += OnFreecamSprintStateChanged;
         vm.FreecamInputLockRequested += OnFreecamInputLockRequested;
         vm.FreecamInputReleaseRequested += OnFreecamInputReleaseRequested;
+        _overlayEventsViewModel = vm;
     }
 
     private void UnsubscribeFromOverlayEvents(VideoDisplayDockViewModel vm)
     {
+        if (_overlayEventsViewModel != vm)
+            return;
+
         vm.OverlayRightButtonDown -= OnOverlayRightButtonDown;
         vm.OverlayRightButtonUp -= OnOverlayRightButtonUp;
         vm.OverlayShiftKeyChanged -= OnOverlayShiftKeyChanged;
         vm.FreecamSprintStateChanged -= OnFreecamSprintStateChanged;
         vm.FreecamInputLockRequested -= OnFreecamInputLockRequested;
         vm.FreecamInputReleaseRequested -= OnFreecamInputReleaseRequested;
+        _overlayEventsViewModel = null;
     }
 
     private void SubscribeToHudOverlay(HudOverlayViewModel? overlay)
@@ -280,7 +301,7 @@ public partial class VideoDisplayDockView : UserControl
 
         if (IsHudOverlayVisible(vm) && (vm.UseD3DHost || (!vm.UseD3DHost && vm.IsStreaming)))
         {
-            vm.ShowHudOverlay();
+            vm.ShowHudOverlay(TopLevel.GetTopLevel(this) as Window);
             if (vm.UseD3DHost)
                 UpdateHudOverlayPosition();
             else
@@ -294,6 +315,9 @@ public partial class VideoDisplayDockView : UserControl
 
     private void OnOverlayRightButtonDown(object? sender, EventArgs e)
     {
+        if (!this.IsAttachedToVisualTree())
+            return;
+
         if (DataContext is VideoDisplayDockViewModel vm && (vm.UseD3DHost || (!vm.UseD3DHost && vm.IsStreaming)))
         {
             StatusBar.Focus();
@@ -713,24 +737,28 @@ public partial class VideoDisplayDockView : UserControl
         if (DataContext is not VideoDisplayDockViewModel vm)
             return;
 
-        vm.ActivateFreecam(ResolveInitMode(vm));
+        if (!this.IsAttachedToVisualTree())
+            return;
 
         // Determine which control to use for cursor center calculation
         Control? targetControl = null;
-        if (vm.UseD3DHost && SharedTextureAspect != null)
+        if (vm.UseD3DHost && SharedTextureAspect != null && SharedTextureAspect.IsAttachedToVisualTree())
         {
             targetControl = SharedTextureAspect;
         }
-        else if (!vm.UseD3DHost && vm.IsStreaming && RtpSwapchainHost != null)
+        else if (!vm.UseD3DHost && vm.IsStreaming && RtpSwapchainHost != null && RtpSwapchainHost.IsAttachedToVisualTree())
         {
             targetControl = RtpSwapchainHost;
         }
         else if (NoSignalOverlay != null && NoSignalOverlay.IsVisible
+            && NoSignalOverlay.IsAttachedToVisualTree()
             && NoSignalOverlay.Bounds.Width > 0 && NoSignalOverlay.Bounds.Height > 0)
         {
             targetControl = NoSignalOverlay;
         }
-        else if (VideoContainer != null && VideoContainer.Bounds.Width > 0 && VideoContainer.Bounds.Height > 0)
+        else if (VideoContainer != null
+            && VideoContainer.IsAttachedToVisualTree()
+            && VideoContainer.Bounds.Width > 0 && VideoContainer.Bounds.Height > 0)
         {
             targetControl = VideoContainer;
         }
@@ -739,13 +767,15 @@ public partial class VideoDisplayDockView : UserControl
             targetControl = this;
         }
 
-        if (targetControl == null)
+        if (targetControl == null || !targetControl.IsAttachedToVisualTree())
             return;
 
         var containerBounds = targetControl.Bounds;
         var centerPoint = new Point(containerBounds.Width / 2, containerBounds.Height / 2);
         var screenCenterPixel = targetControl.PointToScreen(centerPoint);
         var screenCenter = new Point(screenCenterPixel.X, screenCenterPixel.Y);
+
+        vm.ActivateFreecam(ResolveInitMode(vm));
 
         _lockedCursorCenter = screenCenter;
         if (_lockedCursorCenter.HasValue)
@@ -871,7 +901,8 @@ public partial class VideoDisplayDockView : UserControl
         if (DataContext is VideoDisplayDockViewModel vm)
         {
             _currentViewModel = vm;
-            SubscribeToOverlayEvents(vm);
+            if (this.IsAttachedToVisualTree())
+                SubscribeToOverlayEvents(vm);
             vm.RtpStreamRequested += OnRtpStreamRequested;
             vm.RtpStreamStopRequested += OnRtpStreamStopRequested;
             SubscribeToHudOverlay(vm.HudOverlay);
