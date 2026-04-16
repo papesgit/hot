@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Graphics;
 using HlaeObsTools.ViewModels;
@@ -24,7 +26,11 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private string? _selectedInstanceImageFile;
     private AttachSlotOption? _selectedInstanceAttachSlot;
     private AttachAttachmentOption? _selectedInstanceAttachment;
-    private string _selectedProfileName = "default";
+    private string _selectedProfileName = GraphicsProfileStorage.EmptyProfileName;
+    private string _toastMessage = string.Empty;
+    private bool _isToastVisible;
+    private CancellationTokenSource? _toastCts;
+    private bool _disposed;
     private bool _suppressApply;
     public event EventHandler<string>? ProfileRemoved;
 
@@ -68,7 +74,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         ShowSetupCommand = new Relay(() => IsSetupView = true);
         ShowLiveCommand = new Relay(() => IsSetupView = false);
         ApplyCommand = new Relay(async () => await ApplyAsync());
-        SaveProfileCommand = new Relay(() => _graphicsService.SaveProfile(_selectedProfileName));
+        SaveProfileCommand = new Relay(() => SaveProfileAs(_selectedProfileName));
         ReloadAllCommand = new Relay(async () => await ReloadAllAsync());
         ShowAllCommand = new Relay(() =>
         {
@@ -264,8 +270,23 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             if (string.IsNullOrWhiteSpace(value))
                 return;
             _graphicsService.LoadProfile(value);
+            OnPropertyChanged(nameof(CanRemoveSelectedProfile));
         }
     }
+
+    public string ToastMessage
+    {
+        get => _toastMessage;
+        private set => SetProperty(ref _toastMessage, value);
+    }
+
+    public bool IsToastVisible
+    {
+        get => _isToastVisible;
+        private set => SetProperty(ref _isToastVisible, value);
+    }
+
+    public bool CanRemoveSelectedProfile => !GraphicsProfileStorage.IsReservedProfileName(SelectedProfileName);
 
     public bool IsAtlasSourceSelected => SelectedInstanceSource?.Value == GraphicsInstanceSourceType.Atlas;
 
@@ -295,15 +316,54 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
     private async Task ApplyAsync()
     {
-        await _graphicsService.ApplyProfileAsync();
+        var response = await _graphicsService.ApplyProfileAsync();
+        if (response.Result == GraphicsApplyResult.ProducerAtlasCreateNoResponse)
+            return;
+
+        ShowToast(response.Result switch
+        {
+            GraphicsApplyResult.Applied => "Applied",
+            GraphicsApplyResult.HlaeDisconnected => "HLAE not connected",
+            GraphicsApplyResult.ProducerDisconnected => "Graphics producer not connected",
+            GraphicsApplyResult.ProducerAtlasCreateFailed => BuildAtlasCreateFailedToast(response),
+            _ => "Apply failed"
+        });
+    }
+
+    private static string BuildAtlasCreateFailedToast(GraphicsApplyResponse response)
+    {
+        return response.ErrorCode switch
+        {
+            "invalidHtmlPath" when !string.IsNullOrWhiteSpace(response.Error) => $"Atlas HTML path invalid: {response.Error}",
+            "invalidHtmlPath" => "Atlas HTML path is invalid or unavailable to the graphics producer",
+            "invalidAtlasSize" => "Atlas size is invalid",
+            "atlasNameRequired" => "Atlas name is required",
+            _ when !string.IsNullOrWhiteSpace(response.Error) => $"Atlas create failed: {response.Error}",
+            _ => "Apply finished, but an atlas failed to create"
+        };
     }
 
     private async Task ReloadAllAsync()
     {
+        var failed = false;
+        var noResponse = false;
         foreach (var atlas in Atlases)
         {
-            await _graphicsService.ReloadAtlasAsync(atlas.Name);
+            var result = await _graphicsService.ReloadAtlasAsync(atlas.Name);
+            if (result == ProducerCommandResult.Failed)
+            {
+                failed = true;
+            }
+            else if (result == ProducerCommandResult.NoResponse)
+            {
+                noResponse = true;
+            }
         }
+
+        if (failed)
+            ShowToast("Reload failed");
+        else if (!noResponse)
+            ShowToast("Reloaded");
     }
 
     public void AddAtlas(string name)
@@ -554,7 +614,11 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
         if (atlas == null)
             return;
-        await _graphicsService.ReloadAtlasAsync(atlas.Name);
+        var result = await _graphicsService.ReloadAtlasAsync(atlas.Name);
+        if (result == ProducerCommandResult.Succeeded)
+            ShowToast("Reloaded");
+        else if (result == ProducerCommandResult.Failed)
+            ShowToast("Reload failed");
     }
 
     private async Task TriggerAtlasAsync(GraphicsAtlasViewModel? atlas, string action)
@@ -653,14 +717,12 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
         _selectedProfileName = _graphicsService.CurrentProfileName;
         OnPropertyChanged(nameof(SelectedProfileName));
+        OnPropertyChanged(nameof(CanRemoveSelectedProfile));
         RefreshFromProfile();
     }
 
     private void OnAtlasEnabledChanged(GraphicsAtlasViewModel atlas)
     {
-        if (_suppressApply)
-            return;
-        _ = ApplyAsync();
     }
 
     private void OnInstanceVisibleChanged(GraphicsInstanceViewModel instance)
@@ -715,6 +777,9 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
+        _toastCts?.Cancel();
+        _toastCts?.Dispose();
         _graphicsService.ProfileChanged -= OnProfileChanged;
         _graphicsService.InstancesVisibilityChanged -= OnInstancesVisibilityChanged;
     }
@@ -723,37 +788,85 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
         if (string.IsNullOrWhiteSpace(name))
             return;
-        _graphicsService.SaveProfile(name);
+        if (GraphicsProfileStorage.IsReservedProfileName(name))
+        {
+            ShowToast("The empty profile is reserved. Choose another name.");
+            return;
+        }
+
+        if (!_graphicsService.SaveProfile(name))
+        {
+            ShowToast("Profile could not be saved");
+            return;
+        }
+
         RefreshProfiles();
         SelectedProfileName = _graphicsService.CurrentProfileName;
+        ShowToast("Profile saved");
     }
 
     public void RemoveSelectedProfile()
     {
         if (string.IsNullOrWhiteSpace(SelectedProfileName))
             return;
+        if (GraphicsProfileStorage.IsReservedProfileName(SelectedProfileName))
+            return;
+
         var removedProfileName = SelectedProfileName;
         _graphicsService.DeleteProfile(SelectedProfileName);
         RefreshProfiles();
         SelectedProfileName = _graphicsService.CurrentProfileName;
         ProfileRemoved?.Invoke(this, removedProfileName);
+        ShowToast("Profile removed");
     }
 
     private void RefreshProfiles()
     {
         Profiles.Clear();
         var profiles = _graphicsService.ListProfiles();
-        if (profiles.Length == 0)
-        {
-            Profiles.Add("default");
-            return;
-        }
         foreach (var name in profiles)
         {
             Profiles.Add(name);
         }
-        if (!Profiles.Contains("default"))
-            Profiles.Insert(0, "default");
+    }
+
+    private void ShowToast(string message)
+    {
+        if (_disposed)
+            return;
+
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => ShowToast(message));
+            return;
+        }
+
+        _toastCts?.Cancel();
+        _toastCts?.Dispose();
+        _toastCts = new CancellationTokenSource();
+
+        ToastMessage = message;
+        IsToastVisible = true;
+        _ = HideToastAfterDelayAsync(_toastCts.Token);
+    }
+
+    private async Task HideToastAfterDelayAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(2500, token);
+            if (!token.IsCancellationRequested)
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (!_disposed && !token.IsCancellationRequested)
+                        IsToastVisible = false;
+                });
+            }
+        }
+        catch (TaskCanceledException)
+        {
+        }
     }
 
 

@@ -66,25 +66,25 @@ public sealed class GraphicsProducerClient : IDisposable
         await ConnectAsync();
     }
 
-    public async Task<ProducerAtlasInfo?> CreateAtlasAsync(ProducerAtlasRequest request)
+    public async Task<ProducerAtlasCreateResult> CreateAtlasAsync(ProducerAtlasRequest request)
     {
         var response = await SendRequestAsync("gfxp.atlas.create", request);
         if (response == null)
         {
             Console.WriteLine("[gfxp-client] atlas create failed: no response");
-            return null;
+            return new ProducerAtlasCreateResult(ProducerCommandResult.NoResponse, null, null, null);
         }
         if (!response.Value.Ok)
         {
             Console.WriteLine($"[gfxp-client] atlas create error: {response.Value.Error}");
-            return null;
+            return new ProducerAtlasCreateResult(ProducerCommandResult.Failed, null, response.Value.ErrorCode, response.Value.Error);
         }
 
         var data = response.Value.Data;
         if (data.ValueKind != JsonValueKind.Object)
-            return null;
+            return new ProducerAtlasCreateResult(ProducerCommandResult.Failed, null, "invalidProducerResponse", "Producer returned an invalid atlas create response");
         if (!data.TryGetProperty("handle", out var handleProp))
-            return null;
+            return new ProducerAtlasCreateResult(ProducerCommandResult.Failed, null, "invalidProducerResponse", "Producer atlas create response did not include a handle");
 
         var info = new ProducerAtlasInfo
         {
@@ -96,15 +96,22 @@ public sealed class GraphicsProducerClient : IDisposable
             AlphaMode = data.TryGetProperty("alphaMode", out var alphaProp) ? alphaProp.GetString() ?? request.AlphaMode : request.AlphaMode,
             KeyedMutex = data.TryGetProperty("keyedMutex", out var keyedProp) && keyedProp.ValueKind == JsonValueKind.True
         };
-        return info;
+        return new ProducerAtlasCreateResult(ProducerCommandResult.Succeeded, info, null, null);
     }
 
-    public async Task<bool> ReloadAtlasAsync(string name)
+    public async Task<ProducerCommandResult> ReloadAtlasAsync(string name)
     {
         var response = await SendRequestAsync("gfxp.atlas.reload", new { name });
+        if (response == null)
+            return ProducerCommandResult.NoResponse;
+
         if (response?.Ok == false)
+        {
             Console.WriteLine($"[gfxp-client] atlas reload error: {response?.Error}");
-        return response?.Ok == true;
+            return ProducerCommandResult.Failed;
+        }
+
+        return ProducerCommandResult.Succeeded;
     }
 
     public async Task<bool> DestroyAtlasAsync(string name)
@@ -233,6 +240,7 @@ public sealed class GraphicsProducerClient : IDisposable
                 var response = new ProducerResponse
                 {
                     Ok = root.TryGetProperty("ok", out var okProp) && okProp.ValueKind == JsonValueKind.True,
+                    ErrorCode = root.TryGetProperty("errorCode", out var errCodeProp) ? errCodeProp.GetString() : null,
                     Error = root.TryGetProperty("error", out var errProp) ? errProp.GetString() : null,
                     Data = data
                 };
@@ -273,6 +281,7 @@ public sealed class GraphicsProducerClient : IDisposable
     private readonly struct ProducerResponse
     {
         public bool Ok { get; init; }
+        public string? ErrorCode { get; init; }
         public string? Error { get; init; }
         public JsonElement Data { get; init; }
     }
@@ -301,4 +310,13 @@ public sealed class ProducerAtlasInfo
     public string Format { get; set; } = string.Empty;
     public string AlphaMode { get; set; } = string.Empty;
     public bool KeyedMutex { get; set; }
+}
+
+public sealed record ProducerAtlasCreateResult(ProducerCommandResult Result, ProducerAtlasInfo? Info, string? ErrorCode, string? Error);
+
+public enum ProducerCommandResult
+{
+    Succeeded,
+    Failed,
+    NoResponse
 }

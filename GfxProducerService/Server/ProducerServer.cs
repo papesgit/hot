@@ -208,7 +208,7 @@ public sealed class ProducerServer : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"[gfxp] cmd error: {ex.Message}");
-            await SendErrorAsync(socket, id, ex.Message);
+            await SendErrorAsync(socket, id, ex.Message, "commandFailed");
         }
     }
 
@@ -228,11 +228,38 @@ public sealed class ProducerServer : IDisposable
 
         if (string.IsNullOrWhiteSpace(request.Name))
         {
-            await SendErrorAsync(socket, id, "Atlas name required");
+            await SendErrorAsync(socket, id, "Atlas name required", "atlasNameRequired");
             return;
         }
 
-        var info = _atlasManager.CreateAtlas(request);
+        if (request.Width <= 0 || request.Height <= 0)
+        {
+            await SendErrorAsync(socket, id, "Atlas width and height must be greater than zero", "invalidAtlasSize");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.HtmlPath))
+        {
+            await SendErrorAsync(socket, id, "Atlas HTML path required", "invalidHtmlPath");
+            return;
+        }
+
+        AtlasInfo info;
+        try
+        {
+            info = _atlasManager.CreateAtlas(request);
+        }
+        catch (FileNotFoundException ex)
+        {
+            await SendErrorAsync(socket, id, ex.Message, "invalidHtmlPath");
+            return;
+        }
+        catch (Exception ex)
+        {
+            await SendErrorAsync(socket, id, ex.Message, "atlasCreateFailed");
+            return;
+        }
+
         Console.WriteLine($"[gfxp] atlas created '{info.Name}' {info.Width}x{info.Height} handle={info.Handle}");
         await SendResponseAsync(socket, id, new
         {
@@ -251,18 +278,23 @@ public sealed class ProducerServer : IDisposable
         var name = GetString(root, "name");
         if (string.IsNullOrWhiteSpace(name))
         {
-            await SendErrorAsync(socket, id, "Atlas name required");
+            await SendErrorAsync(socket, id, "Atlas name required", "atlasNameRequired");
             return;
         }
 
         var renderer = _atlasManager.GetRenderer(name);
         if (renderer == null)
         {
-            await SendErrorAsync(socket, id, $"Atlas not found: {name}");
+            await SendErrorAsync(socket, id, $"Atlas not found: {name}", "atlasNotFound");
             return;
         }
 
-        await renderer.ReloadAsync();
+        if (!await renderer.ReloadAsync())
+        {
+            await SendErrorAsync(socket, id, $"Atlas reload failed: {name}", "atlasReloadFailed");
+            return;
+        }
+
         Console.WriteLine($"[gfxp] atlas reloaded '{name}'");
         await SendResponseAsync(socket, id, new { name });
     }
@@ -272,7 +304,7 @@ public sealed class ProducerServer : IDisposable
         var name = GetString(root, "name");
         if (string.IsNullOrWhiteSpace(name))
         {
-            await SendErrorAsync(socket, id, "Atlas name required");
+            await SendErrorAsync(socket, id, "Atlas name required", "atlasNameRequired");
             return;
         }
 
@@ -288,14 +320,14 @@ public sealed class ProducerServer : IDisposable
         var target = GetString(root, "target") ?? string.Empty;
         if (string.IsNullOrWhiteSpace(atlas) || string.IsNullOrWhiteSpace(action))
         {
-            await SendErrorAsync(socket, id, "Atlas and action required");
+            await SendErrorAsync(socket, id, "Atlas and action required", "atlasActionRequired");
             return;
         }
 
         var renderer = _atlasManager.GetRenderer(atlas);
         if (renderer == null)
         {
-            await SendErrorAsync(socket, id, $"Atlas not found: {atlas}");
+            await SendErrorAsync(socket, id, $"Atlas not found: {atlas}", "atlasNotFound");
             return;
         }
 
@@ -309,7 +341,7 @@ public sealed class ProducerServer : IDisposable
         var gsiJson = GetString(root, "gsiJson");
         if (string.IsNullOrWhiteSpace(gsiJson))
         {
-            await SendErrorAsync(socket, id, "gsiJson required");
+            await SendErrorAsync(socket, id, "gsiJson required", "gsiJsonRequired");
             return;
         }
 
@@ -337,13 +369,14 @@ public sealed class ProducerServer : IDisposable
         await SendAsync(socket, json);
     }
 
-    private async Task SendErrorAsync(WebSocket socket, string? id, string error)
+    private async Task SendErrorAsync(WebSocket socket, string? id, string error, string? errorCode = null)
     {
         Console.WriteLine($"[gfxp] error: {error}");
         var payload = new
         {
             id,
             ok = false,
+            errorCode,
             error
         };
         var json = JsonSerializer.Serialize(payload, _jsonOptions);

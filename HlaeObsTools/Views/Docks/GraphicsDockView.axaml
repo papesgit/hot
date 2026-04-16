@@ -68,7 +68,10 @@
                     SelectedItem="{Binding SelectedProfileName}"
                     Width="120"
                     Margin="0,0,8,8" />
-          <Button Content="Remove" Click="OnRemoveProfileClick" Margin="0,0,8,8" />
+          <Button Content="Remove"
+                  Click="OnRemoveProfileClick"
+                  IsEnabled="{Binding CanRemoveSelectedProfile}"
+                  Margin="0,0,8,8" />
         </WrapPanel>
       </Grid>
 
@@ -442,6 +445,24 @@
           </StackPanel>
         </ScrollViewer>
       </Grid>
+
+      <Border Grid.RowSpan="2"
+              IsVisible="{Binding IsToastVisible}"
+              IsHitTestVisible="False"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Margin="0,35,0,0"
+              Background="#DD252525"
+              BorderBrush="#555555"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="12,8"
+              ZIndex="10">
+        <TextBlock Text="{Binding ToastMessage}"
+                   Foreground="#F2F2F2"
+                   TextWrapping="Wrap"
+                   MaxWidth="360" />
+      </Border>
     </Grid>
   </Border>
 </UserControl>

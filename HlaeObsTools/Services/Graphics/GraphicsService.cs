@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -17,7 +16,7 @@ public sealed class GraphicsService : IDisposable
     private readonly GraphicsProducerClient _producerClient;
     private readonly GsiServer _gsiServer;
     private readonly GraphicsProfileStorage _storage;
-    private string _currentProfileName = "default";
+    private string _currentProfileName = GraphicsProfileStorage.EmptyProfileName;
     private GraphicsProfile _profile = new();
     private readonly int _targetFps;
     private readonly HashSet<string> _producerAtlases = new(StringComparer.OrdinalIgnoreCase);
@@ -51,26 +50,31 @@ public sealed class GraphicsService : IDisposable
 
     public void LoadProfile(string profileName)
     {
-        _currentProfileName = string.IsNullOrWhiteSpace(profileName) ? "default" : profileName.Trim();
+        _currentProfileName = string.IsNullOrWhiteSpace(profileName) ? GraphicsProfileStorage.EmptyProfileName : profileName.Trim();
         _profile = _storage.Load(_currentProfileName);
         ProfileChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void SaveProfile(string profileName)
+    public bool SaveProfile(string profileName)
     {
-        _currentProfileName = string.IsNullOrWhiteSpace(profileName) ? "default" : profileName.Trim();
-        _storage.Save(_currentProfileName, _profile);
+        var name = string.IsNullOrWhiteSpace(profileName) ? GraphicsProfileStorage.EmptyProfileName : profileName.Trim();
+        if (!_storage.Save(name, _profile))
+            return false;
+
+        _currentProfileName = name;
         ProfileChanged?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
     public void DeleteProfile(string profileName)
     {
         if (string.IsNullOrWhiteSpace(profileName))
             return;
-        _storage.Delete(profileName);
+        if (!_storage.Delete(profileName))
+            return;
         if (string.Equals(_currentProfileName, profileName, StringComparison.OrdinalIgnoreCase))
         {
-            _currentProfileName = "default";
+            _currentProfileName = GraphicsProfileStorage.EmptyProfileName;
             _profile = _storage.Load(_currentProfileName);
             ProfileChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -81,7 +85,7 @@ public sealed class GraphicsService : IDisposable
         return _storage.ListProfiles();
     }
 
-    public Task ReloadAtlasAsync(string atlasName)
+    public Task<ProducerCommandResult> ReloadAtlasAsync(string atlasName)
     {
         return _producerClient.ReloadAtlasAsync(atlasName);
     }
@@ -134,13 +138,17 @@ public sealed class GraphicsService : IDisposable
         }
     }
 
-    public async Task ApplyProfileAsync()
+    public async Task<GraphicsApplyResponse> ApplyProfileAsync()
     {
         await _applySemaphore.WaitAsync();
         try
         {
             if (!_webSocket.IsConnected || !_producerClient.IsConnected)
-                return;
+            {
+                if (!_webSocket.IsConnected)
+                    return new GraphicsApplyResponse(GraphicsApplyResult.HlaeDisconnected);
+                return new GraphicsApplyResponse(GraphicsApplyResult.ProducerDisconnected);
+            }
 
             var desiredAtlases = GetDistinctByName(_profile.Atlases.Where(IsValidAtlas), a => a.Name);
             var desiredAtlasProducerState = desiredAtlases.ToDictionary(a => a.Name, GetAtlasProducerStateKey, StringComparer.OrdinalIgnoreCase);
@@ -175,6 +183,9 @@ public sealed class GraphicsService : IDisposable
                 RemoveAppliedAtlasState(name);
             }
 
+            var producerCreateFailed = false;
+            var producerCreateNoResponse = false;
+            ProducerAtlasCreateResult? firstCreateFailure = null;
             foreach (var atlas in desiredAtlases)
             {
                 var desiredProducerState = desiredAtlasProducerState[atlas.Name];
@@ -183,7 +194,7 @@ public sealed class GraphicsService : IDisposable
 
                 if (producerChanged)
                 {
-                    var info = await _producerClient.CreateAtlasAsync(new ProducerAtlasRequest
+                    var createResult = await _producerClient.CreateAtlasAsync(new ProducerAtlasRequest
                     {
                         Name = atlas.Name,
                         Width = atlas.Width,
@@ -195,8 +206,19 @@ public sealed class GraphicsService : IDisposable
                         TargetFps = _targetFps
                     });
 
-                    if (info == null || string.IsNullOrWhiteSpace(info.Handle))
+                    if (createResult.Result == ProducerCommandResult.NoResponse)
+                    {
+                        producerCreateNoResponse = true;
                         continue;
+                    }
+
+                    var info = createResult.Info;
+                    if (info == null || string.IsNullOrWhiteSpace(info.Handle))
+                    {
+                        producerCreateFailed = true;
+                        firstCreateFailure ??= createResult;
+                        continue;
+                    }
 
                     _producerAtlases.Add(atlas.Name);
 
@@ -265,6 +287,18 @@ public sealed class GraphicsService : IDisposable
             }
 
             _appliedProfileName = _currentProfileName;
+            if (producerCreateFailed)
+            {
+                return new GraphicsApplyResponse(
+                    GraphicsApplyResult.ProducerAtlasCreateFailed,
+                    firstCreateFailure?.ErrorCode,
+                    firstCreateFailure?.Error);
+            }
+
+            if (producerCreateNoResponse)
+                return new GraphicsApplyResponse(GraphicsApplyResult.ProducerAtlasCreateNoResponse);
+
+            return new GraphicsApplyResponse(GraphicsApplyResult.Applied);
         }
         finally
         {
@@ -424,13 +458,19 @@ public sealed class GraphicsService : IDisposable
 
     private static bool IsSupportedHtmlPath(string htmlPath)
     {
+        if (htmlPath.Length >= 2 && htmlPath[1] == ':')
+            return true;
+
         if (Uri.TryCreate(htmlPath, UriKind.Absolute, out var uri) &&
             (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
         {
             return true;
         }
 
-        return File.Exists(htmlPath);
+        if (Uri.TryCreate(htmlPath, UriKind.Absolute, out uri))
+            return uri.IsFile;
+
+        return true;
     }
 
     private static bool IsValidInstance(GraphicsInstance inst)
@@ -636,3 +676,13 @@ public sealed class GraphicsService : IDisposable
 
 public sealed record GraphicsVisibilityEvent(IReadOnlyList<string> InstanceNames, bool Visible);
 public sealed record GraphicsCameraTransform(double PosX, double PosY, double PosZ, double Pitch, double Yaw, double Roll);
+public sealed record GraphicsApplyResponse(GraphicsApplyResult Result, string? ErrorCode = null, string? Error = null);
+
+public enum GraphicsApplyResult
+{
+    Applied,
+    HlaeDisconnected,
+    ProducerDisconnected,
+    ProducerAtlasCreateFailed,
+    ProducerAtlasCreateNoResponse
+}

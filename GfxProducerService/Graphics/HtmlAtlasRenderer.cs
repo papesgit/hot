@@ -94,10 +94,11 @@ public sealed class HtmlAtlasRenderer : IDisposable
         _renderTask = Task.Run(() => RenderLoopAsync(_cts.Token));
     }
 
-    public async Task ReloadAsync()
+    public async Task<bool> ReloadAsync()
     {
         if (_browser == null)
-            return;
+            return false;
+
         TaskCompletionSource<bool> tcs;
         lock (_reloadLock)
         {
@@ -105,10 +106,26 @@ public sealed class HtmlAtlasRenderer : IDisposable
             tcs = _reloadPaintTcs;
         }
 
-        await _browser.LoadUrlAsync(new Uri(_htmlPath).AbsoluteUri);
+        try
+        {
+            await _browser.LoadUrlAsync(new Uri(_htmlPath).AbsoluteUri);
+            try
+            {
+                _browser.GetBrowserHost()?.Invalidate(PaintElementType.View);
+            }
+            catch
+            {
+                // Paint after reload is best-effort; page load completion defines reload success.
+            }
 
-        var completed = await Task.WhenAny(tcs.Task, Task.Delay(5000)) == tcs.Task;
-        if (!completed)
+            await Task.WhenAny(tcs.Task, Task.Delay(250));
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
         {
             lock (_reloadLock)
             {

@@ -74,11 +74,10 @@ public sealed class AtlasManager : IDisposable
     {
         EnsureInitialized();
 
-        if (_info.TryGetValue(request.Name, out var existing))
-            return existing;
-
         if (!IsSupportedHtmlPath(request.HtmlPath))
             throw new FileNotFoundException($"HTML path or URL not found / not supported: {request.HtmlPath}", request.HtmlPath);
+
+        DestroyAtlas(request.Name);
 
         var format = request.Format == "RGBA8" ? Format.R8G8B8A8_UNorm : Format.B8G8R8A8_UNorm;
         var renderer = new HtmlAtlasRenderer(_device, request.Width, request.Height, request.TargetFps, request.HtmlPath, format, request.KeyedMutex);
