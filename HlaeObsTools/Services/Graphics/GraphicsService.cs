@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.WebSocket;
@@ -21,8 +22,12 @@ public sealed class GraphicsService : IDisposable
     private bool _enabled;
     private readonly int _targetFps;
     private readonly HashSet<string> _producerAtlases = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, string> _appliedAtlasState = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _appliedAtlasProducerState = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _appliedAtlasRegionState = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HashSet<string>> _appliedAtlasRegionIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _appliedInstanceState = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SemaphoreSlim _applySemaphore = new(1, 1);
+    private string? _appliedProfileName;
     private readonly GsiExtrasTracker _gsiExtrasTracker = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<IReadOnlyList<string>>> _pendingImageListRequests = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, TaskCompletionSource<GraphicsCameraTransform?>> _pendingCameraRequests = new(StringComparer.Ordinal);
@@ -61,8 +66,7 @@ public sealed class GraphicsService : IDisposable
         }
         else
         {
-            _ = ClearRemoteAsync();
-            _ = DestroyProducerAtlasesAsync();
+            _ = DisableGraphicsAsync();
         }
     }
 
@@ -158,102 +162,141 @@ public sealed class GraphicsService : IDisposable
         if (!_enabled)
             return;
 
-        var desiredAtlases = _profile.Atlases
-            .Where(IsValidAtlas)
-            .ToList();
-        var desiredAtlasState = desiredAtlases.ToDictionary(a => a.Name, GetAtlasStateKey, StringComparer.OrdinalIgnoreCase);
-
-        var desiredInstances = _profile.Instances
-            .Where(IsValidInstance)
-            .ToList();
-        var desiredInstanceState = desiredInstances.ToDictionary(i => i.Name, GetInstanceStateKey, StringComparer.OrdinalIgnoreCase);
-
-        var instancesToDestroy = _appliedInstanceState
-            .Where(pair => !desiredInstanceState.TryGetValue(pair.Key, out var desiredState) || !string.Equals(pair.Value, desiredState, StringComparison.Ordinal))
-            .Select(pair => pair.Key)
-            .ToList();
-        foreach (var name in instancesToDestroy)
+        await _applySemaphore.WaitAsync();
+        try
         {
-            await DestroyRemoteInstanceAsync(name);
-            _appliedInstanceState.Remove(name);
-        }
+            if (!_enabled)
+                return;
+            if (!_webSocket.IsConnected || !_producerClient.IsConnected)
+                return;
 
-        var atlasesToDestroy = _appliedAtlasState
-            .Where(pair => !desiredAtlasState.TryGetValue(pair.Key, out var desiredState) || !string.Equals(pair.Value, desiredState, StringComparison.Ordinal))
-            .Select(pair => pair.Key)
-            .ToList();
-        foreach (var name in atlasesToDestroy)
-        {
-            await DestroyRemoteAtlasAsync(name);
-            _appliedAtlasState.Remove(name);
-        }
+            var desiredAtlases = GetDistinctByName(_profile.Atlases.Where(IsValidAtlas), a => a.Name);
+            var desiredAtlasProducerState = desiredAtlases.ToDictionary(a => a.Name, GetAtlasProducerStateKey, StringComparer.OrdinalIgnoreCase);
+            var desiredAtlasRegionState = desiredAtlases.ToDictionary(a => a.Name, GetAtlasRegionStateKey, StringComparer.OrdinalIgnoreCase);
+            var desiredAtlasRegionIds = desiredAtlases.ToDictionary(a => a.Name, GetAtlasRegionIds, StringComparer.OrdinalIgnoreCase);
 
-        foreach (var atlas in desiredAtlases)
-        {
-            if (_appliedAtlasState.TryGetValue(atlas.Name, out var appliedState) &&
-                desiredAtlasState.TryGetValue(atlas.Name, out var desiredState) &&
-                string.Equals(appliedState, desiredState, StringComparison.Ordinal))
+            var desiredInstances = GetDistinctByName(_profile.Instances.Where(IsValidInstance), i => i.Name);
+            var desiredInstanceState = desiredInstances.ToDictionary(i => i.Name, GetInstanceStateKey, StringComparer.OrdinalIgnoreCase);
+
+            if (_appliedProfileName != null && !string.Equals(_appliedProfileName, _currentProfileName, StringComparison.OrdinalIgnoreCase))
             {
-                continue;
+                await ClearRemoteCoreAsync();
             }
 
-            var info = await _producerClient.CreateAtlasAsync(new ProducerAtlasRequest
+            var instancesToDestroy = _appliedInstanceState
+                .Where(pair => !desiredInstanceState.ContainsKey(pair.Key))
+                .Select(pair => pair.Key)
+                .ToList();
+            foreach (var name in instancesToDestroy)
             {
-                Name = atlas.Name,
-                Width = atlas.Width,
-                Height = atlas.Height,
-                Format = atlas.Format == GraphicsAtlasFormat.Rgba8 ? "RGBA8" : "BGRA8",
-                AlphaMode = atlas.AlphaMode == GraphicsAlphaMode.Straight ? "straight" : "premultiplied",
-                KeyedMutex = atlas.KeyedMutex,
-                HtmlPath = atlas.HtmlPath,
-                TargetFps = _targetFps
-            });
+                await DestroyRemoteInstanceAsync(name);
+                _appliedInstanceState.Remove(name);
+            }
 
-            if (info == null || string.IsNullOrWhiteSpace(info.Handle))
-                continue;
-
-            _producerAtlases.Add(atlas.Name);
-
-            await _webSocket.SendCommandAsync("gfx.atlas.create", new
+            var atlasesToDestroy = _appliedAtlasProducerState
+                .Where(pair => !desiredAtlasProducerState.ContainsKey(pair.Key))
+                .Select(pair => pair.Key)
+                .ToList();
+            foreach (var name in atlasesToDestroy)
             {
-                name = atlas.Name,
-                handle = info.Handle,
-                width = info.Width,
-                height = info.Height,
-                format = info.Format,
-                alphaMode = info.AlphaMode,
-                keyedMutex = info.KeyedMutex
-            });
+                await DestroyRemoteAtlasAsync(name);
+                RemoveAppliedAtlasState(name);
+            }
 
-            foreach (var region in atlas.Regions)
+            foreach (var atlas in desiredAtlases)
             {
-                await _webSocket.SendCommandAsync("gfx.atlas.region.set", new
+                var desiredProducerState = desiredAtlasProducerState[atlas.Name];
+                var producerChanged = !_appliedAtlasProducerState.TryGetValue(atlas.Name, out var appliedProducerState) ||
+                    !string.Equals(appliedProducerState, desiredProducerState, StringComparison.Ordinal);
+
+                if (producerChanged)
                 {
-                    atlas = atlas.Name,
-                    id = region.Id,
-                    u0 = region.U0,
-                    v0 = region.V0,
-                    u1 = region.U1,
-                    v1 = region.V1,
-                    defaultSize = new[] { region.DefaultWidth, region.DefaultHeight }
-                });
+                    var info = await _producerClient.CreateAtlasAsync(new ProducerAtlasRequest
+                    {
+                        Name = atlas.Name,
+                        Width = atlas.Width,
+                        Height = atlas.Height,
+                        Format = atlas.Format == GraphicsAtlasFormat.Rgba8 ? "RGBA8" : "BGRA8",
+                        AlphaMode = atlas.AlphaMode == GraphicsAlphaMode.Straight ? "straight" : "premultiplied",
+                        KeyedMutex = atlas.KeyedMutex,
+                        HtmlPath = atlas.HtmlPath,
+                        TargetFps = _targetFps
+                    });
+
+                    if (info == null || string.IsNullOrWhiteSpace(info.Handle))
+                        continue;
+
+                    _producerAtlases.Add(atlas.Name);
+
+                    await _webSocket.SendCommandAsync("gfx.atlas.create", new
+                    {
+                        name = atlas.Name,
+                        handle = info.Handle,
+                        width = info.Width,
+                        height = info.Height,
+                        format = info.Format,
+                        alphaMode = info.AlphaMode,
+                        keyedMutex = info.KeyedMutex
+                    });
+
+                    _appliedAtlasProducerState[atlas.Name] = desiredProducerState;
+                }
+
+                var desiredRegionIds = desiredAtlasRegionIds[atlas.Name];
+                if (_appliedAtlasRegionIds.TryGetValue(atlas.Name, out var appliedRegionIds))
+                {
+                    foreach (var regionId in appliedRegionIds.Where(id => !desiredRegionIds.Contains(id)).ToList())
+                    {
+                        await _webSocket.SendCommandAsync("gfx.atlas.region.remove", new
+                        {
+                            atlas = atlas.Name,
+                            id = regionId
+                        });
+                    }
+                }
+
+                var desiredRegionState = desiredAtlasRegionState[atlas.Name];
+                var regionsChanged = !_appliedAtlasRegionState.TryGetValue(atlas.Name, out var appliedRegionState) ||
+                    !string.Equals(appliedRegionState, desiredRegionState, StringComparison.Ordinal);
+
+                if (regionsChanged || producerChanged)
+                {
+                    foreach (var region in atlas.Regions)
+                    {
+                        await _webSocket.SendCommandAsync("gfx.atlas.region.set", new
+                        {
+                            atlas = atlas.Name,
+                            id = region.Id,
+                            u0 = region.U0,
+                            v0 = region.V0,
+                            u1 = region.U1,
+                            v1 = region.V1,
+                            defaultSize = new[] { region.DefaultWidth, region.DefaultHeight }
+                        });
+                    }
+
+                    _appliedAtlasRegionState[atlas.Name] = desiredRegionState;
+                    _appliedAtlasRegionIds[atlas.Name] = desiredRegionIds;
+                }
             }
 
-            _appliedAtlasState[atlas.Name] = desiredAtlasState[atlas.Name];
-        }
-
-        foreach (var inst in desiredInstances)
-        {
-            if (_appliedInstanceState.TryGetValue(inst.Name, out var appliedState) &&
-                desiredInstanceState.TryGetValue(inst.Name, out var desiredState) &&
-                string.Equals(appliedState, desiredState, StringComparison.Ordinal))
+            foreach (var inst in desiredInstances)
             {
-                continue;
+                var exists = _appliedInstanceState.TryGetValue(inst.Name, out var appliedState);
+                var desiredState = desiredInstanceState[inst.Name];
+                if (exists && string.Equals(appliedState, desiredState, StringComparison.Ordinal))
+                    continue;
+
+                await _webSocket.SendCommandAsync(exists ? "gfx.instance.update" : "gfx.instance.create", BuildInstancePayload(inst));
+
+                _appliedInstanceState[inst.Name] = desiredState;
             }
 
-            await _webSocket.SendCommandAsync("gfx.instance.create", BuildInstancePayload(inst));
-
-            _appliedInstanceState[inst.Name] = desiredInstanceState[inst.Name];
+            _appliedProfileName = _currentProfileName;
+        }
+        finally
+        {
+            _applySemaphore.Release();
         }
     }
 
@@ -349,17 +392,48 @@ public sealed class GraphicsService : IDisposable
 
     private async Task ClearRemoteAsync()
     {
+        await _applySemaphore.WaitAsync();
+        try
+        {
+            await ClearRemoteCoreAsync();
+        }
+        finally
+        {
+            _applySemaphore.Release();
+        }
+    }
+
+    private async Task DisableGraphicsAsync()
+    {
+        await _applySemaphore.WaitAsync();
+        try
+        {
+            await ClearRemoteCoreAsync();
+            await DestroyProducerAtlasesCoreAsync();
+        }
+        finally
+        {
+            _applySemaphore.Release();
+        }
+    }
+
+    private async Task ClearRemoteCoreAsync()
+    {
         foreach (var name in _appliedInstanceState.Keys.ToList())
         {
             await DestroyRemoteInstanceAsync(name);
         }
         _appliedInstanceState.Clear();
 
-        foreach (var name in _appliedAtlasState.Keys.ToList())
+        foreach (var name in _appliedAtlasProducerState.Keys.ToList())
         {
             await DestroyRemoteAtlasAsync(name);
         }
-        _appliedAtlasState.Clear();
+        await DestroyProducerAtlasesCoreAsync();
+        _appliedAtlasProducerState.Clear();
+        _appliedAtlasRegionState.Clear();
+        _appliedAtlasRegionIds.Clear();
+        _appliedProfileName = null;
     }
 
     private async Task DestroyRemoteInstanceAsync(string name)
@@ -383,13 +457,20 @@ public sealed class GraphicsService : IDisposable
         }
     }
 
-    private async Task DestroyProducerAtlasesAsync()
+    private async Task DestroyProducerAtlasesCoreAsync()
     {
         foreach (var name in _producerAtlases.ToList())
         {
             await _producerClient.DestroyAtlasAsync(name);
             _producerAtlases.Remove(name);
         }
+    }
+
+    private void RemoveAppliedAtlasState(string name)
+    {
+        _appliedAtlasProducerState.Remove(name);
+        _appliedAtlasRegionState.Remove(name);
+        _appliedAtlasRegionIds.Remove(name);
     }
 
     private static bool IsValidAtlas(GraphicsAtlas atlas)
@@ -424,9 +505,30 @@ public sealed class GraphicsService : IDisposable
         };
     }
 
-    private static string GetAtlasStateKey(GraphicsAtlas atlas)
+    private static string GetAtlasProducerStateKey(GraphicsAtlas atlas)
     {
-        return JsonSerializer.Serialize(atlas);
+        return JsonSerializer.Serialize(new
+        {
+            atlas.Width,
+            atlas.Height,
+            atlas.Format,
+            atlas.AlphaMode,
+            atlas.KeyedMutex,
+            atlas.HtmlPath
+        });
+    }
+
+    private static string GetAtlasRegionStateKey(GraphicsAtlas atlas)
+    {
+        return JsonSerializer.Serialize(atlas.Regions);
+    }
+
+    private static HashSet<string> GetAtlasRegionIds(GraphicsAtlas atlas)
+    {
+        return atlas.Regions
+            .Select(region => region.Id)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     private static string GetInstanceStateKey(GraphicsInstance inst)
@@ -436,21 +538,17 @@ public sealed class GraphicsService : IDisposable
 
     private static Dictionary<string, object?> BuildInstancePayload(GraphicsInstance inst)
     {
-        var attachPayload = inst.AttachSlot >= 0
-            ? new
+        var payload = new Dictionary<string, object?>
+        {
+            ["name"] = inst.Name,
+            ["attach"] = new
             {
                 slot = inst.AttachSlot,
                 useYaw = inst.AttachUseYaw,
                 usePitch = inst.AttachUsePitch,
                 useRoll = inst.AttachUseRoll,
                 attachment = inst.AttachAttachmentName
-            }
-            : null;
-
-        var payload = new Dictionary<string, object?>
-        {
-            ["name"] = inst.Name,
-            ["attach"] = attachPayload,
+            },
             ["pos"] = new[] { inst.PosX, inst.PosY, inst.PosZ },
             ["ang"] = new[] { inst.Pitch, inst.Yaw, inst.Roll },
             ["scale"] = new[] { inst.ScaleX, inst.ScaleY },
@@ -470,6 +568,20 @@ public sealed class GraphicsService : IDisposable
         }
 
         return payload;
+    }
+
+    private static List<T> GetDistinctByName<T>(IEnumerable<T> items, Func<T, string> getName)
+    {
+        var result = new List<T>();
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in items)
+        {
+            if (names.Add(getName(item)))
+            {
+                result.Add(item);
+            }
+        }
+        return result;
     }
 
     private void OnGameStateUpdated(object? sender, GsiGameState e)
