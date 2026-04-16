@@ -19,7 +19,6 @@ public sealed class GraphicsService : IDisposable
     private readonly GraphicsProfileStorage _storage;
     private string _currentProfileName = "default";
     private GraphicsProfile _profile = new();
-    private bool _enabled;
     private readonly int _targetFps;
     private readonly HashSet<string> _producerAtlases = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _appliedAtlasProducerState = new(StringComparer.OrdinalIgnoreCase);
@@ -43,32 +42,12 @@ public sealed class GraphicsService : IDisposable
         _storage = storage;
         _targetFps = targetFps;
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
-        _webSocket.Connected += OnWebSocketConnected;
         _webSocket.MessageReceived += OnWebSocketMessageReceived;
-        _producerClient.Connected += OnProducerConnected;
         _producerClient.TriggerCompleted += OnProducerTriggerCompleted;
     }
 
-    public bool Enabled => _enabled;
     public GraphicsProfile Profile => _profile;
     public string CurrentProfileName => _currentProfileName;
-
-    public void SetEnabled(bool enabled)
-    {
-        if (_enabled == enabled)
-            return;
-
-        _enabled = enabled;
-        if (_enabled)
-        {
-            LoadProfile(_currentProfileName);
-            _ = ApplyProfileAsync();
-        }
-        else
-        {
-            _ = DisableGraphicsAsync();
-        }
-    }
 
     public void LoadProfile(string profileName)
     {
@@ -104,8 +83,6 @@ public sealed class GraphicsService : IDisposable
 
     public Task ReloadAtlasAsync(string atlasName)
     {
-        if (!_enabled)
-            return Task.CompletedTask;
         return _producerClient.ReloadAtlasAsync(atlasName);
     }
 
@@ -159,14 +136,9 @@ public sealed class GraphicsService : IDisposable
 
     public async Task ApplyProfileAsync()
     {
-        if (!_enabled)
-            return;
-
         await _applySemaphore.WaitAsync();
         try
         {
-            if (!_enabled)
-                return;
             if (!_webSocket.IsConnected || !_producerClient.IsConnected)
                 return;
 
@@ -302,7 +274,7 @@ public sealed class GraphicsService : IDisposable
 
     public async Task UpdateInstanceVisibilityAsync(string name, bool visible)
     {
-        if (!_enabled || !_webSocket.IsConnected)
+        if (!_webSocket.IsConnected)
             return;
         if (string.IsNullOrWhiteSpace(name))
             return;
@@ -315,7 +287,7 @@ public sealed class GraphicsService : IDisposable
 
     public async Task UpdateInstancesVisibilityAsync(IEnumerable<GraphicsInstance> instances, bool visible)
     {
-        if (!_enabled || !_webSocket.IsConnected)
+        if (!_webSocket.IsConnected)
             return;
         foreach (var inst in instances)
         {
@@ -331,8 +303,6 @@ public sealed class GraphicsService : IDisposable
 
     public Task TriggerInstanceAsync(string instanceName, string action)
     {
-        if (!_enabled)
-            return Task.CompletedTask;
         if (string.IsNullOrWhiteSpace(instanceName))
             return Task.CompletedTask;
         var instance = _profile.Instances.FirstOrDefault(i => i.Name == instanceName);
@@ -364,8 +334,6 @@ public sealed class GraphicsService : IDisposable
 
     public async Task TriggerAtlasInstancesAsync(string atlasName, string action)
     {
-        if (!_enabled)
-            return;
         if (string.IsNullOrWhiteSpace(atlasName))
             return;
         var instances = _profile.Instances
@@ -387,33 +355,6 @@ public sealed class GraphicsService : IDisposable
         foreach (var region in regions)
         {
             await _producerClient.TriggerAsync(atlasName, action, region);
-        }
-    }
-
-    private async Task ClearRemoteAsync()
-    {
-        await _applySemaphore.WaitAsync();
-        try
-        {
-            await ClearRemoteCoreAsync();
-        }
-        finally
-        {
-            _applySemaphore.Release();
-        }
-    }
-
-    private async Task DisableGraphicsAsync()
-    {
-        await _applySemaphore.WaitAsync();
-        try
-        {
-            await ClearRemoteCoreAsync();
-            await DestroyProducerAtlasesCoreAsync();
-        }
-        finally
-        {
-            _applySemaphore.Release();
         }
     }
 
@@ -586,7 +527,7 @@ public sealed class GraphicsService : IDisposable
 
     private void OnGameStateUpdated(object? sender, GsiGameState e)
     {
-        if (_enabled && _producerClient.IsConnected && !string.IsNullOrWhiteSpace(e.RawJson))
+        if (_producerClient.IsConnected && !string.IsNullOrWhiteSpace(e.RawJson))
         {
             var extras = _gsiExtrasTracker.Update(e.RawJson);
             _ = _producerClient.SendGsiAsync(e.RawJson, e.Heartbeat, extras);
@@ -595,24 +536,8 @@ public sealed class GraphicsService : IDisposable
         // Profiles are now user-selected (not tied to map).
     }
 
-    private void OnWebSocketConnected(object? sender, EventArgs e)
-    {
-        if (!_enabled)
-            return;
-        _ = ApplyProfileAsync();
-    }
-
-    private void OnProducerConnected(object? sender, EventArgs e)
-    {
-        if (!_enabled)
-            return;
-        _ = ApplyProfileAsync();
-    }
-
     private void OnProducerTriggerCompleted(object? sender, ProducerTriggerEvent e)
     {
-        if (!_enabled)
-            return;
         if (!string.Equals(e.Action, "animOut", StringComparison.OrdinalIgnoreCase))
             return;
         if (string.IsNullOrWhiteSpace(e.Atlas) || string.IsNullOrWhiteSpace(e.Target))
@@ -704,9 +629,7 @@ public sealed class GraphicsService : IDisposable
     public void Dispose()
     {
         _gsiServer.GameStateUpdated -= OnGameStateUpdated;
-        _webSocket.Connected -= OnWebSocketConnected;
         _webSocket.MessageReceived -= OnWebSocketMessageReceived;
-        _producerClient.Connected -= OnProducerConnected;
         _producerClient.TriggerCompleted -= OnProducerTriggerCompleted;
     }
 }

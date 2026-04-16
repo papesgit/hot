@@ -94,7 +94,7 @@ public class MainDockFactory : Factory, IDisposable
         _producerClient = new GraphicsProducerClient(_storedSettings.WebSocketHost, _storedSettings.GraphicsProducerPort);
         _ = _producerClient.ConnectAsync();
         _graphicsService = new GraphicsService(_webSocketClient, _producerClient, _gsiServer, _graphicsProfileStorage, _storedSettings.GraphicsTargetFps);
-        _graphicsService.SetEnabled(_storedSettings.GraphicsEnabled);
+        _graphicsService.LoadProfile(_graphicsService.CurrentProfileName);
 
         // Initialize global raw input handler and periodically flush into UDP sender
         _rawInputHandler = new RawInputHandler();
@@ -277,7 +277,7 @@ public class MainDockFactory : Factory, IDisposable
         }
 
         var topRight = new NetConsoleDockViewModel(_gsiServer, _settingsStorage, _storedSettings) { Id = "TopRight", Title = "Console" };
-        _graphicsDockVm = new GraphicsDockViewModel(_graphicsService, _settingsStorage, _storedSettings)
+        _graphicsDockVm = new GraphicsDockViewModel(_graphicsService)
         {
             Id = "Graphics",
             Title = "Graphics"

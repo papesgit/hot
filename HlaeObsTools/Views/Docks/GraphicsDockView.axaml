@@ -49,7 +49,7 @@
     </Style>
   </UserControl.Styles>
   <Border Background="#1E1E1E" Padding="10" Focusable="True">
-    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+    <Grid RowDefinitions="Auto,*" RowSpacing="10">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <WrapPanel Orientation="Horizontal"
                    IsVisible="{Binding IsSetupView, Converter={StaticResource BooleanNegationConverter}}">
@@ -442,30 +442,6 @@
           </StackPanel>
         </ScrollViewer>
       </Grid>
-
-      <Border Grid.Row="2" Focusable="True"
-              Background="#222222"
-              CornerRadius="6"
-              Padding="8,2"
-              BorderBrush="#2A2A2A"
-              BorderThickness="1">
-
-        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-          <TextBlock Text="{Binding StatusText}"
-                    Foreground="#8AC6FF"
-                    VerticalAlignment="Center"/>
-
-          <StackPanel Grid.Column="1"
-                      Orientation="Horizontal"
-                      Spacing="8"
-                      VerticalAlignment="Center">
-            <TextBlock Text="Enabled"
-                      Foreground="#B0B0B0"
-                      VerticalAlignment="Center" />
-            <ToggleSwitch IsChecked="{Binding IsEnabled}" />
-          </StackPanel>
-        </Grid>
-      </Border>
     </Grid>
   </Border>
 </UserControl>

@@ -113,7 +113,6 @@ public class AppSettingsData
     public double VmixReplayPostSeconds { get; set; } = 2.0;
     public double VmixReplayExtendWindowSeconds { get; set; } = 3.0;
     public bool DisableFocusInputGate { get; set; }
-    public bool GraphicsEnabled { get; set; }
     public int GraphicsTargetFps { get; set; } = 30;
     public List<HotkeyBindingData> Hotkeys { get; set; } = new();
 }

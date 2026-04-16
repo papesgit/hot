@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Graphics;
-using HlaeObsTools.Services.Settings;
 using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.ViewModels.Docks;
@@ -14,11 +13,8 @@ namespace HlaeObsTools.ViewModels.Docks;
 public sealed class GraphicsDockViewModel : Tool, IDisposable
 {
     private readonly GraphicsService _graphicsService;
-    private readonly SettingsStorage _settingsStorage;
-    private readonly AppSettingsData _settings;
 
     private bool _isSetupView;
-    private bool _isEnabled;
     private GraphicsAtlasViewModel? _selectedAtlas;
     private GraphicsRegionViewModel? _selectedRegion;
     private GraphicsInstanceViewModel? _selectedInstance;
@@ -29,7 +25,6 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private AttachSlotOption? _selectedInstanceAttachSlot;
     private AttachAttachmentOption? _selectedInstanceAttachment;
     private string _selectedProfileName = "default";
-    private string _statusText = "Idle";
     private bool _suppressApply;
     public event EventHandler<string>? ProfileRemoved;
 
@@ -41,18 +36,15 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public ObservableCollection<AttachAttachmentOption> AttachAttachmentOptions { get; } = new();
     public ObservableCollection<string> Profiles { get; } = new();
 
-    public GraphicsDockViewModel(GraphicsService graphicsService, SettingsStorage settingsStorage, AppSettingsData settings)
+    public GraphicsDockViewModel(GraphicsService graphicsService)
     {
         _graphicsService = graphicsService;
-        _settingsStorage = settingsStorage;
-        _settings = settings;
 
         Title = "Graphics";
         CanClose = false;
         CanFloat = true;
         CanPin = true;
 
-        _isEnabled = settings.GraphicsEnabled;
         InstanceSourceOptions.Add(new GraphicsInstanceSourceOption("Atlas", GraphicsInstanceSourceType.Atlas));
         InstanceSourceOptions.Add(new GraphicsInstanceSourceOption("Image", GraphicsInstanceSourceType.Image));
         AttachSlotOptions.Add(new AttachSlotOption("None", -1));
@@ -131,19 +123,6 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
         get => _isSetupView;
         set => SetProperty(ref _isSetupView, value);
-    }
-
-    public bool IsEnabled
-    {
-        get => _isEnabled;
-        set
-        {
-            if (!SetProperty(ref _isEnabled, value))
-                return;
-            _settings.GraphicsEnabled = value;
-            _settingsStorage.Save(_settings);
-            _graphicsService.SetEnabled(value);
-        }
     }
 
     public GraphicsAtlasViewModel? SelectedAtlas
@@ -275,12 +254,6 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         }
     }
 
-    public string StatusText
-    {
-        get => _statusText;
-        set => SetProperty(ref _statusText, value);
-    }
-
     public string SelectedProfileName
     {
         get => _selectedProfileName;
@@ -322,9 +295,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
     private async Task ApplyAsync()
     {
-        StatusText = "Applying...";
         await _graphicsService.ApplyProfileAsync();
-        StatusText = "Applied";
     }
 
     private async Task ReloadAllAsync()
@@ -333,7 +304,6 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         {
             await _graphicsService.ReloadAtlasAsync(atlas.Name);
         }
-        StatusText = "Reloaded";
     }
 
     public void AddAtlas(string name)
@@ -504,10 +474,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
         var camera = await _graphicsService.GetCurrentCameraTransformAsync();
         if (camera == null)
-        {
-            StatusText = "Camera unavailable";
             return;
-        }
 
         if (copyPosition)
         {
@@ -522,12 +489,6 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             SelectedInstance.Yaw = camera.Yaw;
             SelectedInstance.Roll = camera.Roll;
         }
-
-        StatusText = copyPosition && copyRotation
-            ? "Camera transform captured"
-            : copyPosition
-                ? "Camera position captured"
-                : "Camera rotation captured";
     }
 
     private async Task SetAllInstancesVisibleAsync(bool visible)
@@ -594,7 +555,6 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         if (atlas == null)
             return;
         await _graphicsService.ReloadAtlasAsync(atlas.Name);
-        StatusText = "Reloaded";
     }
 
     private async Task TriggerAtlasAsync(GraphicsAtlasViewModel? atlas, string action)
