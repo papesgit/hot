@@ -1657,6 +1657,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 RadarScale = _radarSettings.RadarScale,
                 MarkerScale = _radarSettings.MarkerScale,
                 HeightScaleMultiplier = _radarSettings.HeightScaleMultiplier,
+                HudSize = _hudSettings.HudSize,
                 UseAltPlayerBinds = _radarSettings.UseAltPlayerBinds,
                 DisplayNumbersTopmost = _radarSettings.DisplayNumbersTopmost,
                 ShowPlayerNames = _radarSettings.ShowPlayerNames,

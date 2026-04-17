@@ -22,12 +22,28 @@ public sealed class HudScaleConverter : IMultiValueConverter
             return 1.0;
         }
 
-        if (BaseWidth <= 0 || BaseHeight <= 0)
+        var baseWidth = BaseWidth;
+        var baseHeight = BaseHeight;
+
+        if (values.Count >= 4)
+        {
+            if (values[2] is double boundBaseWidth)
+            {
+                baseWidth = boundBaseWidth;
+            }
+
+            if (values[3] is double boundBaseHeight)
+            {
+                baseHeight = boundBaseHeight;
+            }
+        }
+
+        if (baseWidth <= 0 || baseHeight <= 0)
         {
             return 1.0;
         }
 
-        var scale = Math.Min(width / BaseWidth, height / BaseHeight);
+        var scale = Math.Min(width / baseWidth, height / baseHeight);
         if (double.IsNaN(scale) || double.IsInfinity(scale))
         {
             return 1.0;

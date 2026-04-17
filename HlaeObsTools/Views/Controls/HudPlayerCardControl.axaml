@@ -12,6 +12,9 @@
         <conv:BooleanToOpacityConverter x:Key="AliveOpacityConverter"
                                         TrueOpacity="1"
                                         FalseOpacity="0.35" />
+        <conv:BooleanToOpacityConverter x:Key="ActiveOpacityConverter"
+                                        TrueOpacity="1"
+                                        FalseOpacity="0.25" />
     </UserControl.Resources>
     <Grid>
         <Border x:Name="CardBorder"
@@ -27,13 +30,13 @@
             <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
                     <Border Background="{Binding AccentBrush}"
-                            Padding="6,3"
                             CornerRadius="4"
                             Width="32"
                             HorizontalAlignment="Left">
                         <TextBlock Text="{Binding DisplaySlot}"
                                    HorizontalAlignment="Center"
-                                   FontWeight="Bold"
+                                   FontWeight="ExtraBold"
+                                   FontSize="20"
                                    Foreground="#0D1015" />
                     </Border>
 
@@ -98,6 +101,23 @@
                             Height="28"
                             IsVisible="{Binding HasDefuseKit}">
                         <svg:Svg Path="{Binding DefuseKitIconPath}"
+                                 Width="20"
+                                 Height="20"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+                    <Border Grid.Column="1"
+                            Padding="4"
+                            CornerRadius="4"
+                            BorderThickness="1"
+                            BorderBrush="{Binding AccentBrush}"
+                            Background="#32000000"
+                            Margin="2"
+                            Width="28"
+                            Height="28"
+                            Opacity="{Binding IsBombActive, Converter={StaticResource ActiveOpacityConverter}}"
+                            IsVisible="{Binding HasBomb}">
+                        <svg:Svg Path="{Binding BombIconPath}"
                                  Width="20"
                                  Height="20"
                                  HorizontalAlignment="Center"

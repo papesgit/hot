@@ -378,6 +378,22 @@
                                     Content="Enable HUD"
                             hotkeys:HotkeyTarget.Path="HudSettings.IsHudEnabled"
                                     Foreground="#E6E6E6"/>
+                        <TextBlock Text="HUD size"
+                                Foreground="#CCCCCC"
+                                FontWeight="SemiBold"
+                                Margin="0,8,0,0"/>
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Slider Minimum="0.25"
+                                    Maximum="3.0"
+                                    SmallChange="0.05"
+                                    LargeChange="0.25"
+                                    Width="200"
+                                    Value="{Binding HudSettings.HudSize, Mode=TwoWay}"/>
+                            <TextBlock Text="{Binding HudSettings.HudSize, StringFormat={}{0:F2}}"
+                                    Width="50"
+                                    Foreground="#E6E6E6"
+                                    VerticalAlignment="Center"/>
+                        </StackPanel>
                         <ToggleSwitch IsChecked="{Binding HudSettings.ShowKillfeed, Mode=TwoWay}"
                                     Content="Show killfeed"
                             hotkeys:HotkeyTarget.Path="HudSettings.ShowKillfeed"

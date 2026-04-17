@@ -207,7 +207,8 @@ public class MainDockFactory : Factory, IDisposable
         };
         var hudSettings = new HudSettings
         {
-            UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds
+            UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds,
+            HudSize = _storedSettings.HudSize
         };
         hudSettings.ActiveAttachPresetPage = _storedSettings.ActiveAttachPresetPage;
         hudSettings.ApplyAttachPresetPages(_storedSettings.AttachPresetPages, _storedSettings.AttachPresets);

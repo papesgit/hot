@@ -66,6 +66,7 @@ public class AppSettingsData
     public double RadarScale { get; set; } = 1.0;
     public double MarkerScale { get; set; } = 1.0;
     public double HeightScaleMultiplier { get; set; } = 1.0;
+    public double HudSize { get; set; } = 1.0;
     public bool UseAltPlayerBinds { get; set; } = false;
     public bool DisplayNumbersTopmost { get; set; } = true;
     public bool ShowPlayerNames { get; set; } = true;

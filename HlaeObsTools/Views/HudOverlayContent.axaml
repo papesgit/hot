@@ -24,7 +24,7 @@
                                 BaseWidth="1600"
                                 BaseHeight="900"
                                 MinScale="0"
-                                MaxScale="1" />
+                                MaxScale="5" />
 
         <DataTemplate x:Key="WeaponChipTemplate" x:DataType="hud:HudWeaponViewModel">
             <Border Padding="4"
@@ -70,13 +70,13 @@
                 <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
                         <Border Background="{Binding AccentBrush}"
-                                Padding="6,3"
                                 CornerRadius="4"
                                 Width="32"
                                 HorizontalAlignment="Left">
                             <TextBlock Text="{Binding DisplaySlot}"
                                        HorizontalAlignment="Center"
-                                       FontWeight="Bold"
+                                       FontWeight="ExtraBold"
+                                       FontSize="20"
                                        Foreground="#0D1015" />
                         </Border>
 
@@ -312,18 +312,23 @@
                         <MultiBinding Converter="{StaticResource HudScaleConverter}">
                             <Binding ElementName="HudOverlayHost" Path="Bounds.Width" />
                             <Binding ElementName="HudOverlayHost" Path="Bounds.Height" />
+                            <Binding Path="HudDesignWidth" />
+                            <Binding Path="HudDesignHeight" />
                         </MultiBinding>
                     </ScaleTransform.ScaleX>
                     <ScaleTransform.ScaleY>
                         <MultiBinding Converter="{StaticResource HudScaleConverter}">
                             <Binding ElementName="HudOverlayHost" Path="Bounds.Width" />
                             <Binding ElementName="HudOverlayHost" Path="Bounds.Height" />
+                            <Binding Path="HudDesignWidth" />
+                            <Binding Path="HudDesignHeight" />
                         </MultiBinding>
                     </ScaleTransform.ScaleY>
                 </ScaleTransform>
             </ac:LayoutTransformControl.LayoutTransform>
 
-            <Grid Width="1600" Height="900">
+            <Grid Width="{Binding HudDesignWidth}"
+                  Height="{Binding HudDesignHeight}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />

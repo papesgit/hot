@@ -155,11 +155,12 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     private int _armor;
     private bool _hasHelmet;
     private bool _hasDefuseKit;
+    private bool _hasBomb;
+    private bool _isBombActive;
     private bool _isAlive;
     private HudWeaponViewModel? _primary;
     private HudWeaponViewModel? _secondary;
     private HudWeaponViewModel? _knife;
-    private HudWeaponViewModel? _bomb;
     private HudWeaponViewModel? _activeWeapon;
     private IBrush _accentBrush = Brushes.White;
     private IBrush _cardBackground = Brushes.Black;
@@ -273,10 +274,16 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         private set => SetProperty(ref _knife, value);
     }
 
-    public HudWeaponViewModel? Bomb
+    public bool HasBomb
     {
-        get => _bomb;
-        private set => SetProperty(ref _bomb, value);
+        get => _hasBomb;
+        private set => SetProperty(ref _hasBomb, value);
+    }
+
+    public bool IsBombActive
+    {
+        get => _isBombActive;
+        private set => SetProperty(ref _isBombActive, value);
     }
 
     public ObservableCollection<HudWeaponViewModel> Grenades { get; } = new();
@@ -444,6 +451,8 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
 
     public string DefuseKitIconPath => "avares://HlaeObsTools/Assets/hud/weapons/defuser.svg";
 
+    public string BombIconPath => "avares://HlaeObsTools/Assets/hud/weapons/c4.svg";
+
     public string ActiveAmmoText => ActiveWeapon != null && (ActiveWeapon.AmmoClip > 0 || ActiveWeapon.AmmoReserve > 0)
         ? $"{ActiveWeapon.AmmoClip}/{ActiveWeapon.AmmoReserve}"
         : string.Empty;
@@ -549,11 +558,11 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         int armor,
         bool hasHelmet,
         bool hasDefuseKit,
+        bool hasBomb,
         bool isAlive,
         HudWeaponViewModel? primary,
         HudWeaponViewModel? secondary,
         HudWeaponViewModel? knife,
-        HudWeaponViewModel? bomb,
         IEnumerable<HudWeaponViewModel> grenades,
         HudWeaponViewModel? activeWeapon,
         IBrush accentBrush,
@@ -567,22 +576,24 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         Armor = armor;
         HasHelmet = hasHelmet;
         HasDefuseKit = hasDefuseKit;
+        HasBomb = hasBomb;
+        IsBombActive = activeWeapon?.IsBomb == true;
         IsAlive = isAlive;
         Primary = primary;
         Secondary = secondary;
         Knife = knife;
-        Bomb = bomb;
         ActiveWeapon = activeWeapon;
         AccentBrush = accentBrush;
         CardBackground = cardBackground;
         IsFocused = isFocused;
 
-        var row = BuildRow(primary, secondary, knife, bomb).ToList();
+        var row = BuildRow(primary, secondary, knife).ToList();
         var grenadesList = grenades.ToList();
 
         SyncCollection(WeaponsRow, row);
         SyncCollection(Grenades, grenadesList);
         SyncCollection(WeaponsAndGrenades, row.Concat(grenadesList));
+        UpdateHasWeaponsAndGrenades();
     }
 
     private void ApplyAccentToRadialActions(IBrush accent)
@@ -660,7 +671,7 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
 
     private void UpdateHasWeaponsAndGrenades()
     {
-        HasWeaponsAndGrenades = WeaponsAndGrenades.Count > 0;
+        HasWeaponsAndGrenades = WeaponsAndGrenades.Count > 0 || HasBomb || HasDefuseKit;
     }
 }
 

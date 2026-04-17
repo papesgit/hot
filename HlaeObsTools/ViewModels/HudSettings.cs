@@ -13,6 +13,8 @@ public sealed class HudSettings : ViewModelBase
 {
     public const int AttachPresetPageCount = 5;
     public const int AttachPresetCountPerPage = 5;
+    public const double MinHudSize = 0.25;
+    public const double MaxHudSize = 3.0;
 
     public record AttachmentPreset
     {
@@ -127,6 +129,7 @@ public sealed class HudSettings : ViewModelBase
     private bool _useAltPlayerBinds;
     private bool _showKillfeed = true;
     private bool _showKillfeedAttackerSlot = true;
+    private double _hudSize = 1.0;
 
     /// <summary>
     /// Whether the native HUD overlay in the video display is shown.
@@ -162,6 +165,15 @@ public sealed class HudSettings : ViewModelBase
     {
         get => _showKillfeedAttackerSlot;
         set => SetProperty(ref _showKillfeedAttackerSlot, value);
+    }
+
+    /// <summary>
+    /// Relative HUD element size. 1.0 uses the default 1600x900 design density.
+    /// </summary>
+    public double HudSize
+    {
+        get => _hudSize;
+        set => SetProperty(ref _hudSize, Math.Clamp(value, MinHudSize, MaxHudSize));
     }
 
     /// <summary>

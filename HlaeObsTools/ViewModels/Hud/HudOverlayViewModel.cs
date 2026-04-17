@@ -63,6 +63,8 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
 
     private const double KillfeedLifetimeSeconds = 8.0;
     private const double KillfeedFadeSeconds = 1.0;
+    private const double BaseHudDesignWidth = 1600.0;
+    private const double BaseHudDesignHeight = 900.0;
 
     private static readonly SolidColorBrush CtAccentBrush = new(Color.Parse("#6EB4FF"));
     private static readonly SolidColorBrush TAccentBrush = new(Color.Parse("#FF9B4A"));
@@ -103,6 +105,8 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
     public bool IsHudEnabled => _hudSettings.IsHudEnabled;
     public bool ShowNativeHud => IsHudEnabled;
     public bool ShowKillfeed => _hudSettings.ShowKillfeed;
+    public double HudDesignWidth => BaseHudDesignWidth / _hudSettings.HudSize;
+    public double HudDesignHeight => BaseHudDesignHeight / _hudSettings.HudSize;
 
     public HudTeamViewModel TeamCt => _teamCt;
     public HudTeamViewModel TeamT => _teamT;
@@ -219,6 +223,11 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         else if (e.PropertyName == nameof(HudSettings.ShowKillfeed))
         {
             OnPropertyChanged(nameof(ShowKillfeed));
+        }
+        else if (e.PropertyName == nameof(HudSettings.HudSize))
+        {
+            OnPropertyChanged(nameof(HudDesignWidth));
+            OnPropertyChanged(nameof(HudDesignHeight));
         }
         else if (e.PropertyName == nameof(HudSettings.UseAltPlayerBinds))
         {
@@ -359,7 +368,6 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         var primary = weaponVms.FirstOrDefault(w => w.IsPrimary);
         var secondary = weaponVms.FirstOrDefault(w => w.IsSecondary);
         var knife = weaponVms.FirstOrDefault(w => w.IsKnife);
-        var bomb = weaponVms.FirstOrDefault(w => w.IsBomb);
         var active = weaponVms.FirstOrDefault(w => w.IsActive) ?? primary ?? secondary ?? knife ?? weaponVms.FirstOrDefault();
         var grenades = BuildGrenadeList(weaponVms.Where(w => w.IsGrenade));
 
@@ -377,11 +385,11 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
             player.Armor,
             player.HasHelmet,
             player.HasDefuseKit,
+            player.HasBomb,
             player.IsAlive,
             primary,
             secondary,
             knife,
-            bomb,
             grenades,
             active,
             accent,
