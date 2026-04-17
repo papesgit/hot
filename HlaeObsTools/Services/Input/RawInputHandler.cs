@@ -49,6 +49,7 @@ public class RawInputHandler : IDisposable
 
     public event EventHandler<Keys>? KeyPressed;
     public event EventHandler<(Keys Key, bool IsDown)>? KeyStateChanged;
+    public event EventHandler? MiddleMousePressed;
 
     public bool CaptureOnlyWhenFocused
     {
@@ -214,6 +215,11 @@ public class RawInputHandler : IDisposable
                 short wheelDelta = (short)mouse.usButtonData; // WHEEL_DELTA multiples (usually 120)
                 _mouseWheel += wheelDelta / 120;
             }
+        }
+
+        if (_mouseMiddleButton && !_prevMouseMiddleButton)
+        {
+            MiddleMousePressed?.Invoke(this, EventArgs.Empty);
         }
     }
 

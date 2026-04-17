@@ -101,6 +101,7 @@ public class MainDockFactory : Factory, IDisposable
         _rawInputHandler.CaptureOnlyWhenAppFocused = !_storedSettings.DisableFocusInputGate;
         _rawInputHandler.SetInputSender(_inputSender);
         _rawInputHandler.KeyPressed += OnRawInputKeyPressed;
+        _rawInputHandler.MiddleMousePressed += OnRawInputMiddleMousePressed;
         _rawInputHandler.KeyStateChanged += OnRawInputKeyStateChanged;
         _inputFlushTimer = new Timer(_ => _rawInputHandler.FlushToSender(), null, 0, 4);
 
@@ -551,11 +552,17 @@ public class MainDockFactory : Factory, IDisposable
 
     private void OnRawInputKeyPressed(object? sender, FormsKeys key)
     {
-        if (key != FormsKeys.C)
-            return;
-        if (_videoDisplayVm == null || !_videoDisplayVm.IsFreecamActive)
-            return;
+        if (key == FormsKeys.C)
+            RequestFreecamHold();
+    }
 
+    private void OnRawInputMiddleMousePressed(object? sender, EventArgs e)
+    {
+        RequestFreecamHold();
+    }
+
+    private void RequestFreecamHold()
+    {
         Dispatcher.UIThread.Post(() =>
         {
             if (_videoDisplayVm == null || !_videoDisplayVm.IsFreecamActive)
@@ -608,6 +615,7 @@ public class MainDockFactory : Factory, IDisposable
         _inputFlushTimer.Dispose();
 
         _rawInputHandler.KeyPressed -= OnRawInputKeyPressed;
+        _rawInputHandler.MiddleMousePressed -= OnRawInputMiddleMousePressed;
         _rawInputHandler.KeyStateChanged -= OnRawInputKeyStateChanged;
         _rawInputHandler.Dispose();
         _inputSender.Dispose();
