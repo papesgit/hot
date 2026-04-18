@@ -154,8 +154,9 @@ public sealed class GraphicsService : IDisposable
             var desiredAtlasProducerState = desiredAtlases.ToDictionary(a => a.Name, GetAtlasProducerStateKey, StringComparer.OrdinalIgnoreCase);
             var desiredAtlasRegionState = desiredAtlases.ToDictionary(a => a.Name, GetAtlasRegionStateKey, StringComparer.OrdinalIgnoreCase);
             var desiredAtlasRegionIds = desiredAtlases.ToDictionary(a => a.Name, GetAtlasRegionIds, StringComparer.OrdinalIgnoreCase);
+            var desiredAtlasNames = desiredAtlases.Select(a => a.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var desiredInstances = GetDistinctByName(_profile.Instances.Where(IsValidInstance), i => i.Name);
+            var desiredInstances = GetDistinctByName(_profile.Instances.Where(i => IsValidInstance(i, desiredAtlasNames)), i => i.Name);
             var desiredInstanceState = desiredInstances.ToDictionary(i => i.Name, GetInstanceStateKey, StringComparer.OrdinalIgnoreCase);
 
             if (_appliedProfileName != null && !string.Equals(_appliedProfileName, _currentProfileName, StringComparison.OrdinalIgnoreCase))
@@ -473,7 +474,7 @@ public sealed class GraphicsService : IDisposable
         return true;
     }
 
-    private static bool IsValidInstance(GraphicsInstance inst)
+    private static bool IsValidInstance(GraphicsInstance inst, ISet<string> desiredAtlasNames)
     {
         if (string.IsNullOrWhiteSpace(inst.Name))
             return false;
@@ -481,7 +482,9 @@ public sealed class GraphicsService : IDisposable
         return inst.SourceType switch
         {
             GraphicsInstanceSourceType.Image => !string.IsNullOrWhiteSpace(inst.ImageFile),
-            GraphicsInstanceSourceType.Atlas => !string.IsNullOrWhiteSpace(inst.Atlas) && !string.IsNullOrWhiteSpace(inst.Region),
+            GraphicsInstanceSourceType.Atlas => !string.IsNullOrWhiteSpace(inst.Atlas) &&
+                                                !string.IsNullOrWhiteSpace(inst.Region) &&
+                                                desiredAtlasNames.Contains(inst.Atlas),
             _ => false
         };
     }

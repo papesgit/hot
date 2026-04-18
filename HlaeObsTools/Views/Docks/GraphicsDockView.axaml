@@ -9,6 +9,7 @@
              xmlns:controls="clr-namespace:HlaeObsTools.Controls">
   <UserControl.Resources>
     <conv:DoubleTextConverter x:Key="DoubleText" DefaultValue="0" />
+    <conv:DoubleTextConverter x:Key="PreciseUvText" DefaultValue="0" Format="0.########" />
   </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="HeaderedContentControl">
@@ -232,21 +233,21 @@
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                 <StackPanel Spacing="2">
                   <TextBlock Text="U0" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.U0, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="U0" />
+                  <TextBox Text="{Binding SelectedRegion.U0, Mode=TwoWay, Converter={StaticResource PreciseUvText}}" PlaceholderText="U0" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="V0" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.V0, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="V0" />
+                  <TextBox Text="{Binding SelectedRegion.V0, Mode=TwoWay, Converter={StaticResource PreciseUvText}}" PlaceholderText="V0" />
                 </StackPanel>
               </Grid>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
                 <StackPanel Spacing="2">
                   <TextBlock Text="U1" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.U1, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="U1" />
+                  <TextBox Text="{Binding SelectedRegion.U1, Mode=TwoWay, Converter={StaticResource PreciseUvText}}" PlaceholderText="U1" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="V1" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.V1, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="V1" />
+                  <TextBox Text="{Binding SelectedRegion.V1, Mode=TwoWay, Converter={StaticResource PreciseUvText}}" PlaceholderText="V1" />
                 </StackPanel>
               </Grid>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
