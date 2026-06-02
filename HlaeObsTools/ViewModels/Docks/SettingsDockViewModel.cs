@@ -103,6 +103,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _applyNetworkSettingsCommand;
         private readonly ICommand _browseMapObjCommand;
         private readonly ICommand _clearMapObjCommand;
+        private readonly ICommand _resetTargetOrbitCommand;
         private readonly ICommand _cycleForceDeathnoticesCommand;
         private readonly ICommand _toggleDemouiCommand;
         private readonly ICommand _toggleInterpModeCommand;
@@ -188,6 +189,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _addCommandHotkeyCommand = new Relay(AddCommandHotkey);
             _browseMapObjCommand = new AsyncRelay(BrowseMapObjAsync);
             _clearMapObjCommand = new Relay(() => _viewport3DSettings.MapObjPath = string.Empty);
+            _resetTargetOrbitCommand = new Relay(() => _viewport3DSettings.TargetOrbitResetRequest++);
             _cycleForceDeathnoticesCommand = new Relay(CycleForceDeathnoticesMode);
             _toggleDemouiCommand = new AsyncRelay(() => _ws.SendExecCommandAsync("demoui"));
             _toggleInterpModeCommand = new Relay(() =>
@@ -677,6 +679,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         public ICommand BrowseMapObjCommand => _browseMapObjCommand;
         public ICommand ClearMapObjCommand => _clearMapObjCommand;
+        public ICommand ResetTargetOrbitCommand => _resetTargetOrbitCommand;
 
         private async Task BrowseMapObjAsync()
         {

@@ -112,6 +112,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkItemIconsEnabled), true);
     public static readonly StyledProperty<int> LiveLinkPortProperty =
         AvaloniaProperty.Register<VRFViewport, int>(nameof(LiveLinkPort), 31237);
+    public static readonly StyledProperty<int> TargetOrbitResetRequestProperty =
+        AvaloniaProperty.Register<VRFViewport, int>(nameof(TargetOrbitResetRequest));
 
     private IntPtr _hwnd;
     private NativeWindow? _nativeWindow;
@@ -225,6 +227,11 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private bool _dragging;
     private bool _panning;
+    private bool _targetOrbitActive;
+    private Vector3 _targetOrbitTarget;
+    private float _targetOrbitDistance;
+    private float _targetOrbitYaw;
+    private float _targetOrbitPitch;
     private readonly HashSet<Key> _keysDown = new();
     private Point _lastPointer;
     private bool _mouseButton4Down;
@@ -338,6 +345,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         LiveLinkEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
         LiveLinkItemIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkItemIconsEnabledChanged());
         LiveLinkPortProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
+        TargetOrbitResetRequestProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ResetTargetOrbit());
     }
 
     public string? MapPath
@@ -470,6 +478,12 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     {
         get => GetValue(LiveLinkPortProperty);
         set => SetValue(LiveLinkPortProperty, value);
+    }
+
+    public int TargetOrbitResetRequest
+    {
+        get => GetValue(TargetOrbitResetRequestProperty);
+        set => SetValue(TargetOrbitResetRequestProperty, value);
     }
 
     public bool IsFreecamActive => _freecamActive;
@@ -644,9 +658,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         if (_freecamActive)
             DisableFreecam();
 
-        _dragging = true;
-        _panning = e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Shift);
-        _lastPointer = point.Position;
+        BeginOrbitDrag(
+            point.Position,
+            e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Shift),
+            e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control));
         e.Pointer.Capture(this);
         Focus();
         e.Handled = true;
@@ -685,8 +700,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         var released = updateKind == PointerUpdateKind.MiddleButtonReleased || !middlePressed;
         if (released)
         {
-            _dragging = false;
-            _panning = false;
+            EndOrbitDrag();
             e.Pointer.Capture(null);
         }
     }
@@ -733,15 +747,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         var pos = point.Position;
         var delta = pos - _lastPointer;
-        _lastPointer = pos;
 
         if (_panning)
         {
             Pan((float)delta.X, (float)delta.Y);
+            _lastPointer = pos;
         }
         else
         {
-            Orbit((float)delta.X, (float)delta.Y);
+            ApplyOrbitPointerMove(pos);
         }
 
         RequestNextFrame();
@@ -764,9 +778,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
 
         var zoomFactor = MathF.Pow(1.1f, (float)-e.Delta.Y);
-        _distance = Math.Min(_distance * zoomFactor, _maxDistance);
-        if (_distance < 0.0001f)
-            _distance = 0.0001f;
+        ZoomOrbitDistance(zoomFactor);
         RequestNextFrame();
         e.Handled = true;
     }
@@ -888,9 +900,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         if (_freecamActive)
             DisableFreecam();
 
-        _dragging = true;
-        _panning = shiftDown;
-        _lastPointer = position;
+        BeginOrbitDrag(position, shiftDown, ctrlDown);
         Focus();
     }
 
@@ -923,8 +933,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         var released = updateKind == PointerUpdateKind.MiddleButtonReleased || !middlePressed;
         if (released)
         {
-            _dragging = false;
-            _panning = false;
+            EndOrbitDrag();
         }
     }
 
@@ -963,15 +972,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
 
         var delta = position - _lastPointer;
-        _lastPointer = position;
 
         if (_panning)
         {
             Pan((float)delta.X, (float)delta.Y);
+            _lastPointer = position;
         }
         else
         {
-            Orbit((float)delta.X, (float)delta.Y);
+            ApplyOrbitPointerMove(position);
         }
 
         RequestNextFrame();
@@ -1101,34 +1110,139 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _freecamPreviewRollOverrideActive = false;
     }
 
+    public void ResetTargetOrbit()
+    {
+        _targetOrbitActive = false;
+        RequestNextFrame();
+    }
+
     private void Orbit(float deltaX, float deltaY)
     {
         const float rotateSpeed = 0.01f;
+        if (_targetOrbitActive)
+        {
+            _targetOrbitYaw -= deltaX * rotateSpeed;
+            _targetOrbitPitch += deltaY * rotateSpeed;
+            _targetOrbitPitch = Math.Clamp(_targetOrbitPitch, -1.55f, 1.55f);
+            return;
+        }
+
         _yaw -= deltaX * rotateSpeed;
         _pitch += deltaY * rotateSpeed;
         _pitch = Math.Clamp(_pitch, -1.55f, 1.55f);
     }
 
+    private void BeginOrbitDrag(Point position, bool pan, bool targetOrbit)
+    {
+        _dragging = true;
+        _panning = pan;
+        if (targetOrbit)
+        {
+            TryBeginTargetOrbit(position);
+        }
+        _lastPointer = position;
+        CaptureOrbitMouse();
+    }
+
+    private void EndOrbitDrag()
+    {
+        _dragging = false;
+        _panning = false;
+        ReleaseOrbitMouse();
+    }
+
     private Vector3 GetCameraPosition()
     {
-        var cosPitch = MathF.Cos(_pitch);
-        var sinPitch = MathF.Sin(_pitch);
-        var cosYaw = MathF.Cos(_yaw);
-        var sinYaw = MathF.Sin(_yaw);
+        var pitch = GetActiveOrbitPitch();
+        var yaw = GetActiveOrbitYaw();
+        var cosPitch = MathF.Cos(pitch);
+        var sinPitch = MathF.Sin(pitch);
+        var cosYaw = MathF.Cos(yaw);
+        var sinYaw = MathF.Sin(yaw);
 
         var direction = new Vector3(cosPitch * cosYaw, cosPitch * sinYaw, sinPitch);
-        return _target + direction * _distance;
+        return GetActiveOrbitTarget() + direction * GetActiveOrbitDistance();
+    }
+
+    private Vector3 GetActiveOrbitTarget()
+    {
+        return _targetOrbitActive ? _targetOrbitTarget : _target;
+    }
+
+    private float GetActiveOrbitDistance()
+    {
+        return _targetOrbitActive ? _targetOrbitDistance : _distance;
+    }
+
+    private float GetActiveOrbitYaw()
+    {
+        return _targetOrbitActive ? _targetOrbitYaw : _yaw;
+    }
+
+    private float GetActiveOrbitPitch()
+    {
+        return _targetOrbitActive ? _targetOrbitPitch : _pitch;
+    }
+
+    private void ZoomOrbitDistance(float zoomFactor)
+    {
+        if (_targetOrbitActive)
+        {
+            _targetOrbitDistance = Math.Min(_targetOrbitDistance * zoomFactor, _maxDistance);
+            if (_targetOrbitDistance < 0.0001f)
+                _targetOrbitDistance = 0.0001f;
+            return;
+        }
+
+        _distance = Math.Min(_distance * zoomFactor, _maxDistance);
+        if (_distance < 0.0001f)
+            _distance = 0.0001f;
     }
 
     private void Pan(float deltaX, float deltaY)
     {
         var cameraPos = GetCameraPosition();
-        var forward = Vector3.Normalize(_target - cameraPos);
+        var target = GetActiveOrbitTarget();
+        var distance = GetActiveOrbitDistance();
+        var forward = Vector3.Normalize(target - cameraPos);
         var right = Vector3.Normalize(Vector3.Cross(forward, Vector3.UnitZ));
         var up = Vector3.Normalize(Vector3.Cross(right, forward));
 
-        var panScale = _distance * 0.001f;
-        _target += (-right * deltaX + up * deltaY) * panScale;
+        var panScale = distance * 0.001f;
+        var panOffset = (-right * deltaX + up * deltaY) * panScale;
+        if (_targetOrbitActive)
+            _targetOrbitTarget += panOffset;
+        else
+            _target += panOffset;
+    }
+
+    private bool TryBeginTargetOrbit(Point position)
+    {
+        if (_renderer?.Scene?.PhysicsWorld == null)
+            return false;
+
+        if (!TryGetRay(position, out var rayOrigin, out var rayDir))
+            return false;
+
+        var trace = _renderer.Scene.PhysicsWorld.TraceRay(rayOrigin, rayOrigin + rayDir * 10000f);
+        if (!trace.Hit)
+            return false;
+
+        var cameraPos = GetCameraPosition();
+        var target = trace.HitPosition;
+        var fromTarget = cameraPos - target;
+        var distance = fromTarget.Length();
+        if (distance < 0.0001f)
+            return false;
+
+        var direction = fromTarget / distance;
+        _targetOrbitYaw = MathF.Atan2(direction.Y, direction.X);
+        _targetOrbitPitch = MathF.Asin(Math.Clamp(direction.Z, -1f, 1f));
+        _targetOrbitPitch = Math.Clamp(_targetOrbitPitch, -1.55f, 1.55f);
+        _targetOrbitTarget = target;
+        _targetOrbitDistance = distance;
+        _targetOrbitActive = true;
+        return true;
     }
 
     private void BeginFreecam(Point start)
@@ -1178,7 +1292,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private void InitializeFreecamFromOrbit()
     {
         var cameraPos = GetCameraPosition();
-        var forward = Vector3.Normalize(_target - cameraPos);
+        var forward = Vector3.Normalize(GetActiveOrbitTarget() - cameraPos);
         GetYawPitchFromForward(forward, out var yaw, out var pitch);
 
         var forwardFromAngles = GetForwardVector(pitch, yaw);
@@ -1311,8 +1425,9 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         {
             _rendererContext.FieldOfView = 60f;
             _renderer.Camera.SetViewportSize(width, height);
+            var target = GetActiveOrbitTarget();
             var cameraPos = GetCameraPosition();
-            var forward = Vector3.Normalize(_target - cameraPos);
+            var forward = Vector3.Normalize(target - cameraPos);
             GetYawPitchFromForward(forward, out var yawDeg, out var pitchDeg);
             var rollDeg = ComputeRollForUp(pitchDeg, yawDeg, Vector3.UnitZ);
             _renderer.Camera.SetLocationPitchYawRoll(
@@ -2655,6 +2770,79 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         return true;
     }
 
+    private void ApplyOrbitPointerMove(Point localPoint)
+    {
+        var effectivePoint = GetOrbitEffectivePointerPoint(localPoint, out var wrappedPoint);
+        var delta = effectivePoint - _lastPointer;
+        Orbit((float)delta.X, (float)delta.Y);
+
+        if (wrappedPoint.HasValue)
+        {
+            WarpOrbitCursor(wrappedPoint.Value);
+        }
+        else
+        {
+            _lastPointer = localPoint;
+        }
+    }
+
+    private Point GetOrbitEffectivePointerPoint(Point localPoint, out Point? wrappedPoint)
+    {
+        wrappedPoint = null;
+        var width = Bounds.Width;
+        var height = Bounds.Height;
+        if (width <= 24 || height <= 24)
+            return localPoint;
+
+        const double margin = 8.0;
+        var effectiveX = localPoint.X;
+        var effectiveY = localPoint.Y;
+        var wrappedX = double.NaN;
+        var wrappedY = double.NaN;
+
+        if (localPoint.X <= margin)
+        {
+            effectiveX = margin;
+            wrappedX = width - margin - 1;
+        }
+        else if (localPoint.X >= width - margin - 1)
+        {
+            effectiveX = width - margin - 1;
+            wrappedX = margin;
+        }
+
+        if (localPoint.Y <= margin)
+        {
+            effectiveY = margin;
+            wrappedY = height - margin - 1;
+        }
+        else if (localPoint.Y >= height - margin - 1)
+        {
+            effectiveY = height - margin - 1;
+            wrappedY = margin;
+        }
+
+        if (!double.IsNaN(wrappedX) || !double.IsNaN(wrappedY))
+        {
+            wrappedPoint = new Point(
+                double.IsNaN(wrappedX) ? effectiveX : wrappedX,
+                double.IsNaN(wrappedY) ? effectiveY : wrappedY);
+        }
+
+        return new Point(effectiveX, effectiveY);
+    }
+
+    private void WarpOrbitCursor(Point wrappedLocal)
+    {
+        if (!TryGetScreenPoint(wrappedLocal, out var wrappedScreen))
+            return;
+
+        SetCursorPosition(wrappedScreen.X, wrappedScreen.Y);
+        _lastPointer = TryGetLocalPointFromScreen(wrappedScreen, out var actualLocal)
+            ? actualLocal
+            : wrappedLocal;
+    }
+
     private bool TryGetFreecamCenter(out Point centerLocal, out PixelPoint centerScreen)
     {
         var localCenter = new Point(Bounds.Width / 2.0, Bounds.Height / 2.0);
@@ -2674,11 +2862,28 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private static extern bool SetCursorPos(int X, int Y);
 
     [DllImport("user32.dll")]
+    private static extern IntPtr SetCapture(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ReleaseCapture();
+
+    [DllImport("user32.dll")]
     private static extern int ShowCursor(bool bShow);
 
     private static void SetCursorPosition(int x, int y)
     {
         SetCursorPos(x, y);
+    }
+
+    private void CaptureOrbitMouse()
+    {
+        if (_hwnd != IntPtr.Zero)
+            SetCapture(_hwnd);
+    }
+
+    private static void ReleaseOrbitMouse()
+    {
+        ReleaseCapture();
     }
 
     private static Vector3 GetForwardVector(float pitchDeg, float yawDeg)
@@ -4455,7 +4660,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return "smokegrenade";
         if (path.Contains("hegrenade") || path.Contains("fraggrenade") || path.Contains("frag_grenade"))
             return "hegrenade";
-        if (path.Contains("incgrenade"))
+        if (path.Contains("incgrenade") || path.Contains("incendiarygrenade"))
             return "incgrenade";
         if (path.Contains("molotov") || path.Contains("firebomb"))
             return "molotov";
@@ -4487,6 +4692,9 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 break;
             }
         }
+
+        if (file == "m4a4")
+            return "m4a1";
 
         return string.IsNullOrWhiteSpace(file) ? null : file;
     }

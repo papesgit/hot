@@ -38,6 +38,7 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _liveLinkEnabled;
     private bool _liveLinkItemIconsEnabled = true;
     private int _liveLinkPort = 31237;
+    private int _targetOrbitResetRequest;
     private int _shadowTextureSize = 1024;
     private int _maxTextureSize = 1024;
     private string _renderMode = "Default";
@@ -321,6 +322,15 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _liveLinkPort;
         set => SetProperty(ref _liveLinkPort, value < 1 ? 1 : value > 65535 ? 65535 : value);
+    }
+
+    /// <summary>
+    /// Monotonic request counter used to return the VRF viewport from target orbit to normal orbit.
+    /// </summary>
+    public int TargetOrbitResetRequest
+    {
+        get => _targetOrbitResetRequest;
+        set => SetProperty(ref _targetOrbitResetRequest, value);
     }
 
     /// <summary>
