@@ -25,9 +25,13 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using AvaloniaKeyModifiers = Avalonia.Input.KeyModifiers;
 using HlaeObsTools.Services.Input;
+using HlaeObsTools.Services.LiveLink;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.Services.Viewport3D;
 using HlaeObsTools.ViewModels;
+using SkiaSharp;
+using Svg.Skia;
+using ValveResourceFormat;
 using SteamDatabase.ValvePak;
 using ValveResourceFormat.IO;
 using ValveResourceFormat.Renderer;
@@ -53,6 +57,16 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private static readonly object ClassLock = new();
     private static WndProcDelegate? _wndProc;
     private static IntPtr _wndProcPtr = IntPtr.Zero;
+    private static readonly string[] LiveLinkIconFilePrefixes =
+    [
+        "weapon_rif_",
+        "weapon_pist_",
+        "weapon_smg_",
+        "weapon_shotgun_",
+        "weapon_sniper_",
+        "weapon_mach_",
+        "weapon_",
+    ];
 
     public static readonly StyledProperty<string?> MapPathProperty =
         AvaloniaProperty.Register<VRFViewport, string?>(nameof(MapPath));
@@ -60,6 +74,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         AvaloniaProperty.Register<VRFViewport, float>(nameof(PinScale), 200.0f);
     public static readonly StyledProperty<float> PinOffsetZProperty =
         AvaloniaProperty.Register<VRFViewport, float>(nameof(PinOffsetZ), 55.0f);
+    public static readonly StyledProperty<bool> ShowPlayerPinsProperty =
+        AvaloniaProperty.Register<VRFViewport, bool>(nameof(ShowPlayerPins), true);
     public static readonly StyledProperty<float> ViewportMouseScaleProperty =
         AvaloniaProperty.Register<VRFViewport, float>(nameof(ViewportMouseScale), 0.75f);
     public static readonly StyledProperty<float> ViewportFpsCapProperty =
@@ -88,6 +104,14 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         AvaloniaProperty.Register<VRFViewport, FreecamSettings?>(nameof(FreecamSettings));
     public static readonly StyledProperty<HlaeInputSender?> InputSenderProperty =
         AvaloniaProperty.Register<VRFViewport, HlaeInputSender?>(nameof(InputSender));
+    public static readonly StyledProperty<Cs2LiveLinkReceiver?> LiveLinkReceiverProperty =
+        AvaloniaProperty.Register<VRFViewport, Cs2LiveLinkReceiver?>(nameof(LiveLinkReceiver));
+    public static readonly StyledProperty<bool> LiveLinkEnabledProperty =
+        AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkEnabled));
+    public static readonly StyledProperty<bool> LiveLinkItemIconsEnabledProperty =
+        AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkItemIconsEnabled), true);
+    public static readonly StyledProperty<int> LiveLinkPortProperty =
+        AvaloniaProperty.Register<VRFViewport, int>(nameof(LiveLinkPort), 31237);
 
     private IntPtr _hwnd;
     private NativeWindow? _nativeWindow;
@@ -109,6 +133,21 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private bool _showEntityModels = false;
     private bool _renderLogged;
     private bool _mapHasExternalReferences;
+    private readonly Dictionary<int, LiveLinkModelNode> _liveLinkNodes = new();
+    private uint _lastLiveLinkFrameId = uint.MaxValue;
+    private Cs2LiveLinkReceiver? _liveLinkReceiverCached;
+    private bool _liveLinkEnabledCached;
+    private bool _liveLinkItemIconsEnabledCached = true;
+    private int _liveLinkPortCached = 31237;
+    private readonly HashSet<int> _liveLinkLoggedMissingSkeletons = new();
+    private readonly HashSet<string> _liveLinkLoggedModelFailures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<LiveLinkIconBillboard> _liveLinkIconBillboards = new();
+    private readonly Dictionary<string, RenderTexture?> _liveLinkIconTextures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _liveLinkLoggedMissingIcons = new(StringComparer.OrdinalIgnoreCase);
+    private int _liveLinkIconShaderProgram;
+    private int _liveLinkIconSamplerLocation = -1;
+    private int _liveLinkIconVao;
+    private int _liveLinkIconVbo;
 
     private int _pinShaderProgram;
     private int _pinMvpLocation = -1;
@@ -252,6 +291,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private bool _skipWaterEnabledCached;
     private bool _skipTranslucentEnabledCached;
     private bool _showFpsCached;
+    private bool _showPlayerPinsCached = true;
     private int _shadowTextureSizeCached = 1024;
     private int _maxTextureSizeCached = 1024;
     private string _renderModeCached = "Default";
@@ -280,6 +320,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         MapPathProperty.Changed.AddClassHandler<VRFViewport>((sender, args) => sender.OnMapPathChanged(args));
         PinScaleProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnPinScaleChanged());
         PinOffsetZProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnPinOffsetChanged());
+        ShowPlayerPinsProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnShowPlayerPinsChanged());
         ViewportFpsCapProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnViewportFpsCapChanged());
         PostprocessEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnPostprocessEnabledChanged());
         ColorCorrectionEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnColorCorrectionEnabledChanged());
@@ -293,6 +334,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         RenderModeProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnRenderModeChanged());
         FreecamSettingsProperty.Changed.AddClassHandler<VRFViewport>((sender, args) => sender.OnFreecamSettingsChanged(args));
         InputSenderProperty.Changed.AddClassHandler<VRFViewport>((sender, args) => sender.OnInputSenderChanged(args));
+        LiveLinkReceiverProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
+        LiveLinkEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
+        LiveLinkItemIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkItemIconsEnabledChanged());
+        LiveLinkPortProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
     }
 
     public string? MapPath
@@ -311,6 +356,12 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     {
         get => GetValue(PinOffsetZProperty);
         set => SetValue(PinOffsetZProperty, value);
+    }
+
+    public bool ShowPlayerPins
+    {
+        get => GetValue(ShowPlayerPinsProperty);
+        set => SetValue(ShowPlayerPinsProperty, value);
     }
 
     public float ViewportMouseScale
@@ -397,6 +448,30 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         set => SetValue(InputSenderProperty, value);
     }
 
+    public Cs2LiveLinkReceiver? LiveLinkReceiver
+    {
+        get => GetValue(LiveLinkReceiverProperty);
+        set => SetValue(LiveLinkReceiverProperty, value);
+    }
+
+    public bool LiveLinkEnabled
+    {
+        get => GetValue(LiveLinkEnabledProperty);
+        set => SetValue(LiveLinkEnabledProperty, value);
+    }
+
+    public bool LiveLinkItemIconsEnabled
+    {
+        get => GetValue(LiveLinkItemIconsEnabledProperty);
+        set => SetValue(LiveLinkItemIconsEnabledProperty, value);
+    }
+
+    public int LiveLinkPort
+    {
+        get => GetValue(LiveLinkPortProperty);
+        set => SetValue(LiveLinkPortProperty, value);
+    }
+
     public bool IsFreecamActive => _freecamActive;
     public bool IsFreecamInputEnabled => _freecamInputEnabled;
 
@@ -451,9 +526,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _skipWaterEnabledCached = SkipWaterEnabled;
         _skipTranslucentEnabledCached = SkipTranslucentEnabled;
         _showFpsCached = ShowFps;
+        _showPlayerPinsCached = ShowPlayerPins;
         _shadowTextureSizeCached = ShadowTextureSize;
         _maxTextureSizeCached = MaxTextureSize;
         _renderModeCached = string.IsNullOrWhiteSpace(RenderMode) ? "Default" : RenderMode;
+        _liveLinkReceiverCached = LiveLinkReceiver;
+        _liveLinkEnabledCached = LiveLinkEnabled;
+        _liveLinkItemIconsEnabledCached = LiveLinkItemIconsEnabled;
+        _liveLinkPortCached = LiveLinkPort;
+        ApplyLiveLinkReceiverSettings();
         if (_hwnd != IntPtr.Zero)
         {
             InitializeAfterNativeCreated();
@@ -2722,6 +2803,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     {
         LogMessage("DisposeRenderer");
         _rendererReady = false;
+        ClearLiveLinkNodes();
         _textRenderer = null;
         _renderer?.Dispose();
         _renderer = null;
@@ -2748,6 +2830,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 {
                     _nativeWindow.Context.MakeCurrent();
                     DisposePinResources();
+                    DisposeLiveLinkIconResources();
                     DisposeCampathOverlayResources();
                     DisposeGizmoResources();
                 }
@@ -2816,6 +2899,18 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private void OnShowFpsChanged()
     {
         _showFpsCached = ShowFps;
+        RequestNextFrame();
+    }
+
+    private void OnShowPlayerPinsChanged()
+    {
+        _showPlayerPinsCached = ShowPlayerPins;
+        RequestNextFrame();
+    }
+
+    private void OnLiveLinkItemIconsEnabledChanged()
+    {
+        _liveLinkItemIconsEnabledCached = LiveLinkItemIconsEnabled;
         RequestNextFrame();
     }
 
@@ -3446,6 +3541,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             UpdateFreecamForFrame();
             ApplyCameraForFrame(width, height);
             UpdateCampathOverlayCameraState();
+            ApplyLiveLinkFrame();
 
             _renderer.Update(updateContext);
 
@@ -3462,7 +3558,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             {
                 RebuildPins();
             }
-            DrawPins(width, height);
+            if (_showPlayerPinsCached)
+            {
+                DrawPins(width, height);
+            }
             if (_campathOverlayDirty)
             {
                 RebuildCampathOverlay();
@@ -3472,6 +3571,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             {
                 _renderer.PostprocessRender(_mainFramebuffer, _defaultFramebuffer);
             }
+            DrawLiveLinkIcons(width, height);
             AddPinLabels(width, height);
             AddFpsOverlay(width);
             _textRenderer?.Render(_renderer.Camera);
@@ -3738,6 +3838,175 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
     }
 
+    private void ApplyLiveLinkReceiverSettings()
+    {
+        _liveLinkReceiverCached = LiveLinkReceiver;
+        _liveLinkEnabledCached = LiveLinkEnabled;
+        _liveLinkPortCached = LiveLinkPort;
+
+        var receiver = _liveLinkReceiverCached;
+        if (receiver == null)
+            return;
+
+        receiver.Port = _liveLinkPortCached;
+        receiver.Enabled = _liveLinkEnabledCached;
+        LogMessage($"LiveLink receiver {(_liveLinkEnabledCached ? "enabled" : "disabled")} UDP {_liveLinkPortCached}");
+        RequestNextFrame();
+    }
+
+    private void ApplyLiveLinkFrame()
+    {
+        var receiver = _liveLinkReceiverCached;
+        if (!_liveLinkEnabledCached || receiver == null)
+            return;
+
+        if (_renderer?.Scene == null || _fileLoader == null)
+            return;
+
+        var frame = receiver.GetLatestFrame();
+        if (frame == null || frame.FrameId == _lastLiveLinkFrameId)
+            return;
+
+        _lastLiveLinkFrameId = frame.FrameId;
+        _liveLinkIconBillboards.Clear();
+
+        foreach (var hiddenId in frame.HiddenEntityIds)
+        {
+            RemoveLiveLinkNode(hiddenId);
+        }
+
+        var activeEntityIds = new HashSet<int>();
+        foreach (var entity in frame.Entities)
+        {
+            if (entity.ViewModel)
+                continue;
+
+            if (!entity.Visible)
+            {
+                RemoveLiveLinkNode(entity.Id);
+                continue;
+            }
+
+            activeEntityIds.Add(entity.Id);
+            var skeleton = receiver.GetSkeleton(entity.Id);
+            var modelName = skeleton?.ModelName;
+            if (string.IsNullOrWhiteSpace(modelName))
+            {
+                if (_liveLinkLoggedMissingSkeletons.Add(entity.Id))
+                    LogMessage($"LiveLink skipped entity {entity.Id}: missing skeleton metadata.");
+                continue;
+            }
+
+            var node = GetOrCreateLiveLinkNode(entity.Id, modelName);
+            if (node == null)
+                continue;
+
+            node.Node.Transform = entity.Transform;
+            _renderer.Scene.RefreshLighting(node.Node);
+            if (entity.HasBones && entity.LocalBoneTransforms.Count > 0)
+            {
+                node.Node.SetExternalPose(entity.LocalBoneTransforms);
+            }
+
+            var iconKey = TryGetLiveLinkIconKey(modelName, entity);
+            if (iconKey != null && ShouldDrawLiveLinkItemIcon(entity, iconKey))
+            {
+                _liveLinkIconBillboards.Add(new LiveLinkIconBillboard(
+                    new Vector3(entity.Transform.M41, entity.Transform.M42, entity.Transform.M43 + 18f),
+                    iconKey,
+                    entity.Projectile));
+            }
+
+            _renderer.Scene.MarkParentOctreeDirty(node.Node);
+        }
+
+        foreach (var entityId in _liveLinkNodes.Keys.ToArray())
+        {
+            if (!activeEntityIds.Contains(entityId))
+            {
+                RemoveLiveLinkNode(entityId);
+            }
+        }
+    }
+
+    private LiveLinkModelNode? GetOrCreateLiveLinkNode(int entityId, string modelName)
+    {
+        if (_renderer?.Scene == null || _fileLoader == null)
+            return null;
+
+        if (_liveLinkNodes.TryGetValue(entityId, out var existing)
+            && string.Equals(existing.ModelName, modelName, StringComparison.OrdinalIgnoreCase))
+        {
+            return existing;
+        }
+
+        RemoveLiveLinkNode(entityId);
+
+        try
+        {
+            var started = Stopwatch.GetTimestamp();
+            var resource = _fileLoader.LoadFileCompiled(modelName);
+            var loaded = Stopwatch.GetTimestamp();
+            if (resource?.DataBlock is not Model model)
+            {
+                if (_liveLinkLoggedModelFailures.Add(modelName))
+                    LogMessage($"LiveLink model load failed: {modelName}");
+                return null;
+            }
+
+            var node = new ModelSceneNode(_renderer.Scene, model, isWorldPreview: true, skipAnimations: true)
+            {
+                LayerName = "HLAE LiveLink",
+                Name = modelName,
+                Flags = ObjectTypeFlags.DisableVisCulling
+            };
+            var constructed = Stopwatch.GetTimestamp();
+            node.SetRenderMode(GetEffectiveRenderMode());
+            _renderer.Scene.Add(node, dynamic: true);
+            _renderer.Scene.MarkParentOctreeDirty(node);
+            var added = Stopwatch.GetTimestamp();
+            var liveNode = new LiveLinkModelNode(modelName, node);
+            _liveLinkNodes[entityId] = liveNode;
+            LogMessage(
+                $"LiveLink created entity {entityId}: {modelName} load={Stopwatch.GetElapsedTime(started, loaded).TotalMilliseconds:0}ms construct={Stopwatch.GetElapsedTime(loaded, constructed).TotalMilliseconds:0}ms add={Stopwatch.GetElapsedTime(constructed, added).TotalMilliseconds:0}ms");
+            return liveNode;
+        }
+        catch (Exception ex)
+        {
+            if (_liveLinkLoggedModelFailures.Add(modelName))
+                LogMessage($"LiveLink model load exception for {modelName}: {ex.GetType().Name}: {ex.Message}");
+            return null;
+        }
+    }
+
+    private void RemoveLiveLinkNode(int entityId)
+    {
+        if (!_liveLinkNodes.Remove(entityId, out var liveNode))
+            return;
+
+        try
+        {
+            _renderer?.Scene.Remove(liveNode.Node, dynamic: true);
+            liveNode.Node.Delete();
+        }
+        catch (Exception ex)
+        {
+            LogMessage($"LiveLink node removal failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private void ClearLiveLinkNodes()
+    {
+        foreach (var entityId in _liveLinkNodes.Keys.ToArray())
+        {
+            RemoveLiveLinkNode(entityId);
+        }
+
+        _lastLiveLinkFrameId = uint.MaxValue;
+        _liveLinkLoggedMissingSkeletons.Clear();
+        _liveLinkLoggedModelFailures.Clear();
+    }
+
     private void PostSceneLoad(HashSet<string> defaultEnabledLayers)
     {
         if (_renderer == null)
@@ -3997,6 +4266,394 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
     }
 
+    private void DrawLiveLinkIcons(int width, int height)
+    {
+        if (!_liveLinkItemIconsEnabledCached || _renderer == null || _liveLinkIconBillboards.Count == 0)
+            return;
+
+        if (!EnsureLiveLinkIconResources())
+            return;
+
+        var camera = _renderer.Camera;
+        var blendEnabled = GL.IsEnabled(EnableCap.Blend);
+        var depthEnabled = GL.IsEnabled(EnableCap.DepthTest);
+        var cullEnabled = GL.IsEnabled(EnableCap.CullFace);
+        var previousProgram = GL.GetInteger(GetPName.CurrentProgram);
+        var previousVertexArray = GL.GetInteger(GetPName.VertexArrayBinding);
+        var previousActiveTexture = GL.GetInteger(GetPName.ActiveTexture);
+        var previousTexture = GL.GetInteger(GetPName.TextureBinding2D);
+
+        GL.Enable(EnableCap.Blend);
+        GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        GL.Disable(EnableCap.DepthTest);
+        if (cullEnabled)
+            GL.Disable(EnableCap.CullFace);
+
+        GL.UseProgram(_liveLinkIconShaderProgram);
+        GL.Uniform1(_liveLinkIconSamplerLocation, 0);
+        GL.ActiveTexture(TextureUnit.Texture0);
+        GL.BindVertexArray(_liveLinkIconVao);
+
+        foreach (var billboard in _liveLinkIconBillboards)
+        {
+            var texture = GetLiveLinkIconTexture(billboard.IconKey);
+            if (texture == null)
+                continue;
+
+            if (!TryProjectToScreen(billboard.World, camera, width, height, out var screen))
+                continue;
+
+            var iconHeight = billboard.Projectile ? 30f : 28f;
+            var iconWidth = Math.Max(20f, iconHeight * texture.Width / Math.Max(1f, texture.Height));
+            var x0 = (float)screen.X - iconWidth * 0.5f;
+            var x1 = (float)screen.X + iconWidth * 0.5f;
+            var y0 = (float)screen.Y - iconHeight * 0.5f;
+            var y1 = (float)screen.Y + iconHeight * 0.5f;
+
+            Span<float> vertices =
+            [
+                ToNdcX(x0, width), ToNdcY(y0, height), 0f, 0f,
+                ToNdcX(x1, width), ToNdcY(y0, height), 1f, 0f,
+                ToNdcX(x1, width), ToNdcY(y1, height), 1f, 1f,
+                ToNdcX(x0, width), ToNdcY(y0, height), 0f, 0f,
+                ToNdcX(x1, width), ToNdcY(y1, height), 1f, 1f,
+                ToNdcX(x0, width), ToNdcY(y1, height), 0f, 1f,
+            ];
+
+            GL.BindTexture(TextureTarget.Texture2D, texture.Handle);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _liveLinkIconVbo);
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices.ToArray(), BufferUsageHint.StreamDraw);
+            GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+        }
+
+        GL.BindTexture(TextureTarget.Texture2D, previousTexture);
+        GL.ActiveTexture((TextureUnit)previousActiveTexture);
+        GL.BindVertexArray(previousVertexArray);
+        GL.UseProgram(previousProgram);
+        if (depthEnabled)
+            GL.Enable(EnableCap.DepthTest);
+        else
+            GL.Disable(EnableCap.DepthTest);
+        if (cullEnabled)
+            GL.Enable(EnableCap.CullFace);
+        if (!blendEnabled)
+            GL.Disable(EnableCap.Blend);
+
+        static float ToNdcX(float x, int w) => 2f * x / Math.Max(1, w) - 1f;
+        static float ToNdcY(float y, int h) => 1f - 2f * y / Math.Max(1, h);
+    }
+
+    private bool EnsureLiveLinkIconResources()
+    {
+        if (_liveLinkIconShaderProgram == 0)
+        {
+            _liveLinkIconShaderProgram = CreateLiveLinkIconShaderProgram();
+            if (_liveLinkIconShaderProgram == 0)
+                return false;
+
+            _liveLinkIconSamplerLocation = GL.GetUniformLocation(_liveLinkIconShaderProgram, "uTexture");
+        }
+
+        if (_liveLinkIconVao == 0)
+        {
+            _liveLinkIconVao = GL.GenVertexArray();
+            _liveLinkIconVbo = GL.GenBuffer();
+            GL.BindVertexArray(_liveLinkIconVao);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _liveLinkIconVbo);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 2, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(1);
+            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 4 * sizeof(float), 2 * sizeof(float));
+            GL.BindVertexArray(0);
+        }
+
+        return true;
+    }
+
+    private RenderTexture? GetLiveLinkIconTexture(string iconKey)
+    {
+        if (_liveLinkIconTextures.TryGetValue(iconKey, out var cached))
+            return cached;
+
+        try
+        {
+            var uri = GetLiveLinkIconUri(iconKey);
+            using var stream = AssetLoader.Open(uri);
+            using var svg = new SKSvg();
+            svg.Load(stream);
+            if (svg.Picture == null)
+            {
+                _liveLinkIconTextures[iconKey] = null;
+                return null;
+            }
+
+            using var bitmap = RasterizeSvg(svg, 128);
+            var texture = MaterialLoader.LoadBitmapTexture(bitmap);
+            texture.SetWrapMode(TextureWrapMode.ClampToEdge);
+            texture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
+            _liveLinkIconTextures[iconKey] = texture;
+            return texture;
+        }
+        catch (Exception ex)
+        {
+            if (_liveLinkLoggedMissingIcons.Add(iconKey))
+                LogMessage($"LiveLink icon load failed for {iconKey}: {ex.GetType().Name}: {ex.Message}");
+            _liveLinkIconTextures[iconKey] = null;
+            return null;
+        }
+    }
+
+    private static Uri GetLiveLinkIconUri(string iconKey)
+    {
+        return iconKey == "planted_c4"
+            ? new Uri("avares://HlaeObsTools/Assets/hud/icons/planted-bomb.svg")
+            : new Uri($"avares://HlaeObsTools/Assets/hud/weapons/{iconKey}.svg");
+    }
+
+    private static SKBitmap RasterizeSvg(SKSvg svg, int size)
+    {
+        var bounds = svg.Picture!.CullRect;
+        var aspect = bounds.Width > 0f && bounds.Height > 0f ? bounds.Width / bounds.Height : 1f;
+        var width = Math.Max(1, (int)MathF.Ceiling(size * aspect));
+        var info = new SKImageInfo(width, size, SKColorType.Rgba8888, SKAlphaType.Premul);
+        var bitmap = new SKBitmap(info);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+
+        if (bounds.Width <= 0f || bounds.Height <= 0f)
+            return bitmap;
+
+        var scale = size / bounds.Height * 0.86f;
+        var tx = (width - bounds.Width * scale) * 0.5f - bounds.Left * scale;
+        var ty = (size - bounds.Height * scale) * 0.5f - bounds.Top * scale;
+        canvas.Translate(tx, ty);
+        canvas.Scale(scale);
+        canvas.DrawPicture(svg.Picture);
+        canvas.Flush();
+        return bitmap;
+    }
+
+    private static bool ShouldDrawLiveLinkItemIcon(Cs2LiveLinkEntity entity, string iconKey)
+    {
+        return entity.Projectile || iconKey == "planted_c4" || entity.OwnerId < 0;
+    }
+
+    private static string? TryGetLiveLinkIconKey(string modelName, Cs2LiveLinkEntity entity)
+    {
+        var path = modelName.Replace('\\', '/').ToLowerInvariant();
+        var clientClassName = entity.ClientClassName.ToLowerInvariant();
+
+        if (path.Contains("/defuser/") || path.EndsWith("/defuser.vmdl", StringComparison.Ordinal))
+            return "defuser";
+        if (clientClassName == "c_plantedc4")
+            return "planted_c4";
+        if (path.Contains("/c4/") || path.Contains("weapon_c4") || path.Contains("planted_c4"))
+            return "c4";
+        if (path.Contains("flashbang"))
+            return "flashbang";
+        if (path.Contains("smokegrenade") || path.Contains("smoke_grenade"))
+            return "smokegrenade";
+        if (path.Contains("hegrenade") || path.Contains("fraggrenade") || path.Contains("frag_grenade"))
+            return "hegrenade";
+        if (path.Contains("incgrenade"))
+            return "incgrenade";
+        if (path.Contains("molotov") || path.Contains("firebomb"))
+            return "molotov";
+        if (path.Contains("decoy"))
+            return "decoy";
+        if (path.Contains("tagrenade"))
+            return "tagrenade";
+        if (path.Contains("breachcharge"))
+            return entity.Projectile ? "breachcharge_projectile" : "breachcharge";
+        if (path.Contains("bumpmine"))
+            return "bumpmine";
+        if (path.Contains("healthshot"))
+            return "healthshot";
+        if (path.Contains("taser"))
+            return "taser";
+
+        if (!path.Contains("weapons/models/", StringComparison.Ordinal))
+            return null;
+
+        var file = Path.GetFileNameWithoutExtension(path);
+        if (string.IsNullOrWhiteSpace(file))
+            return null;
+
+        foreach (var prefix in LiveLinkIconFilePrefixes)
+        {
+            if (file.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                file = file[prefix.Length..];
+                break;
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(file) ? null : file;
+    }
+
+    private int CreateLiveLinkIconShaderProgram()
+    {
+        const string Vertex330 = @"#version 330 core
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aTex;
+out vec2 vTex;
+void main()
+{
+    vTex = aTex;
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}";
+        const string Fragment330 = @"#version 330 core
+in vec2 vTex;
+out vec4 FragColor;
+uniform sampler2D uTexture;
+void main()
+{
+    FragColor = texture(uTexture, vTex);
+}";
+        const string Vertex120 = @"#version 120
+attribute vec2 aPos;
+attribute vec2 aTex;
+varying vec2 vTex;
+void main()
+{
+    vTex = aTex;
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}";
+        const string Fragment120 = @"#version 120
+varying vec2 vTex;
+uniform sampler2D uTexture;
+void main()
+{
+    gl_FragColor = texture2D(uTexture, vTex);
+}";
+        const string VertexEs300 = @"#version 300 es
+precision mediump float;
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aTex;
+out vec2 vTex;
+void main()
+{
+    vTex = aTex;
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}";
+        const string FragmentEs300 = @"#version 300 es
+precision mediump float;
+in vec2 vTex;
+out vec4 FragColor;
+uniform sampler2D uTexture;
+void main()
+{
+    FragColor = texture(uTexture, vTex);
+}";
+        const string VertexEs100 = @"#version 100
+precision mediump float;
+attribute vec2 aPos;
+attribute vec2 aTex;
+varying vec2 vTex;
+void main()
+{
+    vTex = aTex;
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}";
+        const string FragmentEs100 = @"#version 100
+precision mediump float;
+varying vec2 vTex;
+uniform sampler2D uTexture;
+void main()
+{
+    gl_FragColor = texture2D(uTexture, vTex);
+}";
+
+        var version = GL.GetString(StringName.Version) ?? "unknown";
+        var glsl = GL.GetString(StringName.ShadingLanguageVersion) ?? "unknown";
+        var isEs = version.Contains("OpenGL ES", StringComparison.OrdinalIgnoreCase);
+        var errors = new List<string>();
+
+        var esVariants = new[]
+        {
+            new ShaderVariant("es300", VertexEs300, FragmentEs300, BindAttribLocation: false),
+            new ShaderVariant("es100", VertexEs100, FragmentEs100, BindAttribLocation: true)
+        };
+        var desktopVariants = new[]
+        {
+            new ShaderVariant("gl330", Vertex330, Fragment330, BindAttribLocation: false),
+            new ShaderVariant("gl120", Vertex120, Fragment120, BindAttribLocation: true)
+        };
+
+        var variants = new List<ShaderVariant>();
+        if (isEs)
+        {
+            variants.AddRange(esVariants);
+            variants.AddRange(desktopVariants);
+        }
+        else
+        {
+            variants.AddRange(desktopVariants);
+            variants.AddRange(esVariants);
+        }
+
+        foreach (var variant in variants)
+        {
+            var vertexShader = CompilePinShader(ShaderType.VertexShader, variant.VertexSource, out var vertexError);
+            if (vertexShader == 0)
+            {
+                if (!string.IsNullOrWhiteSpace(vertexError))
+                    errors.Add($"Vertex {variant.Name}: {vertexError}");
+                continue;
+            }
+
+            var fragmentShader = CompilePinShader(ShaderType.FragmentShader, variant.FragmentSource, out var fragmentError);
+            if (fragmentShader == 0)
+            {
+                if (!string.IsNullOrWhiteSpace(fragmentError))
+                    errors.Add($"Fragment {variant.Name}: {fragmentError}");
+                GL.DeleteShader(vertexShader);
+                continue;
+            }
+
+            var program = GL.CreateProgram();
+            GL.AttachShader(program, vertexShader);
+            GL.AttachShader(program, fragmentShader);
+            if (variant.BindAttribLocation)
+            {
+                GL.BindAttribLocation(program, 0, "aPos");
+                GL.BindAttribLocation(program, 1, "aTex");
+            }
+
+            GL.LinkProgram(program);
+            GL.GetProgram(program, GetProgramParameterName.LinkStatus, out var linked);
+            if (linked == 0)
+            {
+                var info = GL.GetProgramInfoLog(program);
+                if (!string.IsNullOrWhiteSpace(info))
+                    errors.Add($"Link {variant.Name}: {info}");
+                GL.DeleteProgram(program);
+                program = 0;
+            }
+
+            if (program != 0)
+            {
+                GL.DetachShader(program, vertexShader);
+                GL.DetachShader(program, fragmentShader);
+            }
+            GL.DeleteShader(vertexShader);
+            GL.DeleteShader(fragmentShader);
+
+            if (program != 0)
+            {
+                LogMessage($"LiveLink icon shader: {variant.Name} (GL {version} | GLSL {glsl})");
+                return program;
+            }
+        }
+
+        if (errors.Count > 0)
+            LogMessage($"LiveLink icon shader compile failed ({version}): {string.Join(" | ", errors)}");
+        else
+            LogMessage($"LiveLink icon shader compile failed ({version}).");
+
+        return 0;
+    }
+
     private bool EnsurePinResources()
     {
         if (_pinShaderProgram == 0)
@@ -4035,6 +4692,33 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
         _pinVertexCount = 0;
         _pinDraws.Clear();
+    }
+
+    private void DisposeLiveLinkIconResources()
+    {
+        if (_liveLinkIconVao != 0)
+        {
+            GL.DeleteVertexArray(_liveLinkIconVao);
+            _liveLinkIconVao = 0;
+        }
+        if (_liveLinkIconVbo != 0)
+        {
+            GL.DeleteBuffer(_liveLinkIconVbo);
+            _liveLinkIconVbo = 0;
+        }
+        if (_liveLinkIconShaderProgram != 0)
+        {
+            GL.DeleteProgram(_liveLinkIconShaderProgram);
+            _liveLinkIconShaderProgram = 0;
+        }
+
+        foreach (var texture in _liveLinkIconTextures.Values)
+        {
+            texture?.Delete();
+        }
+        _liveLinkIconTextures.Clear();
+        _liveLinkIconBillboards.Clear();
+        _liveLinkIconSamplerLocation = -1;
     }
 
     private bool EnsureCampathOverlayResources()
@@ -5047,6 +5731,10 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
         public double ScreenX { get; set; }
         public double ScreenY { get; set; }
     }
+
+    private sealed record LiveLinkModelNode(string ModelName, ModelSceneNode Node);
+
+    private readonly record struct LiveLinkIconBillboard(Vector3 World, string IconKey, bool Projectile);
 
     private enum GizmoMode
     {

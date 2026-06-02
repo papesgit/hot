@@ -7,6 +7,7 @@ using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.Viewport3D;
 using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.Services.Input;
+using HlaeObsTools.Services.LiveLink;
 using System.Numerics;
 using System.Windows.Input;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private readonly HlaeWebSocketClient? _webSocketClient;
     private readonly VideoDisplayDockViewModel? _videoDisplay;
     private readonly GsiServer? _gsiServer;
+    private readonly Cs2LiveLinkReceiver? _liveLinkReceiver;
     private long _lastHeartbeat;
     private bool _awaitFreecamRelease;
     private readonly DelegateCommand _addKeyframeFromViewportCommand;
@@ -39,13 +41,14 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     public event Action<IReadOnlyList<ViewportPin>>? PinsUpdated;
 
-    public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, CampathEditorViewModel? campathEditor = null, HlaeWebSocketClient? webSocketClient = null, VideoDisplayDockViewModel? videoDisplay = null, GsiServer? gsiServer = null)
+    public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, CampathEditorViewModel? campathEditor = null, HlaeWebSocketClient? webSocketClient = null, VideoDisplayDockViewModel? videoDisplay = null, GsiServer? gsiServer = null, Cs2LiveLinkReceiver? liveLinkReceiver = null)
     {
         _settings = settings;
         _freecamSettings = freecamSettings;
         _webSocketClient = webSocketClient;
         _videoDisplay = videoDisplay;
         _gsiServer = gsiServer;
+        _liveLinkReceiver = liveLinkReceiver;
         if (_gsiServer != null)
             _gsiServer.GameStateUpdated += OnGameStateUpdated;
         _settings.PropertyChanged += OnViewportSettingsChanged;
@@ -81,6 +84,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     public Viewport3DSettings Viewport3DSettings => _settings;
     public FreecamSettings FreecamSettings => _freecamSettings;
     public HlaeInputSender? InputSender => _inputSender;
+    public Cs2LiveLinkReceiver? LiveLinkReceiver => _liveLinkReceiver;
     public CampathEditorViewModel CampathEditor { get; }
     public Func<ViewportFreecamState?>? CampathStateProvider { get; set; }
 

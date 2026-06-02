@@ -447,6 +447,11 @@
                                     Foreground="#E6E6E6"
                             hotkeys:HotkeyTarget.Path="Viewport3DSettings.ShowFps"
                                     Margin="0,6,0,0"/>
+                        <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ShowPlayerPins, Mode=TwoWay}"
+                                    Content="Show player pins"
+                                    Foreground="#E6E6E6"
+                            hotkeys:HotkeyTarget.Path="Viewport3DSettings.ShowPlayerPins"
+                                    Margin="0,6,0,0"/>
 
                         <StackPanel IsVisible="{Binding Viewport3DSettings.IsVrfViewportMode}">
                             <TextBlock Text="Rendering"
@@ -506,6 +511,27 @@
                                     <ComboBox Width="120"
                                             ItemsSource="{Binding Viewport3DSettings.MaxTextureSizeOptions}"
                                             SelectedItem="{Binding Viewport3DSettings.MaxTextureSize, Mode=TwoWay}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <TextBlock Text="LiveLink"
+                                    Foreground="#CCCCCC"
+                                    FontWeight="SemiBold"
+                                    Margin="0,10,0,0"/>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <ToggleSwitch IsChecked="{Binding Viewport3DSettings.LiveLinkEnabled, Mode=TwoWay}"
+                                            Content="Receive CS2 entities"
+                                            Foreground="#E6E6E6"/>
+                                <ToggleSwitch IsChecked="{Binding Viewport3DSettings.LiveLinkItemIconsEnabled, Mode=TwoWay}"
+                                            Content="Show item icons"
+                                            Foreground="#E6E6E6"/>
+                                <StackPanel Orientation="Vertical" Spacing="4">
+                                    <TextBlock Text="UDP port"
+                                            Foreground="#CCCCCC"
+                                            FontWeight="SemiBold"/>
+                                    <TextBox Width="100"
+                                            Text="{Binding Viewport3DSettings.LiveLinkPort, Mode=TwoWay}"
+                                            PlaceholderText="31237"/>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>

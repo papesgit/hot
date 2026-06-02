@@ -12,6 +12,7 @@ public sealed class Viewport3DSettings : ViewModelBase
     private string _mapObjPath = string.Empty;
     private bool _useAltPlayerBinds;
     private bool _useLegacyD3D11Viewport;
+    private bool _showPlayerPins = true;
     private float _pinScale = 200.0f;
     private float _pinOffsetZ = 55.0f;
     private float _viewportMouseScale = 0.75f;
@@ -34,6 +35,9 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _viewportCampathOverlayEnabled = true;
     private bool _campathGizmoLocalSpace = true;
     private bool _viewportCampathSyncEnabled;
+    private bool _liveLinkEnabled;
+    private bool _liveLinkItemIconsEnabled = true;
+    private int _liveLinkPort = 31237;
     private int _shadowTextureSize = 1024;
     private int _maxTextureSize = 1024;
     private string _renderMode = "Default";
@@ -83,6 +87,15 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _useAltPlayerBinds;
         set => SetProperty(ref _useAltPlayerBinds, value);
+    }
+
+    /// <summary>
+    /// Draw player position pins in the 3D viewport.
+    /// </summary>
+    public bool ShowPlayerPins
+    {
+        get => _showPlayerPins;
+        set => SetProperty(ref _showPlayerPins, value);
     }
 
     /// <summary>
@@ -281,6 +294,33 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _viewportCampathSyncEnabled;
         set => SetProperty(ref _viewportCampathSyncEnabled, value);
+    }
+
+    /// <summary>
+    /// Receive CS2 LiveLink UDP frames and render streamed entities in the VRF viewport.
+    /// </summary>
+    public bool LiveLinkEnabled
+    {
+        get => _liveLinkEnabled;
+        set => SetProperty(ref _liveLinkEnabled, value);
+    }
+
+    /// <summary>
+    /// Draw HUD icon billboards for streamed LiveLink weapons, projectiles, and bombs.
+    /// </summary>
+    public bool LiveLinkItemIconsEnabled
+    {
+        get => _liveLinkItemIconsEnabled;
+        set => SetProperty(ref _liveLinkItemIconsEnabled, value);
+    }
+
+    /// <summary>
+    /// UDP port used for CS2 LiveLink frames.
+    /// </summary>
+    public int LiveLinkPort
+    {
+        get => _liveLinkPort;
+        set => SetProperty(ref _liveLinkPort, value < 1 ? 1 : value > 65535 ? 65535 : value);
     }
 
     /// <summary>

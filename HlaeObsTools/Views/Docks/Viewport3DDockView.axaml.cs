@@ -562,6 +562,7 @@ public partial class Viewport3DDockView : UserControl
     {
         var viewport = new VRFViewport();
         viewport.Bind(VRFViewport.MapPathProperty, new Binding("Viewport3DSettings.MapObjPath"));
+        viewport.Bind(VRFViewport.ShowPlayerPinsProperty, new Binding("Viewport3DSettings.ShowPlayerPins"));
         viewport.Bind(VRFViewport.PinScaleProperty, new Binding("Viewport3DSettings.PinScale"));
         viewport.Bind(VRFViewport.PinOffsetZProperty, new Binding("Viewport3DSettings.PinOffsetZ"));
         viewport.Bind(VRFViewport.PostprocessEnabledProperty, new Binding("Viewport3DSettings.PostprocessEnabled"));
@@ -576,6 +577,10 @@ public partial class Viewport3DDockView : UserControl
         viewport.Bind(VRFViewport.RenderModeProperty, new Binding("Viewport3DSettings.RenderMode"));
         viewport.Bind(VRFViewport.FreecamSettingsProperty, new Binding("FreecamSettings"));
         viewport.Bind(VRFViewport.InputSenderProperty, new Binding("InputSender"));
+        viewport.Bind(VRFViewport.LiveLinkReceiverProperty, new Binding("LiveLinkReceiver"));
+        viewport.Bind(VRFViewport.LiveLinkEnabledProperty, new Binding("Viewport3DSettings.LiveLinkEnabled"));
+        viewport.Bind(VRFViewport.LiveLinkItemIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkItemIconsEnabled"));
+        viewport.Bind(VRFViewport.LiveLinkPortProperty, new Binding("Viewport3DSettings.LiveLinkPort"));
         viewport.Bind(VRFViewport.ViewportMouseScaleProperty, new Binding("Viewport3DSettings.ViewportMouseScale"));
         viewport.Bind(VRFViewport.ViewportFpsCapProperty, new Binding("Viewport3DSettings.ViewportFpsCap"));
         return viewport;
@@ -585,6 +590,7 @@ public partial class Viewport3DDockView : UserControl
     {
         var viewport = new D3D11Viewport();
         viewport.Bind(D3D11Viewport.MapPathProperty, new Binding("Viewport3DSettings.MapObjPath"));
+        viewport.Bind(D3D11Viewport.ShowPlayerPinsProperty, new Binding("Viewport3DSettings.ShowPlayerPins"));
         viewport.Bind(D3D11Viewport.PinScaleProperty, new Binding("Viewport3DSettings.PinScale"));
         viewport.Bind(D3D11Viewport.PinOffsetZProperty, new Binding("Viewport3DSettings.PinOffsetZ"));
         viewport.Bind(D3D11Viewport.ViewportMouseScaleProperty, new Binding("Viewport3DSettings.ViewportMouseScale"));

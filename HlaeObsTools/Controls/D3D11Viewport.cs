@@ -61,6 +61,8 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
         AvaloniaProperty.Register<D3D11Viewport, float>(nameof(PinScale), 200.0f);
     public static readonly StyledProperty<float> PinOffsetZProperty =
         AvaloniaProperty.Register<D3D11Viewport, float>(nameof(PinOffsetZ), 55.0f);
+    public static readonly StyledProperty<bool> ShowPlayerPinsProperty =
+        AvaloniaProperty.Register<D3D11Viewport, bool>(nameof(ShowPlayerPins), true);
     public static readonly StyledProperty<float> MapScaleProperty =
         AvaloniaProperty.Register<D3D11Viewport, float>(nameof(MapScale), 1.0f);
     public static readonly StyledProperty<float> MapYawProperty =
@@ -142,6 +144,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
     private bool _nativeInitDone;
     private float _viewportFpsCapCached;
     private bool _showFpsCached;
+    private bool _showPlayerPinsCached = true;
     private long _fpsLastTicks;
     private double _fpsAccumMs;
     private int _fpsFrameCount;
@@ -252,6 +255,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
         InputSenderProperty.Changed.AddClassHandler<D3D11Viewport>((sender, args) => sender.OnInputSenderChanged(args));
         ViewportFpsCapProperty.Changed.AddClassHandler<D3D11Viewport>((sender, _) => sender.OnViewportFpsCapChanged());
         ShowFpsProperty.Changed.AddClassHandler<D3D11Viewport>((sender, _) => sender.OnShowFpsChanged());
+        ShowPlayerPinsProperty.Changed.AddClassHandler<D3D11Viewport>((sender, _) => sender.OnShowPlayerPinsChanged());
     }
 
     public string? MapPath
@@ -276,6 +280,12 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
     {
         get => GetValue(PinOffsetZProperty);
         set => SetValue(PinOffsetZProperty, value);
+    }
+
+    public bool ShowPlayerPins
+    {
+        get => GetValue(ShowPlayerPinsProperty);
+        set => SetValue(ShowPlayerPinsProperty, value);
     }
 
     public float MapScale
@@ -406,6 +416,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
         ResetLogFile();
         _viewportFpsCapCached = ViewportFpsCap;
         _showFpsCached = ShowFps;
+        _showPlayerPinsCached = ShowPlayerPins;
         ResetFpsCounter();
         if (_hwnd != IntPtr.Zero)
         {
@@ -953,7 +964,7 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
             DrawGeometry(_meshBuffer, _meshVertexCount, PrimitiveTopology.TriangleList, depthEnabled: true);
         }
 
-        if (_pinVertexCount > 0 && _pinBuffer != null)
+        if (_showPlayerPinsCached && _pinVertexCount > 0 && _pinBuffer != null)
         {
             foreach (var draw in _pinDraws)
             {
@@ -1048,6 +1059,12 @@ public sealed class D3D11Viewport : NativeControlHost, IViewport3DControl
     {
         _showFpsCached = ShowFps;
         ResetFpsCounter();
+        RequestNextFrame();
+    }
+
+    private void OnShowPlayerPinsChanged()
+    {
+        _showPlayerPinsCached = ShowPlayerPins;
         RequestNextFrame();
     }
 

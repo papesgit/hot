@@ -22,6 +22,7 @@ using HlaeObsTools.ViewModels.Hud;
 using HlaeObsTools.Services.Vmix;
 using HlaeObsTools.Services.Graphics;
 using HlaeObsTools.Services.Hotkeys;
+using HlaeObsTools.Services.LiveLink;
 using HlaeObsTools.Services.Video;
 
 namespace HlaeObsTools.ViewModels;
@@ -47,6 +48,7 @@ public class MainDockFactory : Factory, IDisposable
     private readonly GraphicsProfileStorage _graphicsProfileStorage;
     private readonly GraphicsService _graphicsService;
     private readonly GraphicsProducerClient _producerClient;
+    private readonly Cs2LiveLinkReceiver _liveLinkReceiver;
     private VideoDisplayDockViewModel? _videoDisplayVm;
     private GraphicsDockViewModel? _graphicsDockVm;
     private bool _disposed;
@@ -95,6 +97,11 @@ public class MainDockFactory : Factory, IDisposable
         _ = _producerClient.ConnectAsync();
         _graphicsService = new GraphicsService(_webSocketClient, _producerClient, _gsiServer, _graphicsProfileStorage, _storedSettings.GraphicsTargetFps);
         _graphicsService.LoadProfile(_graphicsService.CurrentProfileName);
+        _liveLinkReceiver = new Cs2LiveLinkReceiver
+        {
+            Port = _storedSettings.ViewportLiveLinkPort,
+            Enabled = _storedSettings.ViewportLiveLinkEnabled
+        };
 
         // Initialize global raw input handler and periodically flush into UDP sender
         _rawInputHandler = new RawInputHandler();
@@ -224,6 +231,7 @@ public class MainDockFactory : Factory, IDisposable
             MapObjPath = _storedSettings.MapObjPath ?? string.Empty,
             UseLegacyD3D11Viewport = _storedSettings.ViewportUseLegacyD3D11,
             UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds,
+            ShowPlayerPins = _storedSettings.ViewportShowPlayerPins,
             PinScale = (float)_storedSettings.PinScale,
             PinOffsetZ = (float)_storedSettings.PinOffsetZ,
             ViewportMouseScale = (float)_storedSettings.ViewportMouseScale,
@@ -246,6 +254,9 @@ public class MainDockFactory : Factory, IDisposable
             ViewportCampathOverlayEnabled = _storedSettings.ViewportCampathOverlayEnabled,
             ViewportCampathSyncEnabled = _storedSettings.ViewportCampathSyncEnabled,
             CampathGizmoLocalSpace = _storedSettings.CampathGizmoLocalSpace,
+            LiveLinkEnabled = _storedSettings.ViewportLiveLinkEnabled,
+            LiveLinkItemIconsEnabled = _storedSettings.ViewportLiveLinkItemIconsEnabled,
+            LiveLinkPort = _storedSettings.ViewportLiveLinkPort,
             ShadowTextureSize = _storedSettings.ViewportShadowTextureSize,
             MaxTextureSize = _storedSettings.ViewportMaxTextureSize,
             RenderMode = _storedSettings.ViewportRenderMode
@@ -318,7 +329,7 @@ public class MainDockFactory : Factory, IDisposable
             await reportProgressAsync("Creating 3D viewport dock...", "Preparing viewport state, freecam integration, and campath editing.", 9);
         }
 
-        var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer) { Id = "BottomCenter", Title = "3D Viewport" };
+        var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer, _liveLinkReceiver) { Id = "BottomCenter", Title = "3D Viewport" };
         bottomCenter.SetInputSender(_inputSender);
 
         if (reportProgressAsync != null)
@@ -630,6 +641,7 @@ public class MainDockFactory : Factory, IDisposable
         _webSocketClient.MessageReceived -= OnHlaeMessage;
         _webSocketClient.Dispose();
         _producerClient.Dispose();
+        _liveLinkReceiver.Dispose();
         _vmixApiClient.Dispose();
         _vmixReplayService.Dispose();
         _graphicsDockVm?.Dispose();

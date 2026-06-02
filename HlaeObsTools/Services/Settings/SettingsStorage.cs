@@ -81,6 +81,7 @@ public class AppSettingsData
     public List<string> GsiRelayUris { get; set; } = new();
     public string MapObjPath { get; set; } = string.Empty;
     public bool ViewportUseLegacyD3D11 { get; set; }
+    public bool ViewportShowPlayerPins { get; set; } = true;
     public double PinScale { get; set; } = 200.0;
     public double PinOffsetZ { get; set; } = 55.0;
     public double ViewportMouseScale { get; set; } = 0.75;
@@ -103,6 +104,9 @@ public class AppSettingsData
     public bool ViewportCampathOverlayEnabled { get; set; } = true;
     public bool ViewportCampathSyncEnabled { get; set; }
     public bool CampathGizmoLocalSpace { get; set; } = true;
+    public bool ViewportLiveLinkEnabled { get; set; }
+    public bool ViewportLiveLinkItemIconsEnabled { get; set; } = true;
+    public int ViewportLiveLinkPort { get; set; } = 31237;
     public int ViewportShadowTextureSize { get; set; } = 1024;
     public int ViewportMaxTextureSize { get; set; } = 1024;
     public string ViewportRenderMode { get; set; } = "Default";
