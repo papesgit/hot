@@ -573,6 +573,10 @@ public partial class Viewport3DDockView : UserControl
         viewport.Bind(VRFViewport.LiveLinkReceiverProperty, new Binding("LiveLinkReceiver"));
         viewport.Bind(VRFViewport.LiveLinkEnabledProperty, new Binding("Viewport3DSettings.LiveLinkEnabled"));
         viewport.Bind(VRFViewport.LiveLinkItemIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkItemIconsEnabled"));
+        viewport.Bind(VRFViewport.LiveLinkWeaponIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkWeaponIconsEnabled"));
+        viewport.Bind(VRFViewport.LiveLinkGrenadeIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkGrenadeIconsEnabled"));
+        viewport.Bind(VRFViewport.LiveLinkProjectileIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkProjectileIconsEnabled"));
+        viewport.Bind(VRFViewport.LiveLinkObjectiveIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkObjectiveIconsEnabled"));
         viewport.Bind(VRFViewport.LiveLinkPortProperty, new Binding("Viewport3DSettings.LiveLinkPort"));
         viewport.Bind(VRFViewport.TargetOrbitResetRequestProperty, new Binding("Viewport3DSettings.TargetOrbitResetRequest"));
         viewport.Bind(VRFViewport.ViewportMouseScaleProperty, new Binding("Viewport3DSettings.ViewportMouseScale"));

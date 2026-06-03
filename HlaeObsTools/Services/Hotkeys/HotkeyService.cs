@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Data;
 using Avalonia.Threading;
@@ -504,7 +505,7 @@ public sealed class HotkeyService
 
     private string GetBindFailureReason(Control control)
     {
-        if (control is ToggleSwitch toggle)
+        if (control is ToggleButton toggle)
         {
             if (!string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAtlasName(toggle)) &&
                 !string.IsNullOrWhiteSpace(HotkeyTarget.GetGraphicsAction(toggle)))
@@ -530,7 +531,7 @@ public sealed class HotkeyService
                 return "Attached path is valid but still not bindable.";
             }
 
-            if (!TryGetBindingExpression(toggle, ToggleSwitch.IsCheckedProperty, out var expression))
+            if (!TryGetBindingExpression(toggle, ToggleButton.IsCheckedProperty, out var expression))
                 return "No binding expression on IsChecked.";
 
             var binding = GetBindingFromExpression(expression);
@@ -680,13 +681,13 @@ public sealed class HotkeyService
         propertyPath = string.Empty;
         displayName = string.Empty;
 
-        if (control is not ToggleSwitch toggle)
+        if (control is not ToggleButton toggle)
             return false;
 
         var path = HotkeyTarget.GetPath(toggle);
         if (string.IsNullOrWhiteSpace(path))
         {
-            if (!TryGetBindingPath(toggle, ToggleSwitch.IsCheckedProperty, out path))
+            if (!TryGetBindingPath(toggle, ToggleButton.IsCheckedProperty, out path))
                 return false;
         }
 
@@ -773,7 +774,7 @@ public sealed class HotkeyService
         return $"{typeName}.{commandProperty}";
     }
 
-    private static string GetToggleDisplayName(ToggleSwitch toggle, string typeName, string propertyPath)
+    private static string GetToggleDisplayName(ToggleButton toggle, string typeName, string propertyPath)
     {
         if (toggle.Content is TextBlock textBlock && !string.IsNullOrWhiteSpace(textBlock.Text))
             return textBlock.Text;
@@ -827,7 +828,7 @@ public sealed class HotkeyService
 
     private static Control? FindHotkeyTarget(object? source)
     {
-        if (source is ToggleSwitch toggle)
+        if (source is ToggleButton toggle)
             return toggle;
 
         if (source is Border border)
@@ -841,7 +842,7 @@ public sealed class HotkeyService
 
         if (source is Avalonia.Visual visual)
         {
-            var toggleAncestor = visual.GetSelfAndVisualAncestors().OfType<ToggleSwitch>().FirstOrDefault();
+            var toggleAncestor = visual.GetSelfAndVisualAncestors().OfType<ToggleButton>().FirstOrDefault();
             if (toggleAncestor != null)
                 return toggleAncestor;
 
@@ -1003,7 +1004,7 @@ public sealed class HotkeyService
 
         atlasName = atlas;
         action = targetAction;
-        var controlName = control is Button button ? GetButtonDisplayName(button, nameof(GraphicsDockViewModel), targetAction) : (control as ToggleSwitch)?.Content?.ToString();
+        var controlName = control is Button button ? GetButtonDisplayName(button, nameof(GraphicsDockViewModel), targetAction) : (control as ToggleButton)?.Content?.ToString();
         displayName = $"[{profileName}] {controlName ?? targetAction} ({atlasName})";
         return true;
     }
@@ -1029,7 +1030,7 @@ public sealed class HotkeyService
 
         instanceName = instance;
         action = targetAction;
-        var controlName = control is Button button ? GetButtonDisplayName(button, nameof(GraphicsDockViewModel), targetAction) : (control as ToggleSwitch)?.Content?.ToString();
+        var controlName = control is Button button ? GetButtonDisplayName(button, nameof(GraphicsDockViewModel), targetAction) : (control as ToggleButton)?.Content?.ToString();
         displayName = $"[{profileName}] {controlName ?? targetAction} ({instanceName})";
         return true;
     }

@@ -110,6 +110,14 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkEnabled));
     public static readonly StyledProperty<bool> LiveLinkItemIconsEnabledProperty =
         AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkItemIconsEnabled), true);
+    public static readonly StyledProperty<bool> LiveLinkWeaponIconsEnabledProperty =
+        AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkWeaponIconsEnabled), true);
+    public static readonly StyledProperty<bool> LiveLinkGrenadeIconsEnabledProperty =
+        AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkGrenadeIconsEnabled), true);
+    public static readonly StyledProperty<bool> LiveLinkProjectileIconsEnabledProperty =
+        AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkProjectileIconsEnabled), true);
+    public static readonly StyledProperty<bool> LiveLinkObjectiveIconsEnabledProperty =
+        AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkObjectiveIconsEnabled), true);
     public static readonly StyledProperty<int> LiveLinkPortProperty =
         AvaloniaProperty.Register<VRFViewport, int>(nameof(LiveLinkPort), 31237);
     public static readonly StyledProperty<int> TargetOrbitResetRequestProperty =
@@ -140,6 +148,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private Cs2LiveLinkReceiver? _liveLinkReceiverCached;
     private bool _liveLinkEnabledCached;
     private bool _liveLinkItemIconsEnabledCached = true;
+    private bool _liveLinkWeaponIconsEnabledCached = true;
+    private bool _liveLinkGrenadeIconsEnabledCached = true;
+    private bool _liveLinkProjectileIconsEnabledCached = true;
+    private bool _liveLinkObjectiveIconsEnabledCached = true;
     private int _liveLinkPortCached = 31237;
     private readonly HashSet<int> _liveLinkLoggedMissingSkeletons = new();
     private readonly HashSet<string> _liveLinkLoggedModelFailures = new(StringComparer.OrdinalIgnoreCase);
@@ -344,6 +356,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         LiveLinkReceiverProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
         LiveLinkEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
         LiveLinkItemIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkItemIconsEnabledChanged());
+        LiveLinkWeaponIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkIconFilterChanged());
+        LiveLinkGrenadeIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkIconFilterChanged());
+        LiveLinkProjectileIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkIconFilterChanged());
+        LiveLinkObjectiveIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkIconFilterChanged());
         LiveLinkPortProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
         TargetOrbitResetRequestProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ResetTargetOrbit());
     }
@@ -474,6 +490,30 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         set => SetValue(LiveLinkItemIconsEnabledProperty, value);
     }
 
+    public bool LiveLinkWeaponIconsEnabled
+    {
+        get => GetValue(LiveLinkWeaponIconsEnabledProperty);
+        set => SetValue(LiveLinkWeaponIconsEnabledProperty, value);
+    }
+
+    public bool LiveLinkGrenadeIconsEnabled
+    {
+        get => GetValue(LiveLinkGrenadeIconsEnabledProperty);
+        set => SetValue(LiveLinkGrenadeIconsEnabledProperty, value);
+    }
+
+    public bool LiveLinkProjectileIconsEnabled
+    {
+        get => GetValue(LiveLinkProjectileIconsEnabledProperty);
+        set => SetValue(LiveLinkProjectileIconsEnabledProperty, value);
+    }
+
+    public bool LiveLinkObjectiveIconsEnabled
+    {
+        get => GetValue(LiveLinkObjectiveIconsEnabledProperty);
+        set => SetValue(LiveLinkObjectiveIconsEnabledProperty, value);
+    }
+
     public int LiveLinkPort
     {
         get => GetValue(LiveLinkPortProperty);
@@ -547,6 +587,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _liveLinkReceiverCached = LiveLinkReceiver;
         _liveLinkEnabledCached = LiveLinkEnabled;
         _liveLinkItemIconsEnabledCached = LiveLinkItemIconsEnabled;
+        _liveLinkWeaponIconsEnabledCached = LiveLinkWeaponIconsEnabled;
+        _liveLinkGrenadeIconsEnabledCached = LiveLinkGrenadeIconsEnabled;
+        _liveLinkProjectileIconsEnabledCached = LiveLinkProjectileIconsEnabled;
+        _liveLinkObjectiveIconsEnabledCached = LiveLinkObjectiveIconsEnabled;
         _liveLinkPortCached = LiveLinkPort;
         ApplyLiveLinkReceiverSettings();
         if (_hwnd != IntPtr.Zero)
@@ -3119,6 +3163,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         RequestNextFrame();
     }
 
+    private void OnLiveLinkIconFilterChanged()
+    {
+        _liveLinkWeaponIconsEnabledCached = LiveLinkWeaponIconsEnabled;
+        _liveLinkGrenadeIconsEnabledCached = LiveLinkGrenadeIconsEnabled;
+        _liveLinkProjectileIconsEnabledCached = LiveLinkProjectileIconsEnabled;
+        _liveLinkObjectiveIconsEnabledCached = LiveLinkObjectiveIconsEnabled;
+        RequestNextFrame();
+    }
+
     private void OnShadowTextureSizeChanged()
     {
         _shadowTextureSizeCached = ShadowTextureSize;
@@ -4114,7 +4167,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             }
 
             var iconKey = TryGetLiveLinkIconKey(modelName, entity);
-            if (iconKey != null && ShouldDrawLiveLinkItemIcon(entity, iconKey))
+            if (iconKey != null && ShouldDrawLiveLinkItemIcon(entity, iconKey) && ShouldDrawLiveLinkIconCategory(entity, iconKey))
             {
                 _liveLinkIconBillboards.Add(new LiveLinkIconBillboard(
                     new Vector3(entity.Transform.M41, entity.Transform.M42, entity.Transform.M43 + 18f),
@@ -4641,6 +4694,39 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private static bool ShouldDrawLiveLinkItemIcon(Cs2LiveLinkEntity entity, string iconKey)
     {
         return entity.Projectile || iconKey == "planted_c4" || entity.OwnerId < 0;
+    }
+
+    private bool ShouldDrawLiveLinkIconCategory(Cs2LiveLinkEntity entity, string iconKey)
+    {
+        if (entity.Projectile)
+            return _liveLinkProjectileIconsEnabledCached;
+
+        if (IsLiveLinkObjectiveIcon(iconKey))
+            return _liveLinkObjectiveIconsEnabledCached;
+
+        if (IsLiveLinkGrenadeIcon(iconKey))
+            return _liveLinkGrenadeIconsEnabledCached;
+
+        return _liveLinkWeaponIconsEnabledCached;
+    }
+
+    private static bool IsLiveLinkObjectiveIcon(string iconKey)
+    {
+        return iconKey is "defuser" or "c4" or "planted_c4";
+    }
+
+    private static bool IsLiveLinkGrenadeIcon(string iconKey)
+    {
+        return iconKey is "flashbang"
+            or "smokegrenade"
+            or "hegrenade"
+            or "incgrenade"
+            or "molotov"
+            or "decoy"
+            or "tagrenade"
+            or "breachcharge"
+            or "breachcharge_projectile"
+            or "bumpmine";
     }
 
     private static string? TryGetLiveLinkIconKey(string modelName, Cs2LiveLinkEntity entity)

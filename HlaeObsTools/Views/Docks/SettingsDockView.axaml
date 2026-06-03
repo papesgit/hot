@@ -460,6 +460,30 @@
                                         Margin="0,6,0,0"/>
                         </StackPanel>
 
+                        <WrapPanel Orientation="Horizontal"
+                                    ItemSpacing="10" LineSpacing="10"
+                                    IsEnabled="{Binding Viewport3DSettings.LiveLinkItemIconsEnabled}">
+                            <TextBlock Text="Viewport icons:"
+                                       Foreground="#CCCCCC"
+                                       VerticalAlignment="Center"/>
+                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkWeaponIconsEnabled, Mode=TwoWay}"
+                                      Content="Weapons"
+                                      Foreground="#E6E6E6"
+                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkWeaponIconsEnabled"/>
+                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkGrenadeIconsEnabled, Mode=TwoWay}"
+                                      Content="Grenades"
+                                      Foreground="#E6E6E6"
+                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkGrenadeIconsEnabled"/>
+                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkProjectileIconsEnabled, Mode=TwoWay}"
+                                      Content="Projectiles"
+                                      Foreground="#E6E6E6"
+                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkProjectileIconsEnabled"/>
+                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkObjectiveIconsEnabled, Mode=TwoWay}"
+                                      Content="Defusers &amp; C4"
+                                      Foreground="#E6E6E6"
+                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkObjectiveIconsEnabled"/>
+                        </WrapPanel>
+
                         <TextBlock Text="Player pin scale"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"

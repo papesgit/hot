@@ -98,6 +98,10 @@ public class AppSettingsData
     public bool CampathGizmoLocalSpace { get; set; } = true;
     public bool ViewportLiveLinkEnabled { get; set; }
     public bool ViewportLiveLinkItemIconsEnabled { get; set; } = true;
+    public bool ViewportLiveLinkWeaponIconsEnabled { get; set; } = true;
+    public bool ViewportLiveLinkGrenadeIconsEnabled { get; set; } = true;
+    public bool ViewportLiveLinkProjectileIconsEnabled { get; set; } = true;
+    public bool ViewportLiveLinkObjectiveIconsEnabled { get; set; } = true;
     public int ViewportLiveLinkPort { get; set; } = 31237;
     public int ViewportShadowTextureSize { get; set; } = 1024;
     public int ViewportMaxTextureSize { get; set; } = 1024;

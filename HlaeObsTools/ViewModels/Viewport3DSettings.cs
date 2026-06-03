@@ -29,6 +29,10 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _viewportCampathSyncEnabled;
     private bool _liveLinkEnabled;
     private bool _liveLinkItemIconsEnabled = true;
+    private bool _liveLinkWeaponIconsEnabled = true;
+    private bool _liveLinkGrenadeIconsEnabled = true;
+    private bool _liveLinkProjectileIconsEnabled = true;
+    private bool _liveLinkObjectiveIconsEnabled = true;
     private int _liveLinkPort = 31237;
     private int _targetOrbitResetRequest;
     private int _shadowTextureSize = 1024;
@@ -222,6 +226,42 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _liveLinkItemIconsEnabled;
         set => SetProperty(ref _liveLinkItemIconsEnabled, value);
+    }
+
+    /// <summary>
+    /// Draw HUD icon billboards for dropped LiveLink weapons.
+    /// </summary>
+    public bool LiveLinkWeaponIconsEnabled
+    {
+        get => _liveLinkWeaponIconsEnabled;
+        set => SetProperty(ref _liveLinkWeaponIconsEnabled, value);
+    }
+
+    /// <summary>
+    /// Draw HUD icon billboards for dropped LiveLink grenades.
+    /// </summary>
+    public bool LiveLinkGrenadeIconsEnabled
+    {
+        get => _liveLinkGrenadeIconsEnabled;
+        set => SetProperty(ref _liveLinkGrenadeIconsEnabled, value);
+    }
+
+    /// <summary>
+    /// Draw HUD icon billboards for LiveLink projectiles.
+    /// </summary>
+    public bool LiveLinkProjectileIconsEnabled
+    {
+        get => _liveLinkProjectileIconsEnabled;
+        set => SetProperty(ref _liveLinkProjectileIconsEnabled, value);
+    }
+
+    /// <summary>
+    /// Draw HUD icon billboards for LiveLink defusers and C4.
+    /// </summary>
+    public bool LiveLinkObjectiveIconsEnabled
+    {
+        get => _liveLinkObjectiveIconsEnabled;
+        set => SetProperty(ref _liveLinkObjectiveIconsEnabled, value);
     }
 
     /// <summary>
