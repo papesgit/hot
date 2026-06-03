@@ -415,13 +415,13 @@
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBox Width="320"
                                     Text="{Binding Viewport3DSettings.MapObjPath, Mode=TwoWay}"
-                                    PlaceholderText="path\\to\\map.vmap_c, map.vpk, or map.obj"/>
+                                    PlaceholderText="path\\to\\map.vmap_c or map.vpk"/>
                             <Button Content="Browse"
                                     Command="{Binding BrowseMapObjCommand}"/>
                             <Button Content="Clear"
                                     Command="{Binding ClearMapObjCommand}"/>
                         </StackPanel>
-                        <TextBlock Text="Load a Source 2 map (.vmap_c/.vpk) or a legacy OBJ when D3D11 is enabled."
+                        <TextBlock Text="Load a Source 2 map (.vmap_c/.vpk)."
                                 Foreground="#888888"
                                 FontSize="12"/>
                         <TextBlock Text="Viewport mouse scale"
@@ -460,7 +460,25 @@
                                         Margin="0,6,0,0"/>
                         </StackPanel>
 
-                        <StackPanel IsVisible="{Binding Viewport3DSettings.IsVrfViewportMode}">
+                        <TextBlock Text="Player pin scale"
+                                Foreground="#CCCCCC"
+                                FontWeight="SemiBold"
+                                Margin="0,10,0,0"/>
+                        <TextBox Width="120"
+                                Text="{Binding Viewport3DSettings.PinScale, Mode=TwoWay}"
+                                PlaceholderText="1.0"
+                                HorizontalAlignment="Left" />
+
+                        <TextBlock Text="Player pin Z offset"
+                                Foreground="#CCCCCC"
+                                FontWeight="SemiBold"
+                                Margin="0,10,0,0"/>
+                        <TextBox Width="120"
+                                Text="{Binding Viewport3DSettings.PinOffsetZ, Mode=TwoWay}"
+                                PlaceholderText="Z"
+                                HorizontalAlignment="Left" />
+
+                        <StackPanel>
                             <TextBlock Text="Camera"
                                     Foreground="#CCCCCC"
                                     FontWeight="SemiBold"
@@ -549,62 +567,6 @@
                             </StackPanel>
                         </StackPanel>
 
-                        <StackPanel IsVisible="{Binding Viewport3DSettings.IsLegacyViewportMode}">
-                            <TextBlock Text="Map scale"
-                                    Foreground="#CCCCCC"
-                                    FontWeight="SemiBold"
-                                    Margin="0,10,0,0"/>
-                            <TextBox Width="120"
-                                    Text="{Binding Viewport3DSettings.MapScale, Mode=TwoWay}"
-                                    PlaceholderText="1.0"
-                                    HorizontalAlignment="Left" />
-
-                            <TextBlock Text="Map rotation (deg)"
-                                    Foreground="#CCCCCC"
-                                    FontWeight="SemiBold"
-                                    Margin="0,10,0,0"/>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBox Width="80" PlaceholderText="Yaw" Text="{Binding Viewport3DSettings.MapYaw, Mode=TwoWay}" />
-                                <TextBox Width="80" PlaceholderText="Pitch" Text="{Binding Viewport3DSettings.MapPitch, Mode=TwoWay}" />
-                                <TextBox Width="80" PlaceholderText="Roll" Text="{Binding Viewport3DSettings.MapRoll, Mode=TwoWay}" />
-                            </StackPanel>
-
-                            <TextBlock Text="Map offset"
-                                    Foreground="#CCCCCC"
-                                    FontWeight="SemiBold"
-                                    Margin="0,10,0,0"/>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBox Width="80" PlaceholderText="X" Text="{Binding Viewport3DSettings.MapOffsetX, Mode=TwoWay}" />
-                                <TextBox Width="80" PlaceholderText="Y" Text="{Binding Viewport3DSettings.MapOffsetY, Mode=TwoWay}" />
-                                <TextBox Width="80" PlaceholderText="Z" Text="{Binding Viewport3DSettings.MapOffsetZ, Mode=TwoWay}" />
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
-
-                                <StackPanel Orientation="Vertical" Spacing="4">
-                                    <TextBlock Text="Pin scale"
-                                            Foreground="#CCCCCC"
-                                            FontWeight="SemiBold"/>
-                                    <TextBox Width="120"
-                                            Text="{Binding Viewport3DSettings.PinScale, Mode=TwoWay}"
-                                            PlaceholderText="1.0"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Vertical" Spacing="4">
-                                    <TextBlock Text="Pin Z offset"
-                                            Foreground="#CCCCCC"
-                                            FontWeight="SemiBold"/>
-                                    <TextBox Width="120"
-                                            Text="{Binding Viewport3DSettings.PinOffsetZ, Mode=TwoWay}"
-                                            PlaceholderText="Z"/>
-                                </StackPanel>
-
-                            </StackPanel>
-                        </StackPanel>
-                        <ToggleSwitch IsChecked="{Binding Viewport3DSettings.UseLegacyD3D11Viewport, Mode=TwoWay}"
-                                      Content="Use legacy D3D11 viewport (OBJ maps)"
-                            hotkeys:HotkeyTarget.Path="Viewport3DSettings.UseLegacyD3D11Viewport"
-                                      Margin="0,4,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

@@ -705,15 +705,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 {
                     Title = "Load Map File",
                     AllowMultiple = false,
-                    FileTypeFilter = _viewport3DSettings.UseLegacyD3D11Viewport
-                        ? new List<FilePickerFileType>
-                        {
-                            new FilePickerFileType("Wavefront OBJ (legacy)")
-                            {
-                                Patterns = ["*.obj"]
-                            }
-                        }
-                        : new List<FilePickerFileType>
+                    FileTypeFilter = new List<FilePickerFileType>
                         {
                             new FilePickerFileType("Source 2 Map (.vmap_c, .vpk)")
                             {
@@ -1674,18 +1666,10 @@ namespace HlaeObsTools.ViewModels.Docks
                 NetConsoleHostPort = _storedSettings.NetConsoleHostPort,
                 GsiRelayUris = gsiRelayUris,
                 MapObjPath = _viewport3DSettings.MapObjPath,
-                ViewportUseLegacyD3D11 = _viewport3DSettings.UseLegacyD3D11Viewport,
                 ViewportShowPlayerPins = _viewport3DSettings.ShowPlayerPins,
                 PinScale = _viewport3DSettings.PinScale,
                 PinOffsetZ = _viewport3DSettings.PinOffsetZ,
                 ViewportMouseScale = _viewport3DSettings.ViewportMouseScale,
-                MapScale = _viewport3DSettings.MapScale,
-                MapYaw = _viewport3DSettings.MapYaw,
-                MapPitch = _viewport3DSettings.MapPitch,
-                MapRoll = _viewport3DSettings.MapRoll,
-                MapOffsetX = _viewport3DSettings.MapOffsetX,
-                MapOffsetY = _viewport3DSettings.MapOffsetY,
-                MapOffsetZ = _viewport3DSettings.MapOffsetZ,
                 ViewportFpsCap = _viewport3DSettings.ViewportFpsCap,
                 ViewportPostprocessEnabled = _viewport3DSettings.PostprocessEnabled,
                 ViewportColorCorrectionEnabled = _viewport3DSettings.ColorCorrectionEnabled,
@@ -2114,11 +2098,6 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             if (_suppressSettingsSave)
                 return;
-
-            if (e.PropertyName == nameof(Viewport3DSettings.UseLegacyD3D11Viewport))
-            {
-                _viewport3DSettings.MapObjPath = string.Empty;
-            }
 
             SaveSettings();
         }

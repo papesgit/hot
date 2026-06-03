@@ -11,18 +11,10 @@ public sealed class Viewport3DSettings : ViewModelBase
 {
     private string _mapObjPath = string.Empty;
     private bool _useAltPlayerBinds;
-    private bool _useLegacyD3D11Viewport;
     private bool _showPlayerPins = true;
     private float _pinScale = 200.0f;
     private float _pinOffsetZ = 55.0f;
     private float _viewportMouseScale = 0.75f;
-    private float _mapScale = 1.0f;
-    private float _mapYaw;
-    private float _mapPitch;
-    private float _mapRoll;
-    private float _mapOffsetX;
-    private float _mapOffsetY;
-    private float _mapOffsetZ;
     private float _viewportFpsCap = 60.0f;
     private bool _postprocessEnabled = true;
     private bool _colorCorrectionEnabled = true;
@@ -53,33 +45,13 @@ public sealed class Viewport3DSettings : ViewModelBase
     public IReadOnlyList<int> MaxTextureSizeOptions { get; } = new[] { 64, 128, 256, 512, 1024, 2048 };
 
     /// <summary>
-    /// Path to the .obj map file.
+    /// Path to the Source 2 map file.
     /// </summary>
     public string MapObjPath
     {
         get => _mapObjPath;
         set => SetProperty(ref _mapObjPath, value ?? string.Empty);
     }
-
-    /// <summary>
-    /// Use the legacy D3D11 viewport (Wavefront OBJ maps).
-    /// </summary>
-    public bool UseLegacyD3D11Viewport
-    {
-        get => _useLegacyD3D11Viewport;
-        set
-        {
-            if (!SetProperty(ref _useLegacyD3D11Viewport, value))
-                return;
-
-            OnPropertyChanged(nameof(IsLegacyViewportMode));
-            OnPropertyChanged(nameof(IsVrfViewportMode));
-        }
-    }
-
-    public bool IsLegacyViewportMode => UseLegacyD3D11Viewport;
-
-    public bool IsVrfViewportMode => !UseLegacyD3D11Viewport;
 
     /// <summary>
     /// Whether to use alternative player bind labels (Q,E,R,T,Z for slots 6-0).
@@ -124,69 +96,6 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _viewportMouseScale;
         set => SetProperty(ref _viewportMouseScale, value);
-    }
-
-    /// <summary>
-    /// Uniform scale for the map mesh.
-    /// </summary>
-    public float MapScale
-    {
-        get => _mapScale;
-        set => SetProperty(ref _mapScale, value);
-    }
-
-    /// <summary>
-    /// Map yaw rotation (degrees).
-    /// </summary>
-    public float MapYaw
-    {
-        get => _mapYaw;
-        set => SetProperty(ref _mapYaw, value);
-    }
-
-    /// <summary>
-    /// Map pitch rotation (degrees).
-    /// </summary>
-    public float MapPitch
-    {
-        get => _mapPitch;
-        set => SetProperty(ref _mapPitch, value);
-    }
-
-    /// <summary>
-    /// Map roll rotation (degrees).
-    /// </summary>
-    public float MapRoll
-    {
-        get => _mapRoll;
-        set => SetProperty(ref _mapRoll, value);
-    }
-
-    /// <summary>
-    /// Map offset (X).
-    /// </summary>
-    public float MapOffsetX
-    {
-        get => _mapOffsetX;
-        set => SetProperty(ref _mapOffsetX, value);
-    }
-
-    /// <summary>
-    /// Map offset (Y).
-    /// </summary>
-    public float MapOffsetY
-    {
-        get => _mapOffsetY;
-        set => SetProperty(ref _mapOffsetY, value);
-    }
-
-    /// <summary>
-    /// Map offset (Z).
-    /// </summary>
-    public float MapOffsetZ
-    {
-        get => _mapOffsetZ;
-        set => SetProperty(ref _mapOffsetZ, value);
     }
 
     /// <summary>

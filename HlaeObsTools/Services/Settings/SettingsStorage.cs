@@ -80,18 +80,10 @@ public class AppSettingsData
     public string NetConsoleHostPort { get; set; } = "127.0.0.1:54545";
     public List<string> GsiRelayUris { get; set; } = new();
     public string MapObjPath { get; set; } = string.Empty;
-    public bool ViewportUseLegacyD3D11 { get; set; }
     public bool ViewportShowPlayerPins { get; set; } = true;
     public double PinScale { get; set; } = 200.0;
     public double PinOffsetZ { get; set; } = 55.0;
     public double ViewportMouseScale { get; set; } = 0.75;
-    public double MapScale { get; set; } = 1.0;
-    public double MapYaw { get; set; }
-    public double MapPitch { get; set; }
-    public double MapRoll { get; set; }
-    public double MapOffsetX { get; set; }
-    public double MapOffsetY { get; set; }
-    public double MapOffsetZ { get; set; }
     public double ViewportFpsCap { get; set; } = 60.0;
     public bool ViewportPostprocessEnabled { get; set; } = true;
     public bool ViewportColorCorrectionEnabled { get; set; } = true;

@@ -2933,7 +2933,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return target;
         }
 
-        // Match C++ FreecamController and D3D11Viewport implementations.
+        // Match C++ FreecamController implementation.
         var omega = 2f / smoothTime;
         var x = omega * deltaTime;
         var exp = 1f / (1f + x + 0.48f * x * x + 0.235f * x * x * x);

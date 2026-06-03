@@ -73,11 +73,7 @@ public partial class Viewport3DDockView : UserControl
 
     private void OnViewportSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(Viewport3DSettings.UseLegacyD3D11Viewport))
-        {
-            EnsureViewport();
-        }
-        else if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathMode) ||
+        if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathMode) ||
                  e.PropertyName == nameof(Viewport3DSettings.ViewportCampathOverlayEnabled))
         {
             UpdateCampathPreview();
@@ -98,15 +94,12 @@ public partial class Viewport3DDockView : UserControl
             return;
         }
 
-        var useLegacy = _viewModel.Viewport3DSettings.UseLegacyD3D11Viewport;
-        if (_viewportControl is D3D11Viewport && useLegacy)
-            return;
-        if (_viewportControl is VRFViewport && !useLegacy)
+        if (_viewportControl is VRFViewport)
             return;
 
         ClearViewport();
 
-        _viewportControl = useLegacy ? CreateD3D11Viewport() : CreateVrfViewport();
+        _viewportControl = CreateVrfViewport();
         _viewport = (IViewport3DControl)_viewportControl;
         ViewportHost.Content = _viewportControl;
         SubscribeFrameTick();
@@ -587,25 +580,4 @@ public partial class Viewport3DDockView : UserControl
         return viewport;
     }
 
-    private D3D11Viewport CreateD3D11Viewport()
-    {
-        var viewport = new D3D11Viewport();
-        viewport.Bind(D3D11Viewport.MapPathProperty, new Binding("Viewport3DSettings.MapObjPath"));
-        viewport.Bind(D3D11Viewport.ShowPlayerPinsProperty, new Binding("Viewport3DSettings.ShowPlayerPins"));
-        viewport.Bind(D3D11Viewport.PinScaleProperty, new Binding("Viewport3DSettings.PinScale"));
-        viewport.Bind(D3D11Viewport.PinOffsetZProperty, new Binding("Viewport3DSettings.PinOffsetZ"));
-        viewport.Bind(D3D11Viewport.ViewportMouseScaleProperty, new Binding("Viewport3DSettings.ViewportMouseScale"));
-        viewport.Bind(D3D11Viewport.ViewportFpsCapProperty, new Binding("Viewport3DSettings.ViewportFpsCap"));
-        viewport.Bind(D3D11Viewport.ShowFpsProperty, new Binding("Viewport3DSettings.ShowFps"));
-        viewport.Bind(D3D11Viewport.MapScaleProperty, new Binding("Viewport3DSettings.MapScale"));
-        viewport.Bind(D3D11Viewport.MapYawProperty, new Binding("Viewport3DSettings.MapYaw"));
-        viewport.Bind(D3D11Viewport.MapPitchProperty, new Binding("Viewport3DSettings.MapPitch"));
-        viewport.Bind(D3D11Viewport.MapRollProperty, new Binding("Viewport3DSettings.MapRoll"));
-        viewport.Bind(D3D11Viewport.MapOffsetXProperty, new Binding("Viewport3DSettings.MapOffsetX"));
-        viewport.Bind(D3D11Viewport.MapOffsetYProperty, new Binding("Viewport3DSettings.MapOffsetY"));
-        viewport.Bind(D3D11Viewport.MapOffsetZProperty, new Binding("Viewport3DSettings.MapOffsetZ"));
-        viewport.Bind(D3D11Viewport.FreecamSettingsProperty, new Binding("FreecamSettings"));
-        viewport.Bind(D3D11Viewport.InputSenderProperty, new Binding("InputSender"));
-        return viewport;
-    }
 }
