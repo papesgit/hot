@@ -2742,6 +2742,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _freecamCenterLocal = centerLocal;
         _freecamCenterScreen = centerScreen;
         SetCursorPosition(centerScreen.X, centerScreen.Y);
+        LockFreecamCursorToViewport();
         Cursor = new Avalonia.Input.Cursor(StandardCursorType.None);
         if (!_freecamCursorHidden)
         {
@@ -2752,6 +2753,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private void UnlockFreecamCursor()
     {
+        ClipCursor(IntPtr.Zero);
         if (_freecamCursorHidden)
         {
             ShowCursor(true);
@@ -2771,6 +2773,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _freecamCenterLocal = centerLocal;
         _freecamCenterScreen = centerScreen;
         SetCursorPosition(centerScreen.X, centerScreen.Y);
+        LockFreecamCursorToViewport();
     }
 
     private bool TryGetScreenPoint(Point localPoint, out PixelPoint screenPoint)
@@ -2912,11 +2915,47 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private static extern bool ReleaseCapture();
 
     [DllImport("user32.dll")]
+    private static extern bool ClipCursor(ref RECT lpRect);
+
+    [DllImport("user32.dll")]
+    private static extern bool ClipCursor(IntPtr lpRect);
+
+    [DllImport("user32.dll")]
     private static extern int ShowCursor(bool bShow);
 
     private static void SetCursorPosition(int x, int y)
     {
         SetCursorPos(x, y);
+    }
+
+    private void LockFreecamCursorToViewport()
+    {
+        if (!TryGetScreenPoint(new Point(0, 0), out var topLeft) ||
+            !TryGetScreenPoint(new Point(Bounds.Width, Bounds.Height), out var bottomRight))
+        {
+            return;
+        }
+
+        var rect = new RECT
+        {
+            left = Math.Min(topLeft.X, bottomRight.X),
+            top = Math.Min(topLeft.Y, bottomRight.Y),
+            right = Math.Max(topLeft.X, bottomRight.X),
+            bottom = Math.Max(topLeft.Y, bottomRight.Y)
+        };
+
+        if (rect.right <= rect.left || rect.bottom <= rect.top)
+            return;
+
+        ClipCursor(ref rect);
+    }
+
+    private struct RECT
+    {
+        public int left;
+        public int top;
+        public int right;
+        public int bottom;
     }
 
     private void CaptureOrbitMouse()

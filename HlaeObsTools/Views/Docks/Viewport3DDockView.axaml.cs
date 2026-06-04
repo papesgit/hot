@@ -546,8 +546,8 @@ public partial class Viewport3DDockView : UserControl
         if (!_viewport.TryGetFreecamState(out var state))
             return;
 
-        vm.HandoffFreecam(state);
         _viewport.DisableFreecamInput();
+        vm.HandoffFreecam(state);
         e.Handled = true;
     }
 
