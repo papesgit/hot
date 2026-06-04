@@ -3802,6 +3802,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             ApplyLiveLinkFrame();
 
             _renderer.Update(updateContext);
+            RefreshLiveLinkLighting();
 
             var renderContext = new Scene.RenderContext
             {
@@ -4104,11 +4105,21 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         var receiver = _liveLinkReceiverCached;
         if (receiver == null)
+        {
+            if (!_liveLinkEnabledCached)
+            {
+                ClearLiveLinkNodes();
+            }
             return;
+        }
 
         receiver.Port = _liveLinkPortCached;
         receiver.Enabled = _liveLinkEnabledCached;
         LogMessage($"LiveLink receiver {(_liveLinkEnabledCached ? "enabled" : "disabled")} UDP {_liveLinkPortCached}");
+        if (!_liveLinkEnabledCached)
+        {
+            ClearLiveLinkNodes();
+        }
         RequestNextFrame();
     }
 
@@ -4160,7 +4171,6 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 continue;
 
             node.Node.Transform = entity.Transform;
-            _renderer.Scene.RefreshLighting(node.Node);
             if (entity.HasBones && entity.LocalBoneTransforms.Count > 0)
             {
                 node.Node.SetExternalPose(entity.LocalBoneTransforms);
@@ -4202,9 +4212,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         try
         {
-            var started = Stopwatch.GetTimestamp();
             var resource = _fileLoader.LoadFileCompiled(modelName);
-            var loaded = Stopwatch.GetTimestamp();
             if (resource?.DataBlock is not Model model)
             {
                 if (_liveLinkLoggedModelFailures.Add(modelName))
@@ -4215,18 +4223,13 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             var node = new ModelSceneNode(_renderer.Scene, model, isWorldPreview: true, skipAnimations: true)
             {
                 LayerName = "HLAE LiveLink",
-                Name = modelName,
-                Flags = ObjectTypeFlags.DisableVisCulling
+                Name = modelName
             };
-            var constructed = Stopwatch.GetTimestamp();
             node.SetRenderMode(GetEffectiveRenderMode());
             _renderer.Scene.Add(node, dynamic: true);
             _renderer.Scene.MarkParentOctreeDirty(node);
-            var added = Stopwatch.GetTimestamp();
             var liveNode = new LiveLinkModelNode(modelName, node);
             _liveLinkNodes[entityId] = liveNode;
-            LogMessage(
-                $"LiveLink created entity {entityId}: {modelName} load={Stopwatch.GetElapsedTime(started, loaded).TotalMilliseconds:0}ms construct={Stopwatch.GetElapsedTime(loaded, constructed).TotalMilliseconds:0}ms add={Stopwatch.GetElapsedTime(constructed, added).TotalMilliseconds:0}ms");
             return liveNode;
         }
         catch (Exception ex)
@@ -4260,9 +4263,22 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             RemoveLiveLinkNode(entityId);
         }
 
+        _liveLinkIconBillboards.Clear();
         _lastLiveLinkFrameId = uint.MaxValue;
         _liveLinkLoggedMissingSkeletons.Clear();
         _liveLinkLoggedModelFailures.Clear();
+    }
+
+    private void RefreshLiveLinkLighting()
+    {
+        var scene = _renderer?.Scene;
+        if (scene == null || _liveLinkNodes.Count == 0)
+            return;
+
+        foreach (var liveNode in _liveLinkNodes.Values)
+        {
+            scene.RefreshLighting(liveNode.Node);
+        }
     }
 
     private void PostSceneLoad(HashSet<string> defaultEnabledLayers)
