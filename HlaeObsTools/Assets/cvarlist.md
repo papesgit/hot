@@ -26,20 +26,19 @@ Name | Flags | Description
 -radialradio2 | cl, release | 
 -radialradio3 | cl, release | 
 -spray_menu | cl, release | 
-CS_WarnFriendlyDamageInterval | sv, cheat | Default: 3<br>Defines how frequently the server notifies clients that a player damaged a friend
-CreatePredictionError | sv, cheat | Create a prediction error
+CS_WarnFriendlyDamageInterval | sv | Default: 3<br>Defines how frequently the server notifies clients that a player damaged a friend
 Inferno_concav_plane_threshold | cl | Default: -10<br>
 ShowSteamStatsSessionID | cl | Prints out the game stats session ID's (developer convar must be set to non-zero).
 StackStats_Dump |  | Dump a named stackstats structure to disk. Usage: stackstats_dump "structname" \["filename"\]
 Test_Checkpoint |  | Indicate to a test script that a checkpoint has been reached
-Test_CreateEntity | sv, cheat | 
-Test_EHandle | sv, cheat | 
-Test_ExitProcess | cheat | Test_ExitProcess &lt;exit code&gt; - immediately kill the process.
+Test_CreateEntity | sv | 
+Test_EHandle | sv | 
+Test_ExitProcess |  | Test_ExitProcess &lt;exit code&gt; - immediately kill the process.
 Test_Loop |  | Test_Loop &lt;loop name&gt; - loop back to the specified loop start point unconditionally.
 Test_LoopCount |  | Test_LoopCount &lt;loop name&gt; &lt;count&gt; - loop back to the specified loop start point the specified # of times.
 Test_LoopForNumSeconds |  | Test_LoopForNumSeconds &lt;loop name&gt; &lt;time&gt; - loop back to the specified start point for the specified # of seconds.
 Test_RandomChance |  | Test_RandomChance &lt;percent chance, 0-100&gt; &lt;token1&gt; &lt;token2...&gt; - Roll the dice and maybe run the command following the percentage chance.
-Test_RandomPlayerPosition | sv, cheat | 
+Test_RandomPlayerPosition | sv | 
 Test_StartLoop |  | Test_StartLoop &lt;loop name&gt; - Denote the start of a loop. Really just defines a named point you can jump to.
 Test_StartScript |  | Start a test script running..
 __mirv_debug_scenesystem_rendercontexts |  | 
@@ -51,7 +50,7 @@ __mirv_panorama_print_children |  |
 __mirv_print_search_paths |  | 
 __mirv_test |  | 
 _fov | cl | Default: 0<br>Automates fov command to server.
-_record | cheat, norecord, release | Record a demo incrementally.
+_record | norecord, release | Record a demo incrementally.
 _resetgamestats | sv | Erases current game stats and writes out a blank stats file
 addip |  | Add an IP address to the ban list.
 addons |  | list current addon info.
@@ -72,20 +71,19 @@ adsp_room_min |  | Default: 102<br>
 adsp_street_min |  | Default: 118<br>
 adsp_tunnel_min |  | Default: 114<br>
 adsp_wall_height |  | Default: 128<br>
+ag2_network_recipeshape_cache_size | sv, norecord | Default: 32<br>Cache size for recently-used pose recipe shapes.
 ag2_preserve_params_on_reload | sv, cl, rep | Default: false<br>When an animgraph is reloaded, should the underlying system restore all params?
 ag2_use_networked_serialization_context_demo | sv, cl, rep, norecord | Default: true<br>Use networked compatibility serialization context in demo playback.
 ag2_use_networked_serialization_context_game | sv, cl, rep | Default: false<br>Use networked compatibility serialization context in games.
-ai_debug_dyninteractions | sv, cheat | Default: 0<br>Debug the NPC dynamic interaction system.
-ai_debug_los | sv, cheat | Default: 0<br>NPC Line-Of-Sight debug mode. If 1, solid entities that block NPC LOC will be highlighted with white bounding boxes. If 2, it'll show non-solid entities that would do it if they were solid.
+ai_debug_dyninteractions | sv | Default: 0<br>Debug the NPC dynamic interaction system.
+ai_debug_los | sv | Default: 0<br>NPC Line-Of-Sight debug mode. If 1, solid entities that block NPC LOC will be highlighted with white bounding boxes. If 2, it'll show non-solid entities that would do it if they were solid.
 ai_debug_ragdoll_magnets | sv | Default: false<br>
-ai_debug_scripted_sequence | sv, cheat | Default: false<br>
-ai_debug_shoot_positions | sv, cl, rep, cheat | Default: 0<br>
+ai_debug_scripted_sequence | sv | Default: false<br>
+ai_debug_shoot_positions | sv, cl, rep | Default: 0<br>
 ai_debug_speech | sv | Default: 0<br>
-ai_disabled | sv, cl, rep, cheat | Default: false<br>
-ai_expression_frametime | sv | Default: 0.05<br>Maximum frametime to still play background expressions.
-ai_expression_optimization | sv | Default: false<br>Disable npc background expressions when you can't see them.
+ai_disabled | sv, cl, rep | Default: false<br>
 ai_force_serverside_ragdoll | sv | Default: false<br>
-ai_off_nav_show_nearest | sv, cheat | Default: false<br>
+ai_off_nav_show_nearest | sv | Default: false<br>
 ai_sequence_debug | sv, cl, rep | Default: false<br>
 ai_use_visibility_cache | sv | Default: 1<br>Sets whether or not NPCs can cache their Visibility checks against other entities. If set to 2, also tests to make sure that NPC-&gt;Target results match that of Target-&gt;NPC.
 ai_use_visibility_cache_reciprocation | sv | Default: true<br>Sets whether or not the visibility check cache should be reciprocal.
@@ -130,21 +128,17 @@ ammo_grenade_limit_flashbang | sv, cl, rep, release | Default: 1<br>
 ammo_grenade_limit_total | sv, cl, rep, release | Default: 3<br>
 ammo_item_limit_adrenaline | sv, cl, rep, release | Default: 5<br>
 ammo_item_limit_healthshot | sv, cl, rep, release | Default: 4<br>
-anim_damped_move_speed_timewindow | sv, cl, rep | Default: 0.2<br>
-anim_dampedaccel16_scale | sv, cl, rep | Default: 0.85<br>
-anim_dampedaccel16_timewindow | sv, cl, rep | Default: 0.25<br>
 anim_decode_forcewritealltransforms |  | Default: false<br>Force BatchAnimationDecode to write transformations for all bones
 anim_disable | sv, cl, rep | Default: false<br>
 anim_eval_stats | sv | Displays stats about how many EvaluatePose calls are unused
 anim_resource_validate_on_load | release | Default: true<br>Validates the animation group channel list against the animations on load for every animation
-anim_scale_wasd_input_hip_dip | sv, cl, rep | Default: 0.8<br>
-anim_scale_wasd_input_hip_swivel | sv, cl, rep | Default: 0.8<br>
-animated_material_attributes | cl, cheat | Default: true<br>
-animevents_dump | sv, cheat | List all the currently registered anim events.<br>
+animated_material_attributes | cl | Default: true<br>
+animevents_dump | sv | List all the currently registered anim events.<br>
 animgraph2_enable_parallel_update | sv, cl, rep | Default: true<br>
-animgraph_debug | sv, cl, rep, cheat | Default: false<br>Debug animation graph
+animgraph2_serialize_pose_recipe_in_pre_pack_entities | sv, cl, rep | Default: true<br>
+animgraph_debug | sv, cl, rep | Default: false<br>Debug animation graph
 animgraph_debug_animevents | sv, cl, rep | Default: false<br>Print info about animevents emitted by AnimGraph
-animgraph_debug_entindex | sv, cl, rep, cheat | Default: 0<br>The entity to specifically debug
+animgraph_debug_entindex | sv, cl, rep | Default: 0<br>The entity to specifically debug
 animgraph_debug_filterent | sv, cl, rep | Default: 0<br>Filter setting for animgraph_debug_variables output. If set to -1, show debug for all entities. If set to 0, show debug for any NPCs that have been npc_selected. If set to &gt;0, something other than 0, show debug for the entity with the matching entindex.
 animgraph_debug_max_poseop_count |  | Default: false<br>
 animgraph_debug_set_filter_params | sv, cl, rep | Default: <br>Comma separated list of params to filter against when drawing debug text overlays
@@ -159,9 +153,6 @@ animgraph_draw_traces | sv, cl, rep | Default: false<br>
 animgraph_dump_update_list | sv | Displays stats about which animations are updating
 animgraph_enable | sv, cl, rep | Default: true<br>Enable animation graph
 animgraph_enable_dirty_netvar_optimization | rep | Default: true<br>
-animgraph_enable_parallel_op_evaluation | sv, cl, rep | Default: false<br>
-animgraph_enable_parallel_preupdate | sv, cl, rep | Default: false<br>
-animgraph_enable_parallel_update | sv, cl, rep | Default: true<br>
 animgraph_footlock_auto_ledge_detection | rep | Default: true<br>Attempt to detect when the foot is partially hanging off a ledge and stop it tilting to reach the bottom
 animgraph_footlock_auto_stair_detection | rep | Default: true<br>Attempt to detect when the foot is on a stair and will stop it from tilting to reach the next step
 animgraph_footlock_calculate_tilt | rep | Default: true<br>
@@ -171,7 +162,7 @@ animgraph_footlock_draw_footbase | rep | Default: false<br>
 animgraph_footlock_enabled | rep | Default: true<br>A master convar that effectively disables the entire footlock node.
 animgraph_footlock_ground_roll | rep | Default: true<br>
 animgraph_footlock_hip_offset_enable | rep | Default: true<br>
-animgraph_footlock_ik_enable | rep, cheat | Default: true<br>Enable IK.
+animgraph_footlock_ik_enable | rep | Default: true<br>Enable IK.
 animgraph_footlock_tilt_mode | rep | Default: 1<br>
 animgraph_footlock_trace_ground_enabled | rep | Default: true<br>Convar for toggling foot lock ground tracking.
 animgraph_footlock_use_hip_shift | rep | Default: true<br>
@@ -181,12 +172,11 @@ animgraph_ik_debug | rep | Default: false<br>
 animgraph_motionmatching_print_compressionstats | rep | Default: false<br>
 animgraph_network_enable | sv, cl, rep | Default: true<br>Enable animation graph networking. The setting is only read at graph creation time; to use please set on the command line.
 animgraph_parallel_postdataupdate | cl | Default: true<br>
-animgraph_record_all | sv, cl, rep, cheat | Default: false<br>Automatically start recording AnimGraphs when they get created, and save them to disk when they are destroyed
-animgraph_slope_draw_raycasts | sv, cl, rep, cheat | Default: false<br>
-animgraph_slope_enable | sv, cl, rep, cheat | Default: true<br>
+animgraph_slope_draw_raycasts | sv, cl, rep | Default: false<br>
+animgraph_slope_enable | sv, cl, rep | Default: true<br>
 animgraph_slowdownonslopes_enabled | rep | Default: true<br>
 animgraph_trace_ignore_prop_physics | sv, cl, rep | Default: true<br>
-animgraph_trace_static_only | sv, cl, rep, cheat | Default: false<br>
+animgraph_trace_static_only | sv, cl, rep | Default: false<br>
 animgraph_verify_dirty_netvar_optimization | rep | Default: false<br>
 annotation_append | cl, release | Load annotation to a file without clearing existing annotations
 annotation_auto_load | cl, release | Default: false<br>
@@ -203,12 +193,11 @@ audio_input_test_signal |  | Default: false<br>For testing the audio input pathw
 audio_input_use_sdl_roles |  | Default: false<br>
 auto_bug | norecord | auto_bug : create non-interactive bug report.
 autobuy | cl, server_can_execute | Attempt to purchase items with the order listed in cl_autobuy
-automatically_open_saved_animgraph_recording | sv, cl, a, rep | Default: false<br>
 autosave | sv | Autosave
 autosave_fully_async | sv | Default: true<br>Set to 1 to have autosaves execute completely on the save thread, forces 'render only' mode while the save completes
 autosavedangerous | sv | AutoSaveDangerous
 autosavedangerousissafe | sv | 
-axis | sv, cheat | Draw an axis<br>	Arguments:  x y z pitch yaw roll &lt;lifetime = 10.0&gt; &lt;r g b a&gt;<br>
+axis | sv | Draw an axis<br>	Arguments:  x y z pitch yaw roll &lt;lifetime = 10.0&gt; &lt;r g b a&gt;<br>
 banid |  | Add a user ID to the ban list.
 banip |  | Add an IP address to the ban list.
 battery_saver | a | Default: false<br>OBSOLETE replaced by mobile_fps_* - Battery saver mode. 0=off, 1=on
@@ -238,61 +227,65 @@ bot_chatter | sv, release | Default: normal<br>Control how bots talk. Allowed va
 bot_chatter_use_rr | sv | Default: true<br>0 = Use old bot chatter system, 1 = Use response rules
 bot_controllable | sv, release | Default: true<br>Determines whether bots can be controlled by players
 bot_coop_idle_max_vision_distance | sv, rep, release | Default: 1400<br>Max distance bots can see targets (in coop) when they are idle, dormant, hiding or asleep.
-bot_crouch | sv, cheat | Default: false<br>
-bot_debug | sv, cheat | Default: 0<br>For internal testing purposes.
-bot_debug_target | sv, cheat | Default: 0<br>For internal testing purposes.
-bot_defense_rush_chance | sv, cheat | Default: 33<br>Are the defense bots going to rush.
+bot_crouch | sv | Default: false<br>
+bot_debug | sv | Default: 0<br>For internal testing purposes.
+bot_debug_target | sv | Default: 0<br>For internal testing purposes.
+bot_defense_rush_chance | sv | Default: 33<br>Are the defense bots going to rush.
 bot_defer_to_human_goals | sv, release | Default: false<br>If nonzero and there is a human on the team, the bots will not do the scenario tasks.
 bot_defer_to_human_items | sv, release | Default: true<br>If nonzero and there is a human on the team, the bots will not get scenario items.
 bot_difficulty | sv, release | Default: 1<br>Defines the skill of bots joining the game.  Values are: 0=easy, 1=normal, 2=hard, 3=expert.
-bot_dont_shoot | sv, cheat, release | Default: false<br>If nonzero, bots will not fire weapons (for debugging).
+bot_dont_shoot | sv, release | Default: false<br>If nonzero, bots will not fire weapons (for debugging).
 bot_eco_limit | sv, release | Default: 2000<br>If nonzero, bots will not buy if their money falls below this amount.
 bot_flipout | sv, release | Default: false<br>If nonzero, bots use no CPU for AI. Instead, they run around randomly.
 bot_force_duck | sv | Default: false<br>
-bot_freeze | sv, cheat | Default: false<br>
-bot_goto_mark | sv, cheat | Sends a bot to the marked nav area (useful for testing navigation meshes)
-bot_goto_selected | sv, cheat | Sends a bot to the selected nav area (useful for testing navigation meshes)
-bot_ignore_enemies | sv, cheat | Default: false<br>If nonzero, bots will ignore enemies (for debugging).
-bot_ignore_players | sv, cheat | Default: false<br>Bots will not see non-bot players.
+bot_freeze | sv | Default: false<br>
+bot_goto_mark | sv | Sends a bot to the marked nav area (useful for testing navigation meshes)
+bot_goto_selected | sv | Sends a bot to the selected nav area (useful for testing navigation meshes)
+bot_hurt | sv | 
+bot_ignore_enemies | sv | Default: false<br>If nonzero, bots will ignore enemies (for debugging).
+bot_ignore_players | sv | Default: false<br>Bots will not see non-bot players.
 bot_join_after_player | sv, release | Default: true<br>If nonzero, bots wait until a player joins before entering the game.
 bot_join_delay | sv | Default: 0<br>Prevents bots from joining the server for this many seconds after a map change.
 bot_join_in_warmup | sv | Default: true<br>Prevents bots from joining the server while warmup phase is active.
 bot_join_team | sv, release | Default: any<br>Determines the team bots will join into. Allowed values: 'any', 'T', or 'CT'.
 bot_kick | sv, release | bot_kick &lt;all&gt; &lt;t\|ct&gt; &lt;type&gt; &lt;difficulty&gt; &lt;name&gt; - Kicks a specific bot, or all bots, matching the given criteria.
-bot_kill | sv, cheat | bot_kill &lt;all&gt; &lt;t\|ct&gt; &lt;type&gt; &lt;difficulty&gt; &lt;name&gt; - Kills a specific bot, or all bots, matching the given criteria.
+bot_kill | sv | bot_kill &lt;all&gt; &lt;t\|ct&gt; &lt;type&gt; &lt;difficulty&gt; &lt;name&gt; - Kills a specific bot, or all bots, matching the given criteria.
 bot_knives_only | sv, release | Restricts the bots to only using knives
-bot_loadout | sv, cheat | Default: <br>bots are given these items at round start
+bot_loadout | sv | Default: <br>bots are given these items at round start
 bot_max_visible_smoke_length | sv, rep, release | Default: 200<br>Bots will see players through smoke clouds up to this length.
 bot_max_vision_distance_override | sv, rep, release | Default: -1<br>Max distance bots can see targets.
-bot_mimic | sv, cl, rep, cheat | Default: 0<br>Bot uses usercmd of player by index.
-bot_mimic_spec_buttons | cl, cheat | Default: true<br>+attack, +jump etc are used for spectator control instead of being passed on to spectated bot
-bot_mimic_yaw_offset | sv, cheat | Default: 180<br>
-bot_path | sv, cheat | bot_path &lt;all&gt; &lt;t\|ct&gt; &lt;type&gt; &lt;difficulty&gt; &lt;name&gt; - Tells a specific bot to follow a human path, matching the given criteria.
+bot_mimic | sv, cl, rep | Default: 0<br>Bot uses usercmd of player by index.
+bot_mimic_spec_buttons | cl | Default: true<br>+attack, +jump etc are used for spectator control instead of being passed on to spectated bot
+bot_mimic_yaw_offset | sv | Default: 180<br>
+bot_path | sv | bot_path &lt;all&gt; &lt;t\|ct&gt; &lt;type&gt; &lt;difficulty&gt; &lt;name&gt; - Tells a specific bot to follow a human path, matching the given criteria.
 bot_pistols_only | sv, release | Restricts the bots to only using pistols
-bot_place | sv, cheat | bot_place - Places a bot from the map at where the local player is pointing.
+bot_place | sv | bot_place - Places a bot from the map at where the local player is pointing.
 bot_prefix | sv, release | Default: <br>This string is prefixed to the name of all bots that join the game.<br>&lt;difficulty&gt; will be replaced with the bot's difficulty.<br>&lt;weaponclass&gt; will be replaced with the bot's desired weapon class.<br>&lt;skill&gt; will be replaced with a 0-100 representation of the bot's skill.
 bot_quota | sv, release | Default: 10<br>Determines the total number of bots in the game.
 bot_quota_mode | sv, release | Default: normal<br>Determines the type of quota.<br>Allowed values: 'normal', 'fill', and 'match'.<br>If 'fill', the server will adjust bots to keep N players in the game, where N is bot_quota.<br>If 'match', the server will maintain a 1:N ratio of humans to bots, where N is bot_quota.
-bot_randombuy | sv, cheat | Default: false<br>should bots ignore their prefered weapons and just buy weapons at random?
-bot_show_battlefront | sv, cheat | Default: false<br>Show areas where rushing players will initially meet.
-bot_show_nav | sv, cheat | Default: false<br>For internal testing purposes.
-bot_show_occupy_time | sv, cheat | Default: false<br>Show when each nav area can first be reached by each team.
+bot_randombuy | sv | Default: false<br>should bots ignore their prefered weapons and just buy weapons at random?
+bot_show_battlefront | sv | Default: false<br>Show areas where rushing players will initially meet.
+bot_show_nav | sv | Default: false<br>For internal testing purposes.
+bot_show_occupy_time | sv | Default: false<br>Show when each nav area can first be reached by each team.
 bot_snipers_only | sv, release | Restricts the bots to only using sniper rifles
-bot_stop | sv, cheat | Default: 0<br>bot_stop &lt;1\|all&gt; \| &lt;not_bomber&gt; \| &lt;t&gt; \| &lt;ct&gt;
-bot_traceview | sv, cheat | Default: 0<br>For internal testing purposes.
+bot_stop | sv | Default: 0<br>bot_stop &lt;1\|all&gt; \| &lt;not_bomber&gt; \| &lt;t&gt; \| &lt;ct&gt;
+bot_strafe | sv, release | Default: 0<br>Strafe left and right (interval)
+bot_traceview | sv | Default: 0<br>For internal testing purposes.
 bot_walk | sv, release | Default: false<br>If nonzero, bots can only walk, not run.
-bot_zombie | sv, cheat | Default: false<br>If nonzero, bots will stay in idle mode and not attack.
-box | sv, cheat | Draw a bbox<br>	Arguments:  minx miny miny maxx maxy maxz &lt;lifetime = 10.0&gt; &lt;r g b a&gt;<br>
+bot_zombie | sv | Default: false<br>If nonzero, bots will stay in idle mode and not attack.
+box | sv | Draw a bbox<br>	Arguments:  minx miny miny maxx maxy maxz &lt;lifetime = 10.0&gt; &lt;r g b a&gt;<br>
 break_damage_inherit_scale | sv, cl, rep | Default: 1<br>
 break_invulnerable_spawn_duration | sv, cl, rep | Default: 0.5<br>
 breakable_debug_spawn_transform_time | sv, cl, rep | Default: 0<br>Debug draw the spawn transform location.
 breakable_force_break | sv | Force a breakable to break
 breakable_multiplayer | sv | Default: true<br>
-buddha | sv, nf, cheat | Default: false<br>Player takes damage but won't die
-buddha_ignore_bots | sv, nf, cheat | Default: false<br>Bots always buddha 0
-buddha_reset_hp | sv, nf, cheat | Default: 1<br>HP to set when damaged below zero in Buddha Mode
+buddha | sv, nf | Default: false<br>Player takes damage but won't die
+buddha_ignore_bots | sv, nf | Default: false<br>Bots always buddha 0
+buddha_reset_hp | sv, nf | Default: 1<br>HP to set when damaged below zero in Buddha Mode
 bug | norecord | bug \[auto_fill_tokens\] \[-title &lt;text&gt;\] \[-noscreenshot\] : Activate the bug reporter.
 bug_submitter_override | a | Default: <br>
+bugbug | cl, release | bugbug
+bugbug_commit | cl, release | bugbug_commit
 bugvoice_clear | norecord | Clear voice attachment data.
 bugvoice_save | norecord | Write buffered voice attachment data to file.
 buildcubemaps | cl | Build Cubemaps
@@ -318,35 +311,34 @@ cachedvalue_count_partybrowser | cl, a | Default: 0<br>
 cachedvalue_count_teammates | cl, a | Default: 0<br>
 callvote | sv | Start a vote on an issue.
 cam_collision | cl, a | Default: 1<br>When in thirdperson and cam_collision is set to 1, an attempt is made to keep the camera from passing though walls.
-cam_command | cl, cheat | Tells camera to change modes
-cam_head_constraint_debug | sv, cl, rep | Default: false<br>Show camera head constraint debug info
-cam_head_constraint_distance | sv, cl, rep | Default: 12<br>Distance to constrain first/thirdperson camera and head
-cam_head_constraint_soft_transition | sv, cl, rep | Default: 4<br>Constraint soft transition distance
+cam_command | cl | Tells camera to change modes
 cam_idealdelta | cl, a | Default: 4<br>Controls the speed when matching offset to ideal angles in thirdperson view
 cam_idealdist | cl, a | Default: 150<br>
 cam_ideallag | cl, a | Default: 4<br>Amount of lag used when matching offset to ideal angles in thirdperson view
 cam_idealpitch | cl, a | Default: 0<br>
 cam_idealyaw | cl, a | Default: 0<br>
-cam_showangles | cl, cheat | Default: false<br>When in thirdperson, print viewangles/idealangles/cameraoffsets to the console.
+cam_showangles | cl | Default: false<br>When in thirdperson, print viewangles/idealangles/cameraoffsets to the console.
 cam_snapto | cl, a | Default: false<br>
 camera_cut_to_datadriven_camera | cl | 
-camera_datadriven_debug | cl, cheat | Default: false<br>
-camera_datadriven_disable_cache | sv, cheat | Default: false<br>
-camera_jolt_fix | sv, cl, rep | Default: true<br>camera jolt fix
-camera_path_add | cl, cheat | 
-camera_path_clear_all | cl, cheat | 
-camera_path_delete | cl, cheat | 
-camera_path_edit_mode | cl, cheat | Default: false<br>
-camera_path_load | cl, cheat | 
-camera_path_save | cl, cheat | 
+camera_datadriven_debug | cl | Default: false<br>
+camera_datadriven_disable_cache | sv | Default: false<br>
+camera_path_add | cl | 
+camera_path_clear_all | cl | 
+camera_path_delete | cl | 
+camera_path_demo | cl | 
+camera_path_edit_mode | cl | Default: false<br>
+camera_path_load | cl | 
+camera_path_save | cl | 
 camerazoomin | cl | 
 camerazoomout | cl | 
-camortho | cl, cheat | Switch to orthographic camera.
+camortho | cl | Switch to orthographic camera.
 cancelselect | cl | 
 capturecubemap | cl | Capture Cubemap
 cash_player_bomb_defused | sv, cl, nf, rep, release | Default: 300<br>
 cash_player_bomb_planted | sv, cl, nf, rep, release | Default: 300<br>
 cash_player_damage_hostage | sv, cl, nf, rep, release | Default: -30<br>
+cash_player_drop_on_death | sv, cl, nf, rep, release | Default: 0<br>
+cash_player_drop_on_death_stack_value | sv, cl, nf, rep, release | Default: 250<br>
 cash_player_get_killed | sv, cl, nf, rep, release | Default: 0<br>
 cash_player_interact_with_hostage | sv, cl, nf, rep, release | Default: 150<br>
 cash_player_killed_enemy_default | sv, cl, nf, rep, release | Default: 300<br>
@@ -372,16 +364,16 @@ cash_team_win_by_hostage_rescue | sv, cl, nf, rep, release | Default: 3500<br>
 cash_team_win_by_time_running_out_bomb | sv, cl, nf, rep, release | Default: 3250<br>
 cash_team_win_by_time_running_out_hostage | sv, cl, nf, rep, release | Default: 3250<br>
 cash_team_winner_bonus_consecutive_rounds | sv, cl, nf, rep, release | Default: 0<br>
-cast_aabb | sv, cheat | Tests box collision detection
-cast_bullet | sv, cheat | Tests bullet cast
-cast_capsule | sv, cheat | Tests capsule collision detection
-cast_convex | sv, cheat | Tests convex hull collision detection
-cast_cylinder | sv, cheat | Tests cylinder collision detection
-cast_intervals | sv, cheat | Tests interval ray cast
-cast_obb | sv, cheat | Tests cylinder collision detection
-cast_physics | sv, cheat | Tests physics shape collision detection
-cast_ray | sv, cheat | Tests ray cast
-cast_sphere | sv, cheat | Tests sphere cast
+cast_aabb | sv | Tests box collision detection
+cast_bullet | sv | Tests bullet cast
+cast_capsule | sv | Tests capsule collision detection
+cast_convex | sv | Tests convex hull collision detection
+cast_cylinder | sv | Tests cylinder collision detection
+cast_intervals | sv | Tests interval ray cast
+cast_obb | sv | Tests cylinder collision detection
+cast_physics | sv | Tests physics shape collision detection
+cast_ray | sv | Tests ray cast
+cast_sphere | sv | Tests sphere cast
 cc_captiontrace | cl | Default: 1<br>Show missing closecaptions (0 = no, 1 = devconsole, 2 = show in hud)
 cc_delay_time | cl, a | Default: 0.25<br>Close caption delay before showing caption.
 cc_emit | cl | Emits a closed caption
@@ -409,17 +401,16 @@ changelevel | release | changelevel &lt;mapname&gt; :Multiplayer change level.
 character_patches | cl | Default: true<br>
 check_nofilefd |  | Print the current number of FDs reported by getrlimit
 check_transmit_dump_ents | sv | Default: false<br>
-chicken_stop | sv, cheat | Default: false<br>
+chicken_stop | sv | Default: false<br>
 cl_ShowBoneSetupEnts | cl | Default: false<br>Show which entities are having their bones setup each frame.
 cl_access_all_missions | cl | Default: false<br>
 cl_ag2_record_entity_graph | cl | Default: <br>Automatically start AG2 recording when an entity with this name (wildcard) or id is created.
 cl_aggregate_particles |  | Default: false<br>
 cl_allow_animated_avatars | cl, a, release | Default: true<br>Whether or not to allow animated avatars
-cl_allow_multi_input_binds | cl, cheat, release | Default: false<br>
+cl_allow_multi_input_binds | cl, release | Default: false<br>
 cl_anglespeedkey | cl | Default: 0.67<br>
 cl_anim_eval_stats | cl | Displays stats about how many EvaluatePose calls are unused
 cl_animgraph_dump_update_list | cl | Displays stats about which animations are updating
-cl_animgraph_history_force_temporal_consistency | cl | Default: true<br>
 cl_async_client_shatter | cl | Default: true<br>spawn client glass shards asynchronously during demos or when remotely connected.
 cl_async_restore_server_authoritative_state | cl | Default: false<br>
 cl_async_usercmd_send |  | Default: true<br>
@@ -427,13 +418,13 @@ cl_async_usercmd_send_recvmargin_min |  | Default: 1<br>Min size of the recv mar
 cl_auto_cursor_scale | a | Default: true<br>Automatic cursor size scaling.
 cl_autobuy | cl, release | Default: <br>The order in which autobuy will attempt to purchase items
 cl_autohelp | cl, a, user | Default: true<br>Auto-help
-cl_avatar_convert_png | cl, cheat, release | Converts all rgb avatars in the avatars directory to png
-cl_avatar_convert_rgb | cl, cheat, release | Converts all png avatars in the avatars directory to rgb
-cl_axis | cl, cheat | Draw an axis<br>	Arguments:  x y z pitch yaw roll &lt;lifetime = 10.0&gt; &lt;r g b a&gt;<br>
+cl_avatar_convert_png | cl, release | Converts all rgb avatars in the avatars directory to png
+cl_avatar_convert_rgb | cl, release | Converts all png avatars in the avatars directory to rgb
+cl_axis | cl | Draw an axis<br>	Arguments:  x y z pitch yaw roll &lt;lifetime = 10.0&gt; &lt;r g b a&gt;<br>
 cl_batch_entity_list_ops_during_latch | cl | Default: false<br>Batch entity list adds / removes while latching interpolated variables to avoid mutex contention.
 cl_bone_cache_optimization | cl | Default: true<br>
 cl_borrow_music_from_player_slot | cl, release | Default: -1<br>
-cl_box | cl, cheat | Draw a bbox<br>	Arguments:  minx miny miny maxx maxy maxz &lt;lifetime = 10.0&gt; &lt;r g b a&gt;<br>
+cl_box | cl | Draw a bbox<br>	Arguments:  minx miny miny maxx maxy maxz &lt;lifetime = 10.0&gt; &lt;r g b a&gt;<br>
 cl_boxmove | cl | Default: 0<br>run in a square, # represents how many usercommands to run before turning.
 cl_boxmove_speed | cl | Default: 1<br>how fast to run (1 to use player max run speed).
 cl_break_on_missing_resource |  | Break in debugger when missing resource match is found.<br>Format: cl_break_on_missing_resource &lt;substring&gt; /(empty to break on all) / 0 to turn off.<br>
@@ -450,11 +441,11 @@ cl_cameraoverride_shadow_depth_bias | cl | Default: 0.006<br>
 cl_cameraoverride_shadow_end | cl | Default: 0.8<br>
 cl_change_callback_limit | cl, release | Default: 0.2<br>change callback msec warning limit
 cl_chat_active | cl | Default: 0<br>
-cl_checkdeclareclasses | cheat | Check game code serializers
+cl_checkdeclareclasses |  | Check game code serializers
 cl_clanid | cl, a, user | Default: 0<br>Current clan ID for name decoration
 cl_clock_buffer_ticks |  | Default: 0<br>Clock sync will try to maintain an additional margin of N ticks.  This is intended to smooth over packet loss, and is a replacement for cl_interp_ratio / cl_interp.  This value is simply added to cl_clock_recvmargin_desired
 cl_clock_buffer_ticks_spectator |  | Default: 2<br>Additional margin (in ticks) to apply when spectating.
-cl_clock_correction | cheat | Default: true<br>Enable/disable clock correction on the client.
+cl_clock_correction |  | Default: true<br>Enable/disable clock correction on the client.
 cl_clock_recvmargin_adjust_limit_slowdown |  | Default: 93<br>Clock sync will not slow down time slower than N%
 cl_clock_recvmargin_adjust_limit_speedup |  | Default: 106<br>Clock sync will not speed up time faster than N%
 cl_clock_recvmargin_desired |  | Default: 5<br>Clock sync will try to maintain N ms margin between tick arrival and polling network.  The effective value is the sum of this and the time implied by cl_clock_buffer_ticks
@@ -465,7 +456,7 @@ cl_clock_recvmargin_window |  | Default: 4<br>Clock sync will use past N seconds
 cl_clockdbg |  | Default: false<br>
 cl_clockdrift_max_ticks | release | Default: 3<br>Maximum number of ticks the clock is allowed to drift before the client snaps its clock to the server's.
 cl_clutch_mode | cl, release | Default: false<br>Silence voice and other distracting sounds until the end of round or next death.
-cl_color | cl, a, user | Default: 3<br>Preferred teammate color
+cl_color | cl, a, user | Default: 2<br>Preferred teammate color
 cl_connectionretrytime_p2p | release | Default: 20<br>Number of seconds over which to spread retry attempts for P2P.
 cl_cq_min_queue | user | Default: 0<br>Used by the client to inform the server of their desired queue length.  Derived from cl_tickpacket_recvmargin_desired and cl_tickpacket_desired_queuelength
 cl_crosshair_drawoutline | cl, a | Default: true<br>Draws a black outline around the crosshair for better visibility
@@ -509,12 +500,13 @@ cl_debug_build_recvmargin_min |  | Default: 2<br>Min size of the recv margin que
 cl_debug_force_push_to_talk | cl | Default: false<br>
 cl_debug_overlay_fullposition | cl | Default: false<br>
 cl_debug_overlays_broadcast | release | Default: false<br>Render debug overlays from server.
+cl_debug_precipitation_surface_graph | cl, rep | Default: false<br>When true, use the surface graph to pass in positions for rainfall.<br>
 cl_debug_round_stat_submission | cl | Default: false<br>
-cl_debugoverlay_cycle_domain | cl, cheat | Toggles visibility of the debug overlay system.
-cl_debugoverlay_cycle_state | cl, cheat | Toggles visibility of the debug overlay system.
-cl_debugoverlay_dashboard | cl, cheat | Makes the debug overlay dashboard visible.
-cl_debugoverlay_hide_imgui | cl, cheat | Hides the overlay.
-cl_debugoverlay_toggle | cl, cheat | Toggles visibility of the debug overlay system.
+cl_debugoverlay_cycle_domain | cl | Toggles visibility of the debug overlay system.
+cl_debugoverlay_cycle_state | cl | Toggles visibility of the debug overlay system.
+cl_debugoverlay_dashboard | cl | Makes the debug overlay dashboard visible.
+cl_debugoverlay_hide_imgui | cl | Hides the overlay.
+cl_debugoverlay_toggle | cl | Toggles visibility of the debug overlay system.
 cl_debugviewangle | cl | Default: false<br>Plots view angles yaw at various stages of the frame/tick in Tracy.
 cl_demo_predict | cl, release | Default: 1<br>Enable 'TrueView' when watching a demo, which attempts to recreate the client's experience more accurately.  0=disable, 1=only if demo version match, 2=always
 cl_demo_steadycam_blendframes | cl | Default: 5<br>blend over this many frames
@@ -524,117 +516,110 @@ cl_demo_steadycam_radius | cl | Default: 16<br>if camera moves this much from la
 cl_demo_view_offset_left | cl | Default: 0<br>View offset during demo playback (+/- 1.25 is a good default for human average left/right eye offset)
 cl_demoviewoverride | cl | Default: 0<br>Override view during demo playback
 cl_destroy_ragdolls | cl | Destroys all client-side ragdolls
-cl_dev_decaltrace_blood | cl, cheat | Shoot out a decal spray that shoots blood.
+cl_dev_decaltrace_blood | cl | Shoot out a decal spray that shoots blood.
 cl_disable_deathcam_audio_mix_fade_out | cl, release | Default: false<br>When set to true, disables audio being silenced while the death cam fades out.
-cl_disable_postprocessing | cl, cheat | Default: false<br>
-cl_disable_ragdolls | cl, cheat | Default: false<br>
+cl_disable_postprocessing | cl | Default: false<br>
+cl_disable_ragdolls | cl | Default: false<br>
 cl_disable_round_end_report | cl, a, release | Default: false<br>
 cl_disconnect_soundevent |  | Default: StopSoundEvents.StopAllExceptMusic<br>This soundevent is called to stop the desired soundevents when the game is disconnected.
 cl_disconnect_voice_fade |  | Default: -1<br>This is a fade of current voices that is called when the game is disconnected. -1.f for no fade on disconnect
 cl_display_flashbang_values | cl | Default: false<br>
-cl_display_game_events | cl, cheat | Default: false<br>
+cl_display_game_events | cl | Default: false<br>
 cl_display_player_visibilty | cl | Default: false<br>
 cl_dm_buyrandomweapons | cl, a, release | Default: true<br>Player will automatically receive a random weapon on spawn in deathmatch if this is set to 1 (otherwise, they will receive the last weapon)
 cl_dormant_spew | cl | Default: false<br>Spew state on when client entities become dormant or active.
 cl_draw_only_deathnotices | cl, release | Default: false<br>For drawing only the crosshair and death notices (used for moviemaking)
-cl_draw_simulating_entities | cl, cheat | Default: false<br>
+cl_draw_simulating_entities | cl | Default: false<br>
 cl_draw_simulating_entities_distance | cl | Default: false<br>
-cl_drawcross | cl, cheat | Draws a cross at the given location<br>	Arguments: x y z
-cl_drawhud | cl, cheat | Default: true<br>Enable the rendering of the hud
+cl_drawcross | cl | Draws a cross at the given location<br>	Arguments: x y z
+cl_drawhud | cl | Default: true<br>Enable the rendering of the hud
 cl_drawhud_force_deathnotices | cl, release | Default: 0<br>0: default; 1: draw deathnotices even if hud disabled; -1: force no deathnotices
 cl_drawhud_force_radar | cl, release | Default: 0<br>0: default; 1: draw radar even if hud disabled; -1: force no radar
 cl_drawhud_force_teamid_overhead | cl, release | Default: 0<br>0: default; 1: draw teamid even if hud disabled; -1: force no teamid
 cl_drawhud_specvote | cl, release | Default: true<br>1: default; 0: disables vote UI for spectators
-cl_drawline | cl, cheat | Draws line between two 3D Points.<br>	Green if no collision<br>	Red is collides with something<br>	Arguments: x1 y1 z1 x2 y2 z2
-cl_dump_player_animgraph_state | cl | Dumps the local player's animgraph state to console
+cl_drawline | cl | Draws line between two 3D Points.<br>	Green if no collision<br>	Red is collides with something<br>	Arguments: x1 y1 z1 x2 y2 z2
 cl_dump_projected_texture_count | cl | Print out number of active projected textures
 cl_dump_response_symbols | cl | print all response symbols to the console
-cl_dumpentity | cl, cheat | Dumps info about an entity
+cl_dumpentity | cl | Dumps info about an entity
 cl_dumpsplithacks | cl | Dump split screen workarounds.
 cl_embedded_stream_audio_volume | cl, a | Default: 0<br>Embedded stream audio volume
 cl_embedded_stream_audio_volume_xmaster | cl, a | Default: true<br>Whether embedded stream audio volume gets multiplied by master volume
 cl_embedded_stream_video_playing | cl | Default: 0<br>Embedded stream video playing state
-cl_enable_eye_occlusion | cl | Default: true<br>
 cl_enable_party_voice | cl, a, release | Default: true<br>
-cl_ent_absbox | cl, cheat | Displays the total bounding box for the given entity(s) in green.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_actornames | cl, cheat | Displays the entity name for all entities that have ShouldDisplayInActorNames true in code
-cl_ent_animgraph2_open_graph | cl, cheat | Opens the graph and starts live debugging the AG2 graph for a given entity<br>	Arguments: entityName<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_animgraph2_record | cl, cheat | Starts live debugging & recording the AG2 graph for a given entity<br>	Arguments: entityName<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_animgraph_debug | cl, cheat | Displays debug draws about the given entity(ies) animgraph<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_animgraph_record | cl, cheat | Toggles recording of animgraph replay of the given entity(s)<br>	Arguments: entityName automaticallyOpenInAnimgraphEditor<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_attachment_filter_substrings | cl, cheat | Default: <br>If an attachment's name has any of the given substrings in it, it will be displayed. Substrings can be delimited by the ',' or '\|' character.
-cl_ent_attachments | cl, cheat | Displays the attachment points on an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_bbox | cl, cheat | Displays the movement bounding box for the given entity(ies) in orange.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_call | cl, cheat | ent_call &lt;funcname&gt; &lt;option:entname&gt; calls function on current look target or filtername, checks on ent, then root, then mode, then map scope
-cl_ent_clear_debug_overlays | cl, cheat | Clears all debug overlays
-cl_ent_find | cl, cheat | Find and list all entities with classnames or targetnames that contain the specified substrings.<br>Format: find_ent &lt;substring&gt;<br>
-cl_ent_find_index | cl, cheat | Display data for entity matching specified index.<br>Format: find_ent_index &lt;index&gt;<br>
-cl_ent_grab | cl, cheat | grabs the object in front of the player. Options: -loose -multiple -toggle
-cl_ent_hierarchy | cl, cheat | Prints the entity hierarchy tree rooted at the specified ent(s)
-cl_ent_hitbox | cl, cheat | Displays the hitboxes for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_absbox | cl | Displays the total bounding box for the given entity(s) in green.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_actornames | cl | Displays the entity name for all entities that have ShouldDisplayInActorNames true in code
+cl_ent_animgraph2_open_graph | cl | Opens the graph and starts live debugging the AG2 graph for a given entity<br>	Arguments: entityName<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_animgraph2_record | cl | Starts live debugging & recording the AG2 graph for a given entity<br>	Arguments: entityName<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_animgraph_debug | cl | Displays debug draws about the given entity(ies) animgraph<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_attachment_filter_substrings | cl | Default: <br>If an attachment's name has any of the given substrings in it, it will be displayed. Substrings can be delimited by the ',' or '\|' character.
+cl_ent_attachments | cl | Displays the attachment points on an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_bbox | cl | Displays the movement bounding box for the given entity(ies) in orange.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_call | cl | ent_call &lt;funcname&gt; &lt;option:entname&gt; calls function on current look target or filtername, checks on ent, then root, then mode, then map scope
+cl_ent_clear_debug_overlays | cl | Clears all debug overlays
+cl_ent_find | cl | Find and list all entities with classnames or targetnames that contain the specified substrings.<br>Format: find_ent &lt;substring&gt;<br>
+cl_ent_find_index | cl | Display data for entity matching specified index.<br>Format: find_ent_index &lt;index&gt;<br>
+cl_ent_grab | cl | grabs the object in front of the player. Options: -loose -multiple -toggle
+cl_ent_hierarchy | cl | Prints the entity hierarchy tree rooted at the specified ent(s)
+cl_ent_hitbox | cl | Displays the hitboxes for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 cl_ent_joint_axis_size | cl | Default: 4<br>
-cl_ent_joint_filter_substrings | cl, cheat | Default: <br>If a joint's name has any of the given substrings in it, it will be displayed. Substrings can be delimited by the ',' or '\|' character.
-cl_ent_joint_lines | cl, cheat | Default: true<br>Draw a line between a rendered joint and its parent.
-cl_ent_joint_names | cl, cheat | Default: true<br>Draw the name of a rendered joint.
+cl_ent_joint_filter_substrings | cl | Default: <br>If a joint's name has any of the given substrings in it, it will be displayed. Substrings can be delimited by the ',' or '\|' character.
+cl_ent_joint_lines | cl | Default: true<br>Draw a line between a rendered joint and its parent.
+cl_ent_joint_names | cl | Default: true<br>Draw the name of a rendered joint.
 cl_ent_joint_only_ik_joints | cl | Default: false<br>
 cl_ent_joint_use_bind_pose | cl | Default: false<br>
-cl_ent_joints | cl, cheat | Displays the joint names + axes an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_messages | cl, cheat | Toggles input/output message display for the selected entity(ies).  The name of the entity will be displayed as well as any messages that it sends or receives.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_name | cl, cheat | Displays the entity name
-cl_ent_picker | cl, cheat | Toggles 'picker' mode.  When picker is on, the bounding box, pivot and debugging text is displayed for whatever entity the player is looking at.<br>	Arguments:	full - enables all debug information
-cl_ent_pivot | cl, cheat | Displays the pivot for the given entity(ies).<br>	(y=up=green, z=forward=blue, x=left=red). <br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_pivot_size | cl, a, cheat | Default: 20<br>
-cl_ent_remove | cl, cheat | Removes the given entity(s)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_remove_all | cl, cheat | Removes all entities of the specified type<br>	Arguments:   	{entity_name} / {class_name} 
-cl_ent_scale | cl, cheat | Scales entities.	Arguments: &lt;scale factor&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
-cl_ent_scenehierarchy | cl, cheat | Prints the entity scenenode hierarchy tree rooted at the specified ent(s)
-cl_ent_script_dump | cl, cheat | Dumps the names and values of this entity's script scope to the console<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_select | cl, cheat | Select or deselects the given entities(s) for later manipulation<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_setang | cl, cheat | Set entity angles
-cl_ent_setname | cl, cheat | Sets the targetname of the given entity(s)<br>	Arguments:   	&lt;new entity name&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
-cl_ent_setpos | cl, cheat | Move entity to position
-cl_ent_show_contexts | cl, cheat | Default: false<br>Show entity contexts in ent_text display
-cl_ent_show_damage | cl, cheat | Sets damage display mode.  When on, you will see the amount of damage dealt over the target's head.
-cl_ent_showonlyattachment | cl, cheat | Default: <br>
-cl_ent_showonlyhitbox | cl, cheat | Default: -1<br>
-cl_ent_skeleton | cl, cheat | Displays the skeleton for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_joints | cl | Displays the joint names + axes an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_messages | cl | Toggles input/output message display for the selected entity(ies).  The name of the entity will be displayed as well as any messages that it sends or receives.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_name | cl | Displays the entity name
+cl_ent_picker | cl | Toggles 'picker' mode.  When picker is on, the bounding box, pivot and debugging text is displayed for whatever entity the player is looking at.<br>	Arguments:	full - enables all debug information
+cl_ent_pivot | cl | Displays the pivot for the given entity(ies).<br>	(y=up=green, z=forward=blue, x=left=red). <br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_pivot_size | cl, a | Default: 20<br>
+cl_ent_remove | cl | Removes the given entity(s)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_remove_all | cl | Removes all entities of the specified type<br>	Arguments:   	{entity_name} / {class_name} 
+cl_ent_scale | cl | Scales entities.	Arguments: &lt;scale factor&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
+cl_ent_scenehierarchy | cl | Prints the entity scenenode hierarchy tree rooted at the specified ent(s)
+cl_ent_script_dump | cl | Dumps the names and values of this entity's script scope to the console<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_select | cl | Select or deselects the given entities(s) for later manipulation<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_setang | cl | Set entity angles
+cl_ent_setname | cl | Sets the targetname of the given entity(s)<br>	Arguments:   	&lt;new entity name&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
+cl_ent_setpos | cl | Move entity to position
+cl_ent_show_contexts | cl | Default: false<br>Show entity contexts in ent_text display
+cl_ent_show_damage | cl | Sets damage display mode.  When on, you will see the amount of damage dealt over the target's head.
+cl_ent_showonlyattachment | cl | Default: <br>
+cl_ent_showonlyhitbox | cl | Default: -1<br>
+cl_ent_skeleton | cl | Displays the skeleton for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 cl_ent_skeleton_only_ik_joints | cl | Default: false<br>
 cl_ent_spew_derived_classes | cl | Prints out all entity classes which inherit from a specified base class
-cl_ent_text | cl, cheat | Displays text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_text256 | cl, cheat | Displays text debugging information about the given entity(ies) \[within 256 units of the player\] on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_text_clear | cl, cheat | Hide text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_text_filter | cl, cheat | Set which ent_text filters you want: 
-cl_ent_text_flags_active | cl, a, cheat | Default: -1<br>
-cl_ent_text_no_name_really_i_mean_it | cl, cheat | Default: false<br>
-cl_ent_text_radius | cl, cheat | Displays text debugging information about the given entity(ies) \[near the player\] on top of the entity (See Overlay Text)<br>	2 Arguments:   	&lt;Radius&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
-cl_ent_text_sticky_add | cl, cheat | Adds to list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_text_sticky_clear | cl, cheat | Clears the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_text_sticky_dump | cl, cheat | Spews the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_text_sticky_remove | cl, cheat | Removes from the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_ungrab | cl, cheat | un-grabs all objects
-cl_ent_vcollide_wireframe | cl, cheat | Displays the interpolated vcollide wireframe pm am entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_viewoffset | cl, cheat | Displays the eye position for the given entity(ies) in red.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_ent_visibility_traces | cl, cheat | Displays visibility traces for the given entity<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_text | cl | Displays text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_text256 | cl | Displays text debugging information about the given entity(ies) \[within 256 units of the player\] on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_text_clear | cl | Hide text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_text_filter | cl | Set which ent_text filters you want: 
+cl_ent_text_flags_active | cl, a | Default: -1<br>
+cl_ent_text_no_name_really_i_mean_it | cl | Default: false<br>
+cl_ent_text_radius | cl | Displays text debugging information about the given entity(ies) \[near the player\] on top of the entity (See Overlay Text)<br>	2 Arguments:   	&lt;Radius&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
+cl_ent_text_sticky_add | cl | Adds to list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_text_sticky_clear | cl | Clears the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_text_sticky_dump | cl | Spews the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_text_sticky_remove | cl | Removes from the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_ungrab | cl | un-grabs all objects
+cl_ent_vcollide_wireframe | cl | Displays the interpolated vcollide wireframe pm am entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_viewoffset | cl | Displays the eye position for the given entity(ies) in red.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_ent_visibility_traces | cl | Displays visibility traces for the given entity<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 cl_entityreport | cl | Reports all extant entities. Optional 2nd arg is a substring of a classname that the list will be filtered by.
 cl_entitysummary | cl | Summarizes (by class) all extant entities. Optional 2nd arg is a substring of a classname that the list will be filtered by.
 cl_ents | cl | List client entities, sorted by spawn group
 cl_error_report_time | cl, release | Default: 0<br>Minimum time in seconds that must elapse before printing prediction error summary. 0 to disable.
-cl_extrapolate | cl, cheat | Default: true<br>Enable/disable extrapolation if interpolation history runs out.
-cl_extrapolate_amount | cl, cheat | Default: 0.25<br>Set how many seconds the client will extrapolate entities for.
-cl_eye_occlusion_debug | cl, cheat | Default: false<br>
-cl_eye_sin_wave | cl | Default: false<br>
-cl_eye_target_override | cl | Default: 0 0 0<br>
-cl_eye_yaw_multiplier | cl | Default: 1<br>
+cl_extrapolate | cl | Default: true<br>Enable/disable extrapolation if interpolation history runs out.
+cl_extrapolate_amount | cl | Default: 0.25<br>Set how many seconds the client will extrapolate entities for.
 cl_fake_timeout | cl | Default: false<br>
 cl_fasttempentcollision | cl | Default: 5<br>
 cl_firstperson_legs | cl | Default: true<br>
 cl_firstperson_legs_aoproxy | cl | Default: true<br>
 cl_fixedcrosshairgap | cl, a | Default: 3<br>For crosshair style 1: How big to make the gap between the pips in the fixed crosshair
-cl_flushentitypacket | cheat | Default: 0<br>For debugging. Force the engine to flush an entity packet.
+cl_flushentitypacket |  | Default: 0<br>For debugging. Force the engine to flush an entity packet.
 cl_force_next_signon_to_reset |  | Default: false<br>
 cl_force_spec_hud_color_to_team | cl, a | Default: true<br>Spec hud color setting is always team/teammate
 cl_frametime_summary_report_detailed | cl, release | Default: true<br>When a perf report is dumped at the end of the session, should it be detailed?
-cl_fullupdate | cheat | Force uncompressed update
+cl_fullupdate |  | Force uncompressed update
 cl_game_mode_convars | cl | Display the values of the convars for the current game_mode.
 cl_generate_postdataupdatepreserved |  | Default: true<br>Do we invoke PostDataUpdatePreserved callbacks for entities that had no changes but are still in the PVS?
 cl_globallight_debug | cl | Default: false<br>
@@ -649,7 +634,7 @@ cl_globallight_use_optimized_calc_frustum | cl | Default: true<br>
 cl_globallight_use_shaadow_near_offset | cl | Default: true<br>
 cl_globallight_world_bottom_height | cl | Default: 0<br>
 cl_globallight_world_top_height | cl | Default: 4096<br>
-cl_glow_brightness | cl, cheat | Default: 1<br>Brightness of player halos
+cl_glow_brightness | cl | Default: 1<br>Brightness of player halos
 cl_glow_item_far_b | cl, release | Default: 1<br>
 cl_glow_item_far_g | cl, release | Default: 0.4<br>
 cl_glow_item_far_r | cl, release | Default: 0.3<br>
@@ -668,7 +653,7 @@ cl_grenadecrosshairdelay_explosive | cl, a | Default: 2<br>How long should the p
 cl_grenadecrosshairdelay_fire | cl, a | Default: 2<br>How long should the pin be pulled for before showing the grenade crosshair
 cl_grenadecrosshairdelay_flash | cl, a | Default: 2<br>How long should the pin be pulled for before showing the grenade crosshair
 cl_grenadecrosshairdelay_smoke | cl, a | Default: 2<br>How long should the pin be pulled for before showing the grenade crosshair
-cl_groups | cl, cheat | Show status of all spawn groups.
+cl_groups | cl | Show status of all spawn groups.
 cl_hide_avatar_images | cl, a | Default: 0<br>Hide avatar images for other players. <br>	0 - Off.<br>	1 - Block All<br>	2 - Block all but friends
 cl_highlights_hud_playback | cl, release | Default: 0<br>Highlights hud playback
 cl_hitbox_debug | cl | Default: false<br>
@@ -683,16 +668,16 @@ cl_hud_radar_scale | cl, a, release | Default: 1<br>
 cl_hud_telemetry_frametime_poor | cl, a, release | Default: 100<br>Frame time greater than this is considered 'poor'.
 cl_hud_telemetry_frametime_show | cl, a, release | Default: 1<br>Show frame time (FPS) in the HUD.  0=never, 1=only if poor, 2=always
 cl_hud_telemetry_net_detailed | cl, a, release | Default: 0<br>Show breakdown network misdelivery (loss, late delivery, and peak jitter).  0=never, 1=only in poor network conditions, 2=always
-cl_hud_telemetry_net_misdelivery_poor | cl, a, release | Default: 5<br>Packet delivery anomaly rate (0..100) higher than this is considered 'poor'.
+cl_hud_telemetry_net_misdelivery_poor | cl, a, release | Default: 2<br>Packet delivery anomaly rate (0..100) higher than this is considered 'poor'.
 cl_hud_telemetry_net_misdelivery_show | cl, a, release | Default: 1<br>Show percentage of user commands & server snapshots that are missed due to network conditions.  0=never, 1=only in poor conditions, 2=always
 cl_hud_telemetry_net_quality_graph_show | cl, a, release | Default: 0<br>Show packet jitter and netframe loss/reordering in the HUD.  0=never, 1=only in poor conditions, 2=always
 cl_hud_telemetry_ping_poor | cl, a, release | Default: 100<br>Ping higher than this (ms) is considered 'poor'.
 cl_hud_telemetry_ping_show | cl, a, release | Default: 1<br>Show ping in the HUD.  0=never, 1=only in poor conditions, 2=always
 cl_hud_telemetry_serverrecvmargin_graph_show | cl, a, release | Default: 0<br>Show graph of the server recv margin in the HUD.  (How early/late user commands are arriving at the server before they are executed.)   0=never, 1=only when there are command queue problems, 2=always
-cl_ignorepackets | cheat | Default: false<br>Force client to ignore packets (for debugging).
-cl_imgui_debug_entity | cl, cheat | Shows the entity browser, focused on the entity you specify.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cl_imgui_set_selection | cl, cheat | Sets ImGui selection
-cl_imgui_set_status_text | cl, cheat | Sets ImGui header status text
+cl_ignorepackets |  | Default: false<br>Force client to ignore packets (for debugging).
+cl_imgui_debug_entity | cl | Shows the entity browser, focused on the entity you specify.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cl_imgui_set_selection | cl | Sets ImGui selection
+cl_imgui_set_status_text | cl | Sets ImGui header status text
 cl_import_csgo_config | cl, a, release | Default: true<br>
 cl_in_forcebuttonstate | cl | Forces a button to be a particular state - WHEN PROCESSING USERCOMMANDS
 cl_inferno_bodyburn | cl | Default: true<br>
@@ -702,7 +687,7 @@ cl_interp | cl, release | Read the effective client simulation interpolation amo
 cl_interp_ag2_for_non_ag2_entities | cl | Default: false<br>
 cl_interp_all | cl | Default: false<br>Disable interpolation list optimizations.
 cl_interp_animationvars | cl | Default: true<br>Interpolate LATCH_ANIMATION_BIT vars if interpolation interval is greater than simulation interval
-cl_interp_hermite | cl, cheat | Default: true<br>Set to zero do disable hermite interpolation.
+cl_interp_hermite | cl | Default: true<br>Set to zero do disable hermite interpolation.
 cl_interp_npcs | cl | Default: 0<br>Interpolate NPC positions starting this many seconds in past (or the value as per cl_interp_ratio, if greater)
 cl_interp_parallel | cl | Default: false<br>Run interpolation in parallel for entities with no children.
 cl_interp_ratio | cl, user | Default: 0<br>Set number of client simulation interpolation ticks.
@@ -729,15 +714,16 @@ cl_lagcompensation_test_auto_target | cl | Default: false<br>Auto-pick value of 
 cl_lagcompensation_test_target | cl | Default: -1<br>Player whose head is tracked to test lag compensation.
 cl_language |  | Default: english<br>Language
 cl_latch_report | cl, a | Default: false<br>Enable to output stats about latching
-cl_leveloverview | cl, cheat | Default: 0<br>
-cl_lightquery_debug | cl, cheat | Default: false<br>
+cl_leveloverview | cl | Default: 0<br>
+cl_lightquery_debug | cl | Default: false<br>
 cl_loadout_saved_sort | cl, a, release | Default: inv_sort_age<br>
-cl_lock_camera | cl, cheat | Default: false<br>
+cl_lock_camera | cl | Default: false<br>
 cl_log_tick |  | Default: false<br>Log when a tick is received<br>
 cl_log_tick_skips |  | Default: 0<br>Log when the tick delta &gt;= this
 cl_low_latency_vsync_recommendation_dont_show_again | cl, a, release | Default: false<br>
 cl_mainmenu_hide_blog | cl, server_can_execute | Show the news panel and hide blog
 cl_mainmenu_show_blog | cl, server_can_execute | Show the blog and hide news panel
+cl_major_store_watch_list | cl, a | Default: <br>
 cl_map_preview_debug_jitter | cl | Default: false<br>
 cl_massreport | cl | Default: false<br>
 cl_matchlist_controlroom_aid | cl, release | Default: 0<br>
@@ -758,7 +744,7 @@ cl_new_user_phase | cl, a, release | Default: 0<br>0: Not Started, 1: Needs Trai
 cl_obs_interp_enable | cl, a | Default: true<br>Enables interpolation between observer targets
 cl_obs_interp_speed | cl, a | Default: 1<br>Spectator camera interpolation speed
 cl_observed_bot_crosshair | cl, a, release | Default: 2<br>Control the crosshair shown when observing a bot. 0: Show player crosshair. 1: Show player crosshair only when bot can be taken over, otherwise show default.. 2: Always show default crosshair for bots.
-cl_paintkit_override | cl, cheat, release | Default: <br>
+cl_paintkit_override | cl, release | Default: <br>
 cl_panel_freeze_time_after_press | cl | Default: 0.5<br>time to freeze mouse/pointer motion after a mouse button press
 cl_parallel_readpacketentities |  | Default: true<br>Set to 1 to use threading snapshot reading (if game supports and server is sending bitcounts).
 cl_parallel_readpacketentities_threshold |  | Default: 2<br>Use parallel processing of snapshot reading if above this many entries.
@@ -769,33 +755,31 @@ cl_particle_fallback_multiplier |  | Default: 0<br>Multiplier for falling back t
 cl_particle_log_creates |  | Default: false<br>Print debug message every time a particle collection is created
 cl_particle_max_count |  | Default: 0<br>
 cl_particle_newinit |  | Default: true<br>turn on optimized particle init
-cl_particle_retire_cost | cheat | Default: 0<br>
+cl_particle_retire_cost |  | Default: 0<br>
 cl_particle_sim_fallback_base_multiplier |  | Default: 5<br>How aggressive the switch to fallbacks will be depending on how far over the cl_particle_sim_fallback_threshold_ms the sim time is.  Higher numbers are more aggressive.
 cl_particle_sim_fallback_threshold_ms |  | Default: 6<br>Amount of simulation time that can elapse before new systems start falling back to cheaper versions
-cl_particle_simulate | cheat | Default: true<br>Enables/Disables Particle Simulation
+cl_particle_simulate |  | Default: true<br>Enables/Disables Particle Simulation
 cl_particles_dump_effects | cl | 
 cl_particles_dumplist | cl | Dump all new particles, optional name substring.
 cl_particles_dumpsimlist | cl | Dump all simulating particles, optional name substring.
-cl_pclass | cl, cheat | Default: <br>Dump entity by prediction classname.
-cl_pdump | cl, cheat | Default: -1<br>Dump info about this entity to screen.
+cl_pclass | cl | Default: <br>Dump entity by prediction classname.
+cl_pdump | cl | Default: -1<br>Dump info about this entity to screen.
 cl_phys_animated_hierarchy | cl | Default: true<br>
 cl_phys_assume_fixed_tick_interval | cl | Default: true<br>If true, we assume the client uses a fixed tickrate like the server (which may not always be true). If false, we recalculate the number of physics substeps in each client tick based on the actual elapsed time in the tick.
 cl_phys_block_dist | cl | Default: 1<br>
 cl_phys_block_fraction | cl | Default: 0.1<br>
 cl_phys_create_test_character_proxy | cl | Create test character proxy
-cl_phys_debug_callback_entities | cl, cheat | Default: false<br>Print all entities that get touch callbacks. Each entity is printed only once.
+cl_phys_debug_callback_entities | cl | Default: false<br>Print all entities that get touch callbacks. Each entity is printed only once.
 cl_phys_dump_intersection_controller | cl | Dump intersection controller status
 cl_phys_dump_main_world | cl | Dump physics main world to file
 cl_phys_dump_memory | cl | Dump memory usage
-cl_phys_enabled | cl, cheat | Default: true<br>Enable all physics simulation
-cl_phys_list | cl | List all physics component contents of every entity in the game;<br>    -stream \[1\|0\]         initiate\|terminate streaming to physics debugger<br>    -allents              include non-physical entities<br>    -classes              print class names<br>    -sdk                  Rubikon-wide memory short status<br>    -sdk -struct          Rubikon-wide memory use per struct<br>    -sdk -rebuildsvms     Rubikon-wide SVM force rebuild and status<br>    -world                current state of the world<br>    -world -touch         list body pairs (bodies in contact)<br>    -world -save &lt;name&gt;   save world to a file<br>    -world -mem           memory dump (separately per game dll)<br>    -world -snapshots     Start/Stop dumping snapshots of the world into the current directory<br>    -world -profiletraces ProfileRecordedTraces<br>    -world -agg           current aggregate data registry (loaded resources)<br>
+cl_phys_enabled | cl | Default: true<br>Enable all physics simulation
+cl_phys_list | cl | List all physics component contents of every entity in the game;<br>    -stream \[1\|0\]         initiate\|terminate streaming to physics debugger<br>    -allents              include non-physical entities<br>    -classes              print class names<br>    -sdk                  Rubikon-wide memory short status<br>    -sdk -struct          Rubikon-wide memory use per struct<br>    -sdk -rebuildsvms     Rubikon-wide SVM force rebuild and status<br>    -world                current state of the world<br>    -world -touch         list body pairs (bodies in contact)<br>    -world -save &lt;name&gt;   save world to a file<br>    -world -mem           memory dump (separately per game dll)<br>    -world -snapshots     Start/Stop dumping snapshots of the world into the current directory<br>    -world -agg           current aggregate data registry (loaded resources)<br>
 cl_phys_networked_start_sleep | cl | Default: false<br>
-cl_phys_record_rays | cl | Dump physics main world to file
-cl_phys_record_rays_and_world | cl | Dump traces physics main world to file
 cl_phys_sleep | cl | Put all physics in all the worlds to sleep
-cl_phys_sleep_enable | cl, cheat | Default: true<br>Enable sleeping for dynamic physics bodies.
-cl_phys_sound_disable_impact_sounds_under_hard_threshold | cl, cheat | Default: false<br>if true, impact sounds wont play if no soft impact sound is present and the impact is below the hard velocity threshold.
-cl_phys_stop_at_collision | cl, cheat | Default: <br>
+cl_phys_sleep_enable | cl | Default: true<br>Enable sleeping for dynamic physics bodies.
+cl_phys_sound_disable_impact_sounds_under_hard_threshold | cl | Default: false<br>if true, impact sounds wont play if no soft impact sound is present and the impact is below the hard velocity threshold.
+cl_phys_stop_at_collision | cl | Default: <br>
 cl_phys_timescale | cl | Default: 1<br>Scale time for physics
 cl_phys_visualize_awake | cl | Default: false<br>
 cl_phys_wakeup | cl | Wake all physics objects in the Main physics up
@@ -805,13 +789,12 @@ cl_physics_remove_test | cl | remove test object
 cl_physics_report_active | cl | Lists all active physics objects<br>  -more : extra info<br>
 cl_ping_fade_deadzone | cl, a, release | Default: 60<br>Distance from the crosshair over which the ping is completely invisible
 cl_ping_fade_distance | cl, a, release | Default: 300<br>Distance from the crosshair over which the ping fades
-cl_pitchdown | cl, cheat | Default: 89<br>
+cl_pitchdown | cl | Default: 89<br>
 cl_pitchspeed | cl | Default: 225<br>
-cl_pitchup | cl, cheat | Default: 89<br>
+cl_pitchup | cl | Default: 89<br>
 cl_playback_screenshots |  | Default: false<br>Allows the client to playback screenshot and jpeg commands in demos.
 cl_player_ping_mute | cl, a, release | Default: 0<br>If 1, player pinging will make a sound, if 0, pings will be silent
-cl_player_proximity_debug | cl, rep, cheat | Default: false<br>
-cl_player_ragdolls_collide | cl, cheat, release | Default: false<br>
+cl_player_ragdolls_collide | cl, release | Default: false<br>
 cl_player_visibility_far | cl | Default: 700<br>distance at which proxy scale is maximized
 cl_player_visibility_far_scale | cl | Default: 1.3<br>proxy scale multiplier at max dist (is 1.0 at mindist)
 cl_player_visibility_near | cl | Default: 200<br>cull characters nearer than this
@@ -830,7 +813,6 @@ cl_pred_parallel_postnetwork | cl | Default: true<br>
 cl_pred_print_every_cmd | cl, release | Default: false<br>Print something every time we predict a command
 cl_pred_track | cl | &lt;entindex&gt; &lt;fieldname&gt;:  Track changes to entity index entindex, for field fieldname.
 cl_pred_track_off | cl | clear field track changes.
-cl_predict_after_every_createmove |  | Default: true<br>run prediction after every CreateMove instead of only after CreateMove for the final tick in a frame.
 cl_predict_body_shot_fx | cl, a, release | Default: false<br>
 cl_predict_bomb_defusal | cl | Default: true<br>
 cl_predict_head_shot_fx | cl, a, release | Default: false<br>
@@ -843,8 +825,8 @@ cl_predictioncopy_runs | cl | Default: true<br>
 cl_prefer_lefthanded | cl, a, user | Default: false<br>Left handed preference
 cl_printfps | cl | Print information from cl_showfps.
 cl_promoted_settings_acknowledged | cl, a | Default: 0:0<br>
-cl_prop_debug | cl, cheat | Toggle prop debug mode. If on, props will show colorcoded bounding boxes. Red means ignore all damage. White means respond physically to damage but never break. Green maps health in the range of 100 down to 1.
-cl_querycache_stats | cl, cheat | Display status of the query cache (client only)
+cl_prop_debug | cl | Toggle prop debug mode. If on, props will show colorcoded bounding boxes. Red means ignore all damage. White means respond physically to damage but never break. Green maps health in the range of 100 down to 1.
+cl_querycache_stats | cl | Display status of the query cache (client only)
 cl_quickinventory_filename | cl, a, release | Default: radial_quickinventory.txt<br>
 cl_quickinventory_lastinv | cl, a, release | Default: true<br>
 cl_quickinventory_line_update_speed | cl, a, release | Default: 65<br>
@@ -893,7 +875,7 @@ cl_radialmenu_deadzone_size | cl, release | Default: 0.4<br>
 cl_radialmenu_deadzone_size_joystick | cl, a, release | Default: 0.17<br>
 cl_ragdoll_default_scale | cl | Default: 1<br>
 cl_ragdoll_limit | cl, a | Default: 20<br>Maximum number of ragdolls to show (-1 disables limit)
-cl_ragdoll_lru_debug | cl, rep, cheat | Default: false<br>
+cl_ragdoll_lru_debug | cl, rep | Default: false<br>
 cl_ragdoll_physics_enable | cl | Default: 1<br>Enable/disable ragdoll physics.
 cl_ragdoll_reload | cl | Default: false<br>
 cl_ragdoll_workaround_threshold | cl, release | Default: 4<br>Mainly cosmetic, client-only effect: when client doesn't know the last position of another player that spawns a ragdoll, the ragdoll creation is simplified and ragdoll is created in the right place. If you increase this significantly, ragdoll positions on your client may be dramatically wrong, but it won't affect other clients
@@ -904,49 +886,48 @@ cl_rebuy | cl, release | Default: <br>The order in which rebuy will attempt to r
 cl_redemption_reset_timestamp | cl, a, release | Default: 0<br>
 cl_refresh_rate_recommendation_dont_show_again | cl, a, release | Default: false<br>
 cl_reload_hud | cl | Reloads the hud scale and resets scale and borders
-cl_removedecals | cl, cheat | Remove the decals from the entity under the crosshair.
-cl_report_entities | cl, cheat | Lists all entities
+cl_removedecals | cl | Remove the decals from the entity under the crosshair.
+cl_report_entities | cl | Lists all entities
 cl_report_predcopy_overrides | cl | Report prediction copy overrides
 cl_report_simthinklist | cl | Lists all simulating/thinking entities
 cl_report_soundpatch | cl | reports client-side sound patch count
 cl_resend | release | Default: 0.5<br>Delay in seconds before the client will resend the 'connect' attempt
 cl_resetfps | cl | Reset information from cl_showfps.
 cl_retire_low_priority_lights | cl | Default: false<br>Low priority dlights are replaced by high priority ones
-cl_rr_dump_rules | cl, cheat | Print all response rules
-cl_rr_reloadresponsesystems | cl, cheat | Reload all response system scripts.
+cl_rr_dump_rules | cl | Print all response rules
+cl_rr_reloadresponsesystems | cl | Reload all response system scripts.
 cl_sanitize_muted_players | cl, release | Default: true<br>Hide names and avatars of muted players.
 cl_sanitize_player_names | cl, a | Default: false<br>Replace names of other players with something non-offensive.
-cl_save_animgraph_recording | cl, cheat | Saves all active animgraph recordings to disk<br>	Arguments: automaticallyOpenInAnimgraphEditor
 cl_sceneentity_debug | cl | Default: false<br>Display all thinking scene entities and its data.
 cl_scoreboard_mouse_enable_binding | cl, a | Default: +attack2<br>Name of the binding to enable mouse selection in the scoreboard
 cl_scoreboard_survivors_always_on | cl, a, release | Default: false<br>
 cl_scoreboard_toggle_enable | cl | Default: false<br>
 cl_screenmessage_notifytime | cl | Default: 8<br>How long to display screen message text
-cl_script_add_debug_filter | cl, cheat | Add a filter to the game debug overlay
-cl_script_add_watch | cl, cheat | Add a watch to the game debug overlay
-cl_script_add_watch_pattern | cl, cheat | Add a watch to the game debug overlay
-cl_script_attach_debugger | cl, cheat | Connect the vscript VM to the script debugger
+cl_script_add_debug_filter | cl | Add a filter to the game debug overlay
+cl_script_add_watch | cl | Add a watch to the game debug overlay
+cl_script_add_watch_pattern | cl | Add a watch to the game debug overlay
+cl_script_attach_debugger | cl | Connect the vscript VM to the script debugger
 cl_script_attach_debugger_at_startup | cl | Default: false<br>
 cl_script_break_in_native_debugger_on_error | cl | Default: false<br>
-cl_script_clear_watches | cl, cheat | Clear all watches from the game debug overlay
-cl_script_debug | cl, cheat | Toggle the in-game script debug features
-cl_script_dump_all | cl, cheat | Dump the state of the VM to the console
-cl_script_find | cl, cheat | Find a key in the VM 
-cl_script_help | cl, cheat | Output help for script functions
+cl_script_clear_watches | cl | Clear all watches from the game debug overlay
+cl_script_debug | cl | Toggle the in-game script debug features
+cl_script_dump_all | cl | Dump the state of the VM to the console
+cl_script_find | cl | Find a key in the VM 
+cl_script_help | cl | Output help for script functions
 cl_script_help2 | cl | Output help for script functions suitable for auto-completion
-cl_script_reload | cl, cheat | Reload scripts
-cl_script_reload_code | cl, cheat | Execute a vscript file, replacing existing functions with the functions in the run script
-cl_script_reload_entity_code | cl, cheat | Execute all of this entity's VScripts, replacing existing functions with the functions in the run scripts
-cl_script_remove_debug_filter | cl, cheat | Remove a filter from the game debug overlay
-cl_script_remove_watch | cl, cheat | Remove a watch from the game debug overlay
-cl_script_remove_watch_pattern | cl, cheat | Remove a watch from the game debug overlay
-cl_script_resurrect_unreachable | cl, cheat | Use the garbage collector to track down reference cycles
-cl_script_trace_disable | cl, cheat | Turn off a particular trace output by file or function name
-cl_script_trace_disable_all | cl, cheat | Turn off all trace output
-cl_script_trace_disable_key | cl, cheat | Turn off a particular trace output by table/instance
-cl_script_trace_enable | cl, cheat | Turn on a particular trace output by file or function name
-cl_script_trace_enable_all | cl, cheat | Turn on all trace output
-cl_script_trace_enable_key | cl, cheat | Turn on a particular trace output by table/instance
+cl_script_reload | cl | Reload scripts
+cl_script_reload_code | cl | Execute a vscript file, replacing existing functions with the functions in the run script
+cl_script_reload_entity_code | cl | Execute all of this entity's VScripts, replacing existing functions with the functions in the run scripts
+cl_script_remove_debug_filter | cl | Remove a filter from the game debug overlay
+cl_script_remove_watch | cl | Remove a watch from the game debug overlay
+cl_script_remove_watch_pattern | cl | Remove a watch from the game debug overlay
+cl_script_resurrect_unreachable | cl | Use the garbage collector to track down reference cycles
+cl_script_trace_disable | cl | Turn off a particular trace output by file or function name
+cl_script_trace_disable_all | cl | Turn off all trace output
+cl_script_trace_disable_key | cl | Turn off a particular trace output by table/instance
+cl_script_trace_enable | cl | Turn on a particular trace output by file or function name
+cl_script_trace_enable_all | cl | Turn on all trace output
+cl_script_trace_enable_key | cl | Turn on a particular trace output by table/instance
 cl_search_key_token | cl, release | Default: <br>Development search key token.
 cl_sendtable_cache_filename |  | Default: sendtables.bin<br>Send tables cache file
 cl_sequence_debug | cl | Default: -1<br>
@@ -968,21 +949,20 @@ cl_show_playernames_max_chars_console | cl | Default: false<br>Shows all player 
 cl_show_quest_info | cl | Default: false<br>
 cl_show_splashes | cl | Default: true<br>
 cl_showdemooverlay |  | Default: 0<br>How often to flash demo recording/playback overlay (0 - disable overlay, -1 - show always)
-cl_showents | cl, cheat | Dump entity list to console.
+cl_showents | cl | Dump entity list to console.
 cl_showerror | cl, release | Default: 0<br>Show prediction errors, 2 for above plus detailed field deltas, 3 to filter out serverside known prediction errors, -entindex for specific entity.
 cl_showfps | cl, release | Default: 0<br>Draw fps meter at top of screen (1 = fps, 2 = smooth fps, 3 = server MS, 4 = Show FPS and Log to file )
 cl_showframenumber | cl, release | Default: false<br>Show current framenumber
 cl_showloadout | cl, a | Default: true<br>Toggles display of current loadout.
 cl_showmem | cl, release | Default: 0<br>Draw approximate memory use at top of screen
-cl_showpos | cl, cheat, release | Default: 0<br>Draw current position at top of screen
+cl_showpos | cl, release | Default: 0<br>Draw current position at top of screen
 cl_showtextmsg | cl | Default: true<br>Enable/disable text messages printing on the screen.
 cl_showtick | cl, release | Default: 0<br>Show current tick/time values.  Bitmask:  1='render time'  2='GameTime'   4=time of predicted entities  8=offset of predicted entities    (-1 means 'everything')
 cl_showusercmd | cl | Default: false<br>Show user command encoding
 cl_silencer_mode | cl, a, user | Default: 0<br>0: cannot detach; 1: press secondary fire to detach
-cl_sim_grenade_trajectory | cl, cheat | Draw trajectory of the deployed grenade if thrown from this position. Takes an optional parameter for how long the drawn trajectory will last.
+cl_sim_grenade_trajectory | cl | Draw trajectory of the deployed grenade if thrown from this position. Takes an optional parameter for how long the drawn trajectory will last.
 cl_simulate_dormant_entities | cl | Default: true<br>
-cl_skel_constraints_enable | rep, cheat | Default: true<br>
-cl_skeleton_instance_smear_boneflags | cl, cheat | Default: false<br>Smear boneflags across the model.  Costs computation, but tests to make sure your bone flags are consistent.
+cl_skeleton_instance_smear_boneflags | cl | Default: false<br>Smear boneflags across the model.  Costs computation, but tests to make sure your bone flags are consistent.
 cl_skip_hierarchy_update_for_unchanged_entities | sv, cl, rep | Default: true<br>Skip updating hierarchy information in PostDataUpdate for entities that have not changed
 cl_skip_update_animations | cl | Default: false<br>Enable to skip game animations
 cl_smoke_edge_feather | sv, cl, rep | Default: 21<br>
@@ -993,30 +973,30 @@ cl_smoke_torus_ring_subradius | sv, cl, rep | Default: 88<br>
 cl_smoke_volume_growth | cl | Default: 1<br>
 cl_smoke_volumeprop | cl | Default: true<br>
 cl_smooth | cl | Default: true<br>Smooth view/eye origin after prediction errors
-cl_smooth_draw_debug | cl, cheat | Default: false<br>
-cl_smooth_root_catchup_factor | cl, cheat | Default: 0.21<br>
-cl_smooth_root_max_accel | cl, cheat | Default: 1000<br>
-cl_smooth_root_origin_coeff | cl, cheat | Default: 100<br>
-cl_smooth_root_timehorizon | cl, cheat | Default: 0.125<br>
-cl_smooth_root_velocity_coeff | cl, cheat | Default: 20<br>
+cl_smooth_draw_debug | cl | Default: false<br>
+cl_smooth_root_catchup_factor | cl | Default: 0.21<br>
+cl_smooth_root_max_accel | cl | Default: 1000<br>
+cl_smooth_root_origin_coeff | cl | Default: 100<br>
+cl_smooth_root_timehorizon | cl | Default: 0.125<br>
+cl_smooth_root_velocity_coeff | cl | Default: 20<br>
 cl_smooth_targetspeed | cl, release | Default: 150<br>
 cl_smoothtime | cl | Default: 0.2<br>Smooth client's view after prediction error over this many seconds
 cl_snd_cast_clear |  | Default: true<br>
 cl_snd_cast_retrigger |  | Default: true<br>
-cl_snd_new_visualize | cl, cheat | Default: false<br>Displays soundevent name played at it's 3d position
+cl_snd_new_visualize | cl | Default: false<br>Displays soundevent name played at it's 3d position
 cl_sniper_auto_rezoom | cl, a, user | Default: true<br>Auto-rezoom snipers after a shot
 cl_sniper_delay_unscope | cl, a, release | Default: false<br>
 cl_sniper_show_inaccuracy | cl, a, release | Default: true<br>
-cl_sos_test_get_opvar | cl, cheat | 
-cl_sos_test_set_opvar | cl, cheat | 
-cl_soundscape_flush | cl, cheat | Flushes the client side soundscapes
+cl_sos_test_get_opvar | cl | 
+cl_sos_test_set_opvar | cl | 
+cl_soundscape_flush | cl | Flushes the client side soundscapes
 cl_soundscape_printdebuginfo | cl | print soundscapes
 cl_spawngroup_log |  | Default: false<br>Dump the contents of the next spawngroup manifest to file.
 cl_spawngroup_spewresources |  | Default: false<br>Spew all manifest add/updates.
 cl_spec_show_bindings | cl, release, server_can_execute | Default: true<br>Toggle the visibility of the spectator bindings.
 cl_spec_stats | cl, release | Default: true<br>
 cl_spec_use_tournament_content_standards | cl, release | Default: false<br>
-cl_spewserializers | cheat | Spew serializers
+cl_spewserializers |  | Spew serializers
 cl_spewworldgroups |  | Spew world groups (client)
 cl_ss_origin | cl | print origin in script format
 cl_streams_image_sfurl | cl | Default: img://loadjpeg:(640x360):<br>Format of Scaleform image representing the stream
@@ -1029,8 +1009,8 @@ cl_streams_write_response_file | cl | Default: <br>When set will save streams in
 cl_teamcounter_playercount_instead_of_avatars | cl, a, release | Default: false<br>
 cl_teamid_overhead_colors_show | cl, a, release | Default: true<br>Show team overhead id in teammate color
 cl_teamid_overhead_fade_near_crosshair | cl, a, release | Default: 0.5<br>The amount to fade teamid when near the crosshair. Range is 0.0-1.0. 0: off
-cl_teamid_overhead_maxdist | cl, cheat | Default: 6000<br>max distance at which the overhead team id icons will show
-cl_teamid_overhead_maxdist_spec | cl, cheat | Default: 4000<br>max distance at which the overhead team id icons will show when a spectator
+cl_teamid_overhead_maxdist | cl | Default: 6000<br>max distance at which the overhead team id icons will show
+cl_teamid_overhead_maxdist_spec | cl | Default: 4000<br>max distance at which the overhead team id icons will show when a spectator
 cl_teamid_overhead_mode | cl, a, release | Default: 3<br>Always show team id over teammates. 0 = off, 1 = pips; 2 = +name, 3 = +equipment
 cl_teammate_color_1 | cl | Default: 136 206 245 255<br>
 cl_teammate_color_2 | cl | Default: 0 158 128 255<br>
@@ -1038,7 +1018,7 @@ cl_teammate_color_3 | cl | Default: 241 228 65 255<br>
 cl_teammate_color_4 | cl | Default: 230 128 42 255<br>
 cl_teammate_color_5 | cl | Default: 189 44 150 255<br>
 cl_teammate_colors_show | cl, a, release | Default: 1<br>In competitive, 1 = show teammates as separate colors in the radar, scoreboard, etc., 2 = show colors and letters
-cl_test_list_entities | cl, cheat | test-list entities
+cl_test_list_entities | cl | test-list entities
 cl_tickpacket_desired_queuelength | user | Default: 0<br>This value, multiplied by the tick interval, is added to cl_tickpacket_recvmargin_desired to obtain the effective desired recv margin.
 cl_tickpacket_recvmargin_adjust_limit |  | Default: 5<br>Recvmargin-based usercommand pacing will not speed up or slow down command pacing by more than N% compared to realtime
 cl_tickpacket_recvmargin_desired |  | Default: 5<br>Recvmargin-based usercommand pacing will try to maintain N ms margin between user command arriving at the server and the server needing that user command.  See also cl_tickpacket_desired_queuelength.
@@ -1046,7 +1026,6 @@ cl_tickpacket_recvmargin_minsamples |  | Default: 10<br>Recvmargin-based usercom
 cl_tickpacket_recvmargin_spew_interval | release | Default: 0<br>
 cl_tickpacket_recvmargin_timeconstant |  | Default: 0.4<br>Recvmargin-based usercommand pacing will remove 63.2% of the error in N seconds
 cl_tickpacket_recvmargin_window |  | Default: 4<br>Recvmargin-based usercommand pacing will use past N seconds
-cl_tickpacket_send_every_tick |  | Default: true<br>Send a network packet each time we generate a new usercommand, even if our frame rate is slow and we generate multiple commands in one frame
 cl_ticks_net_print_threshold | release | Default: 2<br>Print a message if network issues cause problems with server snapshots of user commands not being available when needed, if the percentage (0...100) exceeds this value.  A value of 0 will cause the message to always print each time it is calculated
 cl_ticks_warning_level | release | Default: 0<br>Print a message about problems with ticks and interpolation.  0=never, 1=warnings, 2=all, even if hidden by interpolation
 cl_ticktiming | norecord, release | {print\|&lt;interval&gt;} \[summary\|detail\]  Print timing stats now, or set report interval
@@ -1056,7 +1035,7 @@ cl_tracer_whiz_distance | cl | Default: 72<br>
 cl_tracer_whiz_infront_distance | cl | Default: 32<br>
 cl_track_aim_head_log_closest | cl | Default: false<br>Log when closest distance to head was reached and what it was
 cl_track_aim_head_threshold | cl | Default: 0<br>Notify render device when rendering a frame with enemy head within threshold distance
-cl_track_render_eye_angles | cl, cheat | Default: false<br>Spew render eye angles
+cl_track_render_eye_angles | cl | Default: false<br>Spew render eye angles
 cl_trueview_show_doa_predictions | cl, release | Default: true<br>If true, trueview will recreate the original player experience, including commands that were predicted clientside but never executed on the server because the player was dead when they arrived.
 cl_trueview_show_status | cl, release | Default: 2<br>0=Never; 1=Only if there is a problem; 2=always
 cl_ui_particles_destroy_when_not_painting | cl | Default: true<br>
@@ -1074,34 +1053,28 @@ cl_view_near_hud_player_eye_dist | cl | Default: 20<br>
 cl_view_near_other_player_eye_dist | cl | Default: 16<br>
 cl_viewing_vanity_loadout | sv, cl, user | Default: false<br>
 cl_viewmodelsclonedasworld | cl | Default: true<br>
-cl_viewtarget_clamp | cl | Default: true<br>
 cl_voiceenabled | cl | Default: true<br>
 cl_voip_lobby_audio_volume | cl | Default: 0<br>Lobby voip stream audio volume
 cl_vrr_recommendation_dont_show_again | cl, a, release | Default: false<br>
 cl_vsnd_morph_override_ease_enabled | cl | Default: true<br>Controls whether the compiled in vsnd morph data ease in/out values are used or values set from the convars (cl_vsnd_morph_override_ease_in, cl_vsnd_morph_override_ease_out) are used
 cl_vsnd_morph_override_ease_in | cl | Default: 0.2<br>If cl_enable_vsnd_morph_override_ease_enabled is true, ease into vsnd morph driven animation over the specified number of seconds.
 cl_vsnd_morph_override_ease_out | cl | Default: 0.2<br>If cl_enable_vsnd_morph_override_ease_enabled is true, ease out of vsnd morph driven animation over the specified number of seconds.
-cl_wallbang_heavy_threshold | cl, cheat, release | Default: 22<br>The Threshold where to switch from Light to Heavy Wallbang tracer
-cl_weapon_clip_thinwalls | cl, rep, cheat | Default: true<br>
-cl_weapon_clip_thinwalls_debug | cl, rep, cheat | Default: false<br>
-cl_weapon_clip_thinwalls_lock | cl, rep, cheat | Default: false<br>
-cl_weapon_clip_thinwalls_pitchlimit_down | cl, rep, cheat | Default: 67<br>
-cl_weapon_clip_thinwalls_pitchlimit_up | cl, rep, cheat | Default: 77<br>
+cl_wallbang_heavy_threshold | cl, release | Default: 22<br>The Threshold where to switch from Light to Heavy Wallbang tracer
 cl_weapon_debug_print_accuracy | cl, rep | Default: false<br>
-cl_weapon_debug_show_accuracy | cl, cheat, release | Default: 0<br>Draws a circle representing the effective range with every shot.
-cl_weapon_debug_show_accuracy_duration | cl, cheat, release | Default: 10<br>
+cl_weapon_debug_show_accuracy | cl, release | Default: 0<br>Draws a circle representing the effective range with every shot.
+cl_weapon_debug_show_accuracy_duration | cl, release | Default: 10<br>
 cl_weapon_selection_rarity_color | cl, a, release | Default: false<br>
 cl_workshop_map_download_timeout | cl | Default: 120<br>
 cl_yawspeed | cl | Default: 210<br>
 clear | norecord, release | Clear console output.
-clear_bombs | sv, cheat | 
+clear_bombs | sv | 
 clear_debug_flags_on_death | sv | Default: true<br>
 clearall | norecord, release | Clear console output from all views.
-cli_ent_attachments | cl, cheat | Displays the interpolated attachment points on an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cli_ent_hitbox | cl, cheat | Displays the skeleton for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cli_ent_pivot | cl, cheat | Displays the interpolated pivot for the given entity(ies).<br>	(y=up=green, z=forward=blue, x=left=red). <br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cli_ent_skeleton | cl, cheat | Displays the skeleton for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-cli_ent_vcollide_wireframe | cl, cheat | Displays the interpolated vcollide wireframe pm am entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cli_ent_attachments | cl | Displays the interpolated attachment points on an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cli_ent_hitbox | cl | Displays the skeleton for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cli_ent_pivot | cl | Displays the interpolated pivot for the given entity(ies).<br>	(y=up=green, z=forward=blue, x=left=red). <br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cli_ent_skeleton | cl | Displays the skeleton for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+cli_ent_vcollide_wireframe | cl | Displays the interpolated vcollide wireframe pm am entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 clientport | release | Default: 0<br>If non-zero, client binds port to specific address.  Usually you should leave this blank to use a different random system-assigned port for each connection.
 closecaption | cl, a, user | Default: false<br>Enable close captioning.
 cloth_debug_draw | cl | Default: 0<br>
@@ -1119,7 +1092,7 @@ clutch_mode_toggle | cl, release | Toggle clutch mode convar
 cmd |  | Forward command to server.
 cojob_lock_hold_warning_threshold_ms | sv, cl, rep | Default: 10000<br>How long in milliseconds before we warn about lock hold duration
 cojob_max_no_yield_time_us | sv, cl, rep | Default: 3000<br>Will spew if a job takes longer than the specified number of microseconds
-collect_entity_model_name | sv, cheat | Collect model names of the entities you're pointing at
+collect_entity_model_name | sv | Collect model names of the entities you're pointing at
 commentary | sv, a | Default: false<br>Desired commentary mode state.
 commentary_available | sv | Default: false<br>Automatically set by the game when a commentary file is available for the current map.
 commentary_cvarsnotchanging | sv | 
@@ -1132,7 +1105,7 @@ composite_material_use_bc7 | cl | Default: true<br>
 composite_material_use_gpu | cl | Default: true<br>
 composite_material_use_gpu_endpoint_optimization | cl | Default: false<br>
 composite_material_use_gpu_perceptual_error_metric | cl | Default: true<br>
-compositematerial_showdebugwindow | cl, a, rep, cheat | Default: false<br>Source2/Composite Material Debug
+compositematerial_showdebugwindow | cl, a, rep | Default: false<br>Source2/Composite Material Debug
 con_enable | a | Default: false<br>Allows the console to be activated.
 con_logfile_suffix |  | Default: <br>Suffix to append to the console log, may be changed to reopen the log
 condump | release | dump the text currently in the console to condumpXX.log
@@ -1181,22 +1154,22 @@ cq_print_every_command | sv, release | Default: false<br>print every command as 
 cq_runtests | sv | Default: false<br>
 cq_runtests_broadcast_info | sv | Default: false<br>send message to remote client console when tests change.
 cq_runtests_interval | sv | Default: 30<br>
-crash | cheat | Crash the client. Optional parameter -- type of crash:<br> 0: read from NULL<br> 1: write to NULL<br> 2: force an Assert<br> 3: infinite loop<br> 4: stack buffer overrun<br> 5: multiple asserts across multiple threads. Optional number of threads (default 5)<br> 6: looping memory leak until we're out of memory. Optional allocation size in bytes (default 1048576/1MB)
-crash_error | cheat | Cause the engine to crash by Plat_FatalError on main thread (Debug!!)
-crash_error_job | cheat | Cause the engine to crash by Plat_FatalError on job thread (Debug!!)
-crash_error_thread | cheat | Cause the engine to crash by Plat_FatalError on non-main thread (Debug!!)
-crash_job | cheat | Cause the engine to crash in a job thread (Debug!!)
-crash_thread | cheat | Cause the engine to crash in a brand new non-main thread (Debug!!)
-create_radius_damage | sv, cheat | Causes radius damage where you're looking, at the passed in radius.
+crash |  | Crash the client. Optional parameter -- type of crash:<br> 0: read from NULL<br> 1: write to NULL<br> 2: force an Assert<br> 3: infinite loop<br> 4: stack buffer overrun<br> 5: multiple asserts across multiple threads. Optional number of threads (default 5)<br> 6: looping memory leak until we're out of memory. Optional allocation size in bytes (default 1048576/1MB)
+crash_error |  | Cause the engine to crash by Plat_FatalError on main thread (Debug!!)
+crash_error_job |  | Cause the engine to crash by Plat_FatalError on job thread (Debug!!)
+crash_error_thread |  | Cause the engine to crash by Plat_FatalError on non-main thread (Debug!!)
+crash_job |  | Cause the engine to crash in a job thread (Debug!!)
+crash_thread |  | Cause the engine to crash in a brand new non-main thread (Debug!!)
+create_radius_damage | sv | Causes radius damage where you're looking, at the passed in radius.
 creditsdone | sv | 
 crosshair | cl, a | Default: true<br>
 cs_AssistDamageThreshold | sv | Default: 25<br>cs_AssistDamageThreshold defines the amount of damage needed to score an assist
-cs_ShowStateTransitions | sv, cheat | Default: -2<br>cs_ShowStateTransitions &lt;ent index or -1 for all&gt;. Show player state transitions.
-cs_hostage_near_rescue_music_distance | sv, cheat | Default: 2000<br>
-cs_logtouchexpansion | sv, cheat | Default: -2<br>cs_logtouchexpansion &lt;ent index or -1 for all&gt;. Log player touch expansion component.
+cs_ShowStateTransitions | sv | Default: -2<br>cs_ShowStateTransitions &lt;ent index or -1 for all&gt;. Show player state transitions.
+cs_hostage_near_rescue_music_distance | sv | Default: 2000<br>
+cs_logtouchexpansion | sv | Default: -2<br>cs_logtouchexpansion &lt;ent index or -1 for all&gt;. Log player touch expansion component.
 cs_minimap_create_output_size | cl, release | Default: 1024<br>Size of minimap texture generated with cs_minimap_create (512 default)
-cs_minimap_renderdoc_capture_enabled | cl, cheat | Default: false<br>
-cs_minimap_rendering_msaa_mode | cl, cheat | Default: 2<br>MSAA mode used for minimap rendering 0-none, 1-2xMSAA, 2-4xMSAA, 3-6X, 4-8X, etc
+cs_minimap_renderdoc_capture_enabled | cl | Default: false<br>
+cs_minimap_rendering_msaa_mode | cl | Default: 2<br>MSAA mode used for minimap rendering 0-none, 1-2xMSAA, 2-4xMSAA, 3-6X, 4-8X, etc
 cs_quit_prompt | cl, release | Quit the game
 cs_steamvideo_max_kills_per_multikill | cl | Default: 5<br>Max number of kills for a single multikill event
 cs_steamvideo_max_time_between_multikill_events | cl | Default: 5<br>Maximum time in seconds between consecutive kills for them to be combined into a multikill event
@@ -1212,42 +1185,43 @@ csgo_fatdemo_enable | sv, cl, rep, release | Default: false<br>
 csgo_fatdemo_output | sv, cl, rep, release | Default: test.fatdem<br>
 csgo_map_preview_scale | cl, a | Default: 0<br>
 csgo_nav_jump_link_detour_threshold | sv, rep | Default: 1500<br>don't traverse a jump link if there's a detour that costs less than this amount
-csgo_use_fullsort_for_opaque | cl, cheat | Default: true<br>fullsort the opaque pass when there wasn't a depth prepass
+csgo_use_fullsort_for_opaque | cl | Default: true<br>fullsort the opaque pass when there wasn't a depth prepass
 csgo_watch_friend_session_exit_current | cl, server_can_execute | 
-csm_bias_override_0 | cheat | Default: 1<br>
-csm_bias_override_1 | cheat | Default: 1<br>
-csm_bias_override_2 | cheat | Default: 1<br>
-csm_bias_override_3 | cheat | Default: 1<br>
-csm_cascade0_override_dist | cheat | Default: -1<br>
-csm_cascade1_override_dist | cheat | Default: -1<br>
-csm_cascade2_override_dist | cheat | Default: -1<br>
-csm_cascade3_override_dist | cheat | Default: -1<br>
-csm_cascade_viewdir_shadow_bias_scale | cheat | Default: 2<br>
-csm_max_dist_between_caster_and_receiver | cheat | Default: 15000<br>default pushback
+csm_bias_override_0 |  | Default: 1<br>
+csm_bias_override_1 |  | Default: 1<br>
+csm_bias_override_2 |  | Default: 1<br>
+csm_bias_override_3 |  | Default: 1<br>
+csm_cascade0_override_dist |  | Default: -1<br>
+csm_cascade1_override_dist |  | Default: -1<br>
+csm_cascade2_override_dist |  | Default: -1<br>
+csm_cascade3_override_dist |  | Default: -1<br>
+csm_cascade_viewdir_shadow_bias_scale |  | Default: 2<br>
+csm_max_dist_between_caster_and_receiver |  | Default: 15000<br>default pushback
 csm_max_num_cascades_override |  | Default: -1<br>Number of cascades in sunlight shadow
 csm_max_shadow_dist_override |  | Default: -1<br>
-csm_max_visible_dist | cheat | Default: 7500<br>
-csm_res_override_0 | cheat | Default: 0<br>
-csm_res_override_1 | cheat | Default: 0<br>
-csm_res_override_2 | cheat | Default: 0<br>
-csm_res_override_3 | cheat | Default: 0<br>
-csm_shadow_worldview_align_x_to_u | cheat | Default: false<br>
-csm_shadow_worldview_shear_align_z_to_v | cheat | Default: false<br>
-csm_split_log_scalar | cheat | Default: 0.85<br>
-csm_sst_max_visible_dist | cheat | Default: 2000<br>
-csm_sst_pushback_distance | cheat | Default: 1500<br>default pushback
-csm_sst_shadow_focus_region_maxz | cheat | Default: 2000<br>
-csm_sst_shadow_focus_region_minz | cheat | Default: -2000<br>
-csm_viewdir_shadow_bias | cheat | Default: 0<br>
-csm_viewmodel_farz | cheat | Default: 30<br>
-csm_viewmodel_max_shadow_dist | cheat | Default: 21<br>
-csm_viewmodel_max_visible_dist | cheat | Default: 1000<br>
-csm_viewmodel_nearz | cheat | Default: 0.5<br>
+csm_max_visible_dist |  | Default: 7500<br>
+csm_res_override_0 |  | Default: 0<br>
+csm_res_override_1 |  | Default: 0<br>
+csm_res_override_2 |  | Default: 0<br>
+csm_res_override_3 |  | Default: 0<br>
+csm_shadow_worldview_align_x_to_u |  | Default: false<br>
+csm_shadow_worldview_shear_align_z_to_v |  | Default: false<br>
+csm_split_log_scalar |  | Default: 0.85<br>
+csm_sst_max_visible_dist |  | Default: 2000<br>
+csm_sst_pushback_distance |  | Default: 1500<br>default pushback
+csm_sst_shadow_focus_region_maxz |  | Default: 2000<br>
+csm_sst_shadow_focus_region_minz |  | Default: -2000<br>
+csm_sst_shadow_focus_region_thin_compensation | cl | Default: 500<br>
+csm_viewdir_shadow_bias |  | Default: 0<br>
+csm_viewmodel_farz |  | Default: 30<br>
+csm_viewmodel_max_shadow_dist |  | Default: 21<br>
+csm_viewmodel_max_visible_dist |  | Default: 1000<br>
+csm_viewmodel_nearz |  | Default: 0.5<br>
 csm_viewmodel_shadows |  | Default: false<br>
 custom_bot_difficulty | sv, cl, rep, release | Default: 2<br>Bot difficulty for offline play.
-cv_bot_ai_bt_debug_target | sv, rep, cheat | Default: -1<br>Draw the behavior tree of the given bot.
-cv_bot_ai_bt_hiding_spot_show | sv, rep, cheat | Default: false<br>Draw hiding spots.
-cv_bot_ai_bt_moveto_show_next_hiding_spot | sv, rep, cheat | Default: false<br>Draw the hiding spot the bot will check next.
+cv_bot_ai_bt_debug_target | sv, rep | Default: -1<br>Draw the behavior tree of the given bot.
+cv_bot_ai_bt_hiding_spot_show | sv, rep | Default: false<br>Draw hiding spots.
+cv_bot_ai_bt_moveto_show_next_hiding_spot | sv, rep | Default: false<br>Draw the hiding spot the bot will check next.
 cvarlist | release | Show the list of convars/concommands.
 cvarlist_md |  | List all convars/concmds in Markdown format. Format: \[hidden\]
 cyclevar | norecord, release | Cycle through specified convar values.
@@ -1263,31 +1237,33 @@ debug_aim_angle | sv, cl, rep | Default: 0<br>
 debug_async_data_panel_override_state | cl | Default: -1<br>Force ALL async data panels to be in a specific state. -1:disabled, 0:failure, 1:loading, 2:success
 debug_chicken | sv | Default: false<br>Chicken debug info
 debug_destructible_parts | sv, cl, rep | Default: false<br>Draw debug information for destructible parts.
-debug_destructible_parts_enabled | sv, cl, rep, cheat | Default: true<br>Toggle enabling/disabling the destructible parts system for debug.
+debug_destructible_parts_enabled | sv, cl, rep | Default: true<br>Toggle enabling/disabling the destructible parts system for debug.
 debug_destructible_parts_radius_damage | sv, cl, rep | Default: false<br>
 debug_destructible_parts_ttl | sv, cl, rep | Default: 1<br>How long the debug draws stick around for, unless they're per-tick.
 debug_draw_enable | rep | Default: true<br>
-debug_error_model | sv, cl, rep, cheat | Default: false<br>
+debug_error_model | sv, cl, rep | Default: false<br>
+debug_font_name |  | Default: Courier New<br>Debug font name
 debug_font_size |  | Default: 14<br>Font size for the debug font
 debug_hltv | cl, rep, server_can_execute | Default: 0<br>Print out hltv events
 debug_overlay_fullposition | sv | Default: false<br>
 debug_physimpact | sv | Default: false<br>
 debug_purchase_defidx | cl, release, server_can_execute | Purchase an item by defindex
-debug_radial_damage | sv, cl, rep, cheat | Default: false<br>
+debug_radial_damage | sv, cl, rep | Default: false<br>
 debug_shared_random | sv, cl, rep | Default: false<br>
-debug_takedamage_summaries | sv, cheat | Default: false<br>
+debug_takedamage_summaries | sv | Default: false<br>
 debug_video_config_cvars | cl | Default: false<br>
-debug_visibility_monitor | sv, cheat | Default: 0<br>
-debugoverlay_cycle_domain | sv, cheat | Toggles visibility of the debug overlay system.
-debugoverlay_cycle_state | sv, cheat | Toggles visibility of the debug overlay system.
-debugoverlay_dashboard | sv, cheat | Makes the debug overlay dashboard visible.
-debugoverlay_force_respect_ttl | cheat | Default: false<br>Force respect TTL even when clearing scopes
-debugoverlay_hide_imgui | sv, cheat | Hides the overlay.
-debugoverlay_show_text_outline | cheat | Default: false<br>Toggle display of box around text
-debugoverlay_text_scale | a, cheat | Default: 1<br>Scale of the text used for 3d display
-debugoverlay_toggle | sv, cheat | Toggles visibility of the debug overlay system.
+debug_visibility_monitor | sv | Default: 0<br>
+debugoverlay_cycle_domain | sv | Toggles visibility of the debug overlay system.
+debugoverlay_cycle_state | sv | Toggles visibility of the debug overlay system.
+debugoverlay_dashboard | sv | Makes the debug overlay dashboard visible.
+debugoverlay_enable_dotted_dashed |  | Default: true<br>Toggle the use of dotted/dashed debugoverlay lines to indicate source
+debugoverlay_force_respect_ttl |  | Default: false<br>Force respect TTL even when clearing scopes
+debugoverlay_hide_imgui | sv | Hides the overlay.
+debugoverlay_show_text_outline |  | Default: false<br>Toggle display of box around text
+debugoverlay_text_scale | a | Default: 1<br>Scale of the text used for 3d display, but see also debug_font_{size,name}
+debugoverlay_toggle | sv | Toggles visibility of the debug overlay system.
 decalfrequency | sv, nf | Default: 10<br>
-default_fov | cl, cheat | Default: 90<br>
+default_fov | cl | Default: 90<br>
 demo_allow_game_mismatch |  | Default: false<br>Allow playback of demo even if game directories are not matched \[may crash or fail to load\].
 demo_debug |  | Default: 0<br>Turn on demo debug spew.
 demo_flush | a | Default: false<br>Flush writing the demo file every network update
@@ -1306,7 +1282,7 @@ demo_pause_at_end | cl, release | Default: true<br>Pause demo playback when the 
 demo_pauseatservertick | release | Pauses when the 'render time' reaches the specified tick.
 demo_playback_override_settings | cl | Default: false<br>
 demo_quitafterplayback | release | Default: false<br>Quits game after demo playback.
-demo_recordcommands | cheat | Default: true<br>Record commands typed at console into .dem files.
+demo_recordcommands |  | Default: true<br>Record commands typed at console into .dem files.
 demo_resume | release | Resumes demo playback.
 demo_skip_to_shot_seconds_before | cl, release | Default: 2<br>How many seconds before the shot to skip to when skipping to a specific shot ID.
 demo_step_tick | release | Play for N ticks (default=1) and then pause.
@@ -1320,10 +1296,10 @@ demolist | release | Print demo sequence list.
 demoui | cl, release | Show/hide demo playback ui
 destructible_parts_destroy_parts_when_gibbing | sv, cl, rep | Default: true<br>
 dev_add_onground_on_spawn | sv, release | Default: false<br>Should we mess with the ground flag when we spawn? (I don't think we should). If we don't hit the assert in CCSPlayer_MovementServices::ProcessMovement, we should remove this by Dec 2022.
-dev_create_bhop_reports | sv, cl, rep, cheat | Default: false<br>Whether we should create bhop reports when you jump. Reports are created for the client and server and are numbered monotonically
-dev_create_move_report | sv, cl, rep, cheat | Default: false<br>Whether we should create move reports when you push movement keys. Reports are created for the server and are numbered monotonically
+dev_create_bhop_reports | sv, cl, rep | Default: false<br>Whether we should create bhop reports when you jump. Reports are created for the client and server and are numbered monotonically
+dev_create_move_report | sv, cl, rep | Default: false<br>Whether we should create move reports when you push movement keys. Reports are created for the server and are numbered monotonically
 dev_create_sensitivity_report | cl | Default: 0<br>
-dev_create_smooth_motion_report | cl, rep, cheat | Default: false<br>
+dev_create_smooth_motion_report | cl, rep | Default: false<br>
 dev_cs_force_disable_move | sv, cl, rep | Default: false<br>forcibly prevent players from moving
 dev_cs_frame_firing_enable | sv, cl, rep | Default: true<br>Enable that firing will pretend like it's happening on frames.
 dev_cs_frame_firing_insert_idle_pose_now | sv, cl, rep | Default: true<br>Should we insert the idle pose at this time to make the animation interpolation punchier?
@@ -1350,37 +1326,37 @@ diffcheck_spew |  | Default: true<br>Actually show diffcheck results.
 diffcheck_spew_diff_filter |  | Default: <br>Show diff with matching filter substring only.
 diffcheck_spew_diff_only |  | Default: false<br>Show diff only.
 differences | release | Show all convars which are not at their default values (optional restricted to specific flags).
-disable_dynamic_prop_loading | sv, cheat | Default: false<br>If non-zero when a map loads, dynamic props won't be loaded
+disable_dynamic_prop_loading | sv | Default: false<br>If non-zero when a map loads, dynamic props won't be loaded
 disable_priority_boost |  | Disable focus based priority boost
 disable_source_soundscape_trace | sv | Default: false<br>Bypasses lookup of soundscapes for indvidual audio sources when enabled.
 disconnect | release | Disconnect from server
-display_game_events | sv, cheat | Default: false<br>
-dlight_debug | cl, cheat | Creates a dlight in front of the player
+display_game_events | sv | Default: false<br>
+dlight_debug | cl | Creates a dlight in front of the player
 dm_reset_spawns | sv | 
 dm_togglerandomweapons | cl, server_can_execute | Turns random weapons in deathmatch on/off
 dota_enable_spatial_audio | release | Default: false<br>Flag to enable spatial audio in Dota 2.
 dota_spatial_audio_mix | release | Default: 1<br>Mix value to blend spatial and non-spatial audio in Dota 2.
-drawcross | sv, cheat | Draws a cross at the given location<br>	Arguments: x y z
-drawline | sv, cheat | Draws line between two 3D Points.<br>	Green if no collision<br>	Red is collides with something<br>	Arguments: x1 y1 z1 x2 y2 z2
+drawcross | sv | Draws a cross at the given location<br>	Arguments: x y z
+drawline | sv | Draws line between two 3D Points.<br>	Green if no collision<br>	Red is collides with something<br>	Arguments: x1 y1 z1 x2 y2 z2
 drawoverviewmap | cl | Draws the overview map
 drawradar | cl | Draws HUD radar
-drop_hostage | sv, cheat | drop held hostage
+drop_hostage | sv | drop held hostage
 ds_workshop_changelevel | sv, release | Changelevel to an available workshop map by name
 ds_workshop_listmaps | sv, release | Dump workshop maps available on this server
 dsp_automatic | demo | Default: 0<br>
 dsp_db_min | demo | Default: 80<br>
 dsp_db_mixdrop | demo | Default: 0.5<br>
-dsp_dist_max | cheat, demo | Default: 1440<br>
-dsp_dist_min | cheat, demo | Default: 0<br>
+dsp_dist_max | demo | Default: 1440<br>
+dsp_dist_min | demo | Default: 0<br>
 dsp_mix_max | demo | Default: 0.8<br>
 dsp_mix_min | demo | Default: 0.2<br>
-dsp_off | cheat | Default: false<br>
+dsp_off |  | Default: false<br>
 dsp_vol_2ch | demo | Default: 1<br>
 dsp_vol_4ch | demo | Default: 0.5<br>
 dsp_vol_5ch | demo | Default: 0.5<br>
 dsp_volume | a, demo | Default: 0.8<br>
 dump_audio_input |  | Default: false<br>
-dump_entity_report | cl, cheat | List all client-side entities in the scene
+dump_entity_report | cl | List all client-side entities in the scene
 dump_globals | sv | Dump all global entities/states
 dump_loc_token |  | List information on the given token
 dump_localization_files |  | List all loaded localization files
@@ -1390,7 +1366,7 @@ dump_panorama_render_command_stats |  |
 dump_portrait_world_info_with_debug_name_containing | cl | 
 dump_response_symbols | sv | print all response symbols to the console
 dump_secondary_scene_worlds | cl | Lists secondary scene worlds and ref counts
-dumpparticlelist | cheat | Print out information on existing particle systems
+dumpparticlelist |  | Print out information on existing particle systems
 dumpstringtable |  | Usage:  dumpstringtable &lt;tablename \|all&gt; &lt;sv \| cl&gt; &lt;verbose \| simple&gt; &lt;element&gt;      Print string tables to console, verbose to dump data, simple to show name and count only, can specifiy a single numeric element index to restrict spew.
 echo |  | Echo text to console.
 echoln | release | Echo the command arguments on the console
@@ -1404,7 +1380,7 @@ enable_boneflex | cl, a | Default: true<br>
 enable_priority_boost |  | Disable focus based priority boost
 endmatch_votenextmap | cl, server_can_execute | Votes for the next map at the end of the match
 endmovie | norecord | Stop recording movie frames.
-endround | sv, cheat | End the current round.
+endround | sv | End the current round.
 engine_accurate_input_processing_delta_time |  | Default: false<br>When true, elapsed time given to the input processing will be the time elapsed since the last input processing. This is only relevant when input is processed multiple times per frame ( i.e. multiple ticks per frame)
 engine_allow_multiple_simulates_per_frame |  | Default: false<br>When the client is catching up in low frame rate situations, should we run client simulate more than once a frame?
 engine_allow_multiple_ticks_per_frame |  | Default: true<br>When the client is catching up in low frame rate situations, should we run tick more than once a frame?
@@ -1434,73 +1410,71 @@ engine_show_frame_ticks |  | Default: false<br>
 engine_sse42 |  | Default: true<br>turn on sse4.2 optimizations in the engine
 engine_update_resource_system_during_low_latency_sleep |  | Default: true<br>
 english | cl, user | Default: true<br>If set to 1, running the english language set of assets.
-ent_absbox | sv, cheat | Displays the total bounding box for the given entity(s) in green.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_actornames | sv, cheat | Displays the entity name for all entities that have ShouldDisplayInActorNames true in code
-ent_actornames_font | sv, cl, rep, cheat | Default: Consolas<br>ent_actornames font name
-ent_actornames_fontsize | sv, cl, rep, cheat | Default: 24<br>ent_actornames font size
-ent_animgraph2_open_graph | sv, cheat | Opens the graph and starts live debugging the AG2 graph for a given entity<br>	Arguments: entityName<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_animgraph2_record | sv, cheat | Starts live debugging & recording the AG2 graph for a given entity<br>	Arguments: entityName<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_animgraph_debug | sv, cheat | Displays debug draws about the given entity(ies) animgraph<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_animgraph_record | sv, cheat | Toggles recording of animgraph replay of the given entity(s)<br>	Arguments: entityName automaticallyOpenInAnimgraphEditor<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_animgraph_setvar | sv, cheat | Sets a variable on the animgraph of the given entity(s)<br>	Arguments:   &lt;varname&gt;=&lt;value&gt;	&lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
-ent_attachment_filter_substrings | sv, cheat | Default: <br>If an attachment's name has any of the given substrings in it, it will be displayed. Substrings can be delimited by the ',' or '\|' character.
-ent_attachments | sv, cheat | Displays the attachment points on an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_autoaim | sv, cheat | Displays the entity's autoaim radius.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_bbox | sv, cheat | Displays the movement bounding box for the given entity(ies) in orange.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_absbox | sv | Displays the total bounding box for the given entity(s) in green.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_actornames | sv | Displays the entity name for all entities that have ShouldDisplayInActorNames true in code
+ent_actornames_font | sv, cl, rep | Default: Consolas<br>ent_actornames font name
+ent_actornames_fontsize | sv, cl, rep | Default: 24<br>ent_actornames font size
+ent_animgraph2_open_graph | sv | Opens the graph and starts live debugging the AG2 graph for a given entity<br>	Arguments: entityName<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_animgraph2_record | sv | Starts live debugging & recording the AG2 graph for a given entity<br>	Arguments: entityName<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_animgraph_debug | sv | Displays debug draws about the given entity(ies) animgraph<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_attachment_filter_substrings | sv | Default: <br>If an attachment's name has any of the given substrings in it, it will be displayed. Substrings can be delimited by the ',' or '\|' character.
+ent_attachments | sv | Displays the attachment points on an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_autoaim | sv | Displays the entity's autoaim radius.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_bbox | sv | Displays the movement bounding box for the given entity(ies) in orange.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 ent_bitvec_enable | sv | Default: false<br>
-ent_bonemergeplayer | sv, cheat | Bonemerge the player onto the entity under the crosshairs
-ent_call | sv, cheat | ent_call &lt;funcname&gt; &lt;option:entname&gt; calls function on current look target or filtername, checks on ent, then root, then mode, then map scope
+ent_bonemergeplayer | sv | Bonemerge the player onto the entity under the crosshairs
+ent_call | sv | ent_call &lt;funcname&gt; &lt;option:entname&gt; calls function on current look target or filtername, checks on ent, then root, then mode, then map scope
 ent_cancelpendingentfires | sv | Cancels all ent_fire created outputs that are currently waiting for their delay to expire.
 ent_characterize | sv | Spew PVS debug info for entity
-ent_clear_debug_overlays | sv, cheat | Clears all debug overlays
-ent_create | sv, cheat | Creates an entity of the given designer or subclass name where the player is looking.
+ent_clear_debug_overlays | sv | Clears all debug overlays
+ent_create | sv | Creates an entity of the given designer or subclass name where the player is looking.
 ent_debug_anim | cl | Use the specified entity for animation debugging.
 ent_debug_draw_thinkers | sv, cl, rep | Default: false<br>
 ent_debug_origin_changes | sv | turn on, off, or toggle origin changes on server for entity by index
-ent_find | sv, cheat | Find and list all entities with classnames or targetnames that contain the specified substrings.<br>Format: find_ent &lt;substring&gt;<br>
-ent_find_index | sv, cheat | Display data for entity matching specified index.<br>Format: find_ent_index &lt;index&gt;<br>
-ent_fire | sv, cheat | Usage:<br>   ent_fire &lt;target&gt; \[action\] \[value\] \[delay\]<br>
-ent_fire_output | sv, cheat | Usage:<br>   ent_fire_output &lt;target&gt; \[output name\] \[value\] \[delay\]<br>
-ent_gib | sv, cheat | Gibs the given entity(s)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_grab | sv, cheat | grabs the object in front of the player. Options: -loose -multiple -toggle
-ent_hierarchy | sv, cheat | Prints the entity hierarchy tree rooted at the specified ent(s)
-ent_hitbox | sv, cheat | Displays the hitboxes for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_info | sv, cheat | Usage:<br>   ent_info &lt;class name&gt;<br>
+ent_find | sv | Find and list all entities with classnames or targetnames that contain the specified substrings.<br>Format: find_ent &lt;substring&gt;<br>
+ent_find_index | sv | Display data for entity matching specified index.<br>Format: find_ent_index &lt;index&gt;<br>
+ent_fire | sv | Usage:<br>   ent_fire &lt;target&gt; \[action\] \[value\] \[delay\]<br>
+ent_fire_output | sv | Usage:<br>   ent_fire_output &lt;target&gt; \[output name\] \[value\] \[delay\]<br>
+ent_gib | sv | Gibs the given entity(s)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_grab | sv | grabs the object in front of the player. Options: -loose -multiple -toggle
+ent_hierarchy | sv | Prints the entity hierarchy tree rooted at the specified ent(s)
+ent_hitbox | sv | Displays the hitboxes for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_info | sv | Usage:<br>   ent_info &lt;class name&gt;<br>
 ent_joint_axis_size | sv | Default: 4<br>
-ent_joint_filter_substrings | sv, cheat | Default: <br>If a joint's name has any of the given substrings in it, it will be displayed. Substrings can be delimited by the ',' or '\|' character.
-ent_joint_lines | sv, cheat | Default: true<br>Draw a line between a rendered joint and its parent.
-ent_joint_names | sv, cheat | Default: true<br>Draw the name of a rendered joint.
+ent_joint_filter_substrings | sv | Default: <br>If a joint's name has any of the given substrings in it, it will be displayed. Substrings can be delimited by the ',' or '\|' character.
+ent_joint_lines | sv | Default: true<br>Draw a line between a rendered joint and its parent.
+ent_joint_names | sv | Default: true<br>Draw the name of a rendered joint.
 ent_joint_only_ik_joints | sv | Default: false<br>
 ent_joint_use_bind_pose | sv | Default: false<br>
-ent_joints | sv, cheat | Displays the joint names + axes an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_kill | sv, cheat | Kills the given entity(s)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_joints | sv | Displays the joint names + axes an entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_kill | sv | Kills the given entity(s)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 ent_list_report | sv | Reports all list of all entities in a map, one by one
-ent_messages | sv, cheat | Toggles input/output message display for the selected entity(ies).  The name of the entity will be displayed as well as any messages that it sends or receives.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_messages_draw | sv, cl, rep, cheat | Default: false<br>Visualizes all entity input/output activity.
-ent_name | sv, cheat | Displays the entity name
-ent_orient | sv, cheat | Orient the specified entity to match the player's angles. By default, only orients target entity's YAW. Use the 'allangles' option to orient on all axis.<br>	Format: ent_orient &lt;entity name&gt; &lt;optional: allangles&gt;
-ent_picker | sv, cheat | Toggles 'picker' mode.  When picker is on, the bounding box, pivot and debugging text is displayed for whatever entity the player is looking at.<br>	Arguments:	full - enables all debug information
-ent_pivot | sv, cheat | Displays the pivot for the given entity(ies).<br>	(y=up=green, z=forward=blue, x=left=red). <br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_pivot_size | sv, a, cheat | Default: 20<br>
-ent_rbox | cl, cheat | Displays the total bounding box for the given entity(s) in green.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_remove | sv, cheat | Removes the given entity(s)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_remove_all | sv, cheat | Removes all entities of the specified type<br>	Arguments:   	{entity_name} / {class_name} 
+ent_messages | sv | Toggles input/output message display for the selected entity(ies).  The name of the entity will be displayed as well as any messages that it sends or receives.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_messages_draw | sv, cl, rep | Default: false<br>Visualizes all entity input/output activity.
+ent_name | sv | Displays the entity name
+ent_orient | sv | Orient the specified entity to match the player's angles. By default, only orients target entity's YAW. Use the 'allangles' option to orient on all axis.<br>	Format: ent_orient &lt;entity name&gt; &lt;optional: allangles&gt;
+ent_picker | sv | Toggles 'picker' mode.  When picker is on, the bounding box, pivot and debugging text is displayed for whatever entity the player is looking at.<br>	Arguments:	full - enables all debug information
+ent_pivot | sv | Displays the pivot for the given entity(ies).<br>	(y=up=green, z=forward=blue, x=left=red). <br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_pivot_size | sv, a | Default: 20<br>
+ent_rbox | cl | Displays the total bounding box for the given entity(s) in green.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_remove | sv | Removes the given entity(s)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_remove_all | sv | Removes all entities of the specified type<br>	Arguments:   	{entity_name} / {class_name} 
 ent_reveal_in_hammer | sv | Given a mapname and hammer uniqueid, reveal it in Hammer
 ent_revert_dormancy_change | cl | Default: false<br>
-ent_rotate | sv, cheat | Rotates an entity by a specified # of degrees
-ent_scale | sv, cheat | Scales entities.	Arguments: &lt;scale factor&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
-ent_scenehierarchy | sv, cheat | Prints the entity scenenode hierarchy tree rooted at the specified ent(s)
-ent_script_dump | sv, cheat | Dumps the names and values of this entity's script scope to the console<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_select | sv, cheat | Select or deselects the given entities(s) for later manipulation<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_setang | sv, cheat | Set entity angles
-ent_setname | sv, cheat | Sets the targetname of the given entity(s)<br>	Arguments:   	&lt;new entity name&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
-ent_setpos | sv, cheat | Move entity to position
-ent_show_contexts | sv, cheat | Default: false<br>Show entity contexts in ent_text display
-ent_show_damage | sv, cheat | Sets damage display mode.  When on, you will see the amount of damage dealt over the target's head.
-ent_show_response_criteria | sv, cheat | Print, to the console, an entity's current criteria set used to select responses.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_showonlyattachment | sv, cheat | Default: <br>
-ent_skeleton | sv, cheat | Displays the skeleton for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_skeleton_duration | sv, cl, rep, cheat | Default: 0<br>Duration of ent_skeleton display
+ent_rotate | sv | Rotates an entity by a specified # of degrees
+ent_scale | sv | Scales entities.	Arguments: &lt;scale factor&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
+ent_scenehierarchy | sv | Prints the entity scenenode hierarchy tree rooted at the specified ent(s)
+ent_script_dump | sv | Dumps the names and values of this entity's script scope to the console<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_select | sv | Select or deselects the given entities(s) for later manipulation<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_setang | sv | Set entity angles
+ent_setname | sv | Sets the targetname of the given entity(s)<br>	Arguments:   	&lt;new entity name&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
+ent_setpos | sv | Move entity to position
+ent_show_contexts | sv | Default: false<br>Show entity contexts in ent_text display
+ent_show_damage | sv | Sets damage display mode.  When on, you will see the amount of damage dealt over the target's head.
+ent_show_response_criteria | sv | Print, to the console, an entity's current criteria set used to select responses.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_showonlyattachment | sv | Default: <br>
+ent_skeleton | sv | Displays the skeleton for the given entity(ies).<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_skeleton_duration | sv, cl, rep | Default: 0<br>Duration of ent_skeleton display
 ent_skeleton_only_ik_joints | sv | Default: false<br>
 ent_skeleton_snapshot | sv | Default: false<br>
 ent_spew_derived_classes | sv | Prints out all entity classes which inherit from a specified base class
@@ -1508,30 +1482,30 @@ ent_steadystate_batchsize | sv | Default: 20<br>Max number of entities to transm
 ent_steadystate_delay | sv | Default: 5<br>Time in seconds without network state changes until an entity is considered for trickle updates
 ent_steadystate_enable | sv | Default: false<br>
 ent_steadystate_interval | sv | Default: 0.1<br>Rate at which entities can be trickled to players
-ent_teleport | sv, cheat | Teleport the specified entity to where the player is looking.<br>	Format: ent_teleport &lt;entity name&gt;
+ent_teleport | sv | Teleport the specified entity to where the player is looking.<br>	Format: ent_teleport &lt;entity name&gt;
 ent_test_interpolation | cl | Default: false<br>
-ent_text | sv, cheat | Displays text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_text256 | sv, cheat | Displays text debugging information about the given entity(ies) \[within 256 units of the player\] on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_text_clear | sv, cheat | Hide text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_text_filter | sv, cheat | Set which ent_text filters you want: 
-ent_text_flags_active | sv, a, cheat | Default: -1<br>
-ent_text_no_name_really_i_mean_it | sv, cheat | Default: false<br>
-ent_text_radius | sv, cheat | Displays text debugging information about the given entity(ies) \[near the player\] on top of the entity (See Overlay Text)<br>	2 Arguments:   	&lt;Radius&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
-ent_text_sticky_add | sv, cheat | Adds to list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_text_sticky_clear | sv, cheat | Clears the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_text_sticky_dump | sv, cheat | Spews the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_text_sticky_remove | sv, cheat | Removes from the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-ent_ungrab | sv, cheat | un-grabs all objects
-ent_vcollide_wireframe | sv, cheat | Displays the interpolated vcollide wireframe pm am entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_text | sv | Displays text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_text256 | sv | Displays text debugging information about the given entity(ies) \[within 256 units of the player\] on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_text_clear | sv | Hide text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_text_filter | sv | Set which ent_text filters you want: 
+ent_text_flags_active | sv, a | Default: -1<br>
+ent_text_no_name_really_i_mean_it | sv | Default: false<br>
+ent_text_radius | sv | Displays text debugging information about the given entity(ies) \[near the player\] on top of the entity (See Overlay Text)<br>	2 Arguments:   	&lt;Radius&gt; &lt;{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}&gt;
+ent_text_sticky_add | sv | Adds to list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_text_sticky_clear | sv | Clears the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_text_sticky_dump | sv | Spews the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_text_sticky_remove | sv | Removes from the list of names to display text debugging information about the given entity(ies) on top of the entity (See Overlay Text)<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_ungrab | sv | un-grabs all objects
+ent_vcollide_wireframe | sv | Displays the interpolated vcollide wireframe pm am entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 ent_viewentity | sv | Selects the picked entity as the view entity
-ent_viewoffset | sv, cheat | Displays the eye position for the given entity(ies) in red.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+ent_viewoffset | sv | Displays the eye position for the given entity(ies) in red.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 ent_viewpunch | sv | Used to debug ViewPunch
-ent_visibility_traces | sv, cheat | Displays visibility traces for the given entity<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-entity_log_load_unserialize | sv, cl, rep, cheat | Default: 0<br>Output unserialization of entities on map load. 0 - off, 1 - client/server, 2 - server, 3 - client
+ent_visibility_traces | sv | Displays visibility traces for the given entity<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+entity_log_load_unserialize | sv, cl, rep | Default: 0<br>Output unserialization of entities on map load. 0 - off, 1 - client/server, 2 - server, 3 - client
 entity_lump_list |  | List all known entity lumps
 entity_lump_spew |  | Dump the contents of an entity lump
-entityreport | sv | 
-entitysummary | sv | 
+entityreport | sv | Reports all extant entities. Optional 2nd arg is a substring of a classname that the list will be filtered by.
+entitysummary | sv | Summarizes (by class) all extant entities. Optional 2nd arg is a substring of a classname that the list will be filtered by.
 ents | sv | List server entities, sorted by spawn group
 eom_local_player_defeat_anim_enabled | cl, a, release | Default: true<br>
 error_message_explain_pure | cl, server_can_execute | Take user to Steam support article
@@ -1539,14 +1513,14 @@ error_message_explain_unsigned | cl, server_can_execute | Take user to Steam sup
 error_message_explain_vac | cl, server_can_execute | Take user to Steam support article
 escape | release, server_can_execute | Escape key pressed.
 exec | norecord, release | Execute a cfg file
-exec_async | cheat, norecord | Execute a cfg file over time
+exec_async | norecord | Execute a cfg file over time
 execifexists | norecord, release | Execute a cfg file if file exists
-execute_command_every_frame | cheat | Default: <br>
-explode | sv, cheat | Kills the player with explosive damage
-explodevector | sv, cheat | Kills a player applying an explosive force. Usage: explodevector &lt;player&gt; &lt;x value&gt; &lt;y value&gt; &lt;z value&gt;
+execute_command_every_frame |  | Default: <br>
+explode | sv | Kills the player with explosive damage
+explodevector | sv | Kills a player applying an explosive force. Usage: explodevector &lt;player&gt; &lt;x value&gt; &lt;y value&gt; &lt;z value&gt;
 fade_debug_splitscreen_slot | cl | Default: -1<br>
-fadein | sv, cheat | fadein {time r g b}: Fades the screen in from black or from the specified color over the given number of seconds.
-fadeout | sv, cheat | fadeout {time r g b}: Fades the screen to black or to the specified color over the given number of seconds.
+fadein | sv | fadein {time r g b}: Fades the screen in from black or from the specified color over the given number of seconds.
+fadeout | sv | fadeout {time r g b}: Fades the screen to black or to the specified color over the given number of seconds.
 ff_damage_bullet_penetration | sv, cl, rep, release | Default: 0<br>If friendly fire is off, this will scale the penetration power and damage a bullet does when penetrating another friendly player
 ff_damage_decoy_explosion | sv, cl, rep, release | Default: false<br>Enables or disables team damage from decoy detonation
 ff_damage_reduction_bullets | sv, cl, rep, release | Default: 0.1<br>How much to reduce damage done to teammates when shot.  Range is from 0 - 1 (with 1 being damage equal to what is done to an enemy)
@@ -1563,29 +1537,29 @@ filter_player_simulation_time | sv, cl, rep | Default: true<br>
 find | release | Find concommands with the specified string in their name/help text.
 findflags | release | Find concommands by flags.
 fire_use_modifier | sv, cl, rep | Default: false<br>
-firetarget | sv, cheat | 
+firetarget | sv | 
 firstperson | cl, release, server_cannot_query | Switch to firstperson camera.
-fish_debug | cl, cheat | Default: false<br>Show debug info for fish
-fish_dormant | sv, rep, cheat | Default: false<br>Turns off interactive fish behavior. Fish become immobile and unresponsive.
-fog_color | cl, cheat | Default: -1 -1 -1<br>
-fog_colorskybox | cl, cheat | Default: -1 -1 -1<br>
-fog_enable | cl, cheat | Default: true<br>Enable fog
-fog_enableskybox | cl, cheat | Default: true<br>
-fog_end | cl, cheat | Default: -1<br>
-fog_endskybox | cl, cheat | Default: -1<br>
-fog_hdrcolorscale | cl, cheat | Default: -1<br>
-fog_hdrcolorscaleskybox | cl, cheat | Default: -1<br>
-fog_maxdensity | cl, cheat | Default: -1<br>
-fog_maxdensityskybox | cl, cheat | Default: -1<br>
-fog_override | cl, cheat | Default: 0<br>Overrides the map's fog settings (-1 populates fog_ vars with map's values)
-fog_override_color | cheat | Sets the fog color override
-fog_override_enable | cheat | Default: false<br>Use fog_override convars instead of world fog data
-fog_override_end | cheat | Default: 3500<br>
-fog_override_exponent | cheat | Default: 2<br>
-fog_override_max_density | cheat | Default: 0.4<br>
-fog_override_start | cheat | Default: 1000<br>
-fog_start | cl, cheat | Default: -1<br>
-fog_startskybox | cl, cheat | Default: -1<br>
+fish_debug | cl | Default: false<br>Show debug info for fish
+fish_dormant | sv, rep | Default: false<br>Turns off interactive fish behavior. Fish become immobile and unresponsive.
+fog_color | cl | Default: -1 -1 -1<br>
+fog_colorskybox | cl | Default: -1 -1 -1<br>
+fog_enable | cl | Default: true<br>Enable fog
+fog_enableskybox | cl | Default: true<br>
+fog_end | cl | Default: -1<br>
+fog_endskybox | cl | Default: -1<br>
+fog_hdrcolorscale | cl | Default: -1<br>
+fog_hdrcolorscaleskybox | cl | Default: -1<br>
+fog_maxdensity | cl | Default: -1<br>
+fog_maxdensityskybox | cl | Default: -1<br>
+fog_override | cl | Default: 0<br>Overrides the map's fog settings (-1 populates fog_ vars with map's values)
+fog_override_color |  | Sets the fog color override
+fog_override_enable |  | Default: false<br>Use fog_override convars instead of world fog data
+fog_override_end |  | Default: 3500<br>
+fog_override_exponent |  | Default: 2<br>
+fog_override_max_density |  | Default: 0.4<br>
+fog_override_start |  | Default: 1000<br>
+fog_start | cl | Default: -1<br>
+fog_startskybox | cl | Default: -1<br>
 fog_volume_debug | sv | Default: false<br>If enabled, prints diagnostic information about the current fog volume
 font_show_glyph_miss |  | Default: false<br>
 footstep_audible_threshold | sv, cl, rep | Default: 0.55<br>
@@ -1595,11 +1569,11 @@ force_assert |  | Fire an assertion failure
 force_fatal_error |  | Fire a fatal error
 force_floating_point_exceptions |  | Enable floating point exceptions to find bugs
 force_hibernate |  | Force toggle hibernation state
-force_spectator_only_tools | cl, cheat | Default: false<br>
-fov_cs_debug | cl, cheat | Default: 0<br>Sets the view fov if cheats are on.
-fov_cs_near_z | cl, cheat | Default: 6.5<br>
-fov_cs_super_ultrawide_near_z | cl, cheat | Default: 1<br>
-fov_cs_ultrawide_near_z | cl, cheat | Default: 4<br>
+force_spectator_only_tools | cl | Default: false<br>
+fov_cs_debug | cl | Default: 0<br>Sets the view fov if cheats are on.
+fov_cs_near_z | cl | Default: 6.5<br>
+fov_cs_super_ultrawide_near_z | cl | Default: 1<br>
+fov_cs_ultrawide_near_z | cl | Default: 4<br>
 fov_desired | cl, a, user | Default: 75<br>Sets the base field-of-view.
 fp_trace |  | Toggle field path tracing to file<br>
 fps_max | a, release | Default: 400<br>Frame rate limiter.  0=no limit.  Does not apply to dedicated server.
@@ -1619,7 +1593,7 @@ fs_fake_read_delay_ms | release | Default: 0<br>Add N ms of delay to every low-l
 fs_report_async_io |  | Default: false<br>
 fs_report_long_reads |  | Default: 0<br>0:Off, 1:All (for tracking accumulated duplicate read times), &gt;1:Microsecond threashold
 fs_report_sync_opens | release | Default: 0<br>0:Off, 1:Always, 2:Not during load
-fs_spew_readfieldlist | cheat | index &lt;threshold bytes&gt;: spew changes to ent index, optionally only spewing if update is &gt; than threshold bytes
+fs_spew_readfieldlist |  | index &lt;threshold bytes&gt;: spew changes to ent index, optionally only spewing if update is &gt; than threshold bytes
 fs_warning_mode |  | Default: 0<br>0:Off, 1:Warn main thread, 2:Warn other threads
 func_break_max_pieces | sv, a, rep | Default: 15<br>
 func_break_reduction_factor | sv | Default: 0.5<br>
@@ -1627,18 +1601,23 @@ func_breakdmg_bullet | sv | Default: 0.5<br>
 func_breakdmg_club | sv | Default: 1.5<br>
 func_breakdmg_explosive | sv | Default: 1.25<br>
 func_mover_async_movable_navmesh_updates | sv | Default: true<br>
+func_mover_count | sv | 
 func_mover_debug | sv | Default: false<br>
-func_mover_debug_extra_text | sv | Default: false<br>
+func_mover_debug_all | sv | Default: false<br>
 func_mover_debug_follower | sv | Default: false<br>
+func_mover_debug_parallel | sv | Default: false<br>
+func_mover_debug_showtext | sv | Default: false<br>
+func_mover_debug_verbose | sv | Default: false<br>
+func_mover_enable_debug_all | sv | 
 func_mover_get_speed_override | sv | Default: 0<br>
-func_mover_verbose_log_count | sv | Default: 15<br>
+func_mover_imgui_log_count | sv | Default: 30<br>
 func_rotator_debug | sv | Default: false<br>
 fx_drawmetalspark | cl | Default: true<br>Draw metal spark effects.
-g_debug_angularsensor | sv, cheat | Default: false<br>
-g_debug_constraint_sounds | sv, cheat | Default: false<br>Enable debug printing about constraint sounds.
+g_debug_angularsensor | sv | Default: false<br>
+g_debug_constraint_sounds | sv | Default: false<br>Enable debug printing about constraint sounds.
 g_debug_doors | sv | Default: false<br>
-g_debug_ragdoll_visualize | cl, cheat | Default: false<br>
-g_debug_transitions | sv, cheat | Default: 0<br>Set to 1 and restart the map to be warned if the map has no trigger_transition volumes. Set to 2 to see a dump of all entities & associated results during a transition.
+g_debug_ragdoll_visualize | cl | Default: false<br>
+g_debug_transitions | sv | Default: 0<br>Set to 1 and restart the map to be warned if the map has no trigger_transition volumes. Set to 2 to see a dump of all entities & associated results during a transition.
 g_ragdoll_fadespeed | cl | Default: 600<br>
 g_ragdoll_important_maxcount | sv, cl, rep | Default: 2<br>
 g_ragdoll_lvfadespeed | cl | Default: 100<br>
@@ -1655,16 +1634,16 @@ gameevents_analyze | sv | compare game events across all mods
 gameevents_dumptofile | sv | write gameevents keyvalues (sorted by name) to gameevents_&lt;modname&gt;.txt
 gameevents_showeventlisteners |  | Default: false<br>Show listening addition/removals
 gameevents_showevents |  | Default: 0<br>Dump game events to console. (1 = Show Signaling, 2 = Show Posting also).
-gameinstructor_dump_open_lessons | cl, cheat | Gives a list of all currently open lessons.
-gameinstructor_dump_run_lesson_counts | cl, cheat | Gives a list of lessons that been completed or shown
+gameinstructor_dump_open_lessons | cl | Gives a list of all currently open lessons.
+gameinstructor_dump_run_lesson_counts | cl | Gives a list of lessons that been completed or shown
 gameinstructor_enable | cl, release | Default: false<br>Display in game lessons that teach new players.
-gameinstructor_find_errors | cl, cheat | Default: false<br>Set to 1 and the game instructor will run EVERY scripted command to uncover errors.
+gameinstructor_find_errors | cl | Default: false<br>Set to 1 and the game instructor will run EVERY scripted command to uncover errors.
 gameinstructor_reload_lessons | cl | Shuts down all open lessons and reloads them from the script file.
 gameinstructor_reset_counts | cl | Resets all display and success counts to zero.
 gameinstructor_start_sound_cooldown | cl | Default: 4<br>Number of seconds forced between similar lesson start sounds.
 gameinstructor_teach_lesson | cl | Force a specific lesson to be triggered
-gameinstructor_verbose | cl, cheat | Default: 0<br>Set to 1 for standard debugging or 2 (in combo with gameinstructor_verbose_lesson) to show update actions.
-gameinstructor_verbose_lesson | cl, cheat | Default: <br>Display more verbose information for lessons have this name.
+gameinstructor_verbose | cl | Default: 0<br>Set to 1 for standard debugging or 2 (in combo with gameinstructor_verbose_lesson) to show update actions.
+gameinstructor_verbose_lesson | cl | Default: <br>Display more verbose information for lessons have this name.
 gamestats_file_output_directory | sv | Default: <br>When -gamestatsfileoutputonly is specified, file will be emitted here instead of to modpath<br>
 gameui_activate | release | Shows the game UI
 gameui_allowescape | release | Escape key allowed to hide game UI
@@ -1677,29 +1656,29 @@ gcmd | cl, server_can_execute | Generate a command
 generate_minidump_comment |  | Generate a minidump comment and spew the results to the console
 generate_null_container |  | Generated a nulled out container.
 generate_trash_synth |  | Args: \[Asset directory Path\]
-getpos | cl, cheat | dump position and angles to the console
-getpos_exact | cl, cheat | dump origin and angles to the console
-getposcopy | cl, cheat | dump position and angles to the console and clipboard
-getposcopy_exact | cl, cheat | dump origin and angles to the console and clipboard
+getpos | cl | dump position and angles to the console
+getpos_exact | cl | dump origin and angles to the console
+getposcopy | cl | dump position and angles to the console and clipboard
+getposcopy_exact | cl | dump origin and angles to the console and clipboard
 give | sv | Give item to player.<br>	Arguments: &lt;item_name&gt;
 give_oriented | sv | Give item oriented to player angles.<br>	Arguments: &lt;item_name&gt;
-givecurrentammo | sv, cheat | Give a supply of ammo for current weapon..<br>
+givecurrentammo | sv | Give a supply of ammo for current weapon..<br>
 gl_clear | cl | Default: true<br>
-global_set | sv, cheat | global_set &lt;globalname&gt; &lt;state&gt;: Sets the state of the given env_global (0 = OFF, 1 = ON, 2 = DEAD).
+global_set | sv | global_set &lt;globalname&gt; &lt;state&gt;: Sets the state of the given env_global (0 = OFF, 1 = ON, 2 = DEAD).
 glow_chickens | sv | Default: false<br>Glow chickens with a green outline.
-glow_outline_width | cl, cheat | Default: 6<br>Width of glow outline effect in screen space.
-glow_use_tolerance | cl, rep, cheat | Default: 0.85<br>
-god | sv, cheat | Toggle by default, or 0 to disable and 1 to enable. Player becomes invulnerable.
+glow_outline_width | cl | Default: 6<br>Width of glow outline effect in screen space.
+glow_use_tolerance | cl, rep | Default: 0.85<br>
+god | sv | Toggle by default, or 0 to disable and 1 to enable. Player becomes invulnerable.
 gotv_theater_container | cl, release | Default: <br>Enables GOTV theater mode for the specified container, setting it to 'live' will play top live matches
 gpu_level | cl | Default: 3<br>GPU Level - Default: High
 gpu_mem_level | cl | Default: 2<br>Memory Level - Default: High
 graphcontroller_dumpparams | sv | Print all anim graph parameters for the specified entity.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 grep | release | grep line for pattern, print out matching lines only
-groundlist | sv, cheat | Display ground entity list &lt;index&gt;
-groups | sv, cheat | 
-hairsim_force_fixed_timestep | cheat | Default: true<br>
-hairsim_reset | cheat | Default: false<br>
-healme | sv, cheat | Heals the player.<br>	Arguments: &lt;health to gain&gt;
+groundlist | sv | Display ground entity list &lt;index&gt;
+groups | sv | Show status of all spawn groups.
+hairsim_force_fixed_timestep |  | Default: true<br>
+hairsim_reset |  | Default: false<br>
+healme | sv | Heals the player.<br>	Arguments: &lt;health to gain&gt;
 healthshot_allow_use_at_full | sv, cl, rep, release | Default: true<br>
 healthshot_health | sv, cl, rep, release | Default: 50<br>
 healthshot_healthboost_damage_multiplier | sv, cl, rep, release | Default: 1<br>
@@ -1707,24 +1686,24 @@ healthshot_healthboost_speed_multiplier | sv, cl, rep, release | Default: 1<br>
 healthshot_healthboost_time | sv, cl, rep, release | Default: 1<br>
 help | release | Find help about a convar/concommand.
 hideconsole | norecord, release | Hide the console.
-hidehud | cl, cheat | Default: 0<br>bitmask: 1=weapon selection, 2=flashlight, 4=all, 8=health, 16=player dead, 32=needssuit, 64=misc, 128=chat, 256=crosshair, 512=vehicle crosshair, 1024=in vehicle
+hidehud | cl | Default: 0<br>bitmask: 1=weapon selection, 2=flashlight, 4=all, 8=health, 16=player dead, 32=needssuit, 64=misc, 128=chat, 256=crosshair, 512=vehicle crosshair, 1024=in vehicle
 hideoverviewmap | cl | Hides the overview map
 hideradar | cl | Hides HUD radar
 hinttext_displaytime | cl | Default: 4<br>
 host_force_frametime_to_equal_tick_interval |  | Default: false<br>
 host_force_max_frametime_to_tick_interval |  | Default: false<br>
 host_framerate | release | Default: 0<br>Set to lock per-frame time elapse.
-host_readconfig_ignore_userconfig | cheat | Default: false<br>Whether we should ignore the user config file for reading/writing.
-host_timescale | rep, cheat | Default: 1<br>Prescale the clock by this amount.
-host_timescale_dec | cheat | Decrement the timescale by one step
-host_timescale_inc | cheat | Increment the timescale by one step
+host_readconfig_ignore_userconfig |  | Default: false<br>Whether we should ignore the user config file for reading/writing.
+host_timescale | rep | Default: 1<br>Prescale the clock by this amount.
+host_timescale_dec |  | Decrement the timescale by one step
+host_timescale_inc |  | Increment the timescale by one step
 host_workshop_collection | sv, release | Host a workshop map collection as a mapgroup
 host_workshop_map | sv, release | Get the latest version of the map and host it on this server.
 host_writeconfig | release | Saves out the user config values.
 host_writeconfig_with_prompt | cl, release | Write settings if user agrees
-hostage_debug | sv, cl, rep, cheat | Default: 0<br>Show hostage AI debug information
+hostage_debug | sv, cl, rep | Default: 0<br>Show hostage AI debug information
 hostage_drop_time | sv | Default: 1<br>Time for the hostage before it fully drops to ground
-hostage_is_silent | sv, cl, rep, cheat | Default: false<br>When set, the hostage won't play any code driven response rules lines
+hostage_is_silent | sv, cl, rep | Default: false<br>When set, the hostage won't play any code driven response rules lines
 hostfile | sv, release | Default: host.txt<br>The HOST file to load.
 hostip | release | Default: 0<br>Host game server ip
 hostname | release | Default: <br>Hostname for server.
@@ -1738,13 +1717,13 @@ hullivr_edge_merge_tan | sv, rep | Default: 0.02<br>Should we try to straighten 
 hullivr_faceisland_merge_disp | sv, rep | Default: 0<br>Should we straighten face island if the displacement is this much? (inches)
 hullivr_faceisland_merge_tan | sv, rep | Default: 0.04<br>Should we try to straighten an island of faces deviating from their average normal (tangent)?
 hullivr_version | sv, rep | Default: 3<br>
-hurtme | sv, cheat | Hurts the player.<br>	Arguments: &lt;health to lose&gt;
-hurtthem | sv, cheat | Hurts the enemy in front of you.<br>	Arguments: &lt;health to lose&gt;
+hurtme | sv | Hurts the player.<br>	Arguments: &lt;health to lose&gt;
+hurtthem | sv | Hurts the enemy in front of you.<br>	Arguments: &lt;health to lose&gt;
 ic | cl | interp entity count<br>
 ik_constraints_enabled | rep | Default: true<br>
 ik_debug_all_chains_unique_color_per_chain | rep | Default: false<br>
 ik_debug_ccd | rep | Default: 0<br>
-ik_debug_chain_to_filter_by | sv, cl, rep, cheat | Default: <br>
+ik_debug_chain_to_filter_by | sv, cl, rep | Default: <br>
 ik_debug_constraints | rep | Default: -1<br>
 ik_debug_dogleg3bone | rep | Default: 0<br>
 ik_debug_dogleg3bone_enabled | rep | Default: true<br>
@@ -1759,34 +1738,34 @@ ik_debug_perlin_solver | sv, cl, rep | Default: false<br>
 ik_debug_planetilt | rep | Default: 0<br>
 ik_debug_planetilt_axis_length | rep | Default: 20<br>
 ik_debug_targets | rep | Default: false<br>
-ik_enable | rep, cheat | Default: true<br>Enable IK.
+ik_enable | rep | Default: true<br>Enable IK.
 ik_fabrik_align_chain | rep | Default: true<br>
 ik_fabrik_backwards_enabled | rep | Default: true<br>
 ik_fabrik_forwards_enabled | rep | Default: true<br>
 ik_fabrik_override_num_iterations | rep | Default: -1<br>
 ik_final_fixup_enable | rep | Default: true<br>
-ik_hinge_debug_bone_index | sv, cl, rep, cheat | Default: -1<br>
+ik_hinge_debug_bone_index | sv, cl, rep | Default: -1<br>
 ik_planetilt_enable | rep | Default: true<br>
 ime_hkl_info | norecord | Spew IME HKL info.
 ime_info | norecord | Spew IME info.
 ime_installed_names | norecord, release | Spew list of installed IMEs.
 ime_supported_info | norecord | Spew IME Supported info.
 imgui_cycle_undocked_window_focus |  | Cycles focus between the game window and undocked imgui windows
-imgui_debug_draw_dashboard_toggle_pause | sv, cl, a, rep, cheat | Default: false<br>Dashboard/Pause Game When Activated
-imgui_debug_draw_dashboard_window | sv, cl, a, rep, cheat | Default: false<br>Dashboard/Show Dashboard
-imgui_debug_draw_dashboard_window_toggle_focus | sv, cl, rep, cheat | Default: false<br>Dashboard toggle focus
-imgui_debug_entity | sv, cheat | Shows the entity browser, focused on the entity you specify.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-imgui_default_font_size | a, cheat | Default: 20<br>Default imgui font size
-imgui_domain | sv, cl, a, rep, cheat | Default: 2<br>1 == client, 2 == server
-imgui_enable | sv, cl, rep, cheat | Default: false<br>if imgui should display
-imgui_enable_input | sv, cl, rep, cheat | Default: false<br>if imgui should consume input
-imgui_ent_text_enable | sv, cl, a, rep, cheat | Default: true<br>Show Entity Text in Window
-imgui_set_selection | sv, cheat | Sets ImGui selection
-imgui_set_status_text | sv, cheat | Sets ImGui header status text
-imgui_show_bullets | sv, cl, a, rep, cheat | Default: false<br>CSGO/Bullets
-imgui_show_cs2_worldmodel | sv, cl, a, rep, cheat | Default: false<br>CSGO/WorldModel
-imgui_show_grenades_window | sv, cl, a, rep, cheat | Default: false<br>CSGO/Show Grenades History
-imgui_temp_enable | sv, cl, rep, cheat | Default: false<br>if imgui should display temporarily
+imgui_debug_draw_dashboard_toggle_pause | sv, cl, a, rep | Default: false<br>Dashboard/Pause Game When Activated
+imgui_debug_draw_dashboard_window | sv, cl, a, rep | Default: false<br>Dashboard/Show Dashboard
+imgui_debug_draw_dashboard_window_toggle_focus | sv, cl, rep | Default: false<br>Dashboard toggle focus
+imgui_debug_entity | sv | Shows the entity browser, focused on the entity you specify.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+imgui_default_font_size | a | Default: 20<br>Default imgui font size
+imgui_domain | sv, cl, a, rep | Default: 2<br>1 == client, 2 == server
+imgui_enable | sv, cl, rep | Default: false<br>if imgui should display
+imgui_enable_input | sv, cl, rep | Default: false<br>if imgui should consume input
+imgui_ent_text_enable | sv, cl, a, rep | Default: true<br>Show Entity Text in Window
+imgui_set_selection | sv | Sets ImGui selection
+imgui_set_status_text | sv | Sets ImGui header status text
+imgui_show_bullets | sv, cl, a, rep | Default: false<br>CSGO/Bullets
+imgui_show_cs2_worldmodel | sv, cl, a, rep | Default: false<br>CSGO/WorldModel
+imgui_show_grenades_window | sv, cl, a, rep | Default: false<br>CSGO/Show Grenades History
+imgui_temp_enable | sv, cl, rep | Default: false<br>if imgui should display temporarily
 import_csgo_config | cl | Imports an existing CS:GO configuration file into CS2
 impulse | cl, release | Triggers impulse command
 in_button_double_press_window | sv, cl, rep | Default: 0.22<br>How short the time between presses needs to be for us to consider it a double-press
@@ -1798,41 +1777,41 @@ in_spewent | sv, cl, rep | Default: -1<br>Which entity should we spew input for?
 in_spewinput | sv, cl, rep | Default: 0<br>Spew input, 0 = off, 1 = server, 2 = client, 3 = both
 incrementvar | norecord, release | Increment specified convar value.
 inferno_batched_rays | cl | Default: true<br>
-inferno_child_spawn_interval_multiplier | sv, cheat | Default: 0.1<br>Amount spawn interval increases for each child
+inferno_child_spawn_interval_multiplier | sv | Default: 0.1<br>Amount spawn interval increases for each child
 inferno_child_spawn_max_depth | sv, rep, release | Default: 4<br>
-inferno_ct_experiment | sv, cl, rep, cheat | Default: true<br>enable ct incendiary experiment
-inferno_damage | sv, cheat | Default: 40<br>Damage per second
-inferno_damage_ct | sv, cheat | Default: 40<br>Damage per second from CT inferno
+inferno_ct_experiment | sv, cl, rep | Default: true<br>enable ct incendiary experiment
+inferno_damage | sv | Default: 40<br>Damage per second
+inferno_damage_ct | sv | Default: 40<br>Damage per second from CT inferno
 inferno_damage_timer | sv, cl, rep | Default: 0.2<br>How long between times for the inferno to deal damage.
-inferno_debug | sv, cheat | Default: false<br>
-inferno_dlight_spacing | cl, cheat | Default: 7200<br>Inferno dlights are at least this far apart
+inferno_debug | sv | Default: false<br>
+inferno_dlight_spacing | cl | Default: 7200<br>Inferno dlights are at least this far apart
 inferno_dlights | cl | Default: 30<br>Min FPS at which molotov dlights will be created
 inferno_fire | cl | Default: 2<br>
 inferno_flame_lifetime | sv, rep, release | Default: 7<br>Average lifetime of each flame in seconds
 inferno_flame_lifetime_incendiary | sv, rep, release | Default: 5.5<br>Average lifetime of each flame in seconds (incgrenade)
-inferno_flame_spacing | sv, cheat | Default: 42<br>Minimum distance between separate flame spawns
-inferno_forward_reduction_factor | sv, cheat | Default: 0.9<br>
-inferno_friendly_fire_duration | sv, cheat | Default: 6<br>For this long, FF is credited back to the thrower.
-inferno_initial_spawn_interval | sv, cheat | Default: 0.02<br>Time between spawning flames for first fire
-inferno_max_child_spawn_interval | sv, cheat | Default: 0.5<br>Largest time interval for child flame spawning
+inferno_flame_spacing | sv | Default: 42<br>Minimum distance between separate flame spawns
+inferno_forward_reduction_factor | sv | Default: 0.9<br>
+inferno_friendly_fire_duration | sv | Default: 6<br>For this long, FF is credited back to the thrower.
+inferno_initial_spawn_interval | sv | Default: 0.02<br>Time between spawning flames for first fire
+inferno_max_child_spawn_interval | sv | Default: 0.5<br>Largest time interval for child flame spawning
 inferno_max_flames | sv, rep, release | Default: 16<br>Maximum number of flames that can be created
 inferno_max_range | sv, rep, release | Default: 150<br>Maximum distance flames can spread from their initial ignition point
 inferno_max_range_ct | sv, rep, release | Default: 110<br>Maximum distance flames can spread from their initial ignition point for an incendiary
 inferno_max_trace_per_tick | sv | Default: 16<br>
-inferno_per_flame_spawn_duration | sv, cheat | Default: 3<br>Duration each new flame will attempt to spawn new flames
-inferno_smoke_volume_density | sv, cheat | Default: 0.03<br>
-inferno_spawn_angle | sv, cheat | Default: 45<br>Angular change from parent
+inferno_per_flame_spawn_duration | sv | Default: 3<br>Duration each new flame will attempt to spawn new flames
+inferno_smoke_volume_density | sv | Default: 0.03<br>
+inferno_spawn_angle | sv | Default: 45<br>Angular change from parent
 inferno_spread_speed_mult | sv, rep, release | Default: 1<br>Speed up the spreadrate of the Molotov until max number of nodes are created.  slowdown &lt; 1 &gt; Speedup
 inferno_spread_speed_mult_ct | sv, rep, release | Default: 10<br>Speed up the spread rate of the Incendiary until max number of nodes are created. slowdown &lt; 1 &gt; Speedup
-inferno_surface_offset | sv, cheat | Default: 15<br>
-inferno_velocity_decay_factor | sv, cheat | Default: 0.2<br>
-inferno_velocity_factor | sv, cheat | Default: 0.003<br>
-inferno_velocity_factor_ct | sv, cheat | Default: 0.003<br>
-inferno_velocity_normal_factor | sv, cheat | Default: 0<br>
+inferno_surface_offset | sv | Default: 15<br>
+inferno_velocity_decay_factor | sv | Default: 0.2<br>
+inferno_velocity_factor | sv | Default: 0.003<br>
+inferno_velocity_factor_ct | sv | Default: 0.003<br>
+inferno_velocity_normal_factor | sv | Default: 0<br>
 input_button_code_is_scan_code_scd | a | Default: true<br>Bind keys based on keyboard position instead of key name
 input_downimpulsevalue | cl | Default: 0.7<br>
 input_filter_relative_analog_inputs | cl, a | Default: false<br>
-input_forceuser | cheat | Default: -1<br>Force user input to this split screen player.
+input_forceuser |  | Default: -1<br>Force user input to this split screen player.
 input_state |  | input_state
 input_upimpulsevalue | cl | Default: 0.3<br>
 install_dlc_workshoptools_cvar | cl, release | Default: -1<br>DLC Install Status
@@ -1924,19 +1903,18 @@ keychain_wmul | cl | Default: 2<br>
 kick | norecord, release | Kick a player by name.
 kickid | norecord, release | Kick a player by userid or uniqueid, with a message.
 kickid_hltv | norecord, release | Kick a player by userid or uniqueid, with a message.
-kill | sv, cheat | Kills the player with generic damage
-killvector | sv, cheat | Kills a player applying force. Usage: killvector &lt;player&gt; &lt;x value&gt; &lt;y value&gt; &lt;z value&gt;
-labelled_debug_helper_arc_segments | sv, cl, rep, cheat | Default: 20<br>
-labelled_debug_helper_enabled | sv, cl, rep, cheat | Default: true<br>
-labelled_debug_helper_scale | sv, cl, rep, cheat | Default: 1<br>
-labelled_debug_helper_show_position | sv, cl, rep, cheat | Default: false<br>
-labelled_debug_helper_show_text | sv, cl, rep, cheat | Default: true<br>
-labelled_debug_helper_skeleton_show_bone_names | sv, cl, rep, cheat | Default: true<br>
+kill | sv | Kills the player with generic damage
+killvector | sv | Kills a player applying force. Usage: killvector &lt;player&gt; &lt;x value&gt; &lt;y value&gt; &lt;z value&gt;
+labelled_debug_helper_arc_segments | sv, cl, rep | Default: 20<br>
+labelled_debug_helper_enabled | sv, cl, rep | Default: true<br>
+labelled_debug_helper_scale | sv, cl, rep | Default: 1<br>
+labelled_debug_helper_show_position | sv, cl, rep | Default: false<br>
+labelled_debug_helper_show_text | sv, cl, rep | Default: true<br>
+labelled_debug_helper_skeleton_show_bone_names | sv, cl, rep | Default: true<br>
 lastinv | cl | 
 launch_training_map | cl | 
 launch_warmup_map | cl, norecord, server_can_execute | Launches warmup map
-lb_allow_shadow_rotation | cheat | Default: true<br>SceneSystem/LightBinner/Shadow Rotation
-lb_allow_time_sliced_shadow_map_rendering |  | Default: true<br>Allow time-sliced shadow buffer rendering when enabled via gameinfo.gi
+lb_allow_shadow_rotation |  | Default: true<br>SceneSystem/LightBinner/Shadow Rotation
 lb_barnlight_shadow_use_precomputed_vis |  | Default: true<br>
 lb_barnlight_shadowmap_scale | release | Default: 1<br>Scale for computed barnlight shadowmap size
 lb_bin_slices |  | Default: 8192<br>
@@ -1946,7 +1924,7 @@ lb_csm_cross_fade_override |  | Default: -1<br>Override CSM cross fade amount
 lb_csm_distance_fade_override |  | Default: -1<br>Override CSM distance fade
 lb_csm_draw_alpha_tested |  | Default: true<br>
 lb_csm_draw_translucent |  | Default: true<br>
-lb_csm_fov_override | cheat | Default: -1<br>
+lb_csm_fov_override |  | Default: -1<br>
 lb_csm_override_bulb_radius |  | Default: -1<br>Override bulb radius for CSM
 lb_csm_override_staticgeo_cascades |  | Default: false<br>Override Cascades that will render static objects with lb_csm_override_staticgeo_cascades_value
 lb_csm_override_staticgeo_cascades_animated_verts |  | Default: true<br>If lb_csm_override_staticgeo_cascades, ensure only objects without animated verts, i.e. SCENEOBJECTFLAG_CAN_RENDER_INTO_SST flag will be excluded (as opposed to all static objects).
@@ -1955,60 +1933,62 @@ lb_csm_receiver_plane_depth_bias |  | Default: 1.526e-05<br>Shader depth bias ap
 lb_csm_receiver_plane_depth_bias_transmissive_backface |  | Default: 0.00015<br>Depth bias applied to shadow receiver for transmissive backface geo (based on renderstate depthbias being 0)
 lb_cubemap_normalization_max |  | Default: 1<br>
 lb_cubemap_normalization_roughness_begin |  | Default: 0.1<br>
-lb_debug_light_bounds | cheat | Default: false<br>SceneSystem/LightBinner/Debug Light Bounds
-lb_debug_shadow_atlas | cheat | Default: false<br>SceneSystem/LightBinner/Debug Shadow Atlas
-lb_debug_shadowtile_atlas | cheat | Default: false<br>SceneSystem/LightBinner/Debug ShadowTile Atlas
-lb_debug_silhouette | cheat | Default: <br>SceneSystem/LightBinner/Debug Silhouettes
-lb_debug_silhouette_sum | cheat | Default: 1<br>If we should draw normal silhouette or minkowski sum silhouette
-lb_debug_tiles | cheat | Default: <br>SceneSystem/LightBinner/Debug Tiles
-lb_debug_visualize_fog_shadowed_lights | cheat | Default: 0<br>SceneSystem/LightBinner/Debug Visualize Fog Shadowed Lights
-lb_debug_visualize_lights | cheat | Default: 0<br>SceneSystem/LightBinner/Debug Visualize Lights
-lb_debug_visualize_shadowed_light_details | cheat | Default: false<br>
-lb_debug_visualize_shadowed_lights | cheat | Default: 0<br>SceneSystem/LightBinner/Debug Visualize Shadowed Lights
+lb_debug_light_bounds |  | Default: false<br>SceneSystem/LightBinner/Debug Light Bounds
+lb_debug_shadow_atlas |  | Default: false<br>SceneSystem/LightBinner/Debug Shadow Atlas
+lb_debug_shadowtile_atlas |  | Default: false<br>SceneSystem/LightBinner/Debug ShadowTile Atlas
+lb_debug_silhouette |  | Default: <br>SceneSystem/LightBinner/Debug Silhouettes
+lb_debug_silhouette_sum |  | Default: 1<br>If we should draw normal silhouette or minkowski sum silhouette
+lb_debug_tiles |  | Default: <br>SceneSystem/LightBinner/Debug Tiles
+lb_debug_visualize_fog_shadowed_lights |  | Default: 0<br>SceneSystem/LightBinner/Debug Visualize Fog Shadowed Lights
+lb_debug_visualize_lights |  | Default: 0<br>SceneSystem/LightBinner/Debug Visualize Lights
+lb_debug_visualize_shadowed_light_details |  | Default: false<br>
+lb_debug_visualize_shadowed_lights |  | Default: 0<br>SceneSystem/LightBinner/Debug Visualize Shadowed Lights
 lb_dynamic_shadow_penumbra |  | Default: true<br>Adjust shadow penumbra based on light size
 lb_dynamic_shadow_resolution |  | Default: true<br>Dynamically adjust shadow resolution
 lb_dynamic_shadow_resolution_base |  | Default: 1024<br>Base resolution for dynamic shadowmap sizing.  Shadowmap size of a screen sized light
-lb_dynamic_shadow_resolution_base_cmp_shadowmapsize | cheat | Default: false<br>take min of lb_dynamic_shadow_resolution and barnlight shadowmapsize as base shadowmapsize
+lb_dynamic_shadow_resolution_base_cmp_shadowmapsize |  | Default: false<br>take min of lb_dynamic_shadow_resolution and barnlight shadowmapsize as base shadowmapsize
 lb_dynamic_shadow_resolution_delay |  | Default: 0.85<br>Update delay for shadow size
 lb_dynamic_shadow_resolution_hysteresis |  | Default: 0.33<br>Update hysteresis for shadow size
 lb_dynamic_shadow_resolution_quantization |  | Default: 64<br>Quantization of dynamically computed shadow size
-lb_enable_baked_shadows | cheat | Default: true<br>SceneSystem/LightBinner/Enable Baked Shadows
+lb_enable_baked_shadows |  | Default: true<br>SceneSystem/LightBinner/Enable Baked Shadows
 lb_enable_binning |  | Default: true<br>SceneSystem/LightBinner/Enable Binning
-lb_enable_dynamic_lights | cheat | Default: true<br>Allows rendering dynamic lights
-lb_enable_envmaps | cheat | Default: true<br>SceneSystem/LightBinner/Enable EnvMaps
-lb_enable_fog_mixed_shadows | cheat | Default: true<br>SceneSystem/LightBinner/Enable Fog Mixed Shadows
-lb_enable_lights | cheat | Default: true<br>SceneSystem/LightBinner/Enable Lights
-lb_enable_newsum | cheat | Default: true<br>SceneSystem/LightBinner/Enable New Sum
+lb_enable_dynamic_lights |  | Default: true<br>Allows rendering dynamic lights
+lb_enable_envmaps |  | Default: true<br>SceneSystem/LightBinner/Enable EnvMaps
+lb_enable_fog_mixed_shadows |  | Default: true<br>SceneSystem/LightBinner/Enable Fog Mixed Shadows
+lb_enable_lights |  | Default: true<br>SceneSystem/LightBinner/Enable Lights
 lb_enable_shadow_casting |  | Default: true<br>Allow stationary/dynamic lights to cast shadows.
-lb_enable_stationary_lights | cheat | Default: true<br>Allows rendering stationary/mixed lights
-lb_enable_sunlight | cheat | Default: true<br>SceneSystem/LightBinner/Enable Sunlight
-lb_low_quality_shader_fade_region_rescale | cheat | Default: 0.5<br>For envmaps in low quality shader mode, how much of the fade region to scale the envmap box by.
-lb_max_visible_barn_lights_override | cheat | Default: -1<br>Override maximum visible barn lights
-lb_max_visible_envmaps_override | cheat | Default: -1<br>Override maximum visible envmaps
-lb_mixed_shadows | cheat | Default: true<br>SceneSystem/LightBinner/Enable Mixed Shadows
-lb_override_barn_light_fade_sizes | cheat | Default: 0.05 0.025<br>
-lb_override_barn_light_fade_sizes_enable | cheat | Default: false<br>
-lb_override_barn_light_shadow_fade_sizes | cheat | Default: 0.1 0.05<br>
-lb_precomputed_shadowmap_depth_bias |  | Default: 0.0001<br>
+lb_enable_stationary_lights |  | Default: true<br>Allows rendering stationary/mixed lights
+lb_enable_sunlight |  | Default: true<br>SceneSystem/LightBinner/Enable Sunlight
+lb_low_quality_shader_fade_region_rescale |  | Default: 0.5<br>For envmaps in low quality shader mode, how much of the fade region to scale the envmap box by.
+lb_max_visible_barn_lights_override |  | Default: -1<br>Override maximum visible barn lights
+lb_max_visible_envmaps_override |  | Default: -1<br>Override maximum visible envmaps
+lb_mixed_shadows |  | Default: true<br>SceneSystem/LightBinner/Enable Mixed Shadows
+lb_override_barn_light_fade_sizes |  | Default: 0.05 0.025<br>
+lb_override_barn_light_fade_sizes_enable |  | Default: false<br>
+lb_override_barn_light_shadow_fade_sizes |  | Default: 0.1 0.05<br>
+lb_precomputed_shadowmap_depth_bias |  | Default: 0.00035<br>
 lb_precomputed_shadowmap_enable |  | Default: true<br>
-lb_shadow_map_cull_empty_mixed | cheat | Default: false<br>Don't render shadows for mixed shadowmaps with no dynamics objects in view
-lb_shadow_map_culling | cheat | Default: true<br>
+lb_shadow_map_cull_empty_mixed |  | Default: false<br>Don't render shadows for mixed shadowmaps with no dynamics objects in view
+lb_shadow_map_culling |  | Default: true<br>
 lb_shadow_texture_height_override |  | Default: -1<br>Override height of shadow atlas texture
 lb_shadow_texture_width_override |  | Default: -1<br>Override width of shadow atlas texture
 lb_ssss_importance_sample |  | Default: false<br>
 lb_ssss_samples |  | Default: 11<br>Subsurface sample count
 lb_sun_csm_size_cull_threshold_texels |  | Default: 10<br>Size, in texels, where we will cull an object in the shadowmap
 lb_tile_pixels |  | Default: 8<br>
+lb_time_sliced_shadow_map_reallocation_age |  | Default: 0.7<br>Age of cached allocation to be considered for re-allocation
+lb_time_sliced_shadow_map_reallocation_pct |  | Default: 0.33<br>Likelyhood we'll re-allocate a timesliced shadowmap (to try to improve packing)
+lb_time_sliced_shadow_map_rendering_enable |  | Default: true<br>Allow time-sliced shadow buffer rendering when enabled via gameinfo.gi
 lb_timesliced_shadows_dynamic_size |  | Default: true<br>
-lb_use_ellipsoid_bounds | cheat | Default: true<br>
-lb_use_illumination_silhouette | cheat | Default: true<br>SceneSystem/LightBinner/Use Illumination Bounds
+lb_use_ellipsoid_bounds |  | Default: true<br>
+lb_use_illumination_silhouette |  | Default: true<br>SceneSystem/LightBinner/Use Illumination Bounds
 leaderboards_cache_duration | cl | Default: 600<br>
 legacy_models_supported |  | Default: true<br>Whether to support legacy (pre-modeldoc) models
 lightbinner_precompute |  | 
 lightbinner_test_computespheresilhouette |  | 
 lightbinner_test_computesumsilhouette |  | 
-lightquery_debug_direct_lighting | sv, cl, rep, cheat | Default: true<br>
-lightquery_debug_indirect_lighting | sv, cl, rep, cheat | Default: true<br>
+lightquery_debug_direct_lighting | sv, cl, rep | Default: true<br>
+lightquery_debug_indirect_lighting | sv, cl, rep | Default: true<br>
 listRecentNPCSpeech | sv, norecord | Displays a list of the last 5 lines of speech from NPCs.
 listdemo | release | List demo file contents.
 listid |  | Lists banned users.
@@ -2033,7 +2013,7 @@ logaddress_del_http | sv, unlogged, release | Remove http listener by URI. Wrap 
 logaddress_delall_http | sv, unlogged, release | Remove all http listeners from the dispatch list.
 logaddress_list_http | sv, unlogged, release | List all URIs currently receiving server logs
 logaddress_token_secret | sv, release | Default: <br>Set a secret string that will be hashed when using logaddress with explicit token hash.
-logic_npc_counter_debug | sv, rep, cheat | Default: false<br>
+logic_npc_counter_debug | sv, rep | Default: false<br>
 loop_dump |  | Print the listeners of the current loop mode
 lrucache_flush |  | Flushes the specified cache
 lrucache_reset_stats |  | Resets stats for the specified CUtlLRUCaches (or all if none specified)
@@ -2047,9 +2027,9 @@ lua_shipping_assert_on_error |  | Default: false<br>
 m_pitch | cl, a, user | Default: 0.022<br>Mouse pitch factor.
 m_yaw | cl, a, user | Default: 0.022<br>Mouse yaw factor.
 map | release | map &lt;mapname&gt; :Load a new map.
-map_enable_portrait_worlds | cl, cheat | Enables/disables portrait worlds
-map_setbombradius | sv, cheat | Sets the bomb radius for the map.
-map_showbombradius | sv, cheat | Shows bomb radius from the center of each bomb site and planted bomb.
+map_enable_portrait_worlds | cl | Enables/disables portrait worlds
+map_setbombradius | sv | Sets the bomb radius for the map.
+map_showbombradius | sv | Shows bomb radius from the center of each bomb site and planted bomb.
 map_showspawnpoints | sv | Shows player spawn points (red=invalid). Optionally pass in the duration.
 map_workshop | cl, release | Launch a workshop map
 mapcyclefile | sv | Default: mapcycle.txt<br>Name of the .txt file used to cycle the maps on multiplayer servers 
@@ -2057,9 +2037,9 @@ mapgroup | sv, norecord, release | Specify a map group
 mapoverview_allow_client_draw | cl, release | Default: false<br>Allow a client to draw on the map overview
 mapoverview_icon_scale | cl, a, release | Default: 1<br>Sets the icon scale multiplier for the overview map. Valid values are 0.5 to 3.0.
 maps | release | Displays list of maps.
-markup_group_ent_bbox | sv, cheat | markup_group_ent_bbox &lt;markup_group name&gt; -&gt; toggle ent_bbox for all members of the named markup group
-markup_group_ent_text | sv, cheat | markup_group_ent_text &lt;markup_group name&gt; -&gt; toggle ent_text for all members of the named markup group
-markup_group_spew | sv, cheat | Spew all current markup groups and their members
+markup_group_ent_bbox | sv | markup_group_ent_bbox &lt;markup_group name&gt; -&gt; toggle ent_bbox for all members of the named markup group
+markup_group_ent_text | sv | markup_group_ent_text &lt;markup_group name&gt; -&gt; toggle ent_text for all members of the named markup group
+markup_group_spew | sv | Spew all current markup groups and their members
 markup_volume_ref_cone_angle | sv | Default: 135<br>
 mat_assert_on_error_shader_use |  | Default: false<br>
 mat_assert_on_shader_use |  | Assert on shader used based on substring of shader name
@@ -2069,21 +2049,21 @@ mat_cache_renderablepasses |  | Default: true<br>
 mat_clearshadercache |  | Clears the shader cache used for dynamic shader compile.
 mat_colcorrection_disableentities | cl | Default: false<br>Disable map color-correction entities
 mat_colcorrection_editor | cl | Default: false<br>
-mat_colcorrection_forceentitiesclientside | cl, cheat | Default: false<br>Forces color correction entities to be updated on the client
+mat_colcorrection_forceentitiesclientside | cl | Default: false<br>Forces color correction entities to be updated on the client
 mat_colorcorrection |  | Default: true<br>
 mat_debug | cl | Sets a mat_fullbright debug visualization mode
 mat_depthbias_shadowmap | cl | Default: 0.0005<br>
 mat_disable_dynamic_shader_compile |  | Reloads all shaders from vcs files until the next time mat_reloadshaders is called
-mat_disable_normal_mapping | cl, cheat | Default: false<br>
+mat_disable_normal_mapping | cl | Default: false<br>
 mat_execute_skipbuffers |  | Default: true<br>
 mat_forcereloadshaders |  | Force reloads all shaders (skips MD5 check). Takes optional substrings of shader names to recompile as arguments.
-mat_fullbright | cheat | Default: 0<br>Debug rendering modes
+mat_fullbright |  | Default: 0<br>Debug rendering modes
 mat_hide_error_shader |  | Default: false<br>
-mat_lpv_luxels | cheat | Default: false<br>
-mat_luxels | cheat | Default: false<br>
-mat_max_lighting_complexity | cheat | Default: 8<br>
-mat_overdraw | cheat | Default: 0<br>Visualize overdraw
-mat_overdraw_color | cheat | Default: 0.075 0.15 0.3<br>
+mat_lpv_luxels |  | Default: false<br>
+mat_luxels |  | Default: false<br>
+mat_max_lighting_complexity |  | Default: 8<br>
+mat_overdraw |  | Default: 0<br>Visualize overdraw
+mat_overdraw_color |  | Default: 0.075 0.15 0.3<br>
 mat_print_dead_materials |  | Print loaded materials that have no valid layers due to not supporting any of the modes in gameinfo.gi.
 mat_print_error_materials |  | Print loaded materials that are using the error shader or material.
 mat_print_expensive_materials |  | Print materials sorted by cost heuristic
@@ -2103,32 +2083,32 @@ mat_reloadshaders |  | Reloads all shaders. Takes optional substrings of shader 
 mat_reset_material_costs |  | Reset material cost heuristic
 mat_set_shader_quality |  | Force shader quality setting (valid values are 0 or 1)
 mat_shader_cache |  | Default: true<br>
-mat_shading_complexity | cheat | Default: false<br>Visualize shading complexity
-mat_shading_complexity_color | cheat | Default: 1 0.5 0.25<br>
-mat_shading_complexity_max_instruction_count | cheat | Default: 1024<br>
-mat_shading_complexity_max_register_count | cheat | Default: 128<br>
-mat_shadowmap_luxels | cheat | Default: false<br>
-mat_show_distance_field | cheat | Default: 0<br>0=Off, 1=Visualize trace from camera, 2=Visualize occlusion, 3=Visualize far field trace from camera
+mat_shading_complexity |  | Default: false<br>Visualize shading complexity
+mat_shading_complexity_color |  | Default: 1 0.5 0.25<br>
+mat_shading_complexity_max_instruction_count |  | Default: 1024<br>
+mat_shading_complexity_max_register_count |  | Default: 128<br>
+mat_shadowmap_luxels |  | Default: false<br>
+mat_show_distance_field |  | Default: 0<br>0=Off, 1=Visualize trace from camera, 2=Visualize occlusion, 3=Visualize far field trace from camera
 mat_skip_static_const_eval |  | Default: true<br>
 mat_slopescaledepthbias_shadowmap | cl | Default: 4<br>
-mat_tonemap_bloom_scale | cheat | Default: -1<br>
-mat_tonemap_bloom_start_value | cheat | Default: -1<br>
+mat_tonemap_bloom_scale |  | Default: -1<br>
+mat_tonemap_bloom_start_value |  | Default: -1<br>
 mat_tonemap_debug |  | Default: 0<br>
-mat_tonemap_force_accelerate_exposure_down | cheat | Default: -1<br>
-mat_tonemap_force_average_lum_min | cheat | Default: -1<br>Override. Old default was 3.0
-mat_tonemap_force_log_lum_max | cheat | Default: -1<br>
-mat_tonemap_force_log_lum_min | cheat | Default: -1<br>
-mat_tonemap_force_max | cheat | Default: -1<br>
-mat_tonemap_force_min | cheat | Default: -1<br>
-mat_tonemap_force_percent_bright_pixels | cheat | Default: -1<br>Override. Old value was 1.0
-mat_tonemap_force_percent_target | cheat | Default: -1<br>Override. Old default was 45.
-mat_tonemap_force_rate | cheat | Default: -1<br>
-mat_tonemap_force_scale | cheat | Default: 0<br>
-mat_tonemap_force_use_alpha | cheat | Default: -1<br>
-mat_tonemap_uncap_exposure | cheat | Default: 0<br>
+mat_tonemap_force_accelerate_exposure_down |  | Default: -1<br>
+mat_tonemap_force_average_lum_min |  | Default: -1<br>Override. Old default was 3.0
+mat_tonemap_force_log_lum_max |  | Default: -1<br>
+mat_tonemap_force_log_lum_min |  | Default: -1<br>
+mat_tonemap_force_max |  | Default: -1<br>
+mat_tonemap_force_min |  | Default: -1<br>
+mat_tonemap_force_percent_bright_pixels |  | Default: -1<br>Override. Old value was 1.0
+mat_tonemap_force_percent_target |  | Default: -1<br>Override. Old default was 45.
+mat_tonemap_force_rate |  | Default: -1<br>
+mat_tonemap_force_scale |  | Default: 0<br>
+mat_tonemap_force_use_alpha |  | Default: -1<br>
+mat_tonemap_uncap_exposure |  | Default: 0<br>
 mat_viewportscale | cl | Default: 1<br>Scale down the main viewport (to reduce GPU impact on CPU profiling)
 mat_warn_bad_modes |  | Default: false<br>
-mat_wireframe | cheat | Default: 0<br>0=Off, 1=Surface Wireframe, 2=Transparent Wireframe
+mat_wireframe |  | Default: 0<br>0=Off, 1=Surface Wireframe, 2=Transparent Wireframe
 matchdraft_debug_sendlog | cl, norecord, release, server_can_execute | Print debug draft into HTTP log
 mem_compact |  | Compacts the heap
 mem_dump |  | Dump memory stats to text file or &lt;stdout&gt;.
@@ -2140,11 +2120,12 @@ mem_test_quiet |  | Default: false<br>Don't print stats when memtesting
 memory |  | Print memory stats.
 memory_check_limit |  | Assert if peak memory use is over the limit.
 menuselect | cl, server_can_execute | menuselect
-mesh_calculate_curvature_smooth_invert | sv, cl, rep, cheat | Default: false<br>
-mesh_calculate_curvature_smooth_pass_count | sv, cl, rep, cheat | Default: 3<br>
-mesh_calculate_curvature_smooth_weight | sv, cl, rep, cheat | Default: 1<br>
+mesh_calculate_curvature_smooth_invert | sv, cl, rep | Default: false<br>
+mesh_calculate_curvature_smooth_pass_count | sv, cl, rep | Default: 3<br>
+mesh_calculate_curvature_smooth_weight | sv, cl, rep | Default: 1<br>
 mic_listen_while_nonfocused | cl | Default: false<br>Enables the ability for the mic to remain open if the window loses focus such as when a caster tabs out to adjust settings
-minimap_create | cl, cheat | Does a bunch of work to create a minimap
+minimap_create | cl | Does a bunch of work to create a minimap
+mirv_agr |  | Source 2 AGR recording
 mirv_attach |  | Attach camera to a player attachment
 mirv_camio |  | New camera motion data import / export.
 mirv_campath |  | camera paths
@@ -2160,6 +2141,7 @@ mirv_glow |  | Manage glow drawing.
 mirv_image |  | 3D image drawing in world space.
 mirv_input |  | Input mode configuration.
 mirv_listentities |  | List entities.
+mirv_livelink |  | Source 2 Live Link streaming
 mirv_loadlibrary |  | Load a DLL.
 mirv_nadecam |  | Grenade following camera.
 mirv_noflash |  | Disables flash overlay.
@@ -2173,6 +2155,7 @@ mirv_script_load |  | Load script from file and execute
 mirv_sharedtex |  | Shared texture control.
 mirv_skip |  | for skipping through demos (uses demo_gototick)
 mirv_sky |  | 
+mirv_smoke |  | CS2 smoke rendering control.
 mirv_streams |  | Access to streams system.
 mirv_udpdebug |  | Enable/disable UDP input debug logging (mirv_udpdebug 0\|1).
 mirv_viewmodel |  | Set custom viewmodel
@@ -2196,7 +2179,6 @@ mm_events_listeners_validation |  | Default: false<br>
 mm_ignored_sessions_forget_pass |  | Default: 5<br>
 mm_ignored_sessions_forget_time |  | Default: 600<br>
 mm_ignored_sessions_reset |  | Reset ignored sessions
-mm_match_search_update_interval |  | Default: 10<br>Interval between matchsearcher updates.
 mm_player_search_count |  | Default: 5<br>
 mm_player_search_lan_ping_duration |  | Default: 3.5<br>Duration of LAN discovery ping phase.
 mm_player_search_lan_ping_interval |  | Default: 0.5<br>Interval between LAN discovery pings.
@@ -2204,15 +2186,6 @@ mm_player_search_requests_limit |  | Default: -1<br>How many friend requests are
 mm_player_search_update_interval |  | Default: 10<br>Interval between players searches.
 mm_queue_draft_show | cl, server_can_execute | Display current draft
 mm_queue_show_stats | cl, server_can_execute | Display global server stats
-mm_server_search_inet_ping_interval |  | Default: 1<br>How long to wait between pinging internet server details.
-mm_server_search_inet_ping_refresh |  | Default: 15<br>How often to refresh a listed server.
-mm_server_search_inet_ping_timeout |  | Default: 3<br>How long to wait for internet server details.
-mm_server_search_inet_ping_window |  | Default: 10<br>How many servers can be pinged for server details in a batch.
-mm_server_search_lan_ping_duration |  | Default: 1<br>Duration of LAN discovery ping phase.
-mm_server_search_lan_ping_interval |  | Default: 0.4<br>Interval between LAN discovery pings.
-mm_server_search_lan_ports | a, release | Default: 27015,27016,27017,27018,27019,27020<br>Ports to scan during LAN games discovery. Also used to discover and correctly connect to dedicated LAN servers behind NATs.
-mm_server_search_server_lifetime |  | Default: 180<br>How long until a server is no longer returned by the master till we remove it.
-mm_server_search_update_interval |  | Default: 60<br>Interval between servers updates.
 mm_session_search_num_results |  | Default: 10<br>
 mm_session_search_qos_timeout | release | Default: 15<br>
 mm_session_sys_connect_timeout |  | Default: 8<br>
@@ -2237,12 +2210,12 @@ mobile_fps_limit | a | Default: 30<br>MOBILE_FPS_CONTROL: Mobile FPS limit - 15,
 model_default_preview_sequence_name | sv, cl, a, rep | Default: <br>
 model_dump_convert_info | sv, cl | Print model load-time conversion info
 molotov_throw_detonate_time | sv, cl, rep, release | Default: 2<br>
-molotov_usethrow_direction | sv, cheat | Default: false<br>
+molotov_usethrow_direction | sv | Default: false<br>
 motdfile | sv, release | Default: motd.txt<br>The MOTD file to load.
 mouse_disableinput |  | Default: false<br>Set to disable mouse input
 mouse_inverty | cl, a, user | Default: false<br>
-movement_stats_debug_draw | sv, cheat | Default: false<br>
-movement_stats_force_calculate | sv, cheat | Default: false<br>
+movement_stats_debug_draw | sv | Default: false<br>
+movement_stats_force_calculate | sv | Default: false<br>
 movie_fixwave |  | Fixup corrupted .wav file if engine crashed during startmovie/endmovie, etc.
 mp_afterroundmoney | sv, cl, rep, release | Default: 0<br>amount of money awared to every player after each round
 mp_allowspectators | sv, cl, rep | Default: true<br>toggles whether the server allows spectator mode or not
@@ -2300,7 +2273,7 @@ mp_dm_bonus_percent | sv, cl, rep, release | Default: 50<br>Percent of points ad
 mp_dm_bonusweapon_dogtags | sv, cl, rep, release | Default: 0<br>Additional dogtags to drop when making a kill with the bonus weapon
 mp_dm_dogtag_score | sv, cl, rep, release | Default: 0<br>Points to award for picking up a dogtag in deathmatch.
 mp_dm_healthshot_killcount | sv, cl, rep, release | Default: 3<br>Grant healthshots in deathmatch after n kills
-mp_dm_kill_base_score | sv, cl, rep, release | Default: 10<br>Number of base points to award for a kill in deathmatch.  Cheaper weapons award 1 or 2 additional points.
+mp_dm_kill_base_score | sv, cl, rep, release | Default: 8<br>Number of base points to award for a kill in deathmatch.  Cheaper weapons award 1 or 2 additional points.
 mp_dm_taser_bonus_streak_max | sv, cl, rep, release | Default: 2<br>Maximum times to multiply the score for getting a streak of taser kills in a single life.
 mp_dm_teammode | sv, cl, rep, release | Default: 0<br>In deathmatch, enables team DM visuals & scoring (0: personal, 1: team mode, 2: use team contribution score)
 mp_dm_teammode_bonus_score | sv, cl, rep, release | Default: 1<br>Team deathmatch victory points to award for kill with bonus weapon
@@ -2324,7 +2297,7 @@ mp_endmatch_votenextmap_wargames_nummodes | sv, release | Default: 1<br>Maximum 
 mp_endwarmup_player_count | sv, cl, rep, release | Default: 0<br>Number of players required to be connected to end warmup early. 0 to require maximum players for mode.
 mp_equipment_reset_rounds | sv, cl, rep, release | Default: 0<br>Reset all player equipment every N rounds (0 for never)
 mp_fadetoblack | sv, cl, nf, rep | Default: false<br>fade a player's screen to black when he dies
-mp_flinch_punch_scale | sv, cl, rep, cheat | Default: 3<br>Scalar for first person view punch when getting hit.
+mp_flinch_punch_scale | sv, cl, rep | Default: 3<br>Scalar for first person view punch when getting hit.
 mp_footsteps_serverside | sv, release | Default: true<br>Makes the server always play footstep sounds. Clients never calculate footstep sounds locally, instead relying on the server.
 mp_force_pick_time | sv, cl, rep, release | Default: 15<br>The amount of time a player has on the team screen to make a selection before being auto-teamed
 mp_forcecamera | sv, cl, rep, release | Default: 0<br>Restricts spectator modes for dead players
@@ -2477,8 +2450,8 @@ mp_warmup_start | sv, release | Start warmup.
 mp_warmuptime | sv, cl, rep, release | Default: 30<br>How long the warmup period lasts. Changing this value resets warmup.
 mp_warmuptime_all_players_connected | sv, cl, rep, release | Default: 0<br>Warmup time to use when all players have connected. 0 to disable.
 mp_warmuptime_match_cancelled | sv, cl, rep, release | Default: 5<br>Warmup time to use when the match will be cancelled (eg. due to a live VAC ban).
-mp_weapon_next_owner_touch_time | sv, cheat, release | Default: 1.3<br>
-mp_weapon_prev_owner_touch_time | sv, cl, rep, cheat, release | Default: 1.5<br>
+mp_weapon_next_owner_touch_time | sv, release | Default: 1.3<br>
+mp_weapon_prev_owner_touch_time | sv, cl, rep, release | Default: 1.5<br>
 mp_weapon_self_inflict_amount | sv, rep, release | Default: 0<br>If Set to non-0, will hurt the attacker by the specified fraction of max damage if they miss.
 mp_weapons_allow_heavy | sv, cl, rep, release | Default: -1<br>Determines which team, if any, can purchase Heavy guns. -1 = any; 0 = non; 2 = Ts; 3 = CTs.
 mp_weapons_allow_map_placed | sv, cl, rep, release | Default: false<br>If this convar is set, when a match starts, the game will not delete weapons placed in the map.
@@ -2496,69 +2469,70 @@ multigpu_skip_transfers |  | Default: false<br>
 multvar | norecord, release | Multiply specified convar value.
 muzzle_flash_debug | cl | Default: false<br>
 name | a | Default: unnamed<br>
-nav_add_to_selected_set | sv, cheat | Add current area to the selected set.
-nav_add_to_selected_set_by_id | sv, cheat | Add specified area id to the selected set.
+nav_add_to_selected_set | sv | Add current area to the selected set.
+nav_add_to_selected_set_by_id | sv | Add specified area id to the selected set.
 nav_approach_points_area_size_threshold | sv | Default: 200<br>Ignore nav areas with at least one side smaller than this amount during approach point calculation.
 nav_attribute_obstacle_draw | sv | Default: false<br>
 nav_attribute_obstacle_draw_attribute | sv | Default: <br>
 nav_attribute_obstacle_draw_elements | sv | Default: false<br>
-nav_begin_deselecting | sv, cheat | Start continuously removing from the selected set.
-nav_begin_drag_deselecting | sv, cheat | Start dragging a selection area.
-nav_begin_drag_selecting | sv, cheat | Start dragging a selection area.
-nav_begin_selecting | sv, cheat | Start continuously adding to the selected set.
-nav_bfs_debug | sv, cheat | Default: 0<br>
-nav_check_connectivity | sv, cheat | Checks to be sure every (or just the marked) nav area can get to every goal area for the map (hostages or bomb site).
-nav_clear_attribute | sv, cheat | Remove given nav attribute from all areas in the selected set.
-nav_clear_attributes | sv, cheat | Clear all nav attributes of selected area.
-nav_clear_selected_set | sv, cheat | Clear the selected set.
-nav_corner_adjust_adjacent | cheat | Default: 18<br>radius used to raise/lower corners in nearby areas when raising/lowering corners.
-nav_create_indirect_connection | sv, cheat | Create a connection between the selected area and the area pointed at by the crosshair.
-nav_create_indirect_connection_from_to | sv, cheat | Create a connection between the current 'from' and 'to' locations.
-nav_create_indirect_connection_set_from | sv, cheat | Default: 0 0 0<br>Set the 'from' location of an indirect connection.
-nav_create_indirect_connection_set_from_using_editpos | sv, cheat | Set the 'from' location of an indirect connection to be the current edit pos of nav_edit.
-nav_create_indirect_connection_set_to | sv, cheat | Default: 0 0 0<br>Set the 'to' location of an indirect connection.
-nav_create_indirect_connection_set_to_using_editpos | sv, cheat | Set the 'to' location of an indirect connection to be the current edit pos of nav_edit.
-nav_curve_alt | sv, cheat | Default: false<br>
-nav_curve_iter | sv, cheat | Default: 0<br>
-nav_curve_lock | sv, cheat | Default: -1<br>
-nav_curve_max_step | sv, cheat | Default: 10<br>
-nav_curve_set | sv, cheat | Default: -1<br>
-nav_curve_step | sv, cheat | Default: 0.02<br>
-nav_debug_blocked | sv, cheat | Default: false<br>
-nav_delete | sv, cheat | Deletes the currently highlighted Area.
+nav_begin_deselecting | sv | Start continuously removing from the selected set.
+nav_begin_drag_deselecting | sv | Start dragging a selection area.
+nav_begin_drag_selecting | sv | Start dragging a selection area.
+nav_begin_selecting | sv | Start continuously adding to the selected set.
+nav_bfs_debug | sv | Default: 0<br>
+nav_check_connectivity | sv | Checks to be sure every (or just the marked) nav area can get to every goal area for the map (hostages or bomb site).
+nav_clear_attribute | sv | Remove given nav attribute from all areas in the selected set.
+nav_clear_attributes | sv | Clear all nav attributes of selected area.
+nav_clear_selected_set | sv | Clear the selected set.
+nav_corner_adjust_adjacent |  | Default: 18<br>radius used to raise/lower corners in nearby areas when raising/lowering corners.
+nav_create_indirect_connection | sv | Create a connection between the selected area and the area pointed at by the crosshair.
+nav_create_indirect_connection_from_to | sv | Create a connection between the current 'from' and 'to' locations.
+nav_create_indirect_connection_set_from | sv | Default: 0 0 0<br>Set the 'from' location of an indirect connection.
+nav_create_indirect_connection_set_from_using_editpos | sv | Set the 'from' location of an indirect connection to be the current edit pos of nav_edit.
+nav_create_indirect_connection_set_to | sv | Default: 0 0 0<br>Set the 'to' location of an indirect connection.
+nav_create_indirect_connection_set_to_using_editpos | sv | Set the 'to' location of an indirect connection to be the current edit pos of nav_edit.
+nav_curve_alt | sv | Default: false<br>
+nav_curve_iter | sv | Default: 0<br>
+nav_curve_lock | sv | Default: -1<br>
+nav_curve_max_step | sv | Default: 10<br>
+nav_curve_set | sv | Default: -1<br>
+nav_curve_step | sv | Default: 0.02<br>
+nav_debug_blocked | sv | Default: false<br>
+nav_delete | sv | Deletes the currently highlighted Area.
 nav_drag_selection_volume_zmax_offset | sv, rep | Default: 32<br>The offset of the nav drag volume top from center
 nav_drag_selection_volume_zmin_offset | sv, rep | Default: 32<br>The offset of the nav drag volume bottom from center
-nav_draw_area_connections | sv, cheat | Default: false<br>
-nav_draw_area_filled | sv, cheat | Default: true<br>
-nav_draw_area_gravity | sv, cheat | Default: false<br>
-nav_draw_area_ground | sv, cheat | Default: false<br>
-nav_draw_area_hull_support | sv, cheat | Default: false<br>
-nav_draw_area_ids | sv, cheat | Default: false<br>
-nav_draw_area_inset_margin | sv, cheat | Default: 0<br>
-nav_draw_area_normal | sv, cheat | Default: false<br>
-nav_draw_area_should_be_destroyed | sv, cheat | Default: false<br>
-nav_draw_area_split_by_obstacle_mgr | sv, cheat | Default: false<br>
-nav_draw_area_ztest | sv, cheat | Default: false<br>
+nav_draw_area_connections | sv | Default: false<br>
+nav_draw_area_filled | sv | Default: true<br>
+nav_draw_area_gravity | sv | Default: false<br>
+nav_draw_area_ground | sv | Default: false<br>
+nav_draw_area_hull_support | sv | Default: false<br>
+nav_draw_area_ids | sv | Default: false<br>
+nav_draw_area_inset_margin | sv | Default: 0<br>
+nav_draw_area_normal | sv | Default: false<br>
+nav_draw_area_should_be_destroyed | sv | Default: false<br>
+nav_draw_area_split_by_obstacle_mgr | sv | Default: false<br>
+nav_draw_area_ztest | sv | Default: false<br>
 nav_draw_attribute_dynamic | sv | Default: <br>Draw all nav areas with this dynamic attribute
 nav_draw_attribute_game | sv | Default: <br>Draw all nav areas with this game attribute
 nav_draw_attribute_space | sv | Default: <br>Draw only nav blocks with this attribute
-nav_draw_blocked | sv, cheat | Default: true<br>
-nav_draw_blocked_connections | sv, cheat | Default: false<br>
-nav_draw_boundary_areas | sv, cheat | Default: false<br>
-nav_draw_connected_area_radius | sv, cheat | Default: 1000<br>
-nav_draw_dangerareas | sv, cheat | Default: false<br>
-nav_draw_dormant_movable_meshes | sv, cheat | Default: false<br>Draw dormant movable meshes.
-nav_draw_externally_created | sv, cheat | Default: false<br>
-nav_draw_hidingspots | sv, cheat | Default: false<br>
-nav_draw_indirect_connections | sv, cheat | Default: false<br>
-nav_draw_jump_links | sv, cheat | Default: false<br>
-nav_draw_limit | sv, cheat | Default: 300<br>The maximum number of areas to draw in edit mode
-nav_draw_link_alignment | sv, cheat | Default: false<br>
-nav_draw_links | sv, cheat | Default: false<br>
-nav_draw_markup | sv, cheat | Default: true<br>
-nav_draw_mesh | sv, cheat | Default: true<br>
-nav_draw_mesh_grid | sv, cheat | Default: false<br>Draw the mesh's spatial grid structure around the edit cursor position.
-nav_draw_mesh_offset | sv, cheat | Default: 1<br>Vertical offset for drawing the mesh (useful for flat planes where the mesh is often a fixed offset from the physical ground
+nav_draw_blocked | sv | Default: true<br>
+nav_draw_blocked_connections | sv | Default: false<br>
+nav_draw_boundary_areas | sv | Default: false<br>
+nav_draw_connected_area_radius | sv | Default: 1000<br>
+nav_draw_dangerareas | sv | Default: false<br>
+nav_draw_dormant_movable_meshes | sv | Default: false<br>Draw dormant movable meshes.
+nav_draw_externally_created | sv | Default: false<br>
+nav_draw_flow_map | sv | Default: false<br>
+nav_draw_hidingspots | sv | Default: false<br>
+nav_draw_indirect_connections | sv | Default: false<br>
+nav_draw_jump_links | sv | Default: false<br>
+nav_draw_limit | sv | Default: 300<br>The maximum number of areas to draw in edit mode
+nav_draw_link_alignment | sv | Default: false<br>
+nav_draw_links | sv | Default: false<br>
+nav_draw_markup | sv | Default: true<br>
+nav_draw_mesh | sv | Default: true<br>
+nav_draw_mesh_grid | sv | Default: false<br>Draw the mesh's spatial grid structure around the edit cursor position.
+nav_draw_mesh_offset | sv | Default: 1<br>Vertical offset for drawing the mesh (useful for flat planes where the mesh is often a fixed offset from the physical ground
 nav_draw_space_boundary | sv | Default: 0<br>Draw the boundaries of the 3d nav space. 1 = draw flying space, 2 = draw swimming space
 nav_draw_space_cells | sv | Default: false<br>
 nav_draw_space_fly | sv | Default: false<br>
@@ -2567,240 +2541,241 @@ nav_draw_space_portals | sv | Default: false<br>
 nav_draw_space_radius | sv | Default: 0<br>
 nav_draw_space_swim | sv | Default: false<br>
 nav_draw_space_transitions | sv | Default: true<br>
-nav_edit | sv, cheat | Default: 0<br>Set to one to interactively edit the Navigation Mesh. Set to zero to leave edit mode.
-nav_edit_use_camera | sv, cheat | Default: true<br>
-nav_edit_validate | sv, cheat | Default: false<br>Validate navmesh structures.
-nav_end_deselecting | sv, cheat | Stop continuously removing from the selected set.
-nav_end_drag_deselecting | sv, cheat | Stop dragging a selection area.
-nav_end_drag_selecting | sv, cheat | Stop dragging a selection area.
-nav_end_selecting | sv, cheat | Stop continuously adding to the selected set.
-nav_find_occluded_node_nozup_use_raycast | sv, cheat | Default: true<br>
+nav_edit | sv | Default: 0<br>Set to one to interactively edit the Navigation Mesh. Set to zero to leave edit mode.
+nav_edit_use_camera | sv | Default: true<br>
+nav_edit_validate | sv | Default: false<br>Validate navmesh structures.
+nav_end_deselecting | sv | Stop continuously removing from the selected set.
+nav_end_drag_deselecting | sv | Stop dragging a selection area.
+nav_end_drag_selecting | sv | Stop dragging a selection area.
+nav_end_selecting | sv | Stop continuously adding to the selected set.
+nav_find_occluded_node_nozup_use_raycast | sv | Default: true<br>
 nav_flow_map_enabled | sv | Default: true<br>
-nav_gen_add_jumps | sv, cheat | Default: true<br>
-nav_gen_agent_radius_buffer | sv, cheat | Default: 0.75<br>Buffer to add to agent radius before passing to nav gen
-nav_gen_clip_polys_to_clearance | sv, cheat | Default: true<br>
-nav_gen_clip_polys_to_clearance_debug | sv, cheat | Default: false<br>
-nav_gen_connect_allow_multiple | sv, cheat | Default: true<br>
-nav_gen_connect_angle | sv, cheat | Default: 0.75<br>
-nav_gen_connect_angle_ignore_z | sv, cheat | Default: true<br>
-nav_gen_connect_dist_a | sv, cheat | Default: 1<br>
-nav_gen_connect_dist_b | sv, cheat | Default: 1.5<br>
-nav_gen_connect_dist_z_mult | sv, cheat | Default: 0.5<br>
-nav_gen_connect_overlap | sv, cheat | Default: 0.5<br>
-nav_gen_degen_limit | sv, cheat | Default: 0.001<br>
-nav_gen_false | sv, cheat | Default: false<br>Always false
-nav_gen_flow_map_all_pairs_mode | cheat | Default: 1<br>0=astar, 1=allpaths, -1=test mode (runs both and compares)
-nav_gen_island_removal | sv, cheat | Default: false<br>
-nav_gen_island_removal_all_hulls | sv, cheat | Default: true<br>
-nav_gen_join_nonzup | sv, cheat | Default: true<br>
-nav_gen_jump_connection_min_overlap_ratio | sv, cheat | Default: 0.1<br>Minimum edge overlap required for jump connection consideration as a percentage of agent radius
-nav_gen_markup_split_expand | sv, cheat | Default: 2<br>
-nav_gen_markup_split_tol_base | sv, cheat | Default: 1<br>
-nav_gen_markup_split_tol_nonav | sv, cheat | Default: 1<br>
-nav_gen_markup_split_tol_nonentity | sv, cheat | Default: 8<br>
-nav_gen_max_bottleneck_width | sv, cheat | Default: 128<br>
-nav_gen_max_bottleneck_width_do_clip | sv, cheat | Default: true<br>
-nav_gen_max_edge_len | sv, cheat | Default: 512<br>
-nav_gen_max_edge_len_do_clip | sv, cheat | Default: true<br>
-nav_gen_max_edge_len_split_tol | sv, cheat | Default: 24<br>
-nav_gen_opt_to_quads | sv, cheat | Default: true<br>
-nav_gen_opt_to_quads_angle_limit | sv, cheat | Default: 8<br>
-nav_gen_opt_to_quads_num_steps | sv, cheat | Default: 6<br>
-nav_gen_opt_to_quads_planar_deviation_limit | sv, cheat | Default: 4<br>
-nav_gen_opt_to_quads_se_limit_end | sv, cheat | Default: 0.1<br>
-nav_gen_opt_to_quads_se_limit_start | sv, cheat | Default: 1e-05<br>
-nav_gen_opt_to_quads_weld_limit_end | sv, cheat | Default: 0.01<br>
-nav_gen_opt_to_quads_weld_limit_start | sv, cheat | Default: 1e-07<br>
-nav_gen_oriented_angle_tol | sv, cheat | Default: 15<br>Max abrupt orientation difference an NPC can tolerate when moving through the mesh (degrees).
-nav_gen_oriented_max_region_range | sv, cheat | Default: 15<br>Max orientation range allowed within a region before it gets further split.
-nav_gen_remove_vertical_polys | sv, cheat | Default: true<br>
-nav_gen_split_boundary_polys | sv, cheat | Default: false<br>
-nav_gen_split_multi_connection_polys | sv, cheat | Default: true<br>
-nav_gen_split_multi_connection_polys_tol | sv, cheat | Default: 0.01<br>
-nav_gen_true | sv, cheat | Default: true<br>Always true
-nav_gen_vertical_limit | sv, cheat | Default: 88<br>
-nav_genrt_debug | sv, cheat | Default: false<br>
+nav_gen_add_jumps | sv | Default: true<br>
+nav_gen_agent_radius_buffer | sv | Default: 0.75<br>Buffer to add to agent radius before passing to nav gen
+nav_gen_clip_polys_to_clearance | sv | Default: true<br>
+nav_gen_clip_polys_to_clearance_debug | sv | Default: false<br>
+nav_gen_connect_allow_multiple | sv | Default: true<br>
+nav_gen_connect_angle | sv | Default: 0.75<br>
+nav_gen_connect_angle_ignore_z | sv | Default: true<br>
+nav_gen_connect_dist_a | sv | Default: 1<br>
+nav_gen_connect_dist_b | sv | Default: 1.5<br>
+nav_gen_connect_dist_z_mult | sv | Default: 0.5<br>
+nav_gen_connect_overlap | sv | Default: 0.5<br>
+nav_gen_degen_limit | sv | Default: 0.001<br>
+nav_gen_false | sv | Default: false<br>Always false
+nav_gen_island_removal | sv | Default: false<br>
+nav_gen_island_removal_all_hulls | sv | Default: true<br>
+nav_gen_join_nonzup | sv | Default: true<br>
+nav_gen_jump_connection_min_overlap_ratio | sv | Default: 0.1<br>Minimum edge overlap required for jump connection consideration as a percentage of agent radius
+nav_gen_markup_split_expand | sv | Default: 2<br>
+nav_gen_markup_split_tol_base | sv | Default: 1<br>
+nav_gen_markup_split_tol_nonav | sv | Default: 1<br>
+nav_gen_markup_split_tol_nonentity | sv | Default: 8<br>
+nav_gen_max_bottleneck_width | sv | Default: 128<br>
+nav_gen_max_bottleneck_width_do_clip | sv | Default: true<br>
+nav_gen_max_edge_len | sv | Default: 512<br>
+nav_gen_max_edge_len_do_clip | sv | Default: true<br>
+nav_gen_max_edge_len_split_tol | sv | Default: 24<br>
+nav_gen_opt_to_quads | sv | Default: true<br>
+nav_gen_opt_to_quads_angle_limit | sv | Default: 8<br>
+nav_gen_opt_to_quads_num_steps | sv | Default: 6<br>
+nav_gen_opt_to_quads_planar_deviation_limit | sv | Default: 4<br>
+nav_gen_opt_to_quads_se_limit_end | sv | Default: 0.1<br>
+nav_gen_opt_to_quads_se_limit_start | sv | Default: 1e-05<br>
+nav_gen_opt_to_quads_weld_limit_end | sv | Default: 0.01<br>
+nav_gen_opt_to_quads_weld_limit_start | sv | Default: 1e-07<br>
+nav_gen_oriented_angle_tol | sv | Default: 15<br>Max abrupt orientation difference an NPC can tolerate when moving through the mesh (degrees).
+nav_gen_oriented_max_region_range | sv | Default: 15<br>Max orientation range allowed within a region before it gets further split.
+nav_gen_remove_vertical_polys | sv | Default: true<br>
+nav_gen_split_boundary_polys | sv | Default: false<br>
+nav_gen_split_multi_connection_polys | sv | Default: true<br>
+nav_gen_split_multi_connection_polys_tol | sv | Default: 0.01<br>
+nav_gen_true | sv | Default: true<br>Always true
+nav_gen_vertical_limit | sv | Default: 88<br>
+nav_genrt_debug | sv | Default: false<br>
 nav_ignore_vpk_navdata | sv | Default: false<br>For testing using legacy nav data
-nav_list_movable_meshes | sv, cheat | List the movable meshes registered with the movable meshes manager.
-nav_lower_drag_volume_max | sv, cheat | Lower the top of the drag select volume.
-nav_lower_drag_volume_min | sv, cheat | Lower the bottom of the drag select volume.
-nav_mark | sv, cheat | Marks the Area or Ladder under the cursor for manipulation by subsequent editing commands.
-nav_mark_attribute | sv, cheat | Set nav attribute for all areas in the selected set.
-nav_max_view_distance | sv, cheat | Default: 0<br>Maximum range for precomputed nav mesh visibility (0 = default 1500 units)
-nav_max_vis_delta_list_length | cheat | Default: 64<br>
-nav_obstacle_validate | sv, cheat | Default: false<br>
+nav_list_movable_meshes | sv | List the movable meshes registered with the movable meshes manager.
+nav_lower_drag_volume_max | sv | Lower the top of the drag select volume.
+nav_lower_drag_volume_min | sv | Lower the bottom of the drag select volume.
+nav_mark | sv | Marks the Area or Ladder under the cursor for manipulation by subsequent editing commands.
+nav_mark_attribute | sv | Set nav attribute for all areas in the selected set.
+nav_max_view_distance | sv | Default: 0<br>Maximum range for precomputed nav mesh visibility (0 = default 1500 units)
+nav_max_vis_delta_list_length |  | Default: 64<br>
+nav_obstacle_validate | sv | Default: false<br>
 nav_obstruction_async_update | sv | Default: false<br>
-nav_obstruction_draw | sv, cheat | Default: 0<br>
-nav_obstruction_draw_change | sv, cheat | Default: false<br>
-nav_obstruction_draw_dist | sv, cheat | Default: -1<br>
-nav_obstruction_draw_island | sv, cheat | Default: 0<br>
-nav_obstruction_draw_island_hull | sv, cheat | Default: -1<br>
-nav_obstruction_draw_movefail_blocking | sv, cheat | Default: false<br>
-nav_path_debug | sv, cheat | Default: false<br>
-nav_path_draw_areas | sv, cheat | Default: false<br>
-nav_path_draw_arrow | sv, cheat | Default: true<br>
-nav_path_draw_climb_segments | sv, cheat | Default: true<br>
-nav_path_draw_connected_areas | sv, cheat | Default: false<br>
-nav_path_draw_ground_segments | sv, cheat | Default: true<br>
-nav_path_draw_jump_segments | sv, cheat | Default: true<br>
-nav_path_draw_ladder_segments | sv, cheat | Default: true<br>
-nav_path_draw_link_segments | sv, cheat | Default: true<br>
-nav_path_draw_tick | sv, cheat | Default: 0<br>
-nav_path_fixup_climb_up_segments | sv, cheat | Default: true<br>
-nav_path_fixup_gap_segments | sv, cheat | Default: false<br>
-nav_path_jump_process_debug | sv, cheat | Default: false<br>
-nav_path_optimize | sv, cheat | Default: true<br>
-nav_path_optimize_portals | sv, cheat | Default: true<br>
-nav_path_optimizer_debug | sv, cheat | Default: 0<br>
-nav_pathfind_debug_log | sv, cheat | Default: 0<br>
-nav_pathfind_draw | sv, cheat | Default: 0<br>
-nav_pathfind_draw_blocked | sv, cheat | Default: 0<br>
-nav_pathfind_draw_costs | sv, cheat | Default: false<br>
-nav_pathfind_draw_fail | sv, cheat | Default: 0<br>
-nav_pathfind_draw_total_costs | sv, cheat | Default: false<br>
-nav_pathfind_inadmissable_heuristic_factor | sv, cheat | Default: 1<br>
-nav_pathfind_multithread | sv, cheat | Default: false<br>
-nav_potentially_visible_dot_tolerance | sv, cheat | Default: 0.98<br>
-nav_raise_drag_volume_max | sv, cheat | Raise the top of the drag select volume.
-nav_raise_drag_volume_min | sv, cheat | Raise the bottom of the drag select volume.
-nav_recall_selected_set | sv, cheat | Re-selects the stored selected set.
-nav_recorder_enabled | sv, cheat | Default: true<br>
-nav_remove_from_selected_set | sv, cheat | Remove current area from the selected set.
-nav_select_allow_blocked | sv, cheat | Default: true<br>When selecting an area under nav_edit, allow area marked as blocked.
-nav_select_area_id | sv, cheat | Default: -1<br>Select nav area with matching ID.
-nav_select_block_id | sv, cheat | Default: -1<br>Select nav space block with matching ID.
-nav_select_hull | sv, cheat | Default: 0<br>Restrict area selection to areas that can support a hull of the given category
-nav_select_radius | sv, cheat | Adds all areas in a radius to the selection set
-nav_select_with_attribute | sv, cheat | Selects areas with the given attribute.
-nav_set_movable_mesh_dormant_flag | sv, cheat | Set the movable mesh dormant flag (0=active, 1=dormant)
-nav_show_area_connections | sv, cheat | Default: true<br>Show connections to selected area when true
-nav_show_area_verts | sv, cheat | Default: true<br>Show area vertex positions
-nav_show_area_water_info | sv, cheat | Default: true<br>
-nav_show_elem_info | sv, cheat | Default: true<br>
-nav_show_elem_info_font | sv, cheat | Default: Consolas<br>
-nav_show_elem_info_font_size | sv, cheat | Default: -1<br>
-nav_show_elem_info_font_voffset | sv, cheat | Default: -11<br>
-nav_show_potentially_visible | cheat | Default: 0<br>Show areas that are potentially visible from the current nav area
-nav_smooth_constrain_results | sv, cheat | Default: true<br>
-nav_smooth_constrain_results_relax | sv, cheat | Default: 0.006<br>
-nav_smooth_constrain_spring | sv, cheat | Default: 2<br>
-nav_smooth_constrain_spring_relax | sv, cheat | Default: 0.01<br>
-nav_smooth_draw_accel | sv, cheat | Default: 0<br>
-nav_smooth_draw_boundary | sv, cheat | Default: 0<br>
-nav_smooth_draw_calc | sv, cheat | Default: 0<br>
-nav_smooth_draw_constraint_spline | sv, cheat | Default: false<br>
-nav_smooth_draw_constraint_spring | sv, cheat | Default: 0<br>
-nav_smooth_draw_speed | sv, cheat | Default: 0<br>
-nav_smooth_enable | sv, cheat | Default: true<br>
-nav_smooth_relax | sv, cheat | Default: true<br>
-nav_smooth_relax_use_timesteps | sv, cheat | Default: false<br>
-nav_smooth_spring_const_override | sv, cheat | Default: -1<br>
-nav_smooth_spring_enable | sv, cheat | Default: true<br>
-nav_smooth_spring_factor_deriv | sv, cheat | Default: 0<br>
-nav_smooth_spring_factor_dist | sv, cheat | Default: 0<br>
-nav_smooth_spring_factor_speed | sv, cheat | Default: 0<br>
-nav_smooth_spring_forward_dist_base | sv, cheat | Default: 50<br>
-nav_smooth_spring_forward_dist_time_limit | sv, cheat | Default: 1<br>
-nav_smooth_spring_max_dist | sv, cheat | Default: 36<br>
-nav_smooth_spring_tension_max_override | sv, cheat | Default: -1<br>
-nav_smooth_spring_timestep_factor_accel | sv, cheat | Default: 100<br>
-nav_smooth_spring_timestep_factor_speed | sv, cheat | Default: 100<br>
-nav_smooth_spring_timestep_max | sv, cheat | Default: 0.5<br>
-nav_smooth_spring_timestep_min | sv, cheat | Default: 0.1<br>
-nav_smooth_spring_yaw_rotation_speed | sv, cheat | Default: 50<br>
-nav_smooth_spring_yaw_threshold | sv, cheat | Default: 20<br>
-nav_space_select_dist | sv, cheat | Default: 1000<br>
-nav_split | sv, cheat | To split an Area into two, align the split line using your cursor and invoke the split command.
-nav_split_show_line | sv, cheat | Default: false<br>Show the free split line.
-nav_store_selected_set | sv, cheat | Stores the current selected set for later retrieval.
+nav_obstruction_draw | sv | Default: 0<br>
+nav_obstruction_draw_change | sv | Default: false<br>
+nav_obstruction_draw_dist | sv | Default: -1<br>
+nav_obstruction_draw_island | sv | Default: 0<br>
+nav_obstruction_draw_island_hull | sv | Default: -1<br>
+nav_obstruction_draw_movefail_blocking | sv | Default: false<br>
+nav_path_debug | sv | Default: false<br>
+nav_path_draw_areas | sv | Default: false<br>
+nav_path_draw_arrow | sv | Default: true<br>
+nav_path_draw_climb_segments | sv | Default: true<br>
+nav_path_draw_connected_areas | sv | Default: false<br>
+nav_path_draw_ground_segments | sv | Default: true<br>
+nav_path_draw_jump_segments | sv | Default: true<br>
+nav_path_draw_ladder_segments | sv | Default: true<br>
+nav_path_draw_link_segments | sv | Default: true<br>
+nav_path_draw_tick | sv | Default: 0<br>
+nav_path_fixup_climb_up_segments | sv | Default: true<br>
+nav_path_fixup_gap_segments | sv | Default: false<br>
+nav_path_jump_process_debug | sv | Default: false<br>
+nav_path_optimize | sv | Default: true<br>
+nav_path_optimize_portals | sv | Default: true<br>
+nav_path_optimizer_debug | sv | Default: 0<br>
+nav_pathfind_debug_log | sv | Default: 0<br>
+nav_pathfind_draw | sv | Default: 0<br>
+nav_pathfind_draw_blocked | sv | Default: 0<br>
+nav_pathfind_draw_costs | sv | Default: false<br>
+nav_pathfind_draw_fail | sv | Default: 0<br>
+nav_pathfind_draw_total_costs | sv | Default: false<br>
+nav_pathfind_inadmissable_heuristic_factor | sv | Default: 1<br>
+nav_pathfind_multithread | sv | Default: false<br>
+nav_potentially_visible_dot_tolerance | sv | Default: 0.98<br>
+nav_raise_drag_volume_max | sv | Raise the top of the drag select volume.
+nav_raise_drag_volume_min | sv | Raise the bottom of the drag select volume.
+nav_recall_selected_set | sv | Re-selects the stored selected set.
+nav_recorder_enabled | sv | Default: true<br>
+nav_remove_from_selected_set | sv | Remove current area from the selected set.
+nav_select_allow_blocked | sv | Default: true<br>When selecting an area under nav_edit, allow area marked as blocked.
+nav_select_area_id | sv | Default: -1<br>Select nav area with matching ID.
+nav_select_block_id | sv | Default: -1<br>Select nav space block with matching ID.
+nav_select_hull | sv | Default: 0<br>Restrict area selection to areas that can support a hull of the given category
+nav_select_radius | sv | Adds all areas in a radius to the selection set
+nav_select_with_attribute | sv | Selects areas with the given attribute.
+nav_set_movable_mesh_dormant_flag | sv | Set the movable mesh dormant flag (0=active, 1=dormant)
+nav_show_area_connections | sv | Default: true<br>Show connections to selected area when true
+nav_show_area_verts | sv | Default: true<br>Show area vertex positions
+nav_show_area_water_info | sv | Default: true<br>
+nav_show_elem_info | sv | Default: true<br>
+nav_show_elem_info_font | sv | Default: Consolas<br>
+nav_show_elem_info_font_size | sv | Default: -1<br>
+nav_show_elem_info_font_voffset | sv | Default: -11<br>
+nav_show_potentially_visible |  | Default: 0<br>Show areas that are potentially visible from the current nav area
+nav_smooth_constrain_spline | sv | Default: true<br>
+nav_smooth_constrain_spline_relax | sv | Default: 0.006<br>
+nav_smooth_constrain_spring | sv | Default: 2<br>
+nav_smooth_constrain_spring_relax | sv | Default: 0.01<br>
+nav_smooth_draw_boundary | sv | Default: 0<br>
+nav_smooth_draw_calc | sv | Default: 0<br>
+nav_smooth_draw_constraint_spline | sv | Default: false<br>
+nav_smooth_draw_constraint_spring | sv | Default: 0<br>
+nav_smooth_draw_speed | sv | Default: 0<br>
+nav_smooth_enable | sv | Default: 1<br>
+nav_smooth_push_from_walls | sv | Default: -1<br>
+nav_smooth_relax | sv | Default: true<br>
+nav_smooth_relax_use_timesteps | sv | Default: false<br>
+nav_smooth_spring_const_override | sv | Default: -1<br>
+nav_smooth_spring_enable | sv | Default: true<br>
+nav_smooth_spring_factor_deriv | sv | Default: 0<br>
+nav_smooth_spring_factor_dist | sv | Default: 0<br>
+nav_smooth_spring_factor_speed | sv | Default: 0<br>
+nav_smooth_spring_forward_dist_base | sv | Default: 50<br>
+nav_smooth_spring_forward_dist_time_limit | sv | Default: 1<br>
+nav_smooth_spring_max_dist | sv | Default: 36<br>
+nav_smooth_spring_tension_max_override | sv | Default: -1<br>
+nav_smooth_spring_timestep_factor_accel | sv | Default: 100<br>
+nav_smooth_spring_timestep_factor_speed | sv | Default: 100<br>
+nav_smooth_spring_timestep_max | sv | Default: 0.5<br>
+nav_smooth_spring_timestep_min | sv | Default: 0.1<br>
+nav_smooth_spring_yaw_rotation_speed | sv | Default: 50<br>
+nav_smooth_spring_yaw_threshold | sv | Default: 20<br>
+nav_space_select_dist | sv | Default: 1000<br>
+nav_split | sv | To split an Area into two, align the split line using your cursor and invoke the split command.
+nav_split_show_line | sv | Default: false<br>Show the free split line.
+nav_store_selected_set | sv | Stores the current selected set for later retrieval.
 nav_switch | sv | Switches to navmesh for the specified spawngroup
-nav_test_area_gravity | sv, cheat | Default: false<br>
-nav_test_bfs_lattice_dist_0 | sv, cheat | Default: -1<br>
-nav_test_bfs_lattice_dist_1 | sv, cheat | Default: -1<br>
-nav_test_bfs_lattice_dist_2 | sv, cheat | Default: -1<br>
-nav_test_bfs_lattice_hex | sv, cheat | Default: false<br>Demonstrates searching hexagonal lattice over nav mesh.
-nav_test_bfs_lattice_mark | sv, cheat | Default: 2<br>
-nav_test_bfs_lattice_simple | sv, cheat | Default: false<br>
-nav_test_bfs_lattice_spacing_0 | sv, cheat | Default: 24<br>
-nav_test_bfs_lattice_spacing_1 | sv, cheat | Default: 48<br>
-nav_test_bfs_lattice_spacing_2 | sv, cheat | Default: 96<br>
-nav_test_bfs_simple | sv, cheat | Default: false<br>
-nav_test_boundary_zone_circle | sv, cheat | Default: 0<br>
-nav_test_boundary_zone_force | sv, cheat | Default: false<br>
-nav_test_boundary_zone_grid_dim | sv, cheat | Default: 90<br>
-nav_test_boundary_zone_path | sv, cheat | Default: 0<br>
-nav_test_boundary_zone_rays | sv, cheat | Default: 100<br>
-nav_test_boundary_zone_rays_margin | sv, cheat | Default: -1<br>
-nav_test_boundary_zone_rays_random | sv, cheat | Default: false<br>
-nav_test_boundary_zone_sphere | sv, cheat | Default: 0<br>
-nav_test_curve_opt | sv, cheat | Default: 0<br>
-nav_test_detour | sv, cheat | Default: false<br>
-nav_test_find_nearest | sv, cheat | Default: false<br>Calculate the nearest point on the navmesh to the trace point.  Uses selection from nav_select_hull.
-nav_test_find_nearest_clear | sv, cheat | Default: false<br>Calculate the nearest point on the navmesh to the trace point.  Uses selection from nav_select_hull.
-nav_test_find_random_connected | sv, cheat | Default: false<br>Demonstrates finding random points that are connected in the nav mesh to the start point.
-nav_test_find_random_connected_dist_max | sv, cheat | Default: 1000<br>
-nav_test_find_random_connected_dist_min | sv, cheat | Default: 100<br>
-nav_test_find_z | sv, cheat | Default: 0<br>
-nav_test_force_npc_repath | sv, cheat | Default: false<br>
-nav_test_genrt | sv, cheat | Default: false<br>
-nav_test_genrt_place | sv, cheat | Default: false<br>
-nav_test_genrt_tile_removal_extent | sv, cheat | Default: 50<br>
-nav_test_genrt_tile_removal_place | sv, cheat | Default: false<br>
-nav_test_getareaoverlapping_gravity | sv, cheat | Default: false<br>
-nav_test_getnearestnav_gravity | sv, cheat | Default: false<br>
-nav_test_level_hull | sv, cheat | Find entities that intrude into the nav mesh.  List those entities in console output, and display bounding boxes around them for a while.
-nav_test_level_hull_move | sv, cheat | 
-nav_test_multi_connection | sv, cheat | Default: false<br>
-nav_test_npc_area | sv, cheat | Default: 0<br>
-nav_test_npc_collision | sv, cheat | Default: 0<br>
-nav_test_npc_collision_range | sv, cheat | Default: 250<br>
-nav_test_npc_collision_show_geometry | sv, cheat | Default: false<br>
-nav_test_path | sv, cheat | Default: false<br>Calculate and draw a path from player/camera position to the test position.
-nav_test_path_expansion_search | sv, cheat | Default: 0<br>Extend nav_test_path by doing an expansion search on that path.  Convar value defines dist.
-nav_test_path_lock_goal | sv, cheat | Default: false<br>Lock the pathfinding goal to the current intersection point.
-nav_test_path_lock_start | sv, cheat | Default: false<br>Lock the pathfinding start to the current intersection point.
-nav_test_path_move | sv, cheat | Default: false<br>
-nav_test_path_opt | sv, cheat | Default: true<br>Enable path optimization for nav_edit_path paths.
-nav_test_path_opt_transitions | sv, cheat | Default: false<br>
-nav_test_path_return | sv, cheat | Default: false<br>Calculate a return path from cursor position to the path calculated by nav_test_path.
-nav_test_path_space | sv, cheat | Default: 0<br>Should nav_test_path test 3d navigation?  1 = space to space, 2 = multi-modal space/ground
-nav_test_path_space_fly | sv, cheat | Default: true<br>Test flight paths
-nav_test_path_space_swim | sv, cheat | Default: true<br>Test swim paths
+nav_test_area_gravity | sv | Default: false<br>
+nav_test_bfs_lattice_dist_0 | sv | Default: -1<br>
+nav_test_bfs_lattice_dist_1 | sv | Default: -1<br>
+nav_test_bfs_lattice_dist_2 | sv | Default: -1<br>
+nav_test_bfs_lattice_hex | sv | Default: false<br>Demonstrates searching hexagonal lattice over nav mesh.
+nav_test_bfs_lattice_mark | sv | Default: 2<br>
+nav_test_bfs_lattice_simple | sv | Default: false<br>
+nav_test_bfs_lattice_spacing_0 | sv | Default: 24<br>
+nav_test_bfs_lattice_spacing_1 | sv | Default: 48<br>
+nav_test_bfs_lattice_spacing_2 | sv | Default: 96<br>
+nav_test_bfs_simple | sv | Default: false<br>
+nav_test_boundary_zone_circle | sv | Default: 0<br>
+nav_test_boundary_zone_force | sv | Default: false<br>
+nav_test_boundary_zone_grid_dim | sv | Default: 90<br>
+nav_test_boundary_zone_path | sv | Default: 0<br>
+nav_test_boundary_zone_rays | sv | Default: 100<br>
+nav_test_boundary_zone_rays_margin | sv | Default: -1<br>
+nav_test_boundary_zone_rays_random | sv | Default: false<br>
+nav_test_boundary_zone_sphere | sv | Default: 0<br>
+nav_test_curve_opt | sv | Default: 0<br>
+nav_test_detour | sv | Default: false<br>
+nav_test_find_nearest | sv | Default: false<br>Calculate the nearest point on the navmesh to the trace point.  Uses selection from nav_select_hull.
+nav_test_find_nearest_clear | sv | Default: false<br>Calculate the nearest point on the navmesh to the trace point.  Uses selection from nav_select_hull.
+nav_test_find_random_connected | sv | Default: false<br>Demonstrates finding random points that are connected in the nav mesh to the start point.
+nav_test_find_random_connected_dist_max | sv | Default: 1000<br>
+nav_test_find_random_connected_dist_min | sv | Default: 100<br>
+nav_test_find_z | sv | Default: 0<br>
+nav_test_force_npc_repath | sv | Default: false<br>
+nav_test_genrt | sv | Default: false<br>
+nav_test_genrt_place | sv | Default: false<br>
+nav_test_genrt_tile_removal_extent | sv | Default: 50<br>
+nav_test_genrt_tile_removal_place | sv | Default: false<br>
+nav_test_getareaoverlapping_gravity | sv | Default: false<br>
+nav_test_getnearestnav_gravity | sv | Default: false<br>
+nav_test_level_hull | sv | Find entities that intrude into the nav mesh.  List those entities in console output, and display bounding boxes around them for a while.
+nav_test_level_hull_move | sv | 
+nav_test_multi_connection | sv | Default: false<br>
+nav_test_npc_area | sv | Default: 0<br>
+nav_test_npc_collision | sv | Default: 0<br>
+nav_test_npc_collision_range | sv | Default: 250<br>
+nav_test_npc_collision_show_geometry | sv | Default: false<br>
+nav_test_path | sv | Default: false<br>Calculate and draw a path from player/camera position to the test position.
+nav_test_path_expansion_search | sv | Default: 0<br>Extend nav_test_path by doing an expansion search on that path.  Convar value defines dist.
+nav_test_path_lock_goal | sv | Default: false<br>Lock the pathfinding goal to the current intersection point.
+nav_test_path_lock_start | sv | Default: false<br>Lock the pathfinding start to the current intersection point.
+nav_test_path_move | sv | Default: false<br>
+nav_test_path_opt | sv | Default: true<br>Enable path optimization for nav_edit_path paths.
+nav_test_path_opt_transitions | sv | Default: false<br>
+nav_test_path_return | sv | Default: false<br>Calculate a return path from cursor position to the path calculated by nav_test_path.
+nav_test_path_space | sv | Default: 0<br>Should nav_test_path test 3d navigation?  1 = space to space, 2 = multi-modal space/ground
+nav_test_path_space_fly | sv | Default: true<br>Test flight paths
+nav_test_path_space_swim | sv | Default: true<br>Test swim paths
 nav_test_pos_name | sv | Default: <br>
 nav_test_pos_place | sv | Default: -1<br>
-nav_test_ray_space | sv, cheat | Default: 0<br>
-nav_test_rays | sv, cheat | Default: false<br>
-nav_test_smooth | sv, cheat | Default: false<br>
-nav_test_smooth_extern_push | sv, cheat | Default: 0<br>
-nav_test_smooth_in_speed | sv, cheat | Default: 120<br>
-nav_test_smooth_in_yaw | sv, cheat | Default: 0<br>
-nav_test_smooth_path_speed | sv, cheat | Default: -1<br>
-nav_test_smooth_separating_dist | sv, cheat | Default: -1<br>
-nav_test_smooth_spring_const | sv, cheat | Default: -1<br>
-nav_test_smooth_spring_tension_max | sv, cheat | Default: -1<br>
-nav_test_spline | sv, cheat | Default: 0<br>
-nav_test_split_obstacle | sv, cheat | Default: 0<br>
-nav_test_split_obstacle_dirty | sv, cheat | Default: false<br>
-nav_test_split_obstacle_leave | sv, cheat | Default: false<br>
-nav_test_split_obstacle_size | sv, cheat | Default: 30<br>
-nav_test_split_obstacle_update_pos | sv, cheat | Default: true<br>
-nav_toggle_deselecting | sv, cheat | Start or stop continuously removing from the selected set.
-nav_toggle_in_selected_set | sv, cheat | Remove current area from the selected set.
-nav_toggle_selected_set | sv, cheat | Toggles all areas into/out of the selected set.
-nav_toggle_selecting | sv, cheat | Start or stop continuously adding to the selected set.
-nav_unmark | sv, cheat | Clears the marked Area or Ladder.
-nav_validate | cheat | Default: 0<br>Level of validation for nav system.  Higher will be slower.
-nav_volume_debug | sv, cheat | Default: 0<br>Draw or print debug information about nav volume queries.
-navspace_create_water_smooth_connections | sv, cheat | Default: true<br>
-navspace_create_water_transition_connections | sv, cheat | Default: true<br>
-navspace_debug_pathfind | sv, cheat | Default: -1<br>
-navspace_debug_stringpull | sv, cheat | Default: 1<br>
-navspace_debug_trace | sv, cheat | Default: 0<br>
-navspace_debug_transition_calc | sv, cheat | Default: 0<br>
-navspace_draw_changes_blocks | sv, cheat | Default: 0<br>Draw blocks when they change
-navspace_draw_changes_waters | sv, cheat | Default: 0<br>Draw water volumes when they change
-navspace_path_use_water_level_locator | sv, cheat | Default: true<br>
-net_allow_multicast | a, release | Default: true<br>
+nav_test_ray_space | sv | Default: 0<br>
+nav_test_rays | sv | Default: false<br>
+nav_test_rays_use_npc_move | sv | Default: false<br>
+nav_test_search_on_path | sv | Default: false<br>Test the 'on path' search mode for tactical searches. Requires a selected NPC with a current path.
+nav_test_search_on_path_boundary_edges_only | sv | Default: false<br>Activate the 'boundary edges only' constraint when testing the 'on path' search mode for tactical searches.
+nav_test_smooth | sv | Default: false<br>
+nav_test_smooth_extern_push | sv | Default: 0<br>
+nav_test_smooth_in_speed | sv | Default: 120<br>
+nav_test_smooth_in_yaw | sv | Default: 0<br>
+nav_test_smooth_path_speed | sv | Default: -1<br>
+nav_test_smooth_separating_dist | sv | Default: -1<br>
+nav_test_smooth_spring_const | sv | Default: -1<br>
+nav_test_smooth_spring_tension_max | sv | Default: -1<br>
+nav_test_spline | sv | Default: 0<br>
+nav_test_split_obstacle | sv | Default: 0<br>
+nav_test_split_obstacle_dirty | sv | Default: false<br>
+nav_test_split_obstacle_leave | sv | Default: false<br>
+nav_test_split_obstacle_size | sv | Default: 30<br>
+nav_test_split_obstacle_update_pos | sv | Default: true<br>
+nav_toggle_deselecting | sv | Start or stop continuously removing from the selected set.
+nav_toggle_in_selected_set | sv | Remove current area from the selected set.
+nav_toggle_selected_set | sv | Toggles all areas into/out of the selected set.
+nav_toggle_selecting | sv | Start or stop continuously adding to the selected set.
+nav_unmark | sv | Clears the marked Area or Ladder.
+nav_validate |  | Default: 0<br>Level of validation for nav system.  Higher will be slower.
+nav_volume_debug | sv | Default: 0<br>Draw or print debug information about nav volume queries.
+navspace_create_water_smooth_connections | sv | Default: true<br>
+navspace_create_water_transition_connections | sv | Default: true<br>
+navspace_debug_pathfind | sv | Default: -1<br>
+navspace_debug_stringpull | sv | Default: 1<br>
+navspace_debug_trace | sv | Default: 0<br>
+navspace_debug_transition_calc | sv | Default: 0<br>
+navspace_draw_changes_blocks | sv | Default: 0<br>Draw blocks when they change
+navspace_draw_changes_waters | sv | Default: 0<br>Draw water volumes when they change
+navspace_path_use_water_level_locator | sv | Default: true<br>
 net_async_clientconnect |  | Default: true<br>Enable async client connect optimization
 net_async_job_random_sleep |  | Default: 0<br>Sleep randomly 0..net_async_job_random_sleep ms in the parallel server jobs; sleep is per job
 net_captureculldata |  | Captures low-level data to replay path culling algorithm behavior in controlled unit test environment
@@ -2822,14 +2797,15 @@ net_limit_sv_recv_max_message_size_kb | release | Default: 32<br>Server will rej
 net_limit_sv_recv_segments_per_packet | release | Default: 50<br>Server will reject packets with more than N segments
 net_limit_sv_recvbuffer_kb | release | Default: 128<br>Server will not buffer more than N kb from connected clients
 net_limit_sv_recvbuffer_msg | release | Default: 100<br>Server will not buffer more than N messages from connected clients
-net_listallmessages | cheat | List all registered net messages
+net_listallmessages |  | List all registered net messages
 net_log_processing |  | Default: false<br>Log network processing
 net_max_message_process_count |  | Default: 0<br>Maximum number of messages to process from a client in a single frame (0 == no limit).
 net_max_message_queue_size |  | Default: 0<br>Maximum number of messages to allow waiting in queue after processing; exceeding this disconnects the client. 0 == no limit
 net_max_polymorphic_spew |  | Default: 5<br>Max polymorphic variants to spew when spewing a flattened serializer.
-net_messageinfo | cheat | Display info about a message (by classname or id)
+net_messageinfo |  | Display info about a message (by classname or id)
 net_option | release | Get or set SteamNetworkingSockets options such as fake packet lag and loss
 net_p2p_listen_dedicated |  | Default: false<br>Should dedicated server listen for new-style P2P?
+net_permutation_info |  | show permutation information for serializer
 net_print_sdr_ping_times | release | Print current ping times to SDR points of presence, and selected route
 net_public_adr | release | Default: <br>For servers behind NAT/DHCP meant to be exposed to the public internet, this is the public facing ip address string: ("x.x.x.x" )
 net_qosinterval_spew |  | Default: false<br>Spew QoS interval data as we gather it
@@ -2854,14 +2830,16 @@ net_stats_json |  | Output server networking statistics in json format
 net_status | release | Shows current network status
 net_use_delta_property_fastpath |  | Default: 1<br>
 net_use_packet_compression |  | Default: true<br>Compress network traffic
-net_validatemessages | cheat | Activates/deactivates net message validation
+net_validatemessages |  | Activates/deactivates net message validation
+net_why_field_excluded |  | &lt;classname&gt; &lt;fieldname&gt;:  spew why field was excluded from networking for classname.
 nextdemo | release | Play next demo in sequence.
 nextlevel | sv, nf, release | Default: <br>If set to a valid map name, will trigger a changelevel to the specified map at the end of the round
 nextmap_print_enabled | sv, release | Default: false<br>When enabled prints next map to clients
 nextmode | sv, nf, rep, release | Default: <br>Sets the game mode to be played when the next level loads
-noclip | sv, cheat | Toggle. Player becomes non-solid and flies.  Optional argument of 0 or 1 to force enable/disable
-noclip_fixup | sv, cheat | Default: true<br>
-notarget | sv, cheat | Toggle. Player becomes hidden to NPCs.
+noclip | sv | Toggle. Player becomes non-solid and flies.  Optional argument of 0 or 1 to force enable/disable
+noclip_fixup | sv | Default: true<br>
+notarget | sv | Toggle. Player becomes hidden to NPCs.
+npc_record_snapshot_data | sv | Default: false<br>
 npcsolve_attract_draw | sv | Default: false<br>
 npcsolve_constraint_nav | sv | Default: true<br>
 npcsolve_constraint_npc | sv | Default: true<br>
@@ -2882,6 +2860,7 @@ npcsolve_separation_draw | sv | Default: false<br>
 npcsolve_separation_jitter | sv | Default: 0<br>
 npcsolve_separation_r2 | sv | Default: false<br>
 open_asset |  | Opens an asset in it's primary editor of choice. Specify the full path to the asset from the mod directory.
+open_current_map_in_hammer |  | opens the current map in hammer.
 option_duck_method | cl, a, user | Default: false<br>Input toggle control
 option_speed_method | cl, a, user | Default: false<br>Input toggle control
 opus_decode_test_signal |  | Default: false<br>
@@ -2893,6 +2872,7 @@ panorama_2d_translate_no_comp_layer |  | Default: true<br>
 panorama_alignment_fixes |  | Default: true<br>Fix alignment issues
 panorama_allow_texture_composition_layer_fast_path |  | Default: true<br>
 panorama_allow_transitions |  | Default: true<br>
+panorama_apply_styles_for_invisible_parents |  | Default: false<br>Specifies whether to short circuit applying styles when a parent is invisible.
 panorama_assert_loading_panel_type |  | Default: false<br>Force style invalidation of the entire panel subtree when adding / removing classes.
 panorama_async_compute_mipgen | cl | Default: true<br>use asynchronous compute for mipmap generation.
 panorama_box_shadow_no_comp_layer |  | Default: true<br>
@@ -2900,13 +2880,13 @@ panorama_cache_command_list_repaint_threshold |  | Default: 0.25<br>
 panorama_cache_command_list_size_threshold |  | Default: 384<br>
 panorama_classes_force_invalidate |  | Default: false<br>Force style invalidation of the entire panel subtree when adding / removing classes.
 panorama_clear_frames_on_device_restore |  | Default: 2<br>
-panorama_command_reordering |  | Default: true<br>
 panorama_comp_layer_lru_lifetime |  | Default: 1<br>
 panorama_composition_atlas |  | Default: true<br>
 panorama_console_max_autocomplete | cl | Default: 100<br>
 panorama_console_max_history | cl | Default: 100<br>
 panorama_console_max_lines | cl | Default: 2000<br>
 panorama_console_position_and_size | cl, a | Default: <br>
+panorama_console_reset_size_and_position | cl | Resets the panorama console to its default size and position
 panorama_content_size_fixes |  | Default: true<br>Fix content size issues
 panorama_daisy_wheel | cl | Default: ABXY<br>Daisy wheel input mode: RS \| ABXY
 panorama_dash_gap_ratio |  | Default: 0.5<br>
@@ -2934,6 +2914,9 @@ panorama_dragscroll_maxflickvelocity | cl | Default: 8000<br>Maximum velocity fo
 panorama_dragscroll_minflickvelocity | cl | Default: 60<br>Minimum velocity that the mouse must be moving as mouse up time to qualify as a drag scroll flick
 panorama_dragscroll_mintime |  | Default: 0.02<br>Minimum time that the mouse button must be down before a move is treated as a drag scroll
 panorama_dragscroll_velocitymultiplier |  | Default: 0.5<br>Multiplier for flick velocity off of actual measured velocity
+panorama_draw_fast_path_img_shadow |  | Default: true<br>
+panorama_draw_text_fast_path |  | Default: true<br>
+panorama_draw_text_fast_path_text_shadow |  | Default: true<br>
 panorama_dump_symbols |  | &lt;ESymbolType&gt; Dump all of the symbols in the Panorama symbol table
 panorama_enable_secondary_layout_pass |  | Default: true<br>
 panorama_focus_world_panels | cl, a | Default: false<br>when set request key focus when a world panel is enabled
@@ -2963,7 +2946,9 @@ panorama_might_scroll_no_comp_layer |  | Default: true<br>
 panorama_min_comp_layer_cache_cost |  | Default: 4096<br>
 panorama_movie_async_load_size_bytes | cl | Default: 20971520<br>
 panorama_movie_force_not_ready_behavior | cl | Default: -1<br>
+panorama_panel_occlusion |  | Default: true<br>
 panorama_print_cache_status |  | Print internal panorama refcounts for every file
+panorama_print_render_tree |  | Default: <br>Print the RenderOperation_t tree for the given root window; set to * to print all
 panorama_print_svg_stats |  | 
 panorama_reload_animations |  | Default: 2<br>
 panorama_render_target_cache_max_size |  | Default: 31457280<br>
@@ -2971,7 +2956,7 @@ panorama_script_cache_enabled |  | Default: true<br>Enable script caching to spe
 panorama_show_fps |  | Default: false<br>
 panorama_show_fps_scale |  | Default: 1<br>
 panorama_simple_borders_no_comp_layer |  | Default: true<br>
-panorama_skip_composition_layer_content_paint |  | Default: false<br>
+panorama_skip_composition_layer_content_paint |  | Default: true<br>
 panorama_skip_composition_layer_content_paint_tint |  | Default: false<br>
 panorama_spew_async_event_substring |  | Default: <br>If non-empty, print debug info about async event queue and dispatch behavior for events containing the substring.
 panorama_spew_layout_invalidates |  | Default: false<br>
@@ -2986,8 +2971,10 @@ panorama_track_render_commands |  | Default: false<br>
 panorama_transform_parents_no_layer_for_perspective |  | Default: false<br>
 panorama_transforms_no_comp_layer |  | Default: false<br>
 panorama_transition_time_factor |  | Default: 1<br>A float representing a scale factor for transitions. 1.0 is normal, 2.0 would be twice as fast as normal, 0.5 half as fast
+panorama_unlink_from_render_tree |  | Default: true<br>
 panorama_use_backbuffer_directly |  | Default: true<br>
-panorama_use_new_occlusion_invalidation |  | Default: false<br>
+panorama_use_composite_cmd_for_cached_layers |  | Default: true<br>
+panorama_use_new_occlusion_invalidation |  | Default: true<br>
 panorama_worldpanel_update_cull_distance | cl | Default: 1000<br>
 panorama_worldpanel_update_cull_size_threshold | cl | Default: 5<br>
 panorama_worldpanel_update_culling | cl | Default: false<br>
@@ -3005,21 +2992,22 @@ particle_profile_filter |  | Default: <br>Profile particle filter
 particle_profile_spike |  | Profile particle spike
 particle_reset_assertions |  | Causes all single-fire particle assertions to trigger once more.
 particle_snapshot_allow_combined_models |  | Default: false<br>
-particle_stop_all | cl, cheat | Stops all particle systems currently playing
-particle_stop_specified | cl, cheat | Stops all particle systems that match specified name
-particle_stop_unspecified | cl, cheat | Stops all particle systems that don't match specified name
-particle_test_attach_attachment | sv, cheat | Default: 0<br>Attachment index for attachment mode
-particle_test_attach_mode | sv, cheat | Default: follow_attachment<br>Possible Values: 'start_at_attachment', 'follow_attachment', 'start_at_origin', 'follow_origin'
-particle_test_create | sv, cheat | Creates the named particle system where the player is looking.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-particle_test_destroy | sv, cheat | Destroys all particle systems matching the specified name.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-particle_test_file | sv, cheat | Default: <br>Name of the particle system to dynamically spawn
-particle_test_start | sv, cheat | Dispatches the test particle system with the parameters specified in particle_test_file,<br> particle_test_attach_mode and particle_test_attach_param on the entity the player is looking at.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-particle_test_stop | sv, cheat | Stops all particle systems on the selected entities.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+particle_stop_all | cl | Stops all particle systems currently playing
+particle_stop_specified | cl | Stops all particle systems that match specified name
+particle_stop_unspecified | cl | Stops all particle systems that don't match specified name
+particle_test_attach_attachment | sv | Default: 0<br>Attachment index for attachment mode
+particle_test_attach_mode | sv | Default: follow_attachment<br>Possible Values: 'start_at_attachment', 'follow_attachment', 'start_at_origin', 'follow_origin'
+particle_test_create | sv | Creates the named particle system where the player is looking.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+particle_test_destroy | sv | Destroys all particle systems matching the specified name.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+particle_test_file | sv | Default: <br>Name of the particle system to dynamically spawn
+particle_test_start | sv | Dispatches the test particle system with the parameters specified in particle_test_file,<br> particle_test_attach_mode and particle_test_attach_param on the entity the player is looking at.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+particle_test_stop | sv | Stops all particle systems on the selected entities.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
 partybrowser_throttle_data | cl | Default: 0.15<br>
 partybrowser_timeout | cl | Default: 15<br>
 password | a, norecord, clientcmd_can_execute | Default: <br>Current server access password
 path |  | Show the filesystem path.
 path_closest_point_debug | sv, cl, rep | Default: false<br>
+path_node_evaluation_debug | sv, cl, rep | Default: 0<br>
 pause | release | Toggle the server pause state.
 pawn_mimic_all | sv, cl, rep | Default: false<br>
 perfectworld_replenish_funds | cl, server_can_execute | Opens Perfect World funds replenishment page for account.
@@ -3034,16 +3022,17 @@ phys_debug_draw |  | Set up debug-draw of physics internal state
 phys_dump_intersection_controller | sv | Dump intersection controller status
 phys_dump_main_world | sv | Dump physics main world to file
 phys_dump_memory | sv | Dump memory usage
-phys_dynamic_scaling | sv, cl, rep, cheat | Default: true<br>
-phys_expensive_shape_threshold | cl, cheat | Default: 6<br>
+phys_dynamic_scaling | sv, cl, rep | Default: true<br>
+phys_expensive_shape_threshold | cl | Default: 6<br>
+phys_force_controller_debug | sv | Default: false<br>
 phys_headshotscale | sv, cl, rep | Default: 1.3<br>Modifier for the headshot impulse hits on players
-phys_highlight_expensive_objects | cheat | Default: false<br>Highlight expensive physics objects
-phys_highlight_expensive_objects_strength | cheat | Default: 0.02<br>Highlight expensive physics objects strength
+phys_highlight_expensive_objects |  | Default: false<br>Highlight expensive physics objects
+phys_highlight_expensive_objects_strength |  | Default: 0.02<br>Highlight expensive physics objects strength
 phys_impactforcescale | sv | Default: 1<br>
-phys_joint_teleport | sv, cheat | Default: true<br>Teleport joint anchors if connected to world
-phys_length_damping_ratio | sv, cheat | Default: 2<br>Spring damping ratio for length constraint
-phys_length_frequency | sv, cheat | Default: 5<br>Spring stiffness for length constraint
-phys_list | sv | List all physics component contents of every entity in the game;<br>    -stream \[1\|0\]         initiate\|terminate streaming to physics debugger<br>    -allents              include non-physical entities<br>    -classes              print class names<br>    -sdk                  Rubikon-wide memory short status<br>    -sdk -struct          Rubikon-wide memory use per struct<br>    -sdk -rebuildsvms     Rubikon-wide SVM force rebuild and status<br>    -world                current state of the world<br>    -world -touch         list body pairs (bodies in contact)<br>    -world -save &lt;name&gt;   save world to a file<br>    -world -mem           memory dump (separately per game dll)<br>    -world -snapshots     Start/Stop dumping snapshots of the world into the current directory<br>    -world -profiletraces ProfileRecordedTraces<br>    -world -agg           current aggregate data registry (loaded resources)<br>
+phys_joint_teleport | sv | Default: true<br>Teleport joint anchors if connected to world
+phys_length_damping_ratio | sv | Default: 2<br>Spring damping ratio for length constraint
+phys_length_frequency | sv | Default: 5<br>Spring stiffness for length constraint
+phys_list | sv | List all physics component contents of every entity in the game;<br>    -stream \[1\|0\]         initiate\|terminate streaming to physics debugger<br>    -allents              include non-physical entities<br>    -classes              print class names<br>    -sdk                  Rubikon-wide memory short status<br>    -sdk -struct          Rubikon-wide memory use per struct<br>    -sdk -rebuildsvms     Rubikon-wide SVM force rebuild and status<br>    -world                current state of the world<br>    -world -touch         list body pairs (bodies in contact)<br>    -world -save &lt;name&gt;   save world to a file<br>    -world -mem           memory dump (separately per game dll)<br>    -world -snapshots     Start/Stop dumping snapshots of the world into the current directory<br>    -world -agg           current aggregate data registry (loaded resources)<br>
 phys_log_updaters | sv, cl, rep | Default: false<br>
 phys_log_updaters_exclude | sv, cl, rep | Default: weapon pistol rifle survivor common_male<br>
 phys_log_updaters_include | sv, cl, rep | Default: limbs<br>
@@ -3052,9 +3041,7 @@ phys_multithreading_enabled | sv, cl, rep | Default: true<br>Enable/Disable Mult
 phys_playerscale | sv, cl, rep | Default: 10<br>This multiplies the bullet impact impuse on players for more dramatic results when players are shot.
 phys_powered_ragdoll_debug | sv, cl, rep | Default: false<br>
 phys_pushscale | sv, cl, rep | Default: 1<br>
-phys_record_rays | sv | Dump physics main world to file
-phys_record_rays_and_world | sv | Dump traces physics main world to file
-phys_shoot | sv, cheat | Shoots a phys object.
+phys_shoot | sv | Shoots a phys object.
 phys_shoot_angular_speed | sv | Default: 3600<br>
 phys_shoot_speed | sv | Default: 250<br>
 phys_show_stats | sv, cl, rep | Default: false<br>
@@ -3066,11 +3053,11 @@ phys_threaded_kinematic_bone_update | sv, cl, rep | Default: false<br>
 phys_threaded_transform_update | sv, cl, rep | Default: false<br>
 phys_timescale | sv | Default: 1<br>Scale time for physics
 phys_upimpactforcescale | sv | Default: 0.375<br>
-phys_use_block_solver | sv, cheat | Default: true<br>Use block solving for constraint entities
+phys_use_block_solver | sv | Default: true<br>Use block solving for constraint entities
 phys_vehicleimpactforcescale | sv | Default: 1.5<br>
 phys_visualize_awake_dynamic_only | sv, cl, rep | Default: false<br>
 phys_visualize_awake_unattached_only | sv, cl, rep | Default: false<br>
-phys_visualize_traces | sv, cl, rep, cheat | Default: false<br>
+phys_visualize_traces | sv, cl, rep | Default: false<br>
 phys_wakeup | sv | Wake all physics objects in the Main physics up
 phys_wind_force_scale | sv, cl, rep | Default: 1<br>Scale on the force wind applies to physics bodies
 physics_add_test | sv | add test object
@@ -3079,26 +3066,26 @@ physics_highlight_active | sv | Turns on the absbox for all active physics objec
 physics_remove_test | sv | remove test object
 physics_report_active | sv | Lists all active physics objects<br>  -more : extra info<br>
 pickup_check_period | sv | Default: 0.25<br>
-pixelvis_debug | cheat | Dump debug info
-plant_bomb | sv, cheat | Plant a bomb where the player is looking.
+pixelvis_debug |  | Dump debug info
+plant_bomb | sv | Plant a bomb where the player is looking.
 play |  | Play a sound.
 playcast | release | Play a broadcast
 playdemo | release | Play a recorded demo file (.dem ).
 player0_using_joystick | a | Default: false<br>
 player_botdifflast_s | cl, a, release | Default: 2<br>
 player_competitive_maplist_2v2_10_0_630B8B7C | cl, a | Default: mg_de_inferno,mg_de_nuke,mg_de_vertigo,mg_de_poseidon,mg_de_sanctum,mg_de_overpass<br>
-player_competitive_maplist_8_10_0_C512DEBE | cl, a | Default: mg_de_warden,mg_de_dust2,mg_de_train,mg_de_ancient,mg_de_inferno,mg_de_nuke,mg_de_vertigo,mg_de_mirage,mg_cs_office,mg_cs_italy,mg_cs_alpine,mg_de_stronghold,mg_de_anubis,mg_lobby_mapveto,mg_de_overpass<br>
-player_debug_off_nav | sv, cheat | Default: false<br>
-player_debug_print_damage | sv, cheat | Default: false<br>When true, print amount and type of all damage received by player to console.
+player_competitive_maplist_8_10_0_556B3D03 | cl, a | Default: mg_de_warden,mg_de_dust2,mg_de_train,mg_de_ancient,mg_de_inferno,mg_de_nuke,mg_de_vertigo,mg_de_mirage,mg_cs_office,mg_cs_italy,mg_cs_alpine,mg_de_cache,mg_de_stronghold,mg_de_anubis,mg_lobby_mapveto,mg_de_overpass<br>
+player_debug_off_nav | sv | Default: false<br>
+player_debug_print_damage | sv | Default: false<br>When true, print amount and type of all damage received by player to console.
 player_nevershow_communityservermessage | cl, a | Default: 0<br>
 player_ping | sv | Creates a ping notification where the player is looking.
-player_ping_token_cooldown | sv, cheat, release | Default: 20<br>Cooldown for how long it takes for a player's ping token to refresh allowing them to ping again (they get 5 tokens).
+player_ping_token_cooldown | sv, release | Default: 20<br>Cooldown for how long it takes for a player's ping token to refresh allowing them to ping again (they get 5 tokens).
 player_survival_list_10_0_303 | cl, a | Default: mg_dz_blacksite,mg_dz_sirocco,mg_dz_vineyard,mg_dz_ember<br>
 player_teamplayedlast | cl, a | Default: 3<br>
-player_use_radius | sv, cl, rep, cheat | Default: 80<br>
+player_use_radius | sv, cl, rep | Default: 80<br>
 player_wargames_list2_10_0_0 | cl, a | Default: <br>
 playsound |  | playsound &lt;soundname&gt;
-playsoundscape | cl, cheat | Forces a soundscape to play
+playsoundscape | cl | Forces a soundscape to play
 playvol |  | Play a sound at a specified volume.
 png_screenshot |  | Take a .png screenshot: png_screenshot \[filename\]
 pop_var_values |  | Restore previously pushed convars and config values
@@ -3118,9 +3105,9 @@ print_mapgroup | cl, release | Prints the current mapgroup and the contained map
 print_mapgroup_sv | sv, release | Prints the current mapgroup and the contained maps
 print_model_bind_pose |  | Prints the bind pose of the specified model. Optionally limits to a particular bone and its parent chain, otherwise prints the entire skeleton.
 progress_enable |  | 
-prop_debug | sv, cheat | Toggle prop debug mode. If on, props will show colorcoded bounding boxes. Red means ignore all damage. White means respond physically to damage but never break. Green maps health in the range of 100 down to 1.
-prop_debug_collision | sv, cheat | Default: false<br>Highlights props based on their collision group: COLLISION_GROUP_PROPS(white), COLLISION_GROUP_INTERACTIVE_DEBRIS(green), COLLISION_GROUP_DEBRIS and will return to COLLISION_GROUP_INTERACTIVE_DEBRIS on sleeping(bright red), COLLISION_GROUP_DEBRIS permanently (dark red), COLLISION_GROUP_DEBRIS(blue), OTHER(grey)
-prop_dynamic_create | sv, cheat | Creates a dynamic prop with a specific .vmdl aimed away from where the player is looking.<br>	Arguments: {.vmdl name}
+prop_debug | sv | Toggle prop debug mode. If on, props will show colorcoded bounding boxes. Red means ignore all damage. White means respond physically to damage but never break. Green maps health in the range of 100 down to 1.
+prop_debug_collision | sv | Default: false<br>Highlights props based on their collision group: COLLISION_GROUP_PROPS(white), COLLISION_GROUP_INTERACTIVE_DEBRIS(green), COLLISION_GROUP_DEBRIS and will return to COLLISION_GROUP_INTERACTIVE_DEBRIS on sleeping(bright red), COLLISION_GROUP_DEBRIS permanently (dark red), COLLISION_GROUP_DEBRIS(blue), OTHER(grey)
+prop_dynamic_create | sv | Creates a dynamic prop with a specific .vmdl aimed away from where the player is looking.<br>	Arguments: {.vmdl name}
 prop_nav_ignore_edge_len | sv | Default: -1<br>
 prop_nav_ignore_mass | sv | Default: -1<br>
 prop_nav_obstacle_avoid_mass | sv | Default: 100.1<br>
@@ -3131,52 +3118,58 @@ prop_nav_obstacle_block_edge_min_c | sv | Default: -1<br>
 prop_nav_obstacle_block_mass_a | sv | Default: -1<br>
 prop_nav_obstacle_block_mass_b | sv | Default: -1<br>
 prop_nav_obstacle_block_mass_c | sv | Default: -1<br>
-prop_physics_create | sv, cheat | Creates a physics prop with a specific .vmdl aimed away from where the player is looking.<br>	Arguments: {.vmdl name}
+prop_physics_create | sv | Creates a physics prop with a specific .vmdl aimed away from where the player is looking.<br>	Arguments: {.vmdl name}
 props_break_apply_radial_forces | sv, cl, rep | Default: true<br>
 props_break_max_pieces_perframe | sv, cl, rep | Default: 16<br>Maximum prop breakable piece count per frame (-1 = model default)
 props_break_radial_force_ratio | sv, cl, rep | Default: 0.33<br>
-pulse_debug_entity | sv, cheat | Opens a graph referencing the selected entity. If it is referenced by more than 1 graph, list all the active pulse graph instances referring to that entity so you can pick which one you want.
+pulse_debug_entity | sv | Opens a graph referencing the selected entity. If it is referenced by more than 1 graph, list all the active pulse graph instances referring to that entity so you can pick which one you want.
 pulse_debug_print |  | Usage: pulse_debug_print &lt;vpulse_resource&gt;
-pulse_list_game_blackboards | sv, cheat | List all the active pulse graph instances
-pulse_list_graphs | cheat | List all the active pulse graph instances
-pulse_open_graph_id | cheat | Open a specific graph instance by id
-pulse_print_graph_execution_history | cheat | Prints the execution history of a graph by filename or instanceid
+pulse_list_game_blackboards | sv | List all the active pulse graph instances
+pulse_list_graphs |  | List all the active pulse graph instances
+pulse_open_graph_id |  | Open a specific graph instance by id
+pulse_print_graph_execution_history |  | Prints the execution history of a graph by filename or instanceid
 pulse_save_execution_history | sv, cl, rep | Default: true<br>Keep a history of all instructions run on a per graph basis.
 pulse_save_execution_history_limit | sv, cl, rep | Default: 10000<br>Keep a history of all instructions run on a per graph basis.
 push_var_values |  | Save convars and config values
 pvs_debugentity | sv, release | Default: -1<br>Verbose spew for this entity when doing IsInPVS computation.
 pvs_flowtype | sv, release | Default: 0<br>Flow through spawn groups for vis (0 == default, 1 == always visible, 2 == never visible.
-pwatchent | cl, cheat | Default: -1<br>Entity to watch for prediction system changes.
-pwatchvar | cl, cheat | Default: <br>Entity variable to watch in prediction system for changes.
+pwatchent | cl | Default: -1<br>Entity to watch for prediction system changes.
+pwatchvar | cl | Default: <br>Entity variable to watch in prediction system for changes.
 quit | release | Quit the game
-r_AirboatViewDampenDamp | sv, cl, nf, rep, cheat | Default: 1<br>
-r_AirboatViewDampenFreq | sv, cl, nf, rep, cheat | Default: 7<br>
-r_AirboatViewZHeight | sv, cl, nf, rep, cheat | Default: 0<br>
-r_JeepViewDampenDamp | sv, cl, nf, rep, cheat | Default: 1<br>
-r_JeepViewDampenFreq | sv, cl, nf, rep, cheat | Default: 7<br>
-r_JeepViewZHeight | sv, cl, nf, rep, cheat | Default: 10<br>
+r_AirboatViewDampenDamp | sv, cl, nf, rep | Default: 1<br>
+r_AirboatViewDampenFreq | sv, cl, nf, rep | Default: 7<br>
+r_AirboatViewZHeight | sv, cl, nf, rep | Default: 0<br>
+r_JeepViewDampenDamp | sv, cl, nf, rep | Default: 1<br>
+r_JeepViewDampenFreq | sv, cl, nf, rep | Default: 7<br>
+r_JeepViewZHeight | sv, cl, nf, rep | Default: 10<br>
 r_RainAllowInSplitScreen | cl | Default: false<br>Allows rain in splitscreen
 r_RainParticleDensity | cl | Default: 1<br>Density of Particle Rain 0-1
 r_add_views_in_pre_output |  | Default: true<br>
 r_allow_onesweep_gpusort |  | Default: true<br>
 r_always_render_all_windows |  | Default: false<br>Always force all engine & tools to render
 r_aoproxy_cull_dist |  | Default: 12<br>Distance to cull the AO proxy as a factor of size
-r_aoproxy_debug | cl, cheat | Default: false<br>
+r_aoproxy_debug | cl | Default: false<br>
+r_aoproxy_default_ambient_strength |  | Default: 0.2<br>
+r_aoproxy_default_light_cone_angles |  | Default: 0.3 0.3 0.3 0.3<br>
+r_aoproxy_default_light_cone_strengths |  | Default: 1 1 1 1<br>
+r_aoproxy_default_light_position_0 |  | Default: 1 0 1.5<br>
+r_aoproxy_default_light_position_1 |  | Default: -1 0 1.5<br>
+r_aoproxy_default_light_position_2 |  | Default: 0 1 1.5<br>
+r_aoproxy_default_light_position_3 |  | Default: 0 -1 1.5<br>
 r_aoproxy_enable | cl | Default: true<br>
 r_aoproxy_min_dist |  | Default: 3<br>
 r_aoproxy_min_dist_box |  | Default: 1<br>
-r_aoproxy_show | cl, cheat | Default: false<br>
+r_aoproxy_show | cl | Default: false<br>
 r_aspectratio |  | Default: 0<br>
 r_async_shader_compile_notify_frequency |  | Default: 10<br>
-r_bloom_tent_filter_radius | cl, cheat | Default: 3.1<br>bloom mip up-sample filtering radius (using 3x3 tent filter, radius in mip level texels), 0.0 radius =&gt; box (2x2) filter with (fixed) 1.0 radius
+r_bloom_tent_filter_radius | cl | Default: 3.1<br>bloom mip up-sample filtering radius (using 3x3 tent filter, radius in mip level texels), 0.0 radius =&gt; box (2x2) filter with (fixed) 1.0 radius
 r_camerapos |  | Prints out the current camera position + orientation to the console
 r_character_decal_monitor_draw_frustum |  | Default: false<br>
 r_character_decal_monitor_emissive |  | Default: false<br>
 r_character_decal_monitor_render_res |  | Default: 512<br>
 r_character_decal_renderdoc_capture |  | Default: false<br>
 r_character_decal_resolution |  | Default: 1024<br>Resolution of character decal texture.
-r_cs2_show_icon_editor | cl, rep, cheat | Default: false<br>CSGO/Icon Editor
-r_csgo_barnlight_shadow_scale_preview | cl | Default: 4<br>
+r_cs2_show_icon_editor | cl, rep | Default: false<br>CSGO/Icon Editor
 r_csgo_bloom_threshold_all_samples | cl | Default: true<br>Execute bloom threshold once per sample during downsample (default enabled, higher quality, less bloom aliasing)
 r_csgo_bloom_threshold_downsample_jimenez | cl | Default: true<br>Custom downsample based on Jimenez14, (default enabled, higher quality, decreases bloom aliasing further)
 r_csgo_cable_pixel_radius_clamp | cl | Default: 1.2<br>Minimum clamped size in pixels of a cable (if using F_CLAMP_MIN_RADIUS 1 in cable material)
@@ -3189,27 +3182,27 @@ r_csgo_csm_max_visible_distance_preview | cl | Default: 2000<br>
 r_csgo_csm_override_staticgeo_cascades_alphatest | cl | Default: false<br>If lb_csm_override_staticgeo_cascades true, ensure objects with SCENEOBJECTFLAG_ALPHA_TESTED flag will be rendered into cascade.
 r_csgo_csm_pushback_distance | cl | Default: 7000<br>
 r_csgo_csm_pushback_distance_preview | cl | Default: 1500<br>
-r_csgo_cubemap_normalization | cl, cheat | Default: true<br>
-r_csgo_decal_debug | cl, cheat | Default: false<br>
+r_csgo_cubemap_normalization | cl | Default: true<br>
+r_csgo_decal_debug | cl | Default: false<br>
 r_csgo_decals_use_msaa | cl | Default: false<br>
-r_csgo_depth_prepass | cl, cheat | Default: true<br>
-r_csgo_depth_prepass_cull_threshold | cl, cheat | Default: 60<br>
-r_csgo_depth_prepass_skybox_alpha_tested | cl, cheat | Default: true<br>
-r_csgo_depth_prepass_skybox_large | cl, cheat | Default: false<br>
-r_csgo_depth_prepass_skybox_small | cl, cheat | Default: false<br>
-r_csgo_depth_prepass_skybox_small_cull_threshold | cl, cheat | Default: 5<br>
-r_csgo_depth_prepass_small_cull_threshold | cl, cheat | Default: 10<br>
-r_csgo_depth_prepass_viewmodel | cl, cheat | Default: true<br>
-r_csgo_directional_lightmaps | cl, cheat | Default: true<br>
-r_csgo_effects_bloom | cl, cheat | Default: true<br>
-r_csgo_effects_bloom_when_smoked | cl, cheat | Default: false<br>
+r_csgo_depth_prepass | cl | Default: true<br>
+r_csgo_depth_prepass_cull_threshold | cl | Default: 60<br>
+r_csgo_depth_prepass_skybox_alpha_tested | cl | Default: true<br>
+r_csgo_depth_prepass_skybox_large | cl | Default: false<br>
+r_csgo_depth_prepass_skybox_small | cl | Default: false<br>
+r_csgo_depth_prepass_skybox_small_cull_threshold | cl | Default: 5<br>
+r_csgo_depth_prepass_small_cull_threshold | cl | Default: 10<br>
+r_csgo_depth_prepass_viewmodel | cl | Default: true<br>
+r_csgo_directional_lightmaps | cl | Default: true<br>
+r_csgo_effects_bloom | cl | Default: true<br>
+r_csgo_effects_bloom_when_smoked | cl | Default: false<br>
 r_csgo_enable_cubemap_fog | cl | Default: true<br>
-r_csgo_enable_glows | cl, cheat | Default: true<br>
+r_csgo_enable_glows | cl | Default: true<br>
 r_csgo_enable_gradient_fog | cl | Default: true<br>
-r_csgo_enable_high_precision_lighting | cl, cheat | Default: true<br>
+r_csgo_enable_high_precision_lighting | cl | Default: true<br>
 r_csgo_enable_sunlight_check | cl | Default: true<br>Enable vis tests for sunlight.
-r_csgo_enable_tonemapping | cl, cheat | Default: true<br>
-r_csgo_enable_translucent_screen_space | cl, cheat | Default: true<br>
+r_csgo_enable_tonemapping | cl | Default: true<br>
+r_csgo_enable_translucent_screen_space | cl | Default: true<br>
 r_csgo_enable_volume_fog | cl | Default: false<br>
 r_csgo_firstpersonlegs_nearz_offset | cl | Default: 0.1<br>
 r_csgo_fsr_enable_mip_bias | cl | Default: true<br>Apply negative mip bias when rendering with FSR.
@@ -3232,53 +3225,56 @@ r_csgo_gpu_opt_viewmodel_stencil | cl | Default: true<br>
 r_csgo_gpu_opt_water_refraction_resolve | cl | Default: true<br>copy already resolved depth for use by waterrefraction layers, instead of resolving main depth again (avoids msaa samples)
 r_csgo_gpu_optimizations | cl | Default: true<br>temporary cvar to control new GPU optimzations (depth resolves, etc)
 r_csgo_joint_upscale_sigma | cl | Default: 0.002<br>
-r_csgo_mboit | cl, cheat | Default: true<br>
-r_csgo_mboit_bias | cl, cheat | Default: 5e-06<br>
-r_csgo_mboit_debug | cl, cheat | Default: false<br>
+r_csgo_max_barnlight_shadow_scale_preview | cl | Default: 4<br>
+r_csgo_mboit | cl | Default: true<br>
+r_csgo_mboit_bias | cl | Default: 5e-06<br>
+r_csgo_mboit_debug | cl | Default: false<br>
 r_csgo_mboit_force_mixed_resolution | cl | Default: false<br>
-r_csgo_mboit_overestimation | cl, cheat | Default: 0.01<br>
-r_csgo_mboit_upscale_cs | cl, cheat | Default: false<br>
-r_csgo_mboit_use_4_moments | cl, cheat | Default: false<br>
-r_csgo_merge_resolve_with_histogram | cl, cheat | Default: true<br>
+r_csgo_mboit_overestimation | cl | Default: 0.01<br>
+r_csgo_mboit_upscale_cs | cl | Default: false<br>
+r_csgo_mboit_use_4_moments | cl | Default: false<br>
+r_csgo_merge_resolve_with_histogram | cl | Default: true<br>
 r_csgo_microshadowing | cl | Default: true<br>
-r_csgo_mixed_resolution_color_slices | cl, cheat | Default: false<br>
+r_csgo_mixed_resolution_color_slices | cl | Default: false<br>
 r_csgo_mixed_resolution_particles | cl | Default: true<br>
-r_csgo_mixed_resolution_particles_minmax | cl, cheat | Default: false<br>
-r_csgo_mixed_resolution_particles_scale | cl, cheat | Default: 2<br>
-r_csgo_mouse_trace_coord | cl, cheat | Default: true<br>
+r_csgo_mixed_resolution_particles_minmax | cl | Default: false<br>
+r_csgo_mixed_resolution_particles_scale | cl | Default: 2<br>
+r_csgo_mouse_trace_coord | cl | Default: true<br>
 r_csgo_msaa_resolve_apply_exposure_scale | cl | Default: true<br>0 - before, 1 - after fix for a2c fringing
 r_csgo_multiscattering | cl | Default: true<br>
-r_csgo_no_shader_resolve | cl, cheat | Default: false<br>
+r_csgo_no_shader_resolve | cl | Default: false<br>
 r_csgo_opaquerefract_viewmodel_depthcopy | cl | Default: false<br>Copy depth in viewmodel for opaquerefract 
 r_csgo_opaquerefract_viewmodel_quality | cl | Default: 1<br>Opaque refract quality in viewmodel: 0 = no background copy, no depth, 1= background copy, depth if enabled 
-r_csgo_outline_glow_scaledenom | cl, cheat | Default: 1<br>
-r_csgo_postprocess_enable | cl, cheat | Default: true<br>
+r_csgo_outline_glow_scaledenom | cl | Default: 1<br>
+r_csgo_player_occlusion_query | cl | Default: true<br>
+r_csgo_player_occlusion_query_debug | cl | Default: false<br>
+r_csgo_postprocess_enable | cl | Default: true<br>
 r_csgo_r11g11b10_dither_mode | cl | Default: 2<br>0 - disabled, 1 - regular dither noise, 2 - blue noise dither
-r_csgo_readonly_depth_stencil_enable | cl, cheat | Default: true<br>
-r_csgo_reconstruct_normals | cl, cheat | Default: false<br>
-r_csgo_reconstruct_normals_method | cl, cheat | Default: 0<br>
-r_csgo_render_decals | cl, cheat | Default: true<br>
-r_csgo_render_decals_on_translucent | cl, cheat | Default: true<br>
-r_csgo_render_dither_scale | cl, cheat | Default: 1<br>
-r_csgo_render_dynamic_objects | cl, cheat | Default: true<br>
-r_csgo_render_inferno_decals | cl, cheat | Default: true<br>
-r_csgo_render_opaque | cl, cheat | Default: true<br>
-r_csgo_render_overlays | cl, cheat | Default: true<br>
-r_csgo_render_post_bloom | cl, cheat | Default: 1<br>
-r_csgo_render_post_bloom_strength | cl, cheat | Default: -1<br>
-r_csgo_render_post_colorcorrection | cl, cheat | Default: 0<br>
-r_csgo_render_post_film_grain | cl, cheat | Default: 0<br>
+r_csgo_readonly_depth_stencil_enable | cl | Default: true<br>
+r_csgo_reconstruct_normals | cl | Default: false<br>
+r_csgo_reconstruct_normals_method | cl | Default: 0<br>
+r_csgo_render_decals | cl | Default: true<br>
+r_csgo_render_decals_on_translucent | cl | Default: true<br>
+r_csgo_render_dither_scale | cl | Default: 1<br>
+r_csgo_render_dynamic_objects | cl | Default: true<br>
+r_csgo_render_inferno_decals | cl | Default: true<br>
+r_csgo_render_opaque | cl | Default: true<br>
+r_csgo_render_overlays | cl | Default: true<br>
+r_csgo_render_post_bloom | cl | Default: 1<br>
+r_csgo_render_post_bloom_strength | cl | Default: -1<br>
+r_csgo_render_post_colorcorrection | cl | Default: 0<br>
+r_csgo_render_post_film_grain | cl | Default: 0<br>
 r_csgo_render_post_fxaa | cl | Default: 0<br>
-r_csgo_render_post_local_contrast | cl, cheat | Default: true<br>
-r_csgo_render_post_mirror_horizontal | cl, cheat | Default: 0<br>
-r_csgo_render_post_mirror_vertical | cl, cheat | Default: 0<br>
-r_csgo_render_translucent | cl, cheat | Default: true<br>
+r_csgo_render_post_local_contrast | cl | Default: true<br>
+r_csgo_render_post_mirror_horizontal | cl | Default: 0<br>
+r_csgo_render_post_mirror_vertical | cl | Default: 0<br>
+r_csgo_render_translucent | cl | Default: true<br>
 r_csgo_resolve_dither_bluenoise_amount | cl | Default: 4<br>Equivalent to r_csgo_render_dither_scale, but purely to control bluenoise for R11G11B10 downsample dither (if r_csgo_r11g11b10_dither_mode = 2)
 r_csgo_resolve_dither_noise_amount | cl | Default: 0.2<br>Amount of screen space dither noise to apply during resolve (used/essential with R11G11B10_FLOAT RT)
 r_csgo_shader_feature_test_value | cl | Default: 0<br>
 r_csgo_shader_perf_test | cl | Default: false<br>
-r_csgo_shadow_map_allocation_failure_policy | cl, cheat | Default: 1<br>What happens when a shadow map fails allocation? 0 = don't render, 1 = render unshadowed
-r_csgo_shadows_debug | cl, cheat | Default: 0<br>
+r_csgo_shadow_map_allocation_failure_policy | cl | Default: 1<br>What happens when a shadow map fails allocation? 0 = don't render, 1 = render unshadowed
+r_csgo_shadows_debug | cl | Default: 0<br>
 r_csgo_smoke_avoid_flat | cl | Default: true<br>
 r_csgo_smoke_clip_sniper | cl | Default: true<br>
 r_csgo_smoke_fullres_enhance | cl | Default: false<br>Enhance edges of smokes to eliminate bad pixels
@@ -3288,24 +3284,24 @@ r_csgo_smoke_shadow | cl | Default: true<br>
 r_csgo_smoke_upscale_discard_pixels_behind | cl | Default: false<br>When upsampling smoke discard pixels behind solid depth to avoid pixelated artifacts
 r_csgo_stencil_sniper_zoom | cl | Default: true<br>
 r_csgo_test1 | cl, release | Default: false<br>
-r_csgo_tools_vis_cubemap_roughness | cl, cheat | Default: 0.0001<br>
+r_csgo_tools_vis_cubemap_roughness | cl | Default: 0.0001<br>
 r_csgo_upscale_depth_threshold | cl | Default: 3<br>
 r_csgo_use_compute_bloom | cl | Default: false<br>
 r_csgo_viewmodel_csm_pushback_distance | cl | Default: 1500<br>
-r_csgo_viewmodel_envmap_position_bias | cl, cheat | Default: 0.85<br>
+r_csgo_viewmodel_envmap_position_bias | cl | Default: 0.85<br>
 r_csgo_viewmodel_far_plane | cl | Default: 100<br>
 r_csgo_viewmodel_near_plane | cl | Default: 1<br>
-r_csgo_viewmodel_probe_clamp_plane_distance | cl, cheat | Default: 16<br>
-r_csgo_volume_mboit_optimization | cl, cheat | Default: true<br>
-r_csgo_water_effects | cl, cheat | Default: true<br>
-r_csgo_water_refraction | cl, cheat | Default: true<br>
+r_csgo_viewmodel_probe_clamp_plane_distance | cl | Default: 16<br>
+r_csgo_volume_mboit_optimization | cl | Default: true<br>
+r_csgo_water_effects | cl | Default: true<br>
+r_csgo_water_refraction | cl | Default: true<br>
 r_csgo_water_skybox_depth | cl | Default: true<br>
-r_cubemap_debug_colors | cheat | Default: 0<br>
+r_cubemap_debug_colors |  | Default: 0<br>
 r_dashboard_render_quality | cl, clientcmd_can_execute | Default: true<br>
-r_debug_depth_holes | cl, cheat | Default: false<br>
+r_debug_depth_holes | cl | Default: false<br>
 r_debug_draw_safe_area_insets |  | Default: false<br>Render safe area insets as wireframe.
-r_debug_particle_shadows | cl, cheat | Default: false<br>
-r_debug_precipitation | cl, cheat | Default: false<br>Show precipitation volumes
+r_debug_particle_shadows | cl | Default: false<br>
+r_debug_precipitation | cl | Default: false<br>Show precipitation volumes
 r_decals | sv, cl, rep | Default: 2048<br>
 r_decals_additional_offset | sv, cl, rep | Default: 0.01<br>
 r_decals_default_fade_duration | sv, cl, rep | Default: 3<br>
@@ -3315,74 +3311,74 @@ r_decals_overide_fadestarttime_params | sv, cl, rep | Default: -1<br>
 r_decals_overlap_threshold | sv, cl, rep | Default: 6<br>
 r_depth_of_field | cl | Default: 1<br>0 = off, 1 = enabled (high quality, circular bokeh, HDR)
 r_directional_lightmaps |  | Default: true<br>
-r_directlighting | cheat | Default: true<br>Set to use direct lighting
+r_directlighting |  | Default: true<br>Set to use direct lighting
 r_dlss_preset |  | Default: 5<br>
 r_dof2_maxblursize | cl | Default: 5<br>
 r_dof2_radiusscale | cl | Default: 0.25<br>
-r_dof_override | cheat | Default: false<br>
-r_dof_override_far_blurry | cheat | Default: 2000<br>
-r_dof_override_far_crisp | cheat | Default: 180<br>
-r_dof_override_near_blurry | cheat | Default: -100<br>
-r_dof_override_near_crisp | cheat | Default: 0<br>
-r_dof_override_tilt_to_ground | cheat | Default: 0.5<br>
-r_dopixelvisibility | cheat | Default: true<br>
+r_dof_override |  | Default: false<br>
+r_dof_override_far_blurry |  | Default: 2000<br>
+r_dof_override_far_crisp |  | Default: 180<br>
+r_dof_override_near_blurry |  | Default: -100<br>
+r_dof_override_near_crisp |  | Default: 0<br>
+r_dof_override_tilt_to_ground |  | Default: 0.5<br>
+r_dopixelvisibility |  | Default: true<br>
 r_draw3dskybox | cl | Default: true<br>
-r_draw_first_tri_only | cheat | Default: false<br>
-r_draw_instances | cheat | Default: true<br>
+r_draw_first_tri_only |  | Default: false<br>
+r_draw_instances |  | Default: true<br>
 r_draw_overlays |  | Default: true<br>
-r_draw_particle_children_with_parents | cheat | Default: -1<br>Draw particle children with parents (-1=use gameinfo, 0=no, 1=yes)
-r_drawblankworld | cheat | Default: false<br>Render blank instead of the game world
-r_drawchickens | cl, cheat | Default: true<br>Render chickens
-r_drawcsplayers | cl, cheat | Default: true<br>Render CS players
-r_drawdecals | cheat | Default: true<br>Set to render decals
-r_drawdevvisualizers | cl, cheat | Default: false<br>Render dev visualizers
-r_drawpanorama | cheat | Default: true<br>Enable the rendering of panorama UI
-r_drawparticles | cheat | Default: true<br>SceneSystem/Particles/Draw Particles
+r_draw_particle_children_with_parents |  | Default: -1<br>Draw particle children with parents (-1=use gameinfo, 0=no, 1=yes)
+r_drawblankworld |  | Default: false<br>Render blank instead of the game world
+r_drawchickens | cl | Default: true<br>Render chickens
+r_drawcsplayers | cl | Default: true<br>Render CS players
+r_drawdecals |  | Default: true<br>Set to render decals
+r_drawdevvisualizers | cl | Default: false<br>Render dev visualizers
+r_drawpanorama |  | Default: true<br>Enable the rendering of panorama UI
+r_drawparticles |  | Default: true<br>SceneSystem/Particles/Draw Particles
 r_drawpixelvisibility |  | Default: false<br>Show the occlusion proxies
-r_drawropes | cl, cheat | Default: true<br>
-r_drawskybox | cheat | Default: true<br>Render the 2d skybox.
-r_drawtracers | cl, cheat | Default: true<br>
+r_drawropes | cl | Default: true<br>
+r_drawskybox |  | Default: true<br>Render the 2d skybox.
+r_drawtracers | cl | Default: true<br>
 r_drawtracers_firstperson | cl, a, release | Default: true<br>Toggle visibility of first person weapon tracers
-r_drawviewmodel | cl, cheat | Default: true<br>Render view model
-r_drawworld | cheat | Default: true<br>Render the world.
+r_drawviewmodel | cl | Default: true<br>Render view model
+r_drawworld |  | Default: true<br>Render the world.
 r_dx11_debug_clean | release | Default: false<br>Aggressively unbind bound resources to cleanup DX11 debug warnings.
 r_dx11_report_live_objects |  | Prints out live D3D11 objects (requires -dx11debug)
 r_dx11_software_cmd_lists |  | Default: true<br>Enable Software Command lists for DX11 (Avoid using deferred contexts)
 r_enable_rigid_animation | cl | Default: false<br>
 r_entpos |  | Moves the camera position + orientation to the named entity
 r_experimental_lag_limiter |  | Default: false<br>
-r_extra_render_frames | cheat | Default: 0<br>
-r_fallback_texture_lod_scale | cheat | Default: 2<br>Scale factor for requested texture size (texture streaming) - used for geo that doesn't have a precomputed UV density measure
-r_farz | cl, cheat | Default: -1<br>Override the far clipping plane. -1 means to use the value in env_fog_controller.
-r_flashlightambient | cl, cheat | Default: 0<br>
-r_flashlightbacktraceoffset | cl, cheat | Default: 0.4<br>
-r_flashlightbrightness | cl, rep, cheat | Default: 1<br>
-r_flashlightconstant | cl, rep, cheat | Default: 0<br>
-r_flashlightfar | cl, rep, cheat | Default: 1500<br>
-r_flashlightfov | cl, rep, cheat | Default: 53<br>
-r_flashlightladderdist | cl, cheat | Default: 40<br>
-r_flashlightlinear | cl, rep, cheat | Default: 100<br>
-r_flashlightlockposition | cl, cheat | Default: false<br>
-r_flashlightmuzzleflashfov | cl, cheat | Default: 120<br>
-r_flashlightnear | cl, rep, cheat | Default: 4<br>
-r_flashlightnearoffsetscale | cl, cheat | Default: 1<br>
-r_flashlightoffsetforward | cl, rep, cheat | Default: 0<br>
-r_flashlightoffsetright | cl, rep, cheat | Default: 5<br>
-r_flashlightoffsetup | cl, rep, cheat | Default: -5<br>
-r_flashlightquadratic | cl, rep, cheat | Default: 0<br>
-r_flashlightshadowatten | cl, cheat | Default: 0.35<br>
-r_flashlighttracedistcutoff | cl, cheat | Default: 128<br>
-r_flashlighttracedistwatercutoff | cl, cheat | Default: 80<br>
-r_flashlightvisualizetrace | cl, cheat | Default: false<br>
+r_extra_render_frames |  | Default: 0<br>
+r_fallback_texture_lod_scale |  | Default: 2<br>Scale factor for requested texture size (texture streaming) - used for geo that doesn't have a precomputed UV density measure
+r_farz | cl | Default: -1<br>Override the far clipping plane. -1 means to use the value in env_fog_controller.
+r_flashlightambient | cl | Default: 0<br>
+r_flashlightbacktraceoffset | cl | Default: 0.4<br>
+r_flashlightbrightness | cl, rep | Default: 1<br>
+r_flashlightconstant | cl, rep | Default: 0<br>
+r_flashlightfar | cl, rep | Default: 1500<br>
+r_flashlightfov | cl, rep | Default: 53<br>
+r_flashlightladderdist | cl | Default: 40<br>
+r_flashlightlinear | cl, rep | Default: 100<br>
+r_flashlightlockposition | cl | Default: false<br>
+r_flashlightmuzzleflashfov | cl | Default: 120<br>
+r_flashlightnear | cl, rep | Default: 4<br>
+r_flashlightnearoffsetscale | cl | Default: 1<br>
+r_flashlightoffsetforward | cl, rep | Default: 0<br>
+r_flashlightoffsetright | cl, rep | Default: 5<br>
+r_flashlightoffsetup | cl, rep | Default: -5<br>
+r_flashlightquadratic | cl, rep | Default: 0<br>
+r_flashlightshadowatten | cl | Default: 0.35<br>
+r_flashlighttracedistcutoff | cl | Default: 128<br>
+r_flashlighttracedistwatercutoff | cl | Default: 80<br>
+r_flashlightvisualizetrace | cl | Default: false<br>
 r_flush_on_pooled_ib_resize | release | Default: true<br>
 r_force_engine_render_frame |  | Force a single render of the engine viewport.
-r_force_no_present | cheat | Default: false<br>Force the render device to not present frames.
+r_force_no_present |  | Default: false<br>Force the render device to not present frames.
 r_force_render_frame_count |  | Default: 5<br>The number of frames to render when a
-r_force_thick_hair | cheat | Default: false<br>
-r_force_zprepass | cheat | Default: -1<br>0: Force z prepass off. 1: Force on. -1: Don't force
+r_force_thick_hair |  | Default: false<br>
+r_force_zprepass |  | Default: -1<br>0: Force z prepass off. 1: Force on. -1: Don't force
 r_frame_sync_enable |  | Default: true<br>
 r_freeze_sceneobjects | cl | Default: false<br>
-r_freezeparticles | cheat | Default: false<br>Pause particle simulation
+r_freezeparticles |  | Default: false<br>Pause particle simulation
 r_fullscreen_gamma | a, clientcmd_can_execute | Default: 2.2<br>Screen Gamma (only in fullscreen modes)
 r_fullscreen_quad_single_triangle |  | Default: true<br>
 r_gpu_mem_stats |  | Display GPU memory usage.
@@ -3395,11 +3391,11 @@ r_grass_quality |  | Default: 3<br>0 = Off, 1 = Low, 2 = Med, 3 = high, 4 = ultr
 r_grass_start_fade |  | Default: 3000<br>
 r_grass_vertex_lighting |  | Default: 0<br>
 r_hair_ao |  | Default: true<br>
-r_hair_debug_guides | cheat | Default: 0<br>1: Highlight guide hairs, 2: draw only guide hairs
+r_hair_debug_guides |  | Default: 0<br>1: Highlight guide hairs, 2: draw only guide hairs
 r_hair_indirect_transmittance |  | Default: true<br>
 r_hair_meshshader |  | Default: 0<br>
 r_hair_shadowtile |  | Default: true<br>
-r_hair_voxels | cheat | Default: -1<br>
+r_hair_voxels |  | Default: -1<br>
 r_hair_wind_global_scale |  | Default: 0.3<br>
 r_hair_wind_min_noise_speed |  | Default: 20<br>
 r_hair_wind_motion_scale |  | Default: 0.07<br>
@@ -3407,53 +3403,53 @@ r_hair_wind_noise |  | Default: 0.2<br>
 r_hair_wind_noise_occlusion |  | Default: 1<br>
 r_hair_wind_noise_size |  | Default: 10<br>
 r_hair_wind_occlusion |  | Default: 2<br>
-r_haircull_percent | cheat | Default: -1<br>
-r_hairsort | cheat | Default: true<br>
-r_icon_csm_pushback_distance | cl, cheat | Default: -1<br>csm pushback distance, should be much shorter/disabled for icon rendering
-r_icon_custommaterial_maxres | cl, cheat | Default: 512<br>maxres for custommaterials when rendering icons
-r_icon_generate_offline_mips | cl, cheat | Default: false<br>generate mips via sidecar file for offline
-r_icon_generate_runtime_mips | cl, cheat | Default: true<br>generate mips for runtime
-r_icon_highcontrast_postprocessing_weight | cl, cheat | Default: 0.375<br>if using high contrast postprocessing, use this weight (weight = 1.0 for characters)
+r_haircull_percent |  | Default: -1<br>
+r_hairsort |  | Default: true<br>
+r_icon_csm_pushback_distance | cl | Default: -1<br>csm pushback distance, should be much shorter/disabled for icon rendering
+r_icon_custommaterial_maxres | cl | Default: 512<br>maxres for custommaterials when rendering icons
+r_icon_generate_offline_mips | cl | Default: false<br>generate mips via sidecar file for offline
+r_icon_generate_runtime_mips | cl | Default: true<br>generate mips for runtime
+r_icon_highcontrast_postprocessing_weight | cl | Default: 0.375<br>if using high contrast postprocessing, use this weight (weight = 1.0 for characters)
 r_icon_image_cache_to_disk | cl, a, release | Default: true<br>1
-r_icon_max_mip_width | cl, cheat | Default: 128<br>r_icon_max_mip_width
-r_icon_player_equip_gloves_from_loadout | cl, cheat | Default: false<br>equip gloves on player for icon rendering from loadout, or use default gloves
-r_icon_rendering_height | cl, cheat | Default: 384<br>icon rendering height
-r_icon_rendering_width | cl, cheat | Default: 512<br>icon rendering width
-r_icon_show_timing | cl, cheat | Default: false<br>show timing in output
-r_icon_use_kv3_camera | cl, cheat | Default: false<br>use test kv3 data for camera
+r_icon_max_mip_width | cl | Default: 128<br>r_icon_max_mip_width
+r_icon_player_equip_gloves_from_loadout | cl | Default: false<br>equip gloves on player for icon rendering from loadout, or use default gloves
+r_icon_rendering_height | cl | Default: 384<br>icon rendering height
+r_icon_rendering_width | cl | Default: 512<br>icon rendering width
+r_icon_show_timing | cl | Default: false<br>show timing in output
+r_icon_use_kv3_camera | cl | Default: false<br>use test kv3 data for camera
 r_impact_ricochet_chance | cl | Default: 0.3<br>
 r_impacts_alt_orientation | cl | Default: true<br>
 r_impacts_decal_grazing_incidence_cutoff | cl | Default: 0.55<br>
 r_impacts_decal_grazing_incidence_variance | cl | Default: 0.1<br>
-r_indirectlighting | cheat | Default: true<br>Set to use indirect lighting
+r_indirectlighting |  | Default: true<br>Set to use indirect lighting
 r_late_particle_job_sync | cl | Default: false<br>
 r_legacy_vsync |  | Default: false<br>Use legacy vsync mode -- for testing for a couple user machines.
 r_light_flickering_enabled | sv, cl, rep | Default: true<br>
-r_light_probe_volume_debug_colors | cheat | Default: false<br>
-r_light_probe_volume_debug_grid | cheat | Default: 0<br>Show LPV debug grid, 0: off, 1: closest only 2: closest and keep 3: all
-r_light_probe_volume_debug_grid_albedo | cheat | Default: 128 128 128 255<br>albedo for LPV debug grid
-r_light_probe_volume_debug_grid_bbox | cheat | Default: true<br>Show LPV bounding box when debug grid is on, 0: off, 1: on
-r_light_probe_volume_debug_grid_metalness | cheat | Default: 0<br>metalness for LPV debug grid
-r_light_probe_volume_debug_grid_prim | cheat | Default: 0<br>0: spheres, 1: cubes
-r_light_probe_volume_debug_grid_roughness | cheat | Default: 0.5<br>roughness for LPV debug grid
-r_light_probe_volume_debug_grid_samplesize | cheat | Default: 4<br>sphere radius (world) for LPV debug grid
-r_lightmap_set | cheat | Default: lightmaps<br>Lightmap set to use, only works on map load
+r_light_probe_volume_debug_colors |  | Default: false<br>
+r_light_probe_volume_debug_grid |  | Default: 0<br>Show LPV debug grid, 0: off, 1: closest only 2: closest and keep 3: all
+r_light_probe_volume_debug_grid_albedo |  | Default: 128 128 128 255<br>albedo for LPV debug grid
+r_light_probe_volume_debug_grid_bbox |  | Default: true<br>Show LPV bounding box when debug grid is on, 0: off, 1: on
+r_light_probe_volume_debug_grid_metalness |  | Default: 0<br>metalness for LPV debug grid
+r_light_probe_volume_debug_grid_prim |  | Default: 0<br>0: spheres, 1: cubes
+r_light_probe_volume_debug_grid_roughness |  | Default: 0.5<br>roughness for LPV debug grid
+r_light_probe_volume_debug_grid_samplesize |  | Default: 4<br>sphere radius (world) for LPV debug grid
+r_lightmap_set |  | Default: lightmaps<br>Lightmap set to use, only works on map load
 r_lightmap_size |  | Default: 65536<br>Maximum lightmap resolution.
 r_lightmap_size_directional_irradiance |  | Default: -1<br>Maximum lightmap resolution for directional_irradiance channel. -1 = use value of r_lightmap_size
 r_limit_particle_job_duration |  | Default: false<br>
 r_low_latency |  | Default: 1<br>NVIDIA Low Latency/AMD Anti-Lag 2 (0 = off, 1 = on, 2 = NV-only, on + boost)
 r_low_latency_trigger_flash |  | Default: true<br>NVIDIA Low Latency Trigger Flash
-r_mapextents | cl, cheat | Default: 16384<br>Set the max dimension for the map.  This determines the far clipping plane
+r_mapextents | cl | Default: 16384<br>Set the max dimension for the map.  This determines the far clipping plane
 r_max_texture_pool_size |  | Default: 0<br>Upper limit on texture pool size.
 r_mixed_shadows_fade_in_time | sv, cl, rep | Default: 0.5<br>
 r_mixed_shadows_fade_out_time | sv, cl, rep | Default: 0.5<br>
 r_monitor_3dskybox | cl | Default: true<br>
-r_morphing_enabled | cheat | Default: true<br>
+r_morphing_enabled |  | Default: true<br>
 r_multigpu_num_gpus_found |  | Default: 1<br>
 r_multigpu_num_gpus_used |  | Default: 1<br>
-r_muzzleflashbrightness | cl, rep, cheat | Default: 0.4<br>
-r_muzzleflashlinear | cl, rep, cheat | Default: 0.05<br>
-r_nearz | cl, cheat | Default: -1<br>Override the near clipping plane. -1 means use the default.
+r_muzzleflashbrightness | cl, rep | Default: 0.4<br>
+r_muzzleflashlinear | cl, rep | Default: 0.05<br>
+r_nearz | cl | Default: -1<br>Override the near clipping plane. -1 means use the default.
 r_particle_allowprerender |  | Default: true<br>
 r_particle_batch_collections |  | Default: false<br>
 r_particle_cables_cast_shadows |  | Default: true<br>
@@ -3481,7 +3477,7 @@ r_particle_gpu_implicit_debug_stats |  | Default: false<br>
 r_particle_gpu_implicit_debug_wireframe |  | Default: false<br>
 r_particle_gpu_implicit_lds_cache |  | Default: false<br>
 r_particle_max_detail_level |  | Default: 3<br>The maximum detail level of particle to create
-r_particle_max_draw_distance | cheat | Default: 1e+06<br>The maximum distance that particles will render
+r_particle_max_draw_distance |  | Default: 1e+06<br>The maximum distance that particles will render
 r_particle_max_size_cull |  | Default: 1200<br>Particle systems larger than this in every dimension skip culling to save CPU.  They will be drawn anyway.
 r_particle_max_texture_layers |  | Default: -1<br>
 r_particle_min_timestep |  | Default: 0<br>A minimum on particle simulation time, particle simulation happening more frequently than this will lerp.
@@ -3489,7 +3485,7 @@ r_particle_mixed_resolution_viewstart |  | Default: 500<br>
 r_particle_model_new |  | Default: false<br>
 r_particle_model_new8 |  | Default: true<br>
 r_particle_model_per_thread_count |  | Default: 32<br>
-r_particle_multiplier | cheat | Default: 1<br>Render each particle system N times for perf testing
+r_particle_multiplier |  | Default: 1<br>Render each particle system N times for perf testing
 r_particle_newinput |  | Default: false<br>Enable input path in particle ops
 r_particle_render_refreshes_sleep_timer |  | Default: true<br>Disable to get a better look at what's happening offscreen
 r_particle_render_test |  | Default: false<br>render particles 100 times and show perf
@@ -3509,48 +3505,49 @@ r_pipeline_stats_command_flush |  | Default: false<br>Experimental: Set to 1 to 
 r_pipeline_stats_flush_before_sleeping |  | Default: false<br>Experimental: Set to 1 to enable GPU pipeline flushes right before the render thread sleeps to wait for more work.
 r_pipeline_stats_present_flush |  | Default: false<br>Experimental: Set to 1 to enable full GPU pipeline flushing after each present.
 r_pipeline_stats_use_flush_api |  | Default: true<br>Experimental: Set to 1 to use the ID3D11DeviceContext11::Flush() to flush the GPU pipeline instead of queries.
-r_pixelvisibility_partial | cheat | Default: true<br>
-r_pixelvisibility_spew | cheat | Default: false<br>
-r_player_fog_distance_multiplier | cl, cheat | Default: 1.7<br>
-r_player_fog_maxdensity_multiplier | cl, cheat | Default: 0.6<br>
+r_pixelvisibility_partial |  | Default: true<br>
+r_pixelvisibility_spew |  | Default: false<br>
+r_player_fog_distance_multiplier | cl | Default: 1.7<br>
+r_player_fog_maxdensity_multiplier | cl | Default: 0.6<br>
 r_player_visibility_mode | cl, a, release | Default: 1<br>
-r_player_visibility_stencil | cl, cheat | Default: true<br>
-r_player_visibility_strength | cl, cheat | Default: 1.1<br>
+r_player_visibility_stencil | cl | Default: true<br>
+r_player_visibility_strength | cl | Default: 1.1<br>
 r_post_bloom_debug | cl | Default: 0<br>1 = bloom output (before thresholding), 2 = quarter res downsample, 3 = quarter res effects bloom 4 = quarter res effects raw
 r_print_buffers |  | Print Vertex/Index/GPU buffers.
 r_print_texture_stats |  | Texture stats
 r_propsmaxdist | cl | Default: 1200<br>Maximum visible distance
 r_render_coordination_state |  | Prints out the current render coordination state.
-r_render_hair | cheat | Default: true<br>
+r_render_hair |  | Default: true<br>
 r_render_to_cubemap_begin_mixing_roughness | cl | Default: 0.25<br>
 r_render_to_cubemap_debug | cl | Default: false<br>
-r_render_world_node_bounds | cheat | Default: false<br>Render world node bounds
+r_render_world_node_bounds |  | Default: false<br>Render world node bounds
 r_renderdoc_auto_shader_pdbs |  | Default: true<br>Automatically generate shader debug info on capture
 r_renderdoc_capture_frame |  | Triggers a RenderDoc capture
 r_renderdoc_capture_window_dx11 |  | Triggers a RenderDoc capture of a specific Window
 r_renderdoc_open_captures |  | Default: true<br>
 r_renderdoc_validation_error_capture_limit |  | Default: 5<br>
-r_rendersun | cheat | Default: true<br>Render sun lighting
-r_replay_post_effect | cl, cheat | Default: -1<br>
+r_rendersun |  | Default: true<br>Render sun lighting
+r_replay_post_effect | cl | Default: -1<br>
 r_reset_character_decals |  | Default: false<br>
 r_ropetranslucent | cl | Default: true<br>
 r_screen_size_expansion | cl | Default: 0<br>
 r_setpos |  | Moves the camera position + orientation to the specified position
-r_shadows | cheat | Default: true<br>
+r_shadows |  | Default: true<br>
 r_shadowtile_waveops |  | Default: false<br>
 r_show_build_info | cl, a, release | Default: true<br>Build information. Leave this enabled when submitting bug screenshots and videos, please!
 r_show_time_info | cl, release | Default: false<br>Show real time, large.
-r_showdebugoverlays | cheat | Default: false<br>Set to render debug overlays
-r_showdebugrendertarget | cheat | Default: false<br>Set the debug render target to show, 0 == disable
-r_showsceneobjectbounds | cheat | Default: false<br>Show scenesystem object bounding boxes
-r_showsunshadowdebugrendertargets | cheat | Default: false<br>Set to render sun shadow render targets
-r_showsunshadowdebugsplitvis | cheat | Default: false<br>Set to render sun shadow split visibility debugger
+r_showdebugoverlays |  | Default: false<br>Set to render debug overlays
+r_showdebugrendertarget |  | Default: false<br>Set the debug render target to show, 0 == disable
+r_showsceneobjectbounds |  | Default: false<br>Show scenesystem object bounding boxes
+r_showsunshadowdebugrendertargets |  | Default: false<br>Set to render sun shadow render targets
+r_showsunshadowdebugsplitvis |  | Default: false<br>Set to render sun shadow split visibility debugger
 r_size_cull_threshold |  | Default: 0.33<br>Threshold of screen size percentage below which objects get culled
 r_size_cull_threshold_fade |  | Default: 7.5<br>% above the screen size percentage where we will start fading out (==0 will disable fading).
-r_size_cull_threshold_shadow | cheat | Default: 0.2<br>Threshold of shadow map size percentage below which objects get culled
-r_skinning_enabled | cheat | Default: true<br>
-r_skip_precache_validation_check |  | Default: false<br>
+r_size_cull_threshold_shadow |  | Default: 0.2<br>Threshold of shadow map size percentage below which objects get culled
+r_skinning_enabled |  | Default: true<br>
+r_skip_precache_validation_check |  | Default: true<br>
 r_smooth_morph_normals | release | Default: false<br>
+r_spectator_flashbang_opacity | cl, a | Default: 0.6<br>Spectator flash opacity
 r_ssao |  | Default: true<br>Set to use screen-space ambient occlusion
 r_ssao_bias |  | Default: 2.5<br>
 r_ssao_blur |  | Default: true<br>
@@ -3564,7 +3561,7 @@ r_texture_budget_threshold |  | Default: 0.9<br>Reduce texture memory pool size 
 r_texture_budget_update_period |  | Default: 0.1<br>Time (in seconds) between updating texture memory budget.
 r_texture_eager_eviction |  | Default: false<br>
 r_texture_hookup_uses_threadpool |  | Default: true<br>Async Texture hookup uses its own threadpool instead of the global pool.
-r_texture_lod_scale | cheat | Default: 1<br>Scale factor for requested texture size (texture streaming)
+r_texture_lod_scale |  | Default: 1<br>Scale factor for requested texture size (texture streaming)
 r_texture_nonstreaming_load |  | Default: true<br>Allow immediately loading mips of textures (when possible) when their headers are loaded, saving IO & reducing latency.
 r_texture_pool_increase_rate |  | Default: 64<br>Increase texture memory pool size by this many MB / s when under budget.
 r_texture_pool_reduce_rate |  | Default: 256<br>Reduce texture memory pool size by this many MB / s when over budget.
@@ -3588,7 +3585,7 @@ r_threaded_particles |  | Default: true<br>
 r_threaded_scene_object_update | cl | Default: true<br>
 r_timestamp_query_multiplier |  | Default: 1<br>Set the TIMESTAMP query cycle multiplier, for drivers that lie
 r_toggleviewportsize |  | Toggles viewport size between small + full window.
-r_translucent | cheat | Default: true<br>Enable rendering of translucent geometry
+r_translucent |  | Default: true<br>Enable rendering of translucent geometry
 r_update_particles_on_render_only_frames | cl | Default: false<br>
 r_use_memory_budget_model |  | Default: false<br>Use a model of GPU memory use to determine budget rather than querying the OS.
 r_validate_texture_streaming |  | Default: false<br>Dumps state of texture streaming at the next frame boundary.
@@ -3602,41 +3599,41 @@ r_world_wind_frequency_trees |  | Default: 0.003<br>
 r_world_wind_offset_speed |  | Default: 0.25 0.3 0.2<br>
 r_world_wind_smooth_time |  | Default: 2<br>
 r_world_wind_strength |  | Default: 40<br>
-r_zprepass_normals | cheat | Default: false<br>0: Use normals reconstructed from depth. 1: Output correct normals in z prepass.
-radarvisdistance | sv, cheat | Default: 1000<br>at this distance and beyond you need to be point right at someone to see them
-radarvismaxdot | sv, cheat | Default: 0.996<br>how closely you have to point at someone to see them beyond max distance
-radarvismethod | sv, cheat | Default: 1<br>0 for traditional method, 1 for more realistic method
-radarvispow | sv, cheat | Default: 0.4<br>the degree to which you can point away from a target, and still see them on radar.
+r_zprepass_normals |  | Default: false<br>0: Use normals reconstructed from depth. 1: Output correct normals in z prepass.
+radarvisdistance | sv | Default: 1000<br>at this distance and beyond you need to be point right at someone to see them
+radarvismaxdot | sv | Default: 0.996<br>how closely you have to point at someone to see them beyond max distance
+radarvismethod | sv | Default: 1<br>0 for traditional method, 1 for more realistic method
+radarvispow | sv | Default: 0.4<br>the degree to which you can point away from a target, and still see them on radar.
 radio | cl, release | Opens a radio menu
 radio1 | cl, release | Opens a radio menu
 radio2 | cl, release | Opens a radio menu
 radio3 | cl, release | Opens a radio menu
-ragdoll_cleanup_all | sv, cl, cheat | Cleans up all ragdolls.
+ragdoll_cleanup_all | sv, cl | Cleans up all ragdolls.
 ragdoll_debug_item_detachment | sv, rep | Default: false<br>
 ragdoll_fixup_joint_limits | sv, rep | Default: true<br>Adjusts bone transforms so that physics joints don't appear violated (limits)
 ragdoll_fixup_joint_limits_max_height | sv, rep | Default: 1<br>Disable ragdoll_fixup_joint_limits on joints too high in the hierarchy because long chains tend to depend on violating limits
 ragdoll_fixup_joint_orientation | sv, rep | Default: true<br>Adjusts bone transforms so that physics joints don't appear violated (orientation)
 ragdoll_fixup_joint_orientation_max_height | sv, rep | Default: 10<br>Disable ragdoll_fixup_joint_orientation on joints too high in the hierarchy because small differences can massively accumulate (e.g. long chains)
 ragdoll_fixup_joint_translation | sv, rep | Default: true<br>Adjusts bone transforms so that physics joints don't appear violated (translation)
-ragdoll_friction_scale | sv, cl, rep, cheat | Default: 0.6<br>
-ragdoll_gravity_scale | sv, cl, rep, cheat | Default: 1<br>
+ragdoll_friction_scale | sv, cl, rep | Default: 0.6<br>
+ragdoll_gravity_scale | sv, cl, rep | Default: 1<br>
 ragdoll_impact_strength | cl | Default: 500<br>
-ragdoll_lru_debug_removal | sv, cl, rep, cheat | Default: false<br>
-ragdoll_lru_min_age | sv, cl, rep, cheat | Default: 10<br>
-ragdoll_move_entity | sv, cl, rep, cheat | Default: false<br>
+ragdoll_lru_debug_removal | sv, cl, rep | Default: false<br>
+ragdoll_lru_min_age | sv, cl, rep | Default: 10<br>
+ragdoll_move_entity | sv, cl, rep | Default: false<br>
 ragdoll_override_root_orientation | sv, rep | Default: true<br>
 ragdoll_parallel_pose_control | sv, cl, rep | Default: false<br>
 ragdoll_prop_settle | sv, rep | Default: true<br>Enable more aggressive ragdoll settling
 ragdoll_prop_sleepaftertime | sv, rep | Default: 4<br>After this many seconds of being basically stationary, the ragdoll will go to sleep.
 ragdoll_prop_sleepdisabletime | sv, rep | Default: 1.5<br>Ragdoll is not allowed to physically sleep until this timer has elapsed.
-ragdoll_resolve_initial_conflict | sv, cl, rep, cheat | Default: true<br>
-ragdoll_resolve_separation | sv, cl, rep, cheat | Default: true<br>
+ragdoll_resolve_initial_conflict | sv, cl, rep | Default: true<br>
+ragdoll_resolve_separation | sv, cl, rep | Default: true<br>
 ragdoll_scale_sleep_tolerance | sv, rep | Default: true<br>
-ragdoll_update_from_weights | sv, cl, rep, cheat | Default: false<br>
+ragdoll_update_from_weights | sv, cl, rep | Default: false<br>
 ragdoll_visualize_creation_skeleton | sv, rep | Default: false<br>
 ragdoll_vphysics_scale | sv, rep | Default: 0.5<br>How much we scale physics impacts against the ragdoll.
-rangefinder | sv, cheat | Measures distance along a ray
-rangefinder2d | sv, cheat | Measures distance along a ray, only measuring along XY plane.
+rangefinder | sv | Measures distance along a ray
+rangefinder2d | sv | Measures distance along a ray, only measuring along XY plane.
 rate | a, user | Default: 786432<br>Min bytes/sec the host can receive data
 ray_bench | sv | Load the rays and run the benchmark
 rcon | norecord, release | Issue an rcon command.
@@ -3644,30 +3641,30 @@ rcon_address | norecord, release | Default: <br>Address of remote server if send
 rcon_connected_clients_allow | rep, release | Default: true<br>Allow clients to use rcon commands on server.
 rcon_password | norecord, release | Default: <br>remote console password.
 rebuy | cl, server_can_execute | Attempt to repurchase items with the order listed in cl_rebuy
-recast_mark_overhang | sv, rep, cheat | Default: false<br>Enable/disable overhang detection
-recast_partitioning | sv, rep, cheat | Default: 0<br>0 = watershed, 1 = monotone, 2 = layers
-record | cheat, norecord, release | Record a demo.
+recast_mark_overhang | sv, rep | Default: false<br>Enable/disable overhang detection
+recast_partitioning | sv, rep | Default: 0<br>0 = watershed, 1 = monotone, 2 = layers
+record | norecord, release | Record a demo.
 redirectend | release | Redirect server console output
 redirectstart | release | Redirect server console output
-regenerate_weapon_skins | cl, cheat | 
+regenerate_weapon_skins | cl | 
 reload_model |  | Force a reload of a vmdl resource
 reload_store_config | cl | 
-reloadgame | cheat | Reload the most recent saved game.
-remove_weapon | sv, cheat | Remove a weapon held by the player.<br>	Arguments: &lt;weapon subclass name&gt;
+reloadgame |  | Reload the most recent saved game.
+remove_weapon | sv | Remove a weapon held by the player.<br>	Arguments: &lt;weapon subclass name&gt;
 removeid |  | Remove a user ID from the ban list.
 removeip |  | Remove an IP address from the ban list.
 repeat_last_console_command | release | Repeat last console command.
-replay_death | sv, cheat | start hltv replay of last death
+replay_death | sv | start hltv replay of last death
 replay_debug | rep, release | Default: 0<br>
-replay_start | sv, cheat | Start Source2 TV replay: replay_start &lt;delay&gt;\|stash \[&lt;player name or index&gt;\]
+replay_start | sv | Start Source2 TV replay: replay_start &lt;delay&gt;\|stash \[&lt;player name or index&gt;\]
 replay_stop | sv | stop hltv replay
-report_cliententitysim | cl, cheat | Default: false<br>List all clientside simulations and time - will report and turn itself off.
-report_clientthinklist | cl, cheat | Default: false<br>List all clientside entities thinking and time - will report and turn itself off.
+report_cliententitysim | cl | Default: false<br>List all clientside simulations and time - will report and turn itself off.
+report_clientthinklist | cl | Default: false<br>List all clientside entities thinking and time - will report and turn itself off.
 report_connection_failure_percentage |  | Default: 0<br>
-report_entities | sv, cheat | Lists all entities
+report_entities | sv | Lists all entities
 report_simthinklist | sv | Lists all simulating/thinking entities
 report_soundpatch | sv | reports sound patch count
-reset_gameconvars | cheat | Reset game convars to default values
+reset_gameconvars |  | Reset game convars to default values
 reset_voice_on_input_stallout | user | Default: false<br>If true, resets the input device when there was a long enough hitch between callbacks.
 resource_leaks |  | resource_leaks &lt;resource_name&gt;: Show resource leaks for the named resource
 resource_list |  | List loaded resources matching a substring
@@ -3676,15 +3673,15 @@ resource_manifest_validate_modules |  | Scan all of the loaded modules and valid
 resource_repeated_reload |  | resource_repeated_reload &lt;count&gt; &lt;resource_name&gt; (&lt;resource name&gt; ...): Load and unload the specified resource(s)
 resource_reset_allocate_timing |  | Reset tracked time spent in Allocate (see resource_log_allocate_timing)
 resourcesystem_multiframe_finalize_time_msec |  | Default: 10<br>Max time to spend finalizing resources per frame in miliseconds.
-respawn_player | sv, cheat | Respawns the player from death!<br>
-restart | cheat | Poor man's restart: reload the current map from disk.
+respawn_player | sv | Respawns the player from death!<br>
+restart |  | Poor man's restart: reload the current map from disk.
 restart_in_insecure | cl, server_can_execute | Restart in insecure mode
 restart_in_trusted | cl, server_can_execute | Restart in trusted mode
 restart_in_untrusted | cl, server_can_execute | Restart in untrusted mode
 restart_normal | cl, server_can_execute | Restart
-retake_barrier_clear | sv, cheat | 
-retake_barrier_point | sv, cheat | 
-retake_barrier_spawn | sv, cheat | 
+retake_barrier_clear | sv | 
+retake_barrier_point | sv | 
+retake_barrier_spawn | sv | 
 rope_averagelight | cl | Default: true<br>Makes ropes use average of cubemap lighting instead of max intensity.
 rope_collide | cl | Default: 1<br>Collide rope with the world
 rope_shake | cl | Default: false<br>
@@ -3699,34 +3696,34 @@ rr_debugclassname | sv, cl, rep | Default: <br>If set, rr_debugclassname will pr
 rr_debugresponseconcept | sv, cl, rep | Default: <br>If set, rr_debugresponseconcept will print only responses testing for the specified concept
 rr_debugresponses | sv, cl, rep | Default: 0<br>Show verbose matching output (1 for simple, 2 for rule scoring, 3 for noisy). If set to 4, it will only show response success/failure for npc_selected NPCs.
 rr_debugrule | sv, cl, rep | Default: <br>If set to the name of the rule, that rule's score will be shown whenever a concept is passed into the response rules system.
-rr_dump_rules | sv, cheat | Print all response rules
-rr_followup_maxdist | sv, cheat | Default: 1800<br>'then ANY' or 'then ALL' response followups will be dispatched only to characters within this distance.
-rr_forceconcept | sv, cheat | fire a response concept directly at a given character.<br>USAGE: rr_forceconcept &lt;target name or index&gt; &lt;concept&gt; "criteria1:value1,criteria2:value2,..."<br>criteria values are optional.<br>
-rr_reloadresponsesystems | sv, cheat | Reload all response system scripts.
-rr_thenany_score_slop | sv, a, cheat | Default: 0<br>When computing respondents for a 'THEN ANY' rule, all rule-matching scores within this much of the best score will be considered.
+rr_dump_rules | sv | Print all response rules
+rr_followup_maxdist | sv | Default: 1800<br>'then ANY' or 'then ALL' response followups will be dispatched only to characters within this distance.
+rr_forceconcept | sv | fire a response concept directly at a given character.<br>USAGE: rr_forceconcept &lt;target name or index&gt; &lt;concept&gt; "criteria1:value1,criteria2:value2,..."<br>criteria values are optional.<br>
+rr_reloadresponsesystems | sv | Reload all response system scripts.
+rr_thenany_score_slop | sv, a | Default: 0<br>When computing respondents for a 'THEN ANY' rule, all rule-matching scores within this much of the best score will be considered.
 rs_dump_stats |  | rs_dump_stats - Dump resourcesystem stats.
 rtx_dynamic_blas |  | Default: true<br>Allow dynamic BLAS creation for geometry going through the compute shader skinning path.
 rtx_dynamic_blas_caching |  | Default: true<br>Cache dynamic BLAS if geometry has not changed
 rtx_force_default_hitgroup |  | Default: false<br>Forces all ray traced geometry to use default hit shaders instead of specialized ones.
 rtx_texture_resolution |  | Default: 512<br>Sets the texture resolution the raytracer will mark to stream in
-run_perftest | cheat, norecord | Execute perftest.cfg
+run_perftest | norecord | Execute perftest.cfg
 run_voicecontainer_async |  | Default: false<br>
 safezonex | cl, a | Default: 1<br>The percentage of the screen width that is considered safe from overscan. Cannot result in a width less than the height.
 safezoney | cl, a | Default: 1<br>The percentage of the screen height that is considered safe from overscan
 save | sv, norecord | Save Game
-save_animgraph_recording | sv, cheat | Saves all active animgraph recordings to disk<br>	Arguments: automaticallyOpenInAnimgraphEditor
 save_async | sv | Default: true<br>
 save_clear_subdirectory | sv, rep | 
+save_debug_snapshots | sv, cl, rep | Default: false<br>Save/Load debug snapshot data
 save_fake_hitch | sv | Default: 0<br>Force a busy wait for the specified number of milliseconds during save to simulate a hitch
 save_finish_async | sv | 
 save_history_count | sv | Default: 1<br>Keep this many old copies in history of autosaves and quicksaves.
 save_maxarray_spew | sv, release | Default: 10<br>Max number of array entries to spew when using SaveRestoreIO spewing.
-save_parallel | sv, cl, rep | Default: false<br>
+save_parallel | sv, cl, rep | Default: true<br>
 save_screenshot | sv | Default: 2<br>0 = none, 1 = non-autosave, 2 = always, 3 = bug_only
 save_set_subdirectory | sv, rep | 
 save_showelapsedtime | sv | display up-to-date elapsed play time
 save_spew | sv, cl, rep | Default: false<br>
-save_version | sv, cl, rep | Default: 1<br>0: (V0) Legacy save format, 1: (V1) KeyValues3 save format, 2: (V2) KV3Transfer saves
+save_version | sv, cl, rep | Default: 2<br>0: (V0) Legacy save format, 1: (V1) KeyValues3 save format, 2: (V2) KV3Transfer saves
 save_watchclass | sv | Restrict spew to entities with matching classname
 save_watchentity | sv | Restrict spew to entity index
 save_write_kv3 | sv, cl, rep | Default: false<br>Write the KV3 entity data as a text file in the save directory
@@ -3737,7 +3734,7 @@ sc_aggregate_bvh |  | Default: true<br>
 sc_aggregate_bvh_threshold |  | Default: 128<br>
 sc_aggregate_debug_draw_meshlets |  | Default: 0<br>SceneSystem/Aggregates/Visualize Meshlets
 sc_aggregate_debug_draw_meshlets_bounds |  | Default: false<br>Visualize meshlet bounds and cone axis. Mesh shader only.
-sc_aggregate_debug_visualizer | cheat | Default: false<br>SceneSystem/Aggregates/Debug Visualizer
+sc_aggregate_debug_visualizer |  | Default: false<br>SceneSystem/Aggregates/Debug Visualizer
 sc_aggregate_fragment_merging |  | Default: true<br>
 sc_aggregate_gpu_culling |  | Default: true<br>Toggles GPU culling of aggregate meshes
 sc_aggregate_gpu_culling_conservative_bounds |  | Default: false<br>
@@ -3747,11 +3744,12 @@ sc_aggregate_gpu_vis_culling |  | Default: true<br>
 sc_aggregate_indirect_draw_compaction | release | Default: true<br>Use multidrawindirect...count if the driver/hardware supports it
 sc_aggregate_indirect_draw_compaction_threshold | release | Default: 8<br>Threshold of indirect draws when we will do compaction
 sc_aggregate_instance_streams |  | Default: true<br>Enable instance streams
-sc_aggregate_material_solo | cheat | Default: <br>
+sc_aggregate_material_solo |  | Default: <br>
 sc_aggregate_render_mesh_shader |  | Default: true<br>Using mesh shaders if available instead of drawcalls
-sc_aggregate_rtproxy_debug_visualizer | cheat | Default: false<br>SceneSystem/Aggregates/RT Proxy Debug Visualizer
-sc_aggregate_rtproxy_instanced_geo | cheat | Default: true<br>
-sc_aggregate_rtproxy_unique_geo | cheat | Default: true<br>
+sc_aggregate_rtproxy_debug_visualizer |  | Default: false<br>SceneSystem/Aggregates/RT Proxy Debug Visualizer
+sc_aggregate_rtproxy_instanced_geo |  | Default: true<br>
+sc_aggregate_rtproxy_unique_geo |  | Default: true<br>
+sc_aggregate_rtproxy_visualize |  | Default: false<br>
 sc_aggregate_show_outside_vis |  | Default: false<br>
 sc_allow_dithered_lod |  | Default: true<br>Allow use of dithered lod transitions
 sc_allow_dynamic_constant_batching |  | Default: true<br>
@@ -3764,72 +3762,73 @@ sc_clutter_density_full_size |  | Default: 0.0075<br>Screen-size where clutter w
 sc_clutter_density_none_size |  | Default: 0.0035<br>Screen-size where clutter will be gone
 sc_clutter_desity_override |  | Default: false<br>
 sc_clutter_enable |  | Default: true<br>SceneSystem/Clutter/Draw Clutter
-sc_disableThreading | cheat | Default: false<br>
+sc_disableThreading |  | Default: false<br>
 sc_disable_baked_lighting |  | Default: false<br>
-sc_disable_culling_boxes | cheat | Default: false<br>
-sc_disable_procedural_layer_rendering | cheat | Default: false<br>
-sc_disable_shadow_fastpath | cheat | Default: false<br>
-sc_disable_spotlight_shadows | cheat | Default: false<br>
-sc_disable_world_materials | cheat | Default: false<br>
+sc_disable_culling_boxes |  | Default: false<br>
+sc_disable_procedural_layer_rendering |  | Default: false<br>
+sc_disable_shadow_fastpath |  | Default: false<br>
+sc_disable_spotlight_shadows |  | Default: false<br>
+sc_disable_world_materials |  | Default: false<br>
+sc_distance_field_visualize_atlas |  | Default: false<br>
 sc_dithered_lod_transition_amt |  | Default: 0.075<br>Percentage of the transition between two lods we will apply a dither
 sc_draw_aggregate_meshes |  | Default: true<br>SceneSystem/Aggregates/Draw Aggregates
-sc_dump_lists | cheat | Default: <br>
-sc_dumpworld | cheat | Dump a list of the objects in a sceneworld (Usage: sc_dumpworld &lt;world_index&gt;)
-sc_dumpworld3d | cheat | Dump the objects in a sceneworld into a 3d geoview buffer (Usage: sc_dumpworld3d &lt;world_index&gt;)
+sc_dump_lists |  | Default: <br>
+sc_dumpworld |  | Dump a list of the objects in a sceneworld (Usage: sc_dumpworld &lt;world_index&gt;)
+sc_dumpworld3d |  | Dump the objects in a sceneworld into a 3d geoview buffer (Usage: sc_dumpworld3d &lt;world_index&gt;)
 sc_enable_discard |  | Default: true<br>
-sc_extended_stats | cheat | Default: false<br>
-sc_fade_distance_scale_override | cheat | Default: -1<br>
-sc_force_lod_level | cheat | Default: -1<br>
-sc_force_materials_batchable | cheat | Default: false<br>
+sc_extended_stats |  | Default: false<br>
+sc_fade_distance_scale_override |  | Default: -1<br>
+sc_force_lod_level |  | Default: -1<br>
+sc_force_materials_batchable |  | Default: false<br>
 sc_force_single_display_list_per_layer |  | Default: false<br>
-sc_force_translation_in_projection | cheat | Default: false<br>If enabled, the camera's translation will be included in the projection matrix.
+sc_force_translation_in_projection |  | Default: false<br>If enabled, the camera's translation will be included in the projection matrix.
 sc_hdr_enabled_override |  | Default: -1<br>Override default setting for HDR rendering. -1 default, 0 NoHdr, 1 Hdr, 2 Hdr 1010102 3 Hdr 111110
-sc_imgui_show_debug_log | cheat | Default: false<br>SceneSystem/Imgui/Show Debug Log
-sc_imgui_show_id_stack | cheat | Default: false<br>SceneSystem/Imgui/Show ID Stack Tool
-sc_imgui_show_metrics | cheat | Default: false<br>SceneSystem/Imgui/Show Metrics
-sc_instanced_debug_visualizer | cheat | Default: false<br>SceneSystem/Instanced/Debug Visualizer
+sc_imgui_show_debug_log |  | Default: false<br>SceneSystem/Imgui/Show Debug Log
+sc_imgui_show_id_stack |  | Default: false<br>SceneSystem/Imgui/Show ID Stack Tool
+sc_imgui_show_metrics |  | Default: false<br>SceneSystem/Imgui/Show Metrics
+sc_instanced_debug_visualizer |  | Default: false<br>SceneSystem/Instanced/Debug Visualizer
 sc_instanced_gpu_culling_show_culled |  | Default: false<br>SceneSystem/Instanced/Show GPU Culled Meshlets
-sc_instanced_material_solo | cheat | Default: <br>
-sc_instanced_mesh_enable | cheat | Default: true<br>SceneSystem/Instanced/Draw Instanced
+sc_instanced_material_solo |  | Default: <br>
+sc_instanced_mesh_enable |  | Default: true<br>SceneSystem/Instanced/Draw Instanced
 sc_instanced_mesh_gpu_culling |  | Default: true<br>Toggles GPU culling of instanced meshes
 sc_instanced_mesh_gpu_density_culling |  | Default: true<br>Toggles density culling (if enabled)
 sc_instanced_mesh_gpu_occlusion_culling |  | Default: true<br>Toggles GPU occlusion of instanced meshes
 sc_instanced_mesh_gpu_vis_culling |  | Default: true<br>Toggles GPU vis of instanced meshes
 sc_instanced_mesh_lod_bias |  | Default: 1.25<br>Bias for LOD selection of instanced meshes
 sc_instanced_mesh_lod_bias_shadow |  | Default: 1.75<br>Bias for LOD selection of instanced meshes in shadowmaps
-sc_instanced_mesh_mesh_shader |  | Default: true<br>Toggles mesh shader rendering for instanced meshes
 sc_instanced_mesh_motion_vectors |  | Default: true<br>Toggles motion vector support for instanced meshes
+sc_instanced_mesh_opaque_fade |  | Default: true<br>Toggles fade support for instanced meshes
 sc_instanced_mesh_size_cull_bias |  | Default: 1.5<br>Bias for size culling of instanced meshes
 sc_instanced_mesh_size_cull_bias_shadow |  | Default: 2<br>Bias for size culling instanced meshes in shadowmaps
-sc_instanced_mesh_solo | cheat | Default: <br>
+sc_instanced_mesh_solo |  | Default: <br>
 sc_keep_all_layers |  | Default: false<br>
 sc_layer_batch_threshold |  | Default: 128<br>
 sc_layer_batch_threshold_fullsort |  | Default: 80<br>
 sc_list_extradata_allocations |  | Prints out the overall extra data allocation counts
-sc_listworlds | cheat | List all the active sceneworlds
+sc_listworlds |  | List all the active sceneworlds
 sc_max_framebuffer_copies_per_layer |  | Default: 1<br>
 sc_mesh_backface_culling |  | Default: true<br>
 sc_no_cull |  | Default: false<br>
 sc_no_vis |  | Default: false<br>
-sc_only_render_opaque | cheat | Default: false<br>
-sc_only_render_shadowcasters | cheat | Default: false<br>
-sc_particle_debug_visualizer | cheat | Default: false<br>SceneSystem/Particles/Debug Visualizer
-sc_reject_all_objects | cheat | Default: false<br>
+sc_only_render_opaque |  | Default: false<br>
+sc_only_render_shadowcasters |  | Default: false<br>
+sc_particle_debug_visualizer |  | Default: false<br>SceneSystem/Particles/Debug Visualizer
+sc_reject_all_objects |  | Default: false<br>
 sc_rendergraph_debug_visualizer |  | Default: false<br>SceneSystem/RenderGraph Visualizer
-sc_screen_size_lod_scale_override | cheat | Default: -1<br>
-sc_setclassflags | cheat | Low level command to set the flags byte associated with an object class. sc_SetClassFlags &lt;classname&gt; &lt;value&gt;<br>
+sc_screen_size_lod_scale_override |  | Default: -1<br>
+sc_setclassflags |  | Low level command to set the flags byte associated with an object class. sc_SetClassFlags &lt;classname&gt; &lt;value&gt;<br>
 sc_shadow_depth_bias |  | Default: 256<br>
 sc_shadow_depth_bias_clamp |  | Default: 0<br>
 sc_shadow_depth_bias_state_override |  | Default: false<br>
 sc_shadow_slopescale_depth_bias |  | Default: 2.13<br>
-sc_show_cs_skinning_stats | cheat | Default: false<br>SceneSystem/Compute Skinning Stats
-sc_show_gpu_profiler | cheat | Default: false<br>SceneSystem/GPU Profiler
-sc_show_hair_debug_ui | cheat | Default: false<br>SceneSystem/Hair Debug UI
-sc_show_object_browser | cheat | Default: false<br>SceneSystem/SceneObject Browser
-sc_show_texture_visualizer | cheat | Default: false<br>SceneSystem/Texture Visualizer
-sc_show_view_profiler | cheat | Default: false<br>SceneSystem/View Profiler
-sc_showclasses | cheat | List the object class names known by scenesystem<br>
-sc_skip_traversal | cheat | Default: false<br>
+sc_show_cs_skinning_stats |  | Default: false<br>SceneSystem/Compute Skinning Stats
+sc_show_gpu_profiler |  | Default: false<br>SceneSystem/GPU Profiler
+sc_show_hair_debug_ui |  | Default: false<br>SceneSystem/Hair Debug UI
+sc_show_object_browser |  | Default: false<br>SceneSystem/SceneObject Browser
+sc_show_texture_visualizer |  | Default: false<br>SceneSystem/Texture Visualizer
+sc_show_view_profiler |  | Default: false<br>SceneSystem/View Profiler
+sc_showclasses |  | List the object class names known by scenesystem<br>
+sc_skip_traversal |  | Default: false<br>
 sc_spew_cmt_usage |  | Default: false<br>
 sc_throw_away_all_layers |  | Default: false<br>
 sc_use_clear_subrect |  | Default: false<br>
@@ -3839,7 +3838,7 @@ sc_visualize_sceneobjects |  | Default: SCENEOBJECT_VIS_NONE<br>SceneSystem/Visu
 scene_clientflex | sv, cl, rep | Default: true<br>Do client side flex animation.
 scene_coordinator_add_request | sv | Add a request to the scene coordinator
 scene_maxcaptionradius | sv | Default: 1200<br>Only show closed captions if recipient is within this many units of speaking actor (0==disabled).
-scene_playvcd | sv, cheat | Play the given VCD as an instanced scripted scene.
+scene_playvcd | sv | Play the given VCD as an instanced scripted scene.
 scene_print | sv, cl, rep | Default: 0<br>When playing back a scene, print timing and event info to console.
 scene_vcdautosave | cl | Default: false<br>Create a savegame before VCD playback
 schema_all_list_bindings |  | schema_all_list_bindings &lt;substring&gt; - List all scopes registered schema bindings (classes & enums). If no substring, list them all.
@@ -3849,37 +3848,37 @@ schema_list_bindings |  | schema_list_bindings &lt;substring&gt; - List register
 schema_meta_stats |  | schema_meta_stats \[&lt;options&gt;\]- Print a summary of schemasystem metadata statistics.
 schema_stats |  | schema_stats - Print a summary of various schemasystem statistics.
 screenmessage_notifytime | sv | Default: 8<br>How long to display screen message text
-screenmessage_show | cheat | Default: -1<br>Enable display of console messages on screen. 1 = Enabled, 0 = Disabled, -1 = Enabled if vgui is not present
+screenmessage_show |  | Default: -1<br>Enable display of console messages on screen. 1 = Enabled, 0 = Disabled, -1 = Enabled if vgui is not present
 screenshot |  | Take a screenshot: screenshot \[filename\]
 screenshot_height |  | Default: -1<br>Screenshot height. -1 for screen height.
 screenshot_prefix |  | Default: shot<br>Set the screenshot auto naming prefix.
 screenshot_subdir |  | Default: screenshots<br>Set the screenshot directory.
 screenshot_width |  | Default: -1<br>Screenshot width. -1 for screen width.
-script_add_debug_filter | sv, cheat | Add a filter to the game debug overlay
-script_add_watch | sv, cheat | Add a watch to the game debug overlay
-script_add_watch_pattern | sv, cheat | Add a watch to the game debug overlay
-script_attach_debugger | sv, cheat | Connect the vscript VM to the script debugger
+script_add_debug_filter | sv | Add a filter to the game debug overlay
+script_add_watch | sv | Add a watch to the game debug overlay
+script_add_watch_pattern | sv | Add a watch to the game debug overlay
+script_attach_debugger | sv | Connect the vscript VM to the script debugger
 script_attach_debugger_at_startup | sv | Default: false<br>
 script_break_in_native_debugger_on_error | sv | Default: false<br>
-script_clear_watches | sv, cheat | Clear all watches from the game debug overlay
-script_debug | sv, cheat | Toggle the in-game script debug features
-script_dump_all | sv, cheat | Dump the state of the VM to the console
-script_find | sv, cheat | Find a key in the VM 
-script_help | sv, cheat | Output help for script functions
+script_clear_watches | sv | Clear all watches from the game debug overlay
+script_debug | sv | Toggle the in-game script debug features
+script_dump_all | sv | Dump the state of the VM to the console
+script_find | sv | Find a key in the VM 
+script_help | sv | Output help for script functions
 script_help2 | sv | Output help for script functions suitable for auto-completion
-script_reload | sv, cheat | Reload scripts
-script_reload_code | sv, cheat | Execute a vscript file, replacing existing functions with the functions in the run script
-script_reload_entity_code | sv, cheat | Execute all of this entity's VScripts, replacing existing functions with the functions in the run scripts
-script_remove_debug_filter | sv, cheat | Remove a filter from the game debug overlay
-script_remove_watch | sv, cheat | Remove a watch from the game debug overlay
-script_remove_watch_pattern | sv, cheat | Remove a watch from the game debug overlay
-script_resurrect_unreachable | sv, cheat | Use the garbage collector to track down reference cycles
-script_trace_disable | sv, cheat | Turn off a particular trace output by file or function name
-script_trace_disable_all | sv, cheat | Turn off all trace output
-script_trace_disable_key | sv, cheat | Turn off a particular trace output by table/instance
-script_trace_enable | sv, cheat | Turn on a particular trace output by file or function name
-script_trace_enable_all | sv, cheat | Turn on all trace output
-script_trace_enable_key | sv, cheat | Turn on a particular trace output by table/instance
+script_reload | sv | Reload scripts
+script_reload_code | sv | Execute a vscript file, replacing existing functions with the functions in the run script
+script_reload_entity_code | sv | Execute all of this entity's VScripts, replacing existing functions with the functions in the run scripts
+script_remove_debug_filter | sv | Remove a filter from the game debug overlay
+script_remove_watch | sv | Remove a watch from the game debug overlay
+script_remove_watch_pattern | sv | Remove a watch from the game debug overlay
+script_resurrect_unreachable | sv | Use the garbage collector to track down reference cycles
+script_trace_disable | sv | Turn off a particular trace output by file or function name
+script_trace_disable_all | sv | Turn off all trace output
+script_trace_disable_key | sv | Turn off a particular trace output by table/instance
+script_trace_enable | sv | Turn on a particular trace output by file or function name
+script_trace_enable_all | sv | Turn on all trace output
+script_trace_enable_key | sv | Turn on a particular trace output by table/instance
 scrubber |  | Scrub system off - not a dev build
 sdr | release | An old command that has been renamed to 'net_option'
 sellbackall | cl, server_can_execute | Attempt to refund all equipment
@@ -3887,52 +3886,51 @@ send_round_backup_file_list | sv, release |
 sensitivity | cl, a, user | Default: 1.25<br>Mouse sensitivity.
 sensitivity_y_scale | cl, a, user | Default: 1<br>Multiplies the mouse Y axis for finer pitch vs yaw aim
 server_game_time | sv | Gives the game time in seconds (server's curtime)
-server_snd_cast | sv, cheat | Casts a ray and starts a sound event where the ray hits. The sound event will retrigger periodically. Usage: snd_cast &lt;eventname&gt; \[&lt;retrigger time&gt;\] \[&lt;max distance&gt;\]. Arguments that are specified will become defaults for the remainder of the session.
+server_snd_cast | sv | Casts a ray and starts a sound event where the ray hits. The sound event will retrigger periodically. Usage: snd_cast &lt;eventname&gt; \[&lt;retrigger time&gt;\] \[&lt;max distance&gt;\]. Arguments that are specified will become defaults for the remainder of the session.
 servercfgfile | sv, release | Default: server.cfg<br>
 servervoice_clear | cl | servervoice_clear
 servervoice_dump | cl | servervoice_dump
-setang | sv, cheat | Snap player eyes to specified pitch yaw &lt;roll:optional&gt; (must have sv_cheats).
-setang_exact | sv, cheat | Snap player eyes and orientation to specified pitch yaw &lt;roll:optional&gt; (must have sv_cheats).
+setang | sv | Snap player eyes to specified pitch yaw &lt;roll:optional&gt; (must have sv_cheats).
+setang_exact | sv | Snap player eyes and orientation to specified pitch yaw &lt;roll:optional&gt; (must have sv_cheats).
 setinfo | server_can_execute | Adds a new user info value
-setmodel | sv, cheat | Changes's player's model
+setmodel | sv | Changes's player's model
 setpause | release | Set the pause state of the server.
-setpos | sv, cheat | Move player to specified origin (must have sv_cheats).
-setpos_exact | sv, cheat | Move player to an exact specified origin (must have sv_cheats).
-setpos_player | sv, cheat | Move specified player to specified origin (must have sv_cheats).
-shake | sv, cheat | Shake the screen.
+setpos | sv | Move player to specified origin (must have sv_cheats).
+setpos_exact | sv | Move player to an exact specified origin (must have sv_cheats).
+setpos_player | sv | Move specified player to specified origin (must have sv_cheats).
+shake | sv | Shake the screen.
 shake_show | cl | Default: false<br>Displays a list of the active screen shakes.
-shake_stop | cl, cheat | Stops all active screen shakes.<br>
-shake_testpunch | cl, cheat | Test a punch-style screen shake.<br>
-shatterglass_break | sv, cheat | 
-shatterglass_cleanup | sv, cl, rep, cheat | Default: true<br>
-shatterglass_cleanup_max | sv, cl, rep, cheat | Default: 200<br>
-shatterglass_debug | sv, cl, rep, cheat | Default: false<br>
-shatterglass_hit_tolerance | sv, cl, rep, cheat | Default: 2<br>
-shatterglass_restore | sv, cheat | 
-shatterglass_shard_lifetime | sv, cl, rep, cheat | Default: 15<br>
+shake_stop | cl | Stops all active screen shakes.<br>
+shake_testpunch | cl | Test a punch-style screen shake.<br>
+shatterglass_break | sv | 
+shatterglass_cleanup | sv, cl, rep | Default: true<br>
+shatterglass_cleanup_max | sv, cl, rep | Default: 200<br>
+shatterglass_debug | sv, cl, rep | Default: false<br>
+shatterglass_hit_tolerance | sv, cl, rep | Default: 2<br>
+shatterglass_restore | sv | 
+shatterglass_shard_lifetime | sv, cl, rep | Default: 15<br>
 show_loadout_toggle | cl, server_can_execute | Toggles loadout display
 show_untrusted_warning_again | cl, server_can_execute | Show untrusted warning again
-show_visibility_boxes | cl, cheat | Default: false<br>Enable or Disable debug display of visibility boxes
+show_visibility_boxes | cl | Default: false<br>Enable or Disable debug display of visibility boxes
 showconsole | norecord, release | Show the console.
-showents | sv, cheat | Dump entity list to console.
-showtriggers | sv, cheat | Enable or Disable showing trigger entities
-showtriggers_toggle | sv, cheat | Displays the movement bounding box for the triggers in orange.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-silence_dsp | cheat | Default: false<br>When on, silences all DSP mixes.
+showents | sv | Dump entity list to console.
+showtriggers | sv | Enable or Disable showing trigger entities
+showtriggers_toggle | sv | Displays the movement bounding box for the triggers in orange.  Some entites will also display entity specific overlays.<br>	Arguments:   	{entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+silence_dsp |  | Default: false<br>When on, silences all DSP mixes.
 sk_autoaim_mode | sv, cl, a, rep | Default: 1<br>
 sk_player_arm | sv | Default: 1<br>
 sk_player_chest | sv | Default: 1<br>
 sk_player_head | sv | Default: 2<br>
 sk_player_leg | sv | Default: 1<br>
 sk_player_stomach | sv | Default: 1<br>
-skel_constraints_enable | rep, cheat | Default: true<br>
+skel_constraints_enable | rep | Default: true<br>
 skel_debug | sv, cl, rep | Default: <br>
-skeleton_instance_debug_bodygroups | sv, cl, rep, cheat | Default: false<br>Debug bodygroups
+skeleton_instance_debug_bodygroups | sv, cl, rep | Default: false<br>Debug bodygroups
 skeleton_instance_lod_optimization | sv, cl, rep | Default: false<br>Compute LOD mask internally like since 2016, i.e. force all LOD groups' bones to compute
-skeleton_instance_scaleset_enable | sv, cl, rep, cheat | Default: true<br>
-skeleton_instance_smear_boneflags | sv, cheat | Default: false<br>Smear boneflags across the model.  Costs computation, but tests to make sure your bone flags are consistent.
-skeleton_physics_joint_fixup | sv, cl, rep, cheat | Default: true<br>
+skeleton_instance_scaleset_enable | sv, cl, rep | Default: true<br>
+skeleton_instance_smear_boneflags | sv | Default: false<br>Smear boneflags across the model.  Costs computation, but tests to make sure your bone flags are consistent.
+skeleton_physics_joint_fixup | sv, cl, rep | Default: true<br>
 skill | sv, cl, a, rep | Default: 1<br>Game skill level.
-slope_drop_debug | sv, cl, rep | Default: 0<br>Toggles a test dropping the view offset based on the slope
 slope_drop_enable | sv, cl, rep | Default: true<br>Toggles a test dropping the view offset based on the slope
 slope_drop_max_offset | sv, cl, rep | Default: 16<br>The maximum distance to adjust the view height
 slope_drop_off_ground_blend_speed | sv, cl, rep | Default: 160<br>The speed with which the slope drop is blended out when the entity leaves the ground
@@ -3950,8 +3948,8 @@ slot6 | cl |
 slot7 | cl | 
 slot8 | cl | 
 slot9 | cl | 
-smoke_grenade_ct_color | sv, cheat | Default: 75 127 155<br>
-smoke_grenade_t_color | sv, cheat | Default: 180 129 50<br>
+smoke_grenade_ct_color | sv | Default: 75 127 155<br>
+smoke_grenade_t_color | sv | Default: 180 129 50<br>
 smoke_param1 | sv, cl, rep | Default: 6.26<br>
 smoke_param2 | sv, cl, rep | Default: 8.27<br>
 smoke_param3 | sv, cl, rep | Default: 0.13<br>
@@ -3961,7 +3959,7 @@ smoke_use_noise_texture | sv, cl, rep | Default: true<br>
 smoke_volume_lod_ratio_change | cl | Default: 0.6<br>
 smoothstairs | sv, cl, rep | Default: true<br>Smooth player eye z coordinate when traversing stairs.
 snapto | cl | 
-snd_arrangement_start | cheat | Starts the specified arrangement.
+snd_arrangement_start |  | Starts the specified arrangement.
 snd_async_flush |  | Flush all unlocked async audio data
 snd_async_showmem |  | Show async memory stats
 snd_async_showmem_music |  | Show async memory stats for just non-streamed music
@@ -3970,218 +3968,221 @@ snd_async_spew_blocking |  | Default: 0<br>Spew message to console any time asyn
 snd_autodetect_latency | a, clientcmd_can_execute | Default: true<br>
 snd_boxverb_simd |  | Default: true<br>Enable SIMD code path for shoebox reverb processor.
 snd_boxverb_simd_svf |  | Default: 1<br>0 = use biquad instead of svf, 1 = use vectorized svf, 2 = use scalar svf
-snd_break_on_start_soundevent | sv, cl, rep, cheat | Default: <br>Use to debug break on any soundevent that is started matching this name
-snd_cast | cheat | Casts a ray and starts a sound event where the ray hits. The sound event will retrigger periodically if cl_snd_cast_retrigger is set. The sound event will clear previous snd_cast events if cl_snd_cast_clear is set. Usage: snd_cast &lt;eventname&gt; \[&lt;retrigger time&gt;\] \[&lt;max distance&gt;\]. Arguments that are specified will become defaults for the remainder of the session.
+snd_break_on_start_soundevent | sv, cl, rep | Default: <br>Use to debug break on any soundevent that is started matching this name
+snd_cast |  | Casts a ray and starts a sound event where the ray hits. The sound event will retrigger periodically if cl_snd_cast_retrigger is set. The sound event will clear previous snd_cast events if cl_snd_cast_clear is set. Usage: snd_cast &lt;eventname&gt; \[&lt;retrigger time&gt;\] \[&lt;max distance&gt;\]. Arguments that are specified will become defaults for the remainder of the session.
 snd_compare_KV_convert |  | Default: false<br>
-snd_compare_soundevents | cheat | Compare the compiled and loaded contents of 2 soundevents.
+snd_compare_soundevents |  | Compare the compiled and loaded contents of 2 soundevents.
 snd_cs_duck_reverb | cl | One shot trigger to duck reverb for a few seconds.
 snd_deathcamera_volume | cl, a, release | Default: 0.16<br>Volume of Deathcam Timers
 snd_delay_sound_ms_max |  | Default: 40<br>Sound device synchronization max delay (ms)
 snd_delay_sound_ms_shift |  | Default: 23<br>Sound device synchronization shift (ms)
 snd_diffusor_simd |  | Default: false<br>Enable SIMD code path for diffusor processor.
-snd_disable_mixer_duck | cheat | Default: false<br>
-snd_disable_mixer_solo | cheat | Default: false<br>
+snd_disable_mixer_duck |  | Default: false<br>
+snd_disable_mixer_solo |  | Default: false<br>
 snd_disable_radar_visualize | sv, cl, rep | Default: false<br>
-snd_dsp_distance_max | cheat | Default: 2000<br>
-snd_dsp_distance_min | cheat | Default: 20<br>
+snd_dsp_distance_max |  | Default: 2000<br>
+snd_dsp_distance_min |  | Default: 20<br>
 snd_duckerattacktime | a | Default: 0.5<br>
 snd_duckerreleasetime | a | Default: 2.5<br>
 snd_duckerthreshold | a | Default: 0.15<br>
 snd_ducktovolume | a | Default: 0.55<br>
-snd_enable_imgui | a, cheat | Default: false<br>Game/Sound System Debugger
+snd_enable_imgui | a | Default: false<br>Game/Sound System Debugger
 snd_enable_subgraph_corenull_passthrough |  | Default: true<br>
 snd_enable_subgraph_log |  | Default: false<br>
-snd_envelope_rate | cheat | Default: 0.9<br>
+snd_envelope_rate |  | Default: 0.9<br>
 snd_eq_arms_race | cl, a | Default: -1<br>
 snd_eq_casual | cl, a | Default: -1<br>
 snd_eq_competitive | cl, a | Default: -1<br>
 snd_eq_deathmatch | cl, a | Default: -1<br>
 snd_eq_spectator | cl, a | Default: -1<br>
 snd_eq_warmup | cl, a | Default: -1<br>
-snd_event_cone_debug | sv, cl, rep, cheat | Default: false<br>
-snd_event_oriented_box_debug | sv, cl, rep, cheat | Default: false<br>
-snd_event_oriented_lerp_max_distance | sv, cl, rep, cheat | Default: 64<br>
-snd_event_oriented_lerp_min_distance | sv, cl, rep, cheat | Default: 24<br>
-snd_filter | cheat | Default: <br>
-snd_foliage_db_loss | sv, cheat | Default: 4<br>foliage dB loss per 1200 units
+snd_event_cone_debug | sv, cl, rep | Default: false<br>
+snd_event_oriented_box_debug | sv, cl, rep | Default: false<br>
+snd_event_oriented_lerp_max_distance | sv, cl, rep | Default: 64<br>
+snd_event_oriented_lerp_min_distance | sv, cl, rep | Default: 24<br>
+snd_filter |  | Default: <br>
+snd_foliage_db_loss | sv | Default: 4<br>foliage dB loss per 1200 units
 snd_front_headphone_position |  | Specifies the position (in degrees) of the virtual front left/right headphones.
 snd_front_stereo_speaker_position |  | Specifies the position (in degrees) of the virtual front left/right speakers.
 snd_front_surround_speaker_position |  | Specifies the position (in degrees) of the virtual front left/right speakers.
 snd_gain | a, clientcmd_can_execute | Default: 1<br>
-snd_gain_max | cheat | Default: 1<br>
-snd_gain_min | cheat | Default: 0.01<br>
+snd_gain_max |  | Default: 1<br>
+snd_gain_min |  | Default: 0.01<br>
 snd_gamevoicevolume | a | Default: 1<br>Game v.o. volume
 snd_gamevolume | a, clientcmd_can_execute | Default: 1<br>Game volume
-snd_get_physics_surface_properties | cheat | Get physics surface properties for all the materials.
-snd_group_cluster_debug | rep, cheat | Default: false<br>
-snd_group_priority_debug | rep, cheat | Default: false<br>
-snd_group_priority_max_tolerance | rep, cheat | Default: 0.05<br>
+snd_get_physics_surface_properties |  | Get physics surface properties for all the materials.
+snd_group_cluster_debug | rep | Default: false<br>
+snd_group_occlusion_debug |  | Default: false<br>
+snd_group_priority_debug | rep | Default: false<br>
+snd_group_priority_max_tolerance | rep | Default: 0.05<br>
 snd_headphone_eq | cl, a, server_can_execute | Default: 0<br>Select Headphone EQ Preset
 snd_headphone_eq_active | cl, server_can_execute | Default: 0<br>Select Headphone EQ Preset
 snd_headphone_pan_exponent |  | Specifies the exponent for the pan xfade from phone to phone if the "exp" pan law is being used.
 snd_headphone_pan_radial_weight |  | Apply cos(angle) * weight before pan law
 snd_hrtf_distance_behind |  | Default: 50<br>HRTF calculations will calculate the player as being this far behind the camera.
-snd_list | cheat | Default: <br>
-snd_list_deferred_soundevents | cheat | List all current deferred load soundevents
-snd_list_soundevents | cheat | List all available soundevents
-snd_list_soundevents_by_stack | cheat | List all available soundevents using specified stack name
-snd_log_empty_event_entities | cl, cheat | Default: false<br>Logs the sound event entities that have empty names.
-snd_mainmenu_music_break_time_max | cl, cheat | Default: 0<br>Maximum amount of time to pause between playing main menu music
-snd_mainmenu_music_break_time_min | cl, cheat | Default: 0<br>Minimum amount of time to pause between playing main menu music
+snd_list |  | Default: <br>
+snd_list_deferred_soundevents |  | List all current deferred load soundevents
+snd_list_soundevents |  | List all available soundevents
+snd_list_soundevents_by_stack |  | List all available soundevents using specified stack name
+snd_log_empty_event_entities | cl | Default: false<br>Logs the sound event entities that have empty names.
+snd_mainmenu_music_break_time_max | cl | Default: 0<br>Maximum amount of time to pause between playing main menu music
+snd_mainmenu_music_break_time_min | cl | Default: 0<br>Minimum amount of time to pause between playing main menu music
 snd_mapobjective_volume | cl, a, release | Default: 0.04<br>Volume of Map Objective Music
 snd_max_pitch_shift_inaccuracy | sv, cl, rep | Default: 0.08<br>
 snd_menumap_volume | cl, a, release | Default: 1<br>Volume of background sounds for maps
 snd_menumusic_volume | cl, a, release | Default: 0.04<br>Volume of Menu / Non-gameplay music
 snd_mergemethod |  | Default: 1<br>Sound merge method (0 == sum and clip, 1 == max, 2 == avg).
-snd_min_latency | cheat | Default: false<br>
-snd_mix_async | cheat | Default: true<br>
+snd_min_latency |  | Default: false<br>
+snd_mix_async |  | Default: true<br>
 snd_mixahead | a, clientcmd_can_execute | Default: 0.001<br>
-snd_mixer_master_dsp | cheat | Default: 1<br>
-snd_mixer_master_level | cheat | Default: 1<br>
+snd_mixer_master_dsp |  | Default: 1<br>
+snd_mixer_master_level |  | Default: 1<br>
 snd_musicvolume | a, clientcmd_can_execute | Default: 1<br>Music volume
 snd_mute_losefocus | a, clientcmd_can_execute | Default: true<br>
 snd_mute_mvp_music_live_players | cl, a, release | Default: false<br>If set, MVP music is muted if players from both teams are still alive.
 snd_mvp_volume | cl, a, release | Default: 0.16<br>Volume of MVP Music
-snd_new_visualize | sv, cheat | Default: false<br>Displays soundevent name played at it's 3d position
-snd_occlusion_bounces | rep, cheat | Default: 1<br>
-snd_occlusion_debug | sv, cl, rep, cheat | Default: false<br>
-snd_occlusion_debug_listener_pos | cheat | Default: <br>
-snd_occlusion_indirect_max | cheat | Default: 0.7<br>
-snd_occlusion_indirect_min | cheat | Default: 0.01<br>
-snd_occlusion_indirect_radius | cheat | Default: 120<br>
-snd_occlusion_min_wall_thickness | rep, cheat | Default: 4<br>
-snd_occlusion_override | rep, cheat | Default: -1<br>
-snd_occlusion_rays | rep, cheat | Default: 4<br>
-snd_occlusion_report | cheat | Default: false<br>
-snd_occlusion_visualize | cheat | Default: false<br>
-snd_op_test_convar | cheat | Default: 720<br>
-snd_opvar_set_point_debug | sv, cl, rep, cheat | Default: false<br>
+snd_new_visualize | sv | Default: false<br>Displays soundevent name played at it's 3d position
+snd_occlusion_bounces | rep | Default: 1<br>
+snd_occlusion_debug | sv, cl, rep | Default: false<br>
+snd_occlusion_debug_listener_pos |  | Default: <br>
+snd_occlusion_indirect_max |  | Default: 0.7<br>
+snd_occlusion_indirect_min |  | Default: 0.01<br>
+snd_occlusion_indirect_radius |  | Default: 120<br>
+snd_occlusion_min_wall_thickness | rep | Default: 4<br>
+snd_occlusion_override | rep | Default: -1<br>
+snd_occlusion_rays | rep | Default: 4<br>
+snd_occlusion_report |  | Default: false<br>
+snd_occlusion_visualize |  | Default: false<br>
+snd_op_test_convar |  | Default: 720<br>
+snd_opvar_set_point_debug | sv, cl, rep | Default: false<br>
 snd_opvar_set_point_update_interval | sv, cl, rep | Default: 0.2<br>
 snd_opvar_set_point_update_interval_fast | sv, cl, rep | Default: 0.0333<br>
-snd_print_activetracks | cheat | List all active tracks
-snd_print_arrangements | cheat | List all available sequence arrangments
 snd_print_current_mixer_mixgroup |  | Get data related to mix group matching string
-snd_print_samplers | cheat | List all available samplers
-snd_print_sequences | cheat | List all available midi sequences
+snd_print_samplers |  | List all available samplers
 snd_print_soundevent |  | Print the data associated with the specified soundevent.
 snd_print_soundevent_default_public_properties |  | Print the default public properties of a specified soundevent. Values do not reflect values set on the soundevent. For that see "snd_print_soundevent"
 snd_purge_vsnd_table |  | Purges the VSnd table
 snd_rear_headphone_position |  | Specifies the position  (in degrees) of the virtual rear left/right headphones.
-snd_rear_stereo_scale | rep, cheat | Default: 1<br>
+snd_rear_stereo_scale | rep | Default: 1<br>
 snd_rear_stereo_speaker_position |  | Specifies the position (in degrees) of the virtual rear left/right speakers.
 snd_rear_surround_speaker_position |  | Specifies the position (in degrees) of the virtual rear left/right speakers.
-snd_refdb | cheat | Default: 60<br>Reference dB at snd_refdist
-snd_refdist | cheat | Default: 36<br>Reference distance for snd_refdb
-snd_refresh_ui_audio_state | cl, cheat | Restores audio DSP state for the UI.
-snd_remove_all_soundevents | cheat | Remove all soundevents
-snd_remove_soundevent | cheat | Remove the specified soundevent
+snd_refdb |  | Default: 60<br>Reference dB at snd_refdist
+snd_refdist |  | Default: 36<br>Reference distance for snd_refdb
+snd_refresh_ui_audio_state | cl | Restores audio DSP state for the UI.
+snd_remove_all_soundevents |  | Remove all soundevents
+snd_remove_soundevent |  | Remove the specified soundevent
 snd_report_audio_nan | release | Default: false<br>
-snd_report_c4_sounds | cl, cheat | Default: false<br>
-snd_report_verbose_error | cheat | Default: false<br>If set to 1, report more error found when playing sounds.<br>
+snd_report_c4_sounds | cl | Default: false<br>
+snd_report_verbose_error |  | Default: false<br>If set to 1, report more error found when playing sounds.<br>
 snd_roundaction_volume | cl, a, release | Default: 0<br>Volume of Move Action Music
 snd_roundend_volume | cl, a, release | Default: 0.16<br>Volume of Won/Lost Music
 snd_roundstart_volume | cl, a, release | Default: 0<br>Volume of Round Start Music
-snd_samplers_play_note | cheat | Play a note from a specified sampler
-snd_samplers_stop_note | cheat | Stop a note from a specified sampler
-snd_sequence_set_track_bpm | cheat | Sets the tempo of the specified track
-snd_sequence_set_track_transpose | cheat | Sets the transposition of the specified track
-snd_sequence_stop_all_tracks | cheat | Stops all currently playing sequences
-snd_sequence_stop_track | cheat | Stops the specified track
-snd_sequencer_show_bpm | cheat | Default: false<br>
-snd_sequencer_show_events | cheat | Default: false<br>
-snd_sequencer_show_quantize_queue | cheat | Default: false<br>
-snd_set_physics_surface_properties | cheat | Set physics surface properties for materials. Usage: &lt;heuristic #&gt; &lt;commit&gt;
+snd_samplers_play_note |  | Play a note from a specified sampler
+snd_samplers_stop_note |  | Stop a note from a specified sampler
+snd_sequencer_print_activetracks |  | List all active tracks
+snd_sequencer_print_arrangements |  | List all available sequence arrangments
+snd_sequencer_print_sequences |  | List all available midi sequences
+snd_sequencer_set_track_bpm |  | Sets the tempo of the specified track
+snd_sequencer_set_track_transpose |  | Sets the transposition of the specified track
+snd_sequencer_show_bpm |  | Default: false<br>
+snd_sequencer_show_events |  | Default: false<br>
+snd_sequencer_show_quantize_queue |  | Default: false<br>
+snd_sequencer_stop_all_tracks |  | Stops all currently playing sequences
+snd_sequencer_stop_track |  | Stops the specified track
+snd_sequencer_vmidi_flush |  | Purge and reload all vmidi data and files.
+snd_set_physics_surface_properties |  | Set physics surface properties for materials. Usage: &lt;heuristic #&gt; &lt;commit&gt;
 snd_setmixer |  | Set named Mixgroup of current mixer to mix vol, mute, solo.
 snd_setmixlayer |  | Set named Mixgroup of named mix layer to mix vol, mute, solo.
-snd_showclassname | cheat | Default: 0<br>
-snd_showstart | cheat | Default: 0<br>
+snd_showclassname |  | Default: 0<br>
+snd_showstart |  | Default: 0<br>
 snd_side_surround_speaker_position |  | Specifies the position (in degrees) of the virtual rear left/right speakers.
-snd_sos_block_global_stack | cheat | Default: false<br>
-snd_sos_block_stop_global_stack | cheat | Default: true<br>
-snd_sos_calc_angle_debug | rep, cheat | Default: false<br>
+snd_sos_block_global_stack |  | Default: false<br>
+snd_sos_block_stop_global_stack |  | Default: true<br>
+snd_sos_calc_angle_debug | rep | Default: false<br>
 snd_sos_cl_soundevent_pause_last | cl | Test
 snd_sos_cl_soundevent_start | cl | Test
 snd_sos_cl_soundevent_stop_last | cl | Test
 snd_sos_cl_soundevent_unpause_last | cl | Test
-snd_sos_compare_operator_stacks | cheat | Compares 2 operator stacks and spews any errors
+snd_sos_compare_operator_stacks |  | Compares 2 operator stacks and spews any errors
 snd_sos_debug_trigger_opvar | sv | Default: false<br>
 snd_sos_enable_nan_check |  | Default: false<br>
-snd_sos_flush_operators | cheat | Flush and re-parse the sound operator system
-snd_sos_get_operator_field_info | cheat | Currently gets info for a single operator field
+snd_sos_flush_operators |  | Flush and re-parse the sound operator system
+snd_sos_get_operator_field_info |  | Currently gets info for a single operator field
 snd_sos_hide_simple_parameter_overwrite_warnings |  | Default: true<br>
-snd_sos_ingame_debug | cheat | Default: false<br>
+snd_sos_ingame_debug |  | Default: false<br>
 snd_sos_limit_self |  | Default: false<br>
-snd_sos_list_operator_updates | cheat | Default: false<br>
+snd_sos_list_operator_updates |  | Default: false<br>
 snd_sos_max_event_base_depth |  | Default: 4<br>
-snd_sos_opvar_debug | cheat | Default: false<br>
-snd_sos_pause_soundevent | cheat | Pause the specified soundevent in the list
-snd_sos_pause_system | cheat | Default: false<br>
-snd_sos_print_addfield_dupes | cheat | Default: false<br>
-snd_sos_print_class_sizes | cheat | Prints the sizes of relevant sos classes.
-snd_sos_print_field_name_strings | cheat | Prints a list of currently cached field name strings
-snd_sos_print_field_references | cheat | Default: false<br>
-snd_sos_print_fps | cheat | Default: false<br>
-snd_sos_print_full_field_info | cheat | Default: false<br>
-snd_sos_print_groups | cheat | Prints the current state of the groups system
-snd_sos_print_operator_stack | cheat | Prints a master list of currently exposed variables
-snd_sos_print_operator_stack_operator | cheat | Prints an operator from a stack
-snd_sos_print_operator_stacks | cheat | Prints a list of currently available stacks
-snd_sos_print_operators | cheat | Prints a list of currently available operators
-snd_sos_print_stack_exec_list | cheat | Prints the current stack execution list
-snd_sos_print_strings | cheat | Prints a list of currently cached strings
-snd_sos_print_table_arrays | cheat | Default: false<br>
-snd_sos_print_tool_properties | cheat | Prints the current state of tool properties.
+snd_sos_opvar_debug |  | Default: false<br>
+snd_sos_pause_soundevent |  | Pause the specified soundevent in the list
+snd_sos_pause_system |  | Default: false<br>
+snd_sos_print_addfield_dupes |  | Default: false<br>
+snd_sos_print_class_sizes |  | Prints the sizes of relevant sos classes.
+snd_sos_print_field_name_strings |  | Prints a list of currently cached field name strings
+snd_sos_print_field_references |  | Default: false<br>
+snd_sos_print_fps |  | Default: false<br>
+snd_sos_print_full_field_info |  | Default: false<br>
+snd_sos_print_groups |  | Prints the current state of the groups system
+snd_sos_print_operator_stack |  | Prints a master list of currently exposed variables
+snd_sos_print_operator_stack_operator |  | Prints an operator from a stack
+snd_sos_print_operator_stacks |  | Prints a list of currently available stacks
+snd_sos_print_operators |  | Prints a list of currently available operators
+snd_sos_print_stack_exec_list |  | Prints the current stack execution list
+snd_sos_print_strings |  | Prints a list of currently cached strings
+snd_sos_print_table_arrays |  | Default: false<br>
+snd_sos_print_tool_properties |  | Prints the current state of tool properties.
 snd_sos_report_entity_deleted |  | Default: false<br>
-snd_sos_resolve_execute_operator | cheat | Resolve the inputs and execute one specified operator from a specified stack
-snd_sos_set_operator_field | cheat | Currently sets a single float operator field
-snd_sos_set_operator_field_by_guid | cheat | Currently sets a single float operator field
-snd_sos_show_block_debug | cheat | Default: false<br>Spew data about the list of block entries.
+snd_sos_resolve_execute_operator |  | Resolve the inputs and execute one specified operator from a specified stack
+snd_sos_set_operator_field |  | Currently sets a single float operator field
+snd_sos_set_operator_field_by_guid |  | Currently sets a single float operator field
+snd_sos_show_block_debug |  | Default: false<br>Spew data about the list of block entries.
 snd_sos_show_entry_match_free |  | Default: false<br>
 snd_sos_show_mixgroup_path_errors |  | Default: false<br>
-snd_sos_show_operator_event_and_stack | cheat | Default: true<br>
-snd_sos_show_operator_event_filter | cheat | Default: <br>
-snd_sos_show_operator_field_filter | cheat | Default: <br>
-snd_sos_show_operator_init | cheat | Default: false<br>
-snd_sos_show_operator_not_executing | cheat | Default: true<br>
-snd_sos_show_operator_operator_filter | cheat | Default: <br>
-snd_sos_show_operator_pause_entry | cheat | Default: false<br>
-snd_sos_show_operator_shutdown | cheat | Default: false<br>
-snd_sos_show_operator_stop_entry | cheat | Default: false<br>
-snd_sos_show_operator_updates | cheat | Default: false<br>
-snd_sos_show_opfield_cache_updates | cheat | Default: false<br>
-snd_sos_show_opvar_updates | cheat | Default: false<br>
-snd_sos_show_opvar_updates_filter | cheat | Default: <br>
+snd_sos_show_operator_event_and_stack |  | Default: true<br>
+snd_sos_show_operator_event_filter |  | Default: <br>
+snd_sos_show_operator_field_filter |  | Default: <br>
+snd_sos_show_operator_init |  | Default: false<br>
+snd_sos_show_operator_not_executing |  | Default: true<br>
+snd_sos_show_operator_operator_filter |  | Default: <br>
+snd_sos_show_operator_pause_entry |  | Default: false<br>
+snd_sos_show_operator_shutdown |  | Default: false<br>
+snd_sos_show_operator_stop_entry |  | Default: false<br>
+snd_sos_show_operator_updates |  | Default: false<br>
+snd_sos_show_opfield_cache_updates |  | Default: false<br>
+snd_sos_show_opvar_updates |  | Default: false<br>
+snd_sos_show_opvar_updates_filter |  | Default: <br>
 snd_sos_show_parameter_overwrite_value_comparisons |  | Default: false<br>
 snd_sos_show_parameter_overwrite_warnings |  | Default: false<br>
-snd_sos_show_queuetotrack | cheat | Default: false<br>
+snd_sos_show_queuetotrack |  | Default: false<br>
 snd_sos_show_soundevent_overwrites |  | Default: false<br>
-snd_sos_show_soundevent_param_overwrite | cheat | Default: false<br>
-snd_sos_show_soundevent_start | cheat | Default: false<br>
+snd_sos_show_soundevent_param_overwrite |  | Default: false<br>
+snd_sos_show_soundevent_start |  | Default: false<br>
 snd_sos_show_track_list |  | Default: false<br>
 snd_sos_show_voice_elapsed_time |  | Default: false<br>
-snd_sos_soundevent_constellation_debug | rep, cheat | Default: false<br>
-snd_sos_soundevent_constellation_replenish_max_fraction | rep, cheat | Default: 0.3<br>
+snd_sos_soundevent_constellation_debug | rep | Default: false<br>
+snd_sos_soundevent_constellation_replenish_max_fraction | rep | Default: 0.3<br>
 snd_sos_soundevent_deferred_interval_time |  | Default: 0.1<br>
-snd_sos_soundevent_filter | cheat | Default: <br>
+snd_sos_soundevent_filter |  | Default: <br>
 snd_sos_soundevent_max_deferred_time |  | Default: 5<br>
-snd_sos_soundevent_profile | cheat | Dump a record of current soundevents and profile data
+snd_sos_soundevent_profile |  | Dump a record of current soundevents and profile data
 snd_sos_soundevent_show_deferral_warning |  | Default: false<br>
-snd_sos_start_soundevent | cheat | Starts a specified soundevent
-snd_sos_start_soundevent_at_pos | cheat | Starts a specified soundevent at the given position
-snd_sos_start_stack | cheat | Starts a specified stack via an empty soundevent
-snd_sos_stop_all_soundevents | cheat | Stops all soundevents currently on the execution list
-snd_sos_stop_soundevent_guid | cheat | Stops a specified soundevent
-snd_sos_stop_soundevent_index | cheat | Stops a specified soundevent
+snd_sos_start_soundevent |  | Starts a specified soundevent
+snd_sos_start_soundevent_at_pos |  | Starts a specified soundevent at the given position
+snd_sos_start_stack |  | Starts a specified stack via an empty soundevent
+snd_sos_stop_all_soundevents |  | Stops all soundevents currently on the execution list
+snd_sos_stop_soundevent_guid |  | Stops a specified soundevent
+snd_sos_stop_soundevent_index |  | Stops a specified soundevent
+snd_sos_stop_track |  | Stop the specified track and it's queue.
 snd_sos_sv_soundevent_pause_last | sv | Test
 snd_sos_sv_soundevent_start | sv | Test
 snd_sos_sv_soundevent_stop_last | sv | Test
 snd_sos_sv_soundevent_unpause_last | sv | Test
 snd_sos_sv_test_gender | sv | Test
-snd_sos_test_soundmessage | cheat | test
-snd_sos_unpause_soundevent | cheat | UnPause the first soundevent in the list
-snd_sound_areas_debug | cl, rep, cheat | Default: false<br>
-snd_sound_areas_debug_interval | cl, rep, cheat | Default: 0.2<br>
-snd_soundevent_clear_deferred | cheat | Clear the list of deferred soundevents for loading.
+snd_sos_test_soundmessage |  | test
+snd_sos_unpause_soundevent |  | UnPause the first soundevent in the list
+snd_sound_areas_debug | cl, rep | Default: false<br>
+snd_sound_areas_debug_interval | cl, rep | Default: 0.2<br>
+snd_soundevent_clear_deferred |  | Clear the list of deferred soundevents for loading.
 snd_soundmixer |  | Default: Default_Mix<br>
 snd_soundmixer_flush |  | Reload soundmixers.txt file.
 snd_soundmixer_list_mix_groups |  | List all mix groups to dev console.
@@ -4189,53 +4190,53 @@ snd_soundmixer_list_mix_layers |  | List all mix layers to dev console.
 snd_soundmixer_list_mixers |  | List all mixers to dev console.
 snd_soundmixer_set_trigger_factor |  | Set named mix layer / mix group, trigger amount.
 snd_soundmixer_setmixlayer_amount |  | Set named mix layer mix amount.
-snd_soundmixer_update_maximum_frame_rate | cheat | Default: 10<br>
+snd_soundmixer_update_maximum_frame_rate |  | Default: 10<br>
 snd_soundmixer_version |  | Default: 2<br>
 snd_spatialize_lerp | a, release | Default: 0<br>
 snd_steamaudio_active_hrtf |  | Default: 0<br>Index of active HRTF.
-snd_steamaudio_baked_data_stats | cheat | Display baked data stats for the current mod.
-snd_steamaudio_baked_occlusion_mode | cheat | Default: 0<br>0: distance ratio only. 1: deviation only (1/r). 2: deviation only (linear). 3: Mode 0 and Mode 1, 4: Mode 0 and Mode 2
+snd_steamaudio_baked_data_stats |  | Display baked data stats for the current mod.
+snd_steamaudio_baked_occlusion_mode |  | Default: 0<br>0: distance ratio only. 1: deviation only (1/r). 2: deviation only (linear). 3: Mode 0 and Mode 1, 4: Mode 0 and Mode 2
 snd_steamaudio_default_hrtf_volume_gain |  | Default: 0<br>Adjust overall volume of the default HRTF by the specified gain (dB).
 snd_steamaudio_display_probes |  | Load all the probes from a file and display probes based on the passed on arguments.
 snd_steamaudio_dynamicpathing_max_samples | sv, cl, rep | Default: 16<br>
 snd_steamaudio_enable_compressed_reverb_lookup |  | Default: true<br>Use compressed reverb data if available.
 snd_steamaudio_enable_custom_hrtf |  | Default: false<br>Enable custom HRTF loading.
 snd_steamaudio_enable_editor_profiling |  | Default: false<br>Enables tracy profiling when baking steam audio data in Hammer.
-snd_steamaudio_enable_pathing | cheat | Default: true<br>This variable is checked by soundstack to globally enabling pathing for audio processing.
+snd_steamaudio_enable_pathing |  | Default: true<br>This variable is checked by soundstack to globally enabling pathing for audio processing.
 snd_steamaudio_enable_perspective_correction | a, release | Default: true<br>Enable perspective correction for 3D audio.
 snd_steamaudio_enable_probeneighborhood_caching |  | Default: true<br>Enable caching listener probe neighborhood for pathing.
 snd_steamaudio_enable_reverb | release | Default: 0<br>Enable Steam Audio Reverb processor.
 snd_steamaudio_enable_reverb_probe_caching_for_missing_probes |  | Default: true<br>Continue using previous prrobes if probe lookup for reverb fails.
-snd_steamaudio_enable_spatial_blend_fix | cheat | Toggles the speculative fix for low-frequency issues when using spatial blend.
-snd_steamaudio_halton_sequence | cheat | Generate Halton Sequence for a given order and number of samples.
+snd_steamaudio_enable_spatial_blend_fix |  | Toggles the speculative fix for low-frequency issues when using spatial blend.
+snd_steamaudio_halton_sequence |  | Generate Halton Sequence for a given order and number of samples.
 snd_steamaudio_hybrid_reverb_overlap |  | Default: 0.25<br>Set the overlap fraction (0 to 1) for hybrid reverb.
 snd_steamaudio_hybrid_reverb_transition_time |  | Default: 1<br>Set the transition time (in seconds) between convolution and parametric reverb.
 snd_steamaudio_invalid_path_length |  | Default: 0<br>Path length of invalid path in inches. Set this to .0 to use direct distance as path length.
-snd_steamaudio_ir_duration | cheat | Default: 2<br>The time delay between a sound being emitted and the last audible reflection in Steam Audio.
+snd_steamaudio_ir_duration |  | Default: 2<br>The time delay between a sound being emitted and the last audible reflection in Steam Audio.
 snd_steamaudio_irradiancemindistance_reverb |  | Default: 1<br>Minimum distance (in meters) of a source from a surface for the purposes of energy calculations.
 snd_steamaudio_load_dimensions_data |  | Default: true<br>If set, baked dimensions data is loaded.
 snd_steamaudio_load_materials_data |  | Default: true<br>If set, baked materials data is loaded.
 snd_steamaudio_load_occlusion_data |  | Default: true<br>If set, baked occlusion data is loaded.
 snd_steamaudio_load_pathing_data |  | Default: true<br>If set, baked pathing data is loaded. Steam Audio Hammer entities can successfully use pathing in this case.
 snd_steamaudio_load_reverb_data |  | Default: true<br>If set, baked reverb data is loaded. Reset it to zero during an format changes of baked data until all data is updated.
-snd_steamaudio_max_convolution_sources | cheat | Default: 4<br>The maximum number of simultaneous sources that can be modeled by Steam Audio.
+snd_steamaudio_max_convolution_sources |  | Default: 4<br>The maximum number of simultaneous sources that can be modeled by Steam Audio.
 snd_steamaudio_max_hrtf_normalization_gain_db |  | Default: 6<br>Maximum gain any HRTF could have during volume normalization.
-snd_steamaudio_max_occlusion_samples | cheat | Default: 64<br>The maximum number of rays that can be traced for volumetric occlusion by Steam Audio.
+snd_steamaudio_max_occlusion_samples |  | Default: 64<br>The maximum number of rays that can be traced for volumetric occlusion by Steam Audio.
 snd_steamaudio_max_probes_customdata |  | Default: 12000<br>Maximum number of probes to create when baking custom data (occlusion).
 snd_steamaudio_max_probes_customdata_dimensions |  | Default: 4294967295<br>Maximum number of probes to create when baking custom data (dimensions).
 snd_steamaudio_max_probes_customdata_materials |  | Default: 4294967295<br>Maximum number of probes to create when baking custom data (occlusion).
 snd_steamaudio_max_probes_pathing |  | Default: 4294967295<br>Maximum number of probes to create when baking paths.
 snd_steamaudio_max_probes_reverb |  | Default: 4294967295<br>Maximum number of probes to create when baking reverb.
 snd_steamaudio_normalize_default_hrtf_volume |  | Default: true<br>Normalize volume of default HRTF dataset across all directions.
-snd_steamaudio_num_bounces | cheat | Default: 128<br>The maximum number of times any ray can bounce when using Steam Audio.
-snd_steamaudio_num_diffuse_samples | cheat | Default: 2048<br>The number of directions considered for ray bounce by Steam Audio.
-snd_steamaudio_num_rays | cheat | Default: 65536<br>The number of rays to trace for reflection modeling by Steam Audio.
-snd_steamaudio_num_threads | cheat | Default: 2<br>Sets the number of threads used for realtime reflection by Steam Audio.
+snd_steamaudio_num_bounces |  | Default: 128<br>The maximum number of times any ray can bounce when using Steam Audio.
+snd_steamaudio_num_diffuse_samples |  | Default: 2048<br>The number of directions considered for ray bounce by Steam Audio.
+snd_steamaudio_num_rays |  | Default: 65536<br>The number of rays to trace for reflection modeling by Steam Audio.
+snd_steamaudio_num_threads |  | Default: 2<br>Sets the number of threads used for realtime reflection by Steam Audio.
 snd_steamaudio_pathing_caching_threshold | sv, cl, rep | Default: 5<br>
 snd_steamaudio_pathing_enable_caching | sv, cl, rep | Default: true<br>
 snd_steamaudio_pathing_enable_source_probe_interp |  | Default: false<br>If set, all the probes near a source withing probe range are used to find paths instead of nearest probe.
-snd_steamaudio_pathing_order | cheat | Default: 1<br>The amount of directional detail in the simulated by Steam Audio.
-snd_steamaudio_pathing_order_rendering | cheat | Default: 1<br>The amount of directional detail in the rendered audio by Steam Audio.
+snd_steamaudio_pathing_order |  | Default: 1<br>The amount of directional detail in the simulated by Steam Audio.
+snd_steamaudio_pathing_order_rendering |  | Default: 1<br>The amount of directional detail in the rendered audio by Steam Audio.
 snd_steamaudio_perspective_correction_factor |  | Default: 1<br>Perspective correction factor, ratio of screen size and view depth from screen, for 3D audio.
 snd_steamaudio_perspective_correction_front_only |  | Default: true<br>Use perspective correction for 3D audio only in the frontal directions.
 snd_steamaudio_reverb_level_db | release | Default: -3<br>Adjust overall volume (dB) of the output from Steam Audio Reverb processor.
@@ -4254,12 +4255,11 @@ snd_surround_speaker_pan_exponent |  | Specifies the exponent for the pan xfade 
 snd_surround_speaker_pan_radial_weight |  | Apply cos(angle) * weight before pan law
 snd_tensecondwarning_volume | cl, a, release | Default: 0.04<br>Volume of Ten Second Warnings
 snd_toolvolume | a | Default: 1<br>Volume of sounds in tools (e.g. Hammer, SFM)
-snd_ui_positional | cheat | Default: false<br>
-snd_ui_spatialization_spread | cheat | Default: 1<br>
-snd_use_baked_occlusion | rep, cheat, release | Default: 0<br>
-snd_vmidi_flush | cheat | Purge and reload all vmidi data and files.
-snd_vmix_override_mix_decay_time | cheat | Default: -1<br>If set &gt; 0, overrides how long the decay time is on all mix graphs (in seconds).<br>
-snd_vmix_show_input_updates | cheat | Default: false<br>If set to 1, show all incoming updates to vmix inputs.<br>
+snd_ui_positional |  | Default: false<br>
+snd_ui_spatialization_spread |  | Default: 1<br>
+snd_use_baked_occlusion | rep, release | Default: 0<br>
+snd_vmix_override_mix_decay_time |  | Default: -1<br>If set &gt; 0, overrides how long the decay time is on all mix graphs (in seconds).<br>
+snd_vmix_show_input_updates |  | Default: false<br>If set to 1, show all incoming updates to vmix inputs.<br>
 snd_voipvolume | a, clientcmd_can_execute | Default: 1<br>Voice volume
 snd_vol_arms_race | cl, a | Default: 1<br>
 snd_vol_casual | cl, a | Default: 1<br>
@@ -4276,13 +4276,13 @@ soundevent_check_networked_entity | sv | Default: false<br>
 soundinfo | release | Describe the current sound device with an active voice list.
 soundlist |  | List all known sounds.
 soundpatch_captionlength | sv, cl, rep | Default: 2<br>How long looping soundpatch captions should display for.
-soundscape_debug | sv, cheat | Default: false<br>When on, draws lines to all env_soundscape entities. Green lines show the active soundscape, red lines show soundscapes that aren't in range, and white lines show soundscapes that are in range, but not the active soundscape.
-soundscape_dumpclient | cl, cheat | Dumps the client's soundscape data.<br>
-soundscape_fadetime | cl, cheat | Default: 3<br>Time to crossfade sound effects between soundscapes
+soundscape_debug | sv | Default: false<br>When on, draws lines to all env_soundscape entities. Green lines show the active soundscape, red lines show soundscapes that aren't in range, and white lines show soundscapes that are in range, but not the active soundscape.
+soundscape_dumpclient | cl | Dumps the client's soundscape data.<br>
+soundscape_fadetime | cl | Default: 3<br>Time to crossfade sound effects between soundscapes
 soundscape_flush | sv | Flushes the server & client side soundscapes
 soundscape_message | cl | Default: false<br>
-soundscape_radius_debug | cl, cheat | Default: false<br>Prints current volume of radius sounds
-soundscape_update_include_bots | sv, cheat | Default: false<br>Enable to calculate soundscape audio params for bots.
+soundscape_radius_debug | cl | Default: false<br>Prints current volume of radius sounds
+soundscape_update_include_bots | sv | Default: false<br>Enable to calculate soundscape audio params for bots.
 soundsystem_device_used |  | Default: <br>Sound device in use (changing this does not change the soundsystem).
 soundsystem_update_async |  | Default: true<br>
 soundsysteminfo |  | Describe the current sound device without an active voice list.
@@ -4312,9 +4312,10 @@ sparseshadowtree_renderdoc_capture_generation |  | Default: false<br>Capture dua
 sparseshadowtree_unpack_direct_to_shadow_atlas |  | Default: false<br>unpack SST directly into shadow atlas cascade vs via staging texture PS copy (NOTE - rendersystem fix reqd for AMD + driver fix required for NV + VK only.
 sparseshadowtree_uv_frac_offset_x |  | Default: 0<br>uv x offset during copy to cascade.
 sparseshadowtree_uv_frac_offset_y |  | Default: 0<br>uv y offset during copy to cascade.
-spawn_group_activate | sv, cheat | 
-spawn_group_load | sv, cheat | 
-spawn_group_unload | sv, cheat | 
+spawnCashStack | sv | 
+spawn_group_activate | sv | Activate specified spawngroup.
+spawn_group_load | sv | Load named spawn group.
+spawn_group_unload | sv | Unload named spawn group.
 spawngroup_ignore_timeouts |  | Default: false<br>
 speaker_config | a | Default: -1<br>
 spec_autodirector | cl, server_can_execute | Default: false<br>Auto-director chooses best view modes while spectating
@@ -4338,7 +4339,7 @@ spec_lock_to_current_player | cl | As an observer, lock the spectator target to 
 spec_mode | cl, server_can_execute | Set spectator mode
 spec_next | cl, server_can_execute | Spectate next player
 spec_player | cl, server_can_execute | Spectate a player by name or slot
-spec_pos | cl, cheat | dump position and angles to the console
+spec_pos | cl | dump position and angles to the console
 spec_prev | cl, server_can_execute | Spectate previous player
 spec_replay_autostart | cl, a | Default: true<br>Auto-start Killer Replay when available
 spec_replay_bot | sv, release | Default: false<br>Enable Spectator Hltv Replay when killed by bot
@@ -4367,12 +4368,12 @@ spec_show_xray | cl, a, release | Default: 1<br>If set to 1, you can see player 
 spec_track | cl | Default: 0<br>Tracks an entity in spec mode
 spec_usenumberkeys_nobinds | cl, a | Default: true<br>If set to 1, map voting and spectator view use the raw number keys instead of the weapon binds (slot1, slot2, etc).
 spew_fonts |  | Spew information about font manager fonts
-splitscreen_mode | a, cheat | Default: 0<br>
+splitscreen_mode | a | Default: 0<br>
 splitscreen_testreadconfigconflict |  | 
 ss_add |  | Adds a splitscreen user.
-ss_mimic | cl, cheat | Default: 0<br>Split screen users mimic base player's CUserCmds
+ss_mimic | cl | Default: 0<br>Split screen users mimic base player's CUserCmds
 ss_remove |  | Removes a splitscreen user.
-ss_teleport | cl, cheat | Teleport other splitscreen player to my location.
+ss_teleport | cl | Teleport other splitscreen player to my location.
 ss_voice_hearpartner |  | Default: false<br>Route voice between splitscreen players on same system.
 startdemos | release | Play demos in demo sequence.
 startmovie | norecord | Start recording movie frames.
@@ -4392,22 +4393,21 @@ steamworks_sessionid_server | sv, cl, rep | Default: 0<br>The server session ID 
 sticky_tooltips | cl | Default: false<br>Don't ever hide tooltips. Helpful when debugging complicated tooltip layouts.
 stop | release | Finish recording demo.
 stopdemos | release | Stop looping demos (current demo will complete).
-stopsound | cheat | 
-stopsoundscape | cl, cheat | Stops all soundscape processing and fades current looping sounds
+stopsound |  | 
+stopsoundscape | cl | Stops all soundscape processing and fades current looping sounds
 stopwatch | cl | General purpose timer. use 'stopwatch' to toggle or explicitly call 'stopwatch start' and/or 'stopwatch stop'.
-subclass_change | sv, cheat | Changes the subclass of the given entity.<br>	Arguments:   	&lt;new_subclass&gt; {entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
-subclass_create | sv, cheat | Creates an entity of the given subclass where the player is looking.
+subclass_change | sv | Changes the subclass of the given entity.<br>	Arguments:   	&lt;new_subclass&gt; {entity_name} / {class_name} / {entity_index} / {no argument = pick what player is looking at}
+subclass_create | sv | Creates an entity of the given subclass where the player is looking.
 surf_speed_fast | sv, cl, rep, release | Default: 3000<br>Speed above which a player is considered to be going fast.
 surf_speed_med | sv, cl, rep, release | Default: 2000<br>Speed above which a player is considered to be going medium.
 surf_speed_slow | sv, cl, rep, release | Default: 50<br>Speed above which a player is considered to be going slow.
-surfaceprop | sv, cheat | Reports the surface properties at the cursor
+surfaceprop | sv | Reports the surface properties at the cursor
 suspicious_hit_odds_threshold | sv, release | Default: 0.01<br>
 suspicious_hit_player_radius | sv, release | Default: 8<br>
 suspicious_hit_strategy | sv, release | Default: 0<br>What to do about suspicious hits. 0: Nothing. 1: Skip the bullet. 2: Skip the bullet and re-roll a new bullet.
 sv_accelerate | sv, cl, nf, rep, release | Default: 5.5<br>
 sv_accelerate_debug_speed | sv, cl, nf, rep, release | Default: false<br>
 sv_accelerate_use_weapon_speed | sv, cl, nf, rep, release | Default: true<br>
-sv_ag2_low_skel_lod | sv | Default: false<br>
 sv_ag2_record_entity_graph | sv | Default: <br>Automatically start AG2 recording when an entity with this name (wildcard) or id is created.
 sv_air_max_wishspeed | sv, cl, rep, release | Default: 30<br>
 sv_airaccelerate | sv, cl, nf, rep, release | Default: 12<br>
@@ -4453,24 +4453,25 @@ sv_c4_upright_constraint_damping | sv | Default: 0.5<br>Controls how much veloci
 sv_c4_upright_constraint_enabled | sv | Default: true<br>Use a constraint to keep C4 pointed upright when thrown
 sv_c4_upright_constraint_strength | sv | Default: 0.6<br>How quickly the constraint converges
 sv_chat_proximity | sv, cl, rep, release | Default: -1<br>
-sv_cheats | nf, rep, release | Default: false<br>Allow cheats on server
+sv_cheats | cl, release | Default: false<br>Allow cheats on server
 sv_client_max_interp_ratio | sv, cl, rep | Default: 5<br>This can be used to limit the value of cl_interp_ratio for connected clients (only while they are connected).
 sv_client_min_interp_ratio | sv, cl, rep | Default: 0<br>This can be used to limit the value of cl_interp_ratio for connected clients (only while they are connected).<br>
 sv_clientrates |  | Show client rates.
 sv_clip_penetration_traces_to_players | sv, cl, rep | Default: true<br>
 sv_clockcorrection_msecs | sv, release | Default: 30<br>The server tries to keep each player's m_nTickBase withing this many msecs of the server absolute tickcount
+sv_clockdbg |  | Default: false<br>Print spew related to server clock and ticking
 sv_cluster | release | Default: 0<br>Data center cluster this server lives in.
 sv_coaching_enabled | sv, cl, rep, release | Default: false<br>Allows spectating and communicating with a team ( 'coach t' or 'coach ct' )
 sv_competitive_minspec | sv, cl, nf, rep, release | Default: true<br>Enable to force certain client convars to minimum/maximum values to help prevent competitive advantages.
 sv_compute_per_bot_difficulty | sv, cl, rep | Default: false<br>0 = compute all bot difficulties equally, 1 = compute unique bot difficulty for each bot 
 sv_condense_late_buttons | sv | Default: true<br>When condensing late commands. Should we compress multiple moves of button presses into the target move?
-sv_connectionless_legacy_events_allowed |  | Default: false<br>
 sv_cq_min_queue | rep | Default: 0<br>Server min buffer size.
 sv_cq_trim_bloat_remainder | sv, release | Default: 1<br>When trimming a bloated CQ, leave at least N more commands than the minimum
 sv_cq_trim_bloat_space | sv, release | Default: 0<br>When trimming a bloated CQ, try to leave room for N more commands to be added.  0 will trim only what is needed to remove the immediate bloat, a very large value will reset the whole queue.
 sv_cq_trim_catchup_remainder | sv, release | Default: 1<br>When trimming an overful CQ due to app 'catchup' request, leave at least N more commands than the minimum
 sv_cs_dump_econ_item_stringtable | sv | sv_cs_dump_econ_item_stringtable
 sv_cs_player_speed_has_hostage | sv, cl, rep, release | Default: 200<br>
+sv_csgo_gpu_culling_skybox | sv, cl, rep, release | Default: false<br>
 sv_csgo_shoot_assert_lagcompensation_error | sv, cl, rep | Default: false<br>
 sv_csgo_shoot_force_full_interp | sv, cl, rep | Default: false<br>
 sv_csgo_shoot_force_use_target_time | sv, cl, rep | Default: false<br>
@@ -4482,9 +4483,9 @@ sv_csgo_shoot_verify | sv, cl, rep | Default: false<br>
 sv_csgo_shoot_verify_on_attack_only | sv, cl, rep | Default: true<br>Only run lag compensation error check when primary attack goes down.
 sv_damage_prediction_allowed | sv, cl, rep, release | Default: true<br>
 sv_deadtalk | sv, cl, nf, rep, release | Default: false<br>Dead players can speak (voice, text) to the living
-sv_debug_client_not_in_pvs | sv, cheat | Default: false<br>If set, draw failed client PVS checks with red box
+sv_debug_client_not_in_pvs | sv | Default: false<br>If set, draw failed client PVS checks with red box
 sv_debug_overlays_bandwidth | release | Default: 65536<br>Broadcast server debug overlays traffic
-sv_debug_overlays_broadcast | nf, cheat, release | Default: false<br>Broadcast server debug overlays
+sv_debug_overlays_broadcast | nf, release | Default: false<br>Broadcast server debug overlays
 sv_debug_player_use | sv, cl, rep | Default: 0<br>Visualizes +use logic. Green cross=trace success, Red cross=trace too far, Green box=radius success
 sv_debugroundstats | sv | Default: false<br>
 sv_deltaticks_enforce | release | Default: 2<br>By default, player must ack delta ticks in order. How to enforce it: 2 = kick all clients, 1 = kick only TV clients, 0 = do not kick.
@@ -4497,18 +4498,12 @@ sv_dev_simulate_gcdown | sv | &lt;state&gt; Turn on/off simulated GC communicati
 sv_disable_immunity_alpha | sv, cl, rep, release | Default: false<br>If set, clients won't slam the player model render settings each frame for immunity \[mod authors use this\]
 sv_disable_networkable_loadouts | sv, cl, rep | Default: false<br>
 sv_disable_observer_interpolation | sv, cl, rep, release | Default: false<br>Disallow interpolating between observer targets on this server.
-sv_disable_querycache | sv, cl, rep, cheat | Default: false<br>debug - disable trace query cache
+sv_disable_querycache | sv, cl, rep | Default: false<br>debug - disable trace query cache
 sv_disable_radar | sv, cl, rep, release | Default: 0<br>0: regular radar; 1: always disabled; 2: disabled in warmup
 sv_disable_reliable_delta_retransmit |  | Default: true<br>Assume that a reliable entity delta will be ack'ed and send future deltas relative to the last reliable delta.
 sv_disable_teamselect_menu | sv, cl, rep, release | Default: false<br>Disable teamselect menu on clients
 sv_disconnected_player_data_hold_time | sv, cl, rep, release | Default: 60<br>Duration, in seconds, to hold onto the data of disconnected players, for scoreboard display.
 sv_disconnected_players_cleanup_delay | sv, release | Default: 0<br>Delay between player disconnecting and their corpse getting cleaned up.
-sv_dz_cash_bundle_size | sv, rep, release | Default: 50<br>Size of a cash bundle
-sv_dz_cash_mega_bundle_size | sv, rep, release | Default: 13<br>Size of a mega cash bundle
-sv_dz_contractkill_reward | sv, rep, release | Default: 10<br>Cash bundles to award for a successful contract kill
-sv_dz_hostage_rescue_reward | sv, cl, rep, release | Default: 18<br>Number of cash bundles to award for rescuing a hostage
-sv_dz_show_enemy_name_scope_range |  | Default: 0<br>
-sv_dz_squad_wipe_reward | sv, cl, rep, release | Default: 2<br>Number of cash bundles to award for eliminating a squad
 sv_early_network_message_processing | sv | Default: false<br>Processes network messages on the server before entities think, instead of at the end of the tick.
 sv_enable_alternate_baselines | release | Default: 1<br>Allow alternate baseline system, set to 2 for debugging spew.
 sv_enable_delta_packing | release | Default: true<br>When enabled, this allows for entity packing to use the property changes for building up the data. This is many times faster, but can be disabled for error checking.
@@ -4520,10 +4515,10 @@ sv_endmatch_item_drop_interval_ancient | sv, cl, rep | Default: 3.5<br>The time 
 sv_endmatch_item_drop_interval_legendary | sv, cl, rep | Default: 2<br>The time between drops on the end match scoreboard for legendary items 
 sv_endmatch_item_drop_interval_mythical | sv, cl, rep | Default: 1.25<br>The time between drops on the end match scoreboard for mythical items 
 sv_endmatch_item_drop_interval_rare | sv, cl, rep | Default: 1<br>The time between drops on the end match scoreboard for rare items 
-sv_ent_showonlyhitbox | sv, cheat | Default: -1<br>
+sv_ent_showonlyhitbox | sv | Default: -1<br>
 sv_ents_write_alarm | release | Default: 0<br>Print callstack every time CNetworkGameServerBase::WriteEntityUpdate takes more than this amount of milliseconds
-sv_explode_inferno_at_crosshair | sv, cheat | explodes molotov(0) or Incendiary (1) at crosshair location with single param
-sv_explode_smokegrenade_at_crosshair | sv, cheat | explodes smoke grenade at crosshair location
+sv_explode_inferno_at_crosshair | sv | explodes molotov(0) or Incendiary (1) at crosshair location with single param
+sv_explode_smokegrenade_at_crosshair | sv | explodes smoke grenade at crosshair location
 sv_extra_client_connect_time |  | Default: 15<br>Seconds after client connect during which extra frames are buffered to prevent non-delta'd update
 sv_extract_ammo_from_dropped_weapons | sv, cl, rep, release | Default: false<br>
 sv_extreme_strafe_accuracy_fishtail | sv, cl, rep | Default: 0<br>Number of degrees of aim 'fishtail' when making an extreme strafe direction change
@@ -4538,6 +4533,10 @@ sv_force_team_intro_random | sv | Default: 0<br>
 sv_force_team_intro_variant | sv | Default: 0<br>
 sv_force_transmit_ents | sv | Default: false<br>Will transmit all entities to client, regardless of PVS conditions (will still skip based on transmit flags, however).
 sv_fps_max |  | Default: 0<br>Dedicated server frame rate limiter. 0=tick rate. Only applies to the dedicated server.
+sv_freeze_camera_angles | sv, cl, rep, release | Default: 0 0 0<br>
+sv_freeze_camera_enabled | sv, cl, rep, release | Default: false<br>
+sv_freeze_camera_min_remaining | sv, cl, rep, release | Default: 3<br>
+sv_freeze_camera_position | sv, cl, rep, release | Default: 0 0 0<br>
 sv_friction | sv, cl, nf, rep, release | Default: 5.2<br>World friction.
 sv_full_alltalk | sv, cl, rep, release | Default: false<br>Any player (including Spectator team) can speak to any other player
 sv_fullupdate |  | Force a full update for all clients.
@@ -4545,8 +4544,10 @@ sv_game_mode_convars | sv | Display the values of the convars for the current ga
 sv_game_mode_flags | sv, release | Default: 0<br>Dedicated server game mode flags to run
 sv_gameinstructor_disable | sv, cl, rep, release | Default: false<br>Force all clients to disable their game instructors.
 sv_gameinstructor_enable | cl, rep, release | Default: false<br>Force all clients to enable their game instructors.
-sv_give_item | sv, rep, cheat, release | Default: <br>Player's extra item to give
+sv_give_item | sv, rep, release | Default: <br>Player's extra item to give
 sv_gravity | sv, cl, nf, rep, release | Default: 800<br>World gravity.
+sv_grenade_collision_sphere | sv, cl, rep, release | Default: false<br>
+sv_grenade_collision_sphere_radius | sv, cl, rep, release | Default: 2<br>
 sv_grenade_trajectory_prac_pipreview | sv, cl, rep, release | Default: false<br>Shows grenade trajectory practice picture-in-picture preview.
 sv_grenade_trajectory_prac_trailtime | sv, cl, rep, release | Default: 0<br>Shows grenade trajectory practice visualization for this number of seconds.
 sv_grenade_trajectory_time_spectator | sv, cl, rep, release | Default: 0<br>Length of time grenade trajectory remains visible as a spectator.
@@ -4571,7 +4572,7 @@ sv_hosting_lobby | rep | Default: false<br>
 sv_hoststate_quit_syscall | release | Default: false<br>When enabled, game server will quit immediately via syscall instead of running host states shutdown sequence
 sv_human_autojoin_team | sv, cl, rep, release | Default: 0<br>Force human players on to a team. 0 to disable.
 sv_ignoregrenaderadio | sv, release | Default: false<br>Turn off Fire in the hole messages
-sv_infinite_ammo | sv, cl, rep, cheat, release | Default: 0<br>Player's active weapon will never run out of ammo
+sv_infinite_ammo | sv, cl, rep, release | Default: 0<br>Player's active weapon will never run out of ammo
 sv_instancebaselines |  | Default: true<br>Enable instanced baselines. Saves network overhead.
 sv_invites_only_mainmenu | sv, cl, rep, release | Default: false<br>If turned on, will ignore all invites when user is playing a match
 sv_jump_impulse | sv, cl, rep, release | Default: 301.993<br>Initial upward velocity for player jumps; sqrt(2*gravity*height).
@@ -4580,17 +4581,17 @@ sv_jump_spam_penalty_time | sv, cl, rep, release | Default: 0.015625<br>For subt
 sv_kick_ban_duration | sv, cl, nf, rep, release | Default: 15<br>How long should a kick ban from the server should last (in minutes)
 sv_kick_players_with_cooldown | sv, rep, release | Default: 1<br>(0: do not kick on insecure servers; 1: kick players with Untrusted status or convicted by Overwatch; 2: kick players with any cooldown)
 sv_kill_players_at_coord_min | sv, release | Default: true<br>Kill players with fall damage at negative coord min
-sv_kill_smokegrenade | sv, cheat | kill all smoke grenades
+sv_kill_smokegrenade | sv | kill all smoke grenades
 sv_ladder_angle | sv, cl, rep | Default: -0.707<br>Cos of angle of incidence to ladder perpendicular for applying ladder_dampen
 sv_ladder_dampen | sv, cl, rep | Default: 0.2<br>Amount to dampen perpendicular movement on a ladder
 sv_ladder_scale_speed | sv, cl, rep, release | Default: 0.78<br>Scale top speed on ladders
-sv_ladder_slack_z_mult | sv, cl, rep, cheat | Default: 0.026<br>Difference in Z increases toward the middle of the slack ladder.<br>
-sv_lagcomp_filterbyviewangle | sv, cheat | Default: true<br>If true, player pawn will filter lag compensation targets by their view angle.
-sv_lagcompensationforcerestore | sv, cheat | Default: true<br>Don't test validity of a lag comp restore, just do it.
+sv_ladder_slack_z_mult | sv, cl, rep | Default: 0.026<br>Difference in Z increases toward the middle of the slack ladder.<br>
+sv_lagcomp_filterbyviewangle | sv | Default: true<br>If true, player pawn will filter lag compensation targets by their view angle.
+sv_lagcompensationforcerestore | sv | Default: true<br>Don't test validity of a lag comp restore, just do it.
 sv_lan | release | Default: false<br>Server is a lan server ( no heartbeat, no authentication, no non-class C addresses )
 sv_late_commands_allowed | sv, release | Default: 5<br>Allow N late commands to run at 0 timescale prior to running an on-time command. Negative values for network round trip based calculation with a hard cap of the of absolute value
 sv_legacy_jump | sv, cl, rep, release | Default: false<br>Whether or not to use the pre-2026 jump code.
-sv_lightquery_debug | sv, cheat | Default: false<br>
+sv_lightquery_debug | sv | Default: false<br>
 sv_limit_buyrandom_per_life | sv, release | Default: true<br>Enable to limit buyrandom command to only run once per player life
 sv_listen_directudp | release | Default: true<br>Server will listen for direct UDP connections on the configured port.  This can be turned off to only listen for P2P/SDR connections.
 sv_load_forced_client_names_file | sv, release | Loads a file containing SteamID64 names for clients
@@ -4628,9 +4629,9 @@ sv_maxunlag | sv, cl, rep, release | Default: 0.2<br>Maximum lag compensation in
 sv_maxunlag_player | sv, release | Default: -1<br>If &gt;0, maximumum lag compensation used for other human pawns. Applied after sv_maxunlag!
 sv_maxuptimelimit | sv, release | Default: 0<br>Number of hours to operate before trying sv_shutdown.
 sv_maxvelocity | sv, cl, rep, release | Default: 3500<br>Maximum speed any ballistically moving object is allowed to attain per axis.
-sv_memlimit | cheat, release | Default: 0<br>If set, whenever a game ends, if the total memory used by the server is greater than this # of megabytes, the server will exit.
+sv_memlimit | release | Default: 0<br>If set, whenever a game ends, if the total memory used by the server is greater than this # of megabytes, the server will exit.
 sv_merge_changes_after_tick_with_calcdelta | release | Default: 1<br>This fixes bugs where pure calcdelta is used due to recipient changing but it doesn't pick up a field change where the value was changed back to same value as the from snapshot even though the destination fields change list does note the change. Set to 2 to spew any changes merged in by this fix.
-sv_metaduplication | cheat | Check serializer meta for duplication, add verbose to command for full spew
+sv_metaduplication |  | Check serializer meta for duplication, add verbose to command for full spew
 sv_min_jump_landing_sound | sv, cl, rep, release | Default: 260<br>
 sv_minimum_desired_chicken_count | sv, rep, release | Default: 0<br>Minimum number of chickens to attempt to spawn in the map
 sv_minrate | rep, release | Default: 98304<br>Min bandwidth rate allowed on server, 0 == unlimited
@@ -4644,17 +4645,21 @@ sv_mute_players_with_social_penalties | sv | Default: true<br>
 sv_networkvar_log_fullchanges | sv | Default: false<br>Log FUL_FULL_EDICT_CHANGED calls.
 sv_networkvar_perfieldtracking | release | Default: true<br>Track individual field offset changes, rather than a single dirty flag for the whole entity.
 sv_networkvar_validate | release | Default: false<br>Validate each StateChanged against known offsets.
-sv_no_navmesh | sv, cheat | Default: false<br>Block loading of the navmesh. Unplayable, only used for memory sampling.
+sv_no_navmesh | sv | Default: false<br>Block loading of the navmesh. Unplayable, only used for memory sampling.
 sv_noclipaccelerate | sv, cl, a, nf, rep | Default: 5<br>
-sv_noclipduringpause | sv, cl, rep, cheat | Default: false<br>If cheats are enabled, then you can noclip with the game paused (for doing screenshots, etc.).
+sv_noclipduringpause | sv, cl, rep | Default: false<br>If cheats are enabled, then you can noclip with the game paused (for doing screenshots, etc.).
 sv_noclipfriction | sv, cl, a, nf, rep | Default: 4<br>Friction during noclip move.
 sv_noclipspeed | sv, cl, a, nf, rep | Default: 1200<br>
+sv_noclipspeedscaleonshift | sv, cl, a, nf, rep | Default: 0.5<br>
 sv_nomvp | sv | Default: false<br>Disable MVP awards.
 sv_nonemesis | sv | Default: true<br>Disable nemesis and revenge.
 sv_nowinpanel | sv | Default: false<br>Turn on/off win panel on server
 sv_optimizedmovement | sv, cl, rep | Default: true<br>
 sv_outofammo_indicator | sv, cl, rep, release | Default: false<br>
 sv_outofpvsentityupdates |  | Default: false<br>
+sv_override_max_health | sv, release | Default: 0<br>
+sv_pack_entities_really_verbose | release | Default: false<br>Increase verbosity for entity packing
+sv_pack_entities_verbose_entidx | release | Default: -1<br>Verbose output for entity packing, set to the entindex of the entity you want verbose output for.
 sv_packstats | release | Show entity packing stats, pass 'clear' as argument to reset counts.
 sv_parallel_checktransmit | sv, release | Default: 2<br>Set to 1 to use threaded checkentities for transmit/pvs on listen servers, 2 for dedicated servers.
 sv_parallel_packentities | release | Default: 2<br>Set to 1 to use threaded snapshot sending on listen servers, 2 for dedicated servers.
@@ -4666,14 +4671,14 @@ sv_pausable | release | Default: 0<br>Is the server pausable.
 sv_pausable_dev |  | Default: true<br>Whether listen server is pausable when running -dev and playing solo against bots
 sv_pausable_dev_ds |  | Default: false<br>Whether dedicated server is pausable when running -dev and playing solo against bots
 sv_pause_on_console_open | a | Default: false<br>1 = Pause the game when pressing ~ to open the console. CTRL+~ opens the console without pause.
-sv_pause_on_tick | sv, rep, cheat | Default: 0<br>Tick count to pause on
+sv_pause_on_tick | sv, rep | Default: 0<br>Tick count to pause on
 sv_phys_animated_hierarchy | sv | Default: true<br>
 sv_phys_async_buoyancy_update | sv, rep | Default: false<br>If true, server buoyancy motion controllers are updated in an async job after the tick has completed.
-sv_phys_debug_callback_entities | sv, cheat | Default: false<br>Print all entities that get touch callbacks. Each entity is printed only once.
-sv_phys_enabled | sv, cheat | Default: true<br>Enable all physics simulation
-sv_phys_sleep_enable | sv, cheat | Default: true<br>Enable sleeping for dynamic physics bodies.
-sv_phys_sound_disable_impact_sounds_under_hard_threshold | sv, cheat | Default: false<br>if true, impact sounds wont play if no soft impact sound is present and the impact is below the hard velocity threshold.
-sv_phys_stop_at_collision | sv, cheat | Default: <br>
+sv_phys_debug_callback_entities | sv | Default: false<br>Print all entities that get touch callbacks. Each entity is printed only once.
+sv_phys_enabled | sv | Default: true<br>Enable all physics simulation
+sv_phys_sleep_enable | sv | Default: true<br>Enable sleeping for dynamic physics bodies.
+sv_phys_sound_disable_impact_sounds_under_hard_threshold | sv | Default: false<br>if true, impact sounds wont play if no soft impact sound is present and the impact is below the hard velocity threshold.
+sv_phys_stop_at_collision | sv | Default: <br>
 sv_phys_visualize_awake | sv | Default: false<br>
 sv_player_search_range | sv, cl, rep | Default: 64<br>
 sv_playerradio_use_allowlist | sv, release | Default: true<br>playerradio commands may only use responses from an allow list of commands.
@@ -4682,12 +4687,12 @@ sv_prime_accounts_only | sv, release | Default: false<br>When this setting is en
 sv_pushaway_clientside | sv, cl, rep | Default: 0<br>Clientside physics push away (0=off, 1=only localplayer, 1=all players)
 sv_pushaway_clientside_size | sv, cl, rep | Default: 15<br>Minimum size of pushback objects
 sv_pushaway_force | sv, cl, rep | Default: 300000<br>How hard physics objects are pushed away from the players on the server.
-sv_pushaway_hostage_force | sv, rep, cheat | Default: 20000<br>How hard the hostage is pushed away from physics objects (falls off with inverse square of distance).
+sv_pushaway_hostage_force | sv, rep | Default: 20000<br>How hard the hostage is pushed away from physics objects (falls off with inverse square of distance).
 sv_pushaway_max_force | sv, cl, rep | Default: 2000<br>Maximum amount of force applied to physics objects by players.
-sv_pushaway_max_hostage_force | sv, rep, cheat | Default: 1000<br>Maximum of how hard the hostage is pushed away from physics objects.
-sv_pushaway_max_player_force | sv, cl, rep, cheat | Default: 20<br>Maximum of how hard the player is pushed away from physics objects.
+sv_pushaway_max_hostage_force | sv, rep | Default: 1000<br>Maximum of how hard the hostage is pushed away from physics objects.
+sv_pushaway_max_player_force | sv, cl, rep | Default: 20<br>Maximum of how hard the player is pushed away from physics objects.
 sv_pushaway_min_player_speed | sv, cl, rep | Default: 75<br>If a player is moving slower than this, don't push away physics objects (enables ducking behind things).
-sv_pushaway_player_force | sv, cl, rep, cheat | Default: 450<br>How hard the player is pushed away from physics objects (falls off with inverse square of distance).
+sv_pushaway_player_force | sv, cl, rep | Default: 450<br>How hard the player is pushed away from physics objects (falls off with inverse square of distance).
 sv_pvs_cache_query_inflate_amount | sv | Default: 0<br>
 sv_pvs_entity | sv | Default: -1<br>If set, only allows this ent index to network (other than players and things that force sending).
 sv_pvs_max_distance | rep, release | Default: 0<br>if set, adds a maximum range to PVS/PAS checks
@@ -4696,7 +4701,7 @@ sv_pvs_shadows_include_env | sv, rep, release | Default: false<br>
 sv_quantize_movement_input | sv, cl, rep, release | Default: true<br>Quantize movement input values. Enabling this restricts players from using analog input to move at fractional speeds normally impossible with digital button input.
 sv_querycache_stats | sv | Display status of the query cache (client only)
 sv_radio_throttle_window | sv, release | Default: 10<br>The number of seconds before radio command tokens refresh.
-sv_ragdoll_lru_debug | sv, rep, cheat | Default: false<br>
+sv_ragdoll_lru_debug | sv, rep | Default: false<br>
 sv_rcon_banpenalty |  | Default: 0<br>Number of minutes to ban users who fail rcon authentication
 sv_rcon_log |  | Default: true<br>Enable/disable rcon logging.
 sv_rcon_maxfailures |  | Default: 10<br>Max number of times a user can fail rcon authentication before being banned
@@ -4705,7 +4710,7 @@ sv_rcon_minfailuretime |  | Default: 30<br>Number of seconds to track failed rco
 sv_recipients_check | release | Default: true<br>When packing entities, check that recipient bits match for fast path packing.
 sv_record_item_time_data | sv, release | Default: false<br>Turn on recording of per player item time data into the server log.
 sv_recvbuf_messages |  | Default: 1024<br>Max number of messages that can be queued in a netchan receive buffer for an ordinary connection from a client.
-sv_regeneration_force_on | sv, cheat | Default: false<br>Cheat to test regenerative health systems
+sv_regeneration_force_on | sv | Default: false<br>Cheat to test regenerative health systems
 sv_regeneration_wait_time | sv, rep | Default: 1<br>
 sv_region | release | Default: -1<br>The region of the world to report this server in.
 sv_reliableavatardata | sv, cl, rep, release | Default: false<br>Use server overrides for steam avatars
@@ -4715,7 +4720,7 @@ sv_remove_ent_from_pvs | sv | Default: 0<br>
 sv_replay_group_id | release | Default: 0<br>The replay group that this server will be uploading files to
 sv_replaysdir |  | Default: replays<br>Directory to store replays in
 sv_reserve_slots_for_reconnecting_players_kick_prior |  | Default: true<br>Kick a previously connected player with the same steamID if a replacement comes along
-sv_rethrow_last_grenade | sv, cheat | Emit the last grenade thrown on the server.
+sv_rethrow_last_grenade | sv | Emit the last grenade thrown on the server.
 sv_rollangle | sv, cl, nf, rep | Default: 0<br>Max view roll angle
 sv_rollspeed | sv, cl, nf, rep | Default: 200<br>
 sv_runcmds | sv | Default: true<br>
@@ -4729,17 +4734,17 @@ sv_sequence_debug2 | sv | Default: -1<br>
 sv_sequence_model_substring | sv | Default: <br>
 sv_server_graphic1 | sv, cl, rep, release | Default: <br>A 360x60 (&lt;16kb) image file in /csgo/ that will be displayed to spectators.
 sv_server_graphic2 | sv, cl, rep, release | Default: <br>A 220x45 (&lt;16kb) image file in /csgo/ that will be displayed to spectators.
-sv_server_verify_blood_on_player | sv, cl, rep, cheat | Default: true<br>
+sv_server_verify_blood_on_player | sv, cl, rep | Default: true<br>
 sv_setsteamaccount | release | token<br>Set game server account token to use for logging in to a persistent game server account
 sv_shared_team_pvs | sv | Default: false<br>PVS is shared between teams
 sv_show_bot_difficulty_in_name | sv, cl, rep | Default: false<br>0 = hide bot difficulty in bot name, 1 = show bot difficulty in bot name
-sv_show_move_collisions | sv, cl, rep, cheat | Default: false<br>Enable this to visualize collisions between player and geometry.
+sv_show_move_collisions | sv, cl, rep | Default: false<br>Enable this to visualize collisions between player and geometry.
 sv_show_team_equipment_force_on | sv, cl, rep, release | Default: false<br>Force on if not prohibited
 sv_show_team_equipment_prohibit | sv, cl, nf, rep, release | Default: false<br>Determines whether +cl_show_team_equipment is prohibited.
 sv_show_teammate_death_notification | sv, release | Default: false<br>Show chat notification upon teammate death
 sv_show_voip_indicator_for_enemies | sv, rep, release | Default: false<br>Makes it so the voip icon is shown over enemies as well as allies when they are talking
 sv_showbullethits | sv, cl, rep, release | Default: 0<br>1=show hits and near misses, 2=show hits only
-sv_showhitregistration | sv, cl, rep, cheat | Default: 0<br>Display lag_compensated hitboxes. 0 = off, 1 = server only, 2 = client only, 3 = both server and client
+sv_showhitregistration | sv, cl, rep | Default: 0<br>Display lag_compensated hitboxes. 0 = off, 1 = server only, 2 = client only, 3 = both server and client
 sv_showimpacts | sv, cl, rep, release | Default: 0<br>Shows client (red) and server (blue) bullet impact point (1=both, 2=client-only, 3=server-only)
 sv_showimpacts_penetration | sv, cl, rep, release | Default: 0<br>Shows extra data when bullets penetrate. (use sv_showimpacts_time to increase time shown)
 sv_showimpacts_time | sv, cl, rep, release | Default: 4<br>Duration bullet impact indicators remain before disappearing
@@ -4749,7 +4754,7 @@ sv_showplayerhitboxes | sv, cl, rep | Default: 0<br>Show lag compensated hitboxe
 sv_showtags |  | Describe current gametags.
 sv_shutdown | release | Sets the server to shutdown when all games have completed
 sv_shutdown_immediately_on_request |  | Default: false<br>The server will always shutdown on receiving the shutdown request, even if not hibernating
-sv_skel_constraints_enable | rep, cheat | Default: false<br>
+sv_skel_constraints_enable | rep | Default: false<br>
 sv_skip_update_animations | sv | Default: false<br>Enable to skip game animations
 sv_skirmish_id | sv, cl, rep, release | Default: 0<br>Dedicated server skirmish id to run
 sv_skyname | sv, cl, a, rep | Default: sky_urb01<br>Current name of the skybox texture
@@ -4758,36 +4763,36 @@ sv_snapshot_unlimited | rep, release | Default: false<br>For debugging, don't th
 sv_sniper_tracer_innacuracy | sv, cl, rep | Default: 0.085<br>How inaccurate a sniper shot can be before we trip sv_sniper_tracer_mode behavior.
 sv_sniper_tracer_innacuracy_length | sv, cl, rep | Default: 200<br>How far should the tracer draw if we trip sv_sniper_tracer_mode behavior.
 sv_sniper_tracer_mode | sv, cl, rep | Default: 1<br>Mode for sniper tracers. 0: legacy, 1: hide when more than sv_sniper_tracer_innacuracy inaccurate.
-sv_soundscape_printdebuginfo | sv, cheat | print soundscapes
+sv_soundscape_printdebuginfo | sv | print soundscapes
 sv_spawn_afk_bomb_drop_time | sv, rep, release | Default: 15<br>Players that have never moved since they spawned will drop the bomb after this amount of time.
-sv_spec_hear | sv, cl, nf, rep, release | Default: 1<br>Determines who spectators can hear: 0: only spectators; 1: all players; 2: spectated team; 3: self only; 4: nobody
+sv_spec_hear | sv, cl, nf, rep, release | Default: 3<br>Determines who spectators can hear: 0: only spectators; 1: all players; 2: spectated team; 3: self only; 4: nobody
 sv_spec_use_tournament_content_standards | sv, cl, rep, release | Default: false<br>
 sv_specaccelerate | sv, cl, a, nf, rep | Default: 5<br>
 sv_specnoclip | sv, cl, a, nf, rep | Default: true<br>
 sv_specspeed | sv, cl, a, nf, rep | Default: 1200<br>
-sv_spewmeta | cheat | Spew serializer meta
+sv_spewmeta |  | Spew serializer meta
 sv_spewworldgroups |  | Spew world groups (server)
 sv_staminajumpcost | sv, cl, rep, release | Default: 0.08<br>sv_legacy_jump only: Stamina penalty for jumping
 sv_staminalandcost | sv, cl, rep, release | Default: 0.05<br>sv_legacy_jump only: Stamina penalty for landing
 sv_staminamax | sv, cl, rep, release | Default: 80<br>Maximum stamina penalty
 sv_staminarecoveryrate | sv, cl, rep, release | Default: 60<br>Rate at which stamina recovers (units/sec)
-sv_standable_normal | sv, cl, rep, cheat, release | Default: 0.7<br>
+sv_standable_normal | sv, cl, rep, release | Default: 0.7<br>
 sv_stats |  | Default: true<br>Collect CPU usage stats
 sv_steamauth_enforce | release | Default: 2<br>By default, player must maintain a reliable connection to Steam servers. When player Steam session drops, enforce it: 2 = instantly kick, 1 = kick at next spawn, 0 = do not kick.
 sv_steamauth_ignore_localhost | release | Default: true<br>Ignore VAC and auth errors for client connected via localhost address or in-engine loopback
 sv_steamgroup | nf, release | Default: <br>The ID of the steam group that this server belongs to. You can find your group's ID on the admin profile page in the steam community.
 sv_steamgroup_exclusive | release | Default: false<br>If set, only members of Steam group will be able to join the server when it's empty, public people will be able to join the server only if it has players.
-sv_step_move_vel_min | sv, cl, rep, cheat | Default: 64<br>Min velocity for step move.
+sv_step_move_vel_min | sv, cl, rep | Default: 64<br>Min velocity for step move.
 sv_stepsize | sv, cl, nf, rep | Default: 18<br>
 sv_stopspeed | sv, cl, nf, rep, release | Default: 80<br>Minimum stopping speed when on ground.
-sv_strafing_inaccuracy_bias | sv, cl, rep, cheat, release | Default: 0.5<br>
-sv_strafing_inaccuracy_enabled | sv, cl, rep, cheat, release | Default: false<br>
-sv_strafing_inaccuracy_scale | sv, cl, rep, cheat, release | Default: 0.1<br>
+sv_strafing_inaccuracy_bias | sv, cl, rep, release | Default: 0.5<br>
+sv_strafing_inaccuracy_enabled | sv, cl, rep, release | Default: false<br>
+sv_strafing_inaccuracy_scale | sv, cl, rep, release | Default: 0.1<br>
 sv_stressbots | release | Default: false<br>If set to 1, the server calculates data and fills packets to bots. Used for perf testing.
 sv_strict_notarget | sv | Default: false<br>If set, notarget will cause entities to never think they are in the pvs
 sv_subtick_movement_view_angles | sv, cl, rep, release | Default: true<br>Whether or not subtick view angles are taken into account during movement.
 sv_suppress_friendlyfire_decals | sv | Default: true<br>
-sv_suppress_viewpunch | sv, cl, rep, cheat | Default: false<br>
+sv_suppress_viewpunch | sv, cl, rep | Default: false<br>
 sv_surf_sounds | sv, cl, rep, release | Default: false<br>Should we try to play sounds for surf?
 sv_tags | nf, release | Default: <br>Server tags. Used to provide extra information to clients when they're browsing for servers. Separate tags with a comma.
 sv_talk_after_dying_time | sv, cl, rep, release | Default: 0<br>The number of seconds a player can continue talking after dying as if they were still alive
@@ -4798,26 +4803,26 @@ sv_teamid_overhead_always_prohibit | sv, cl, nf, rep, release | Default: false<b
 sv_teamid_overhead_maxdist | sv, cl, rep, release | Default: 0<br>If &gt;0, server will override cl_teamid_overhead_maxdist
 sv_teamid_overhead_maxdist_spec | sv, cl, rep, release | Default: 0<br>If &gt;0, server will override cl_teamid_overhead_maxdist_spec
 sv_temp_baseline_string_table_buffer_size |  | Default: 524288<br>Buffer size for writing string table baselines
-sv_throw_decoygrenade | sv, cheat | throw decoy grenade with parmas.
-sv_throw_flashgrenade | sv, cheat | throw flash grenade with parmas.
-sv_throw_hegrenade | sv, cheat | throw HEgrenade with parmas.
-sv_throw_molotov | sv, cheat | throw molotov grenade with parmas.
-sv_throw_smokegrenade | sv, cheat | throw smoke grenade with parmas.
+sv_throw_decoygrenade | sv | throw decoy grenade with parmas.
+sv_throw_flashgrenade | sv | throw flash grenade with parmas.
+sv_throw_hegrenade | sv | throw HEgrenade with parmas.
+sv_throw_molotov | sv | throw molotov grenade with parmas.
+sv_throw_smokegrenade | sv | throw smoke grenade with parmas.
 sv_tick_parallel_with_client |  | Default: false<br>Runs the final server tick of the frame in parallel with client work
 sv_tick_snapshot_sort_entities |  | Default: true<br>
 sv_timebetweenducks | sv, cl, rep, release | Default: 0.4<br>Minimum time before recognizing consecutive duck key
 sv_timeout |  | Default: 20<br>After this many seconds without a message from fully connected client, the client is dropped
 sv_turbophysics | sv, cl, rep | Default: false<br>Turns on turbo physics
-sv_turning_inaccuracy_angle_min | sv, cl, rep, cheat, release | Default: 4<br>
-sv_turning_inaccuracy_decay | sv, cl, rep, cheat, release | Default: 0.8<br>
-sv_turning_inaccuracy_enabled | sv, cl, rep, cheat, release | Default: false<br>
+sv_turning_inaccuracy_angle_min | sv, cl, rep, release | Default: 4<br>
+sv_turning_inaccuracy_decay | sv, cl, rep, release | Default: 0.8<br>
+sv_turning_inaccuracy_enabled | sv, cl, rep, release | Default: false<br>
 sv_unlag | sv | Default: true<br>Enables player lag compensation
 sv_unlag_debug | sv | Default: false<br>
 sv_unlag_fixstuck | sv | Default: false<br>Disallow backtracking a player for lag compensation if it will cause them to become stuck
 sv_unlockedchapters | a | Default: 1<br>Highest unlocked game chapter.
 sv_unpause_on_console_close | a | Default: false<br>1 = Unpause the game when pressing ~ to close the console. 0 = Leave the game paused.
 sv_use_hi_pri_context_switch_time | sv, cl, rep, release | Default: 1<br>+use search behaves as though high priority items are usable for this long after they become unusable to avoid players accidentally performing a different action.
-sv_use_playercache | sv, cl, rep, cheat | Default: true<br>Cache off player bounds for traces.
+sv_use_playercache | sv, cl, rep | Default: true<br>Cache off player bounds for traces.
 sv_use_pvs_cache | sv | Default: false<br>
 sv_usenetworkvars |  | Default: true<br>Use networkvar system.
 sv_usercmd_custom_random_seed | sv, release | Default: false<br>When enabled server will populate an additional random seed independent of the client
@@ -4858,7 +4863,7 @@ sv_vote_quorum_ratio | sv, release | Default: 0.501<br>The minimum ratio of play
 sv_vote_timer_duration | sv, release | Default: 15<br>How long to allow voting on an issue
 sv_vote_to_changelevel_before_match_point | sv, rep, release | Default: false<br>Restricts vote to change level to rounds prior to match point (default 0, vote is never disallowed)
 sv_vote_to_changelevel_rndmin | sv, rep, release | Default: 0<br>When non-zero, restricts vote to change level to this many first rounds or minutes of the match (default 0, vote is not disallowed)
-sv_walkable_normal | sv, cl, rep, cheat, release | Default: 0.7<br>
+sv_walkable_normal | sv, cl, rep, release | Default: 0.7<br>
 sv_warmup_to_freezetime_delay | sv, cl, rep, release | Default: 4<br>Delay between end of warmup and start of match.
 sv_watchtransmit | sv, release | Default: -2<br>Watch NetworkStateChanged info for this entity index.
 sv_water_slow_amount | sv, cl, rep, release | Default: 0.9<br>
@@ -4877,19 +4882,19 @@ sys_minidumpexpandedspew |  | Default: true<br>
 sys_minidumpspewlines | release | Default: 2000<br>Lines of crash dump console spew to keep.
 target_scan_use_query_cache | sv | Default: true<br>
 teammenu | cl | Show team selection window
-telemetry_message | sv, cheat | Place a message in the telemetry timeline
-telemetry_toggle_timespan | sv, cheat | Starts/stops a timespan with an ever increasing name.
+telemetry_message | sv | Place a message in the telemetry timeline
+telemetry_toggle_timespan | sv | Starts/stops a timespan with an ever increasing name.
 teleport_trigger_debug | sv | Default: false<br>
-test_dispatcheffect | sv, cheat | Test a clientside dispatch effect.<br>	Usage: test_dispatcheffect &lt;effect name&gt; &lt;distance away&gt; &lt;flags&gt; &lt;magnitude&gt; &lt;scale&gt;<br>	Defaults are: &lt;distance 1024&gt; &lt;flags 0&gt; &lt;magnitude 0&gt; &lt;scale 0&gt;<br>
-test_entity_blocker | sv, cheat | Test command that drops an entity blocker out in front of the player.
-test_list_entities | sv, cheat | test-list entities
+test_dispatcheffect | sv | Test a clientside dispatch effect.<br>	Usage: test_dispatcheffect &lt;effect name&gt; &lt;distance away&gt; &lt;flags&gt; &lt;magnitude&gt; &lt;scale&gt;<br>	Defaults are: &lt;distance 1024&gt; &lt;flags 0&gt; &lt;magnitude 0&gt; &lt;scale 0&gt;<br>
+test_entity_blocker | sv | Test command that drops an entity blocker out in front of the player.
+test_list_entities | sv | test-list entities
 test_shipping_assert | release | Generate an assert to test shipping assertion code
 test_voice_container_nesting |  | Test nesting voice containers.
 test_voice_containers |  | Quick example for how we'd derive traits from voice containers.
 testscript_debug |  | Default: false<br>Debug test scripts.
 think_limit | sv, cl, rep, release | Default: 10<br>Maximum think time in milliseconds, warning is printed if this is exceeded.
-thirdperson | cl, cheat, server_cannot_query | Switch to thirdperson camera.
-thirdperson_mayamode | cl, cheat | Switch to thirdperson Maya-like camera controls.
+thirdperson | cl, server_cannot_query | Switch to thirdperson camera.
+thirdperson_mayamode | cl | Switch to thirdperson Maya-like camera controls.
 thirdpersonshoulder | cl | Switch to thirdperson-shoulder camera.
 thread_pool_option | release | Default: -1<br>Thread pool option
 throttle_expensive_ai | sv | Default: false<br>
@@ -5013,13 +5018,14 @@ ui_deepstats_radio_heat_tab | cl, a, release | Default: 0<br>
 ui_deepstats_radio_heat_team | cl, a, release | Default: 0<br>
 ui_deepstats_toplevel_mode | cl, a, release | Default: 0<br>
 ui_hud_dist | cl, rep | Default: 24<br>distance from the player to the hud
-ui_inspect_bkgnd_map_539CD0B9 | cl, a, release | Default: warehouse<br>Inspect background map
+ui_inspect_bkgnd_map_C2AEBB5E | cl, a, release | Default: warehouse<br>Inspect background map
 ui_inventorysettings_recently_acknowledged | cl, a, release | Default: <br>
 ui_leaderboards_top_public_appid | cl, release | Default: 730<br>
 ui_lobby_draft_enabled | cl, release | Default: false<br>
-ui_mainmenu_bkgnd_movie_539CD0B9 | cl, a, release | Default: de_ancient<br>Main menu background movie
+ui_mainmenu_bkgnd_movie_C2AEBB5E | cl, a, release | Default: de_cache<br>Main menu background movie
 ui_nearbylobbies_filter3 | cl, a, release | Default: competitive<br>
 ui_news_last_read_link | cl, a, release | Default: <br>
+ui_news_last_read_link2 | cl, a, release | Default: <br>
 ui_notification_tb_snooze | cl, a, release | Default: <br>
 ui_party_msg_sound_enabled | cl, release | Default: true<br>When enabled, lobby messages will play a short sound
 ui_playsettings_custom_preset | cl, a, release | Default: <br>
@@ -5096,7 +5102,7 @@ videocfg_hdr_detail | cl | Default: -1<br>
 videocfg_particle_detail | cl | Default: 1<br>
 videocfg_shadow_quality | cl | Default: 1<br>
 videocfg_texture_detail | cl | Default: 1<br>
-view_punch_decay | sv, cl, rep, cheat, release | Default: 18<br>Decay factor exponent for view punch
+view_punch_decay | sv, cl, rep, release | Default: 18<br>Decay factor exponent for view punch
 viewmodel_fov | cl, a, user | Default: 60<br>Viewmodel FOV
 viewmodel_offset_x | cl, a, user | Default: 1<br>viewmodel_offset_x
 viewmodel_offset_y | cl, a, user | Default: 1<br>viewmodel_offset_y
@@ -5117,14 +5123,14 @@ vis_debug_show |  | Show/hide the vis debug visualization
 vis_debug_sunclusters |  | Showing clusters for sun/csm rendering. Red (full sun csm & lighting), Orange (no viewmodel sun or csm), Green (no sun at all)
 vis_debug_tracelos |  | Trace rays and check vis from the current camera
 vis_enable |  | Default: true<br>Enable precomputed visibility when true
-vis_force | sv, cheat | Default: false<br>
-vis_sunlight_enable | cheat | Default: true<br>Toggle whether to use sunlight PVS for sunlight views (0 = sky PVS, 1 = sunlight PVS)
-vismon_poll_frequency | sv, cheat | Default: 0.5<br>
-vismon_trace_limit | sv, cheat | Default: 12<br>
+vis_force | sv | Default: false<br>
+vis_sunlight_enable |  | Default: true<br>Toggle whether to use sunlight PVS for sunlight views (0 = sky PVS, 1 = sunlight PVS)
+vismon_poll_frequency | sv | Default: 0.5<br>
+vismon_trace_limit | sv | Default: 12<br>
 vmem_dump |  | Dump memory stats to log.
 vmix_debug_list |  | Debug dump the list of available vmix graphs
-vmix_input | cheat | Set an input mix value
-vmix_output | cheat | Dump main graph control output values
+vmix_input |  | Set an input mix value
+vmix_output |  | Dump main graph control output values
 voice_all_icons | cl | Default: false<br>Draw all players' voice icons
 voice_always_sample_mic | a | Default: false<br>When enabled, open the voip audio input stream when the application launches.
 voice_bypass_noise_gate |  | Default: false<br>
@@ -5144,7 +5150,7 @@ voice_modenable | cl, a, release, server_can_execute | Default: true<br>Enable/d
 voice_modenable_toggle | cl, release | Toggle the voice_modenable convar.
 voice_mute |  | Mute a specific Steam user
 voice_noise_supression |  | Default: false<br>
-voice_player_speaking_delay_threshold | sv, cheat | Default: 0.5<br>
+voice_player_speaking_delay_threshold | sv | Default: 0.5<br>
 voice_reset_mutelist |  | Reset all mute information for all players who were ever muted.
 voice_sequence_maximum_wait_time |  | Default: 0.5<br>When receiving packets out of sequence, wait this many seconds for missing sequences to arrive
 voice_serverdebug | sv | Default: false<br>
@@ -5162,13 +5168,13 @@ voice_unmute |  | Unmute a specific Steam user, or `all` to unmute all connected
 voice_vox | cl, a | Default: 0<br>Voice chat uses a vox-style always on
 voice_vox_current_peak | cl | Default: 0<br>Current peak value (out of 64k) of the incoming voice stream
 volume | a | Default: 1<br>Sound volume
-volume_fog_debug_volumes | cheat | Default: false<br>
-volume_fog_density_scale | cheat | Default: 1<br>Scale global volume fog density
+volume_fog_debug_volumes |  | Default: false<br>
+volume_fog_density_scale |  | Default: 1<br>Scale global volume fog density
 volume_fog_depth |  | Default: 128<br>Depth of volume fog texture
 volume_fog_depth_warp |  | Default: 7<br>
 volume_fog_depth_warp_debug |  | Default: false<br>
-volume_fog_dither_scale | cheat | Default: 1<br>
-volume_fog_enable_jitter | cheat | Default: true<br>
+volume_fog_dither_scale |  | Default: 1<br>
+volume_fog_enable_jitter |  | Default: true<br>
 volume_fog_height |  | Default: 160<br>Height of volume fog texture
 volume_fog_intermediate_textures_hdr |  | Default: true<br>
 volume_fog_shadow_penumbra_multiplier |  | Default: 3<br>Penumbra size multiplier for shadow sampling, reduces fog shadow aliasing
@@ -5196,26 +5202,27 @@ vtune |  | Controls VTune's sampling.
 weapon_accuracy_forcespread | sv, cl, rep, release | Default: 0<br>Force spread to the specified value.
 weapon_accuracy_logging | sv, cl, a, rep | Default: false<br>
 weapon_accuracy_nospread | sv, cl, rep, release | Default: false<br>Disable weapon inaccuracy spread
-weapon_accuracy_reset_on_deploy | sv, cl, rep, cheat, release | Default: false<br>On deploy, forcibly reset weapon accuracy to zero.
+weapon_accuracy_reset_on_deploy | sv, cl, rep, release | Default: false<br>On deploy, forcibly reset weapon accuracy to zero.
 weapon_accuracy_shotgun_spread_patterns | sv, cl, rep, release | Default: true<br>
+weapon_accuracy_stack_boost_limit | sv, cl, rep, release | Default: 2<br>Apply ladder inaccuracy to players boosted by a stack of this many (or more) players
 weapon_air_spread_scale | sv, cl, rep, release | Default: 1<br>Scale factor for jumping inaccuracy, set to 0 to make jumping accuracy equal to standing
 weapon_all_nametag | cl | Default: false<br>
 weapon_all_stattrak | cl | Default: false<br>
 weapon_auto_cleanup_time | sv, cl, rep, release | Default: 0<br>If set to non-zero, weapons will delete themselves after the specified time (in seconds) if no players are near.
-weapon_debug_inaccuracy_only_up | sv, cl, rep, cheat | Default: false<br>Force weapon inaccuracy to be in exactly the up direction
-weapon_debug_max_inaccuracy | sv, cl, rep, cheat | Default: false<br>Force all shots to have maximum inaccuracy
-weapon_debug_spread_gap | cl, cheat | Default: 0.67<br>
-weapon_debug_spread_show | cl, cheat | Default: 0<br>Enables display of weapon accuracy; 1: show accuracy box, 3: show accuracy with dynamic crosshair
-weapon_land_dip_amt | sv, cl, rep, cheat | Default: 20<br>The amount the gun should dip when the player lands after a jump.
+weapon_debug_inaccuracy_only_up | sv, cl, rep | Default: false<br>Force weapon inaccuracy to be in exactly the up direction
+weapon_debug_max_inaccuracy | sv, cl, rep | Default: false<br>Force all shots to have maximum inaccuracy
+weapon_debug_spread_gap | cl | Default: 0.67<br>
+weapon_debug_spread_show | cl | Default: 0<br>Enables display of weapon accuracy; 1: show accuracy box, 3: show accuracy with dynamic crosshair
+weapon_land_dip_amt | sv, cl, rep | Default: 20<br>The amount the gun should dip when the player lands after a jump.
 weapon_max_before_cleanup | sv, cl, rep, release | Default: 0<br>If set to non-zero, will remove the oldest dropped weapon to maintain the specified number of dropped weapons in the world.
 weapon_molotov_maxdetonateslope | sv, cl, rep | Default: 30<br>Maximum angle of slope on which the molotov will detonate
-weapon_near_empty_sound | sv, cl, rep, cheat | Default: true<br>
+weapon_near_empty_sound | sv, cl, rep | Default: true<br>
 weapon_random_stickers | cl | Default: false<br>
 weapon_reticle_knife_show | sv, cl, rep, release | Default: true<br>When enabled will show knife reticle on clients. Used for game modes requiring target id display when holding a knife.
 weapon_skin_force_legacy | sv, cl, rep | Default: -1<br>
 weapon_skins | cl | Default: true<br>
 weapon_skins_on_default | cl | Default: false<br>
-weapon_sound_falloff_multiplier | sv, cl, rep, cheat, release | Default: 1<br>Scaling for falloff of weapon firing sounds
+weapon_sound_falloff_multiplier | sv, cl, rep, release | Default: 1<br>Scaling for falloff of weapon firing sounds
 weapon_switch | sv | Use a particular weapon	<br>Arguments: &lt;weapon_name&gt;
 webapi_values_init_buffer_size | cl | Default: 65536<br>Initial buffer size for buffers in the WebAPIValues buffer pool
 webapi_values_max_pool_size_mb | cl | Default: 400<br>Maximum size in bytes of the WebAPIValues buffer pool
