@@ -161,6 +161,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private readonly HashSet<int> _liveLinkLoggedMissingSkeletons = new();
     private readonly HashSet<string> _liveLinkLoggedModelFailures = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<LiveLinkIconBillboard> _liveLinkIconBillboards = new();
+    private readonly object _liveLinkIconHitLock = new();
+    private List<LiveLinkIconHit> _liveLinkIconHitCache = new();
     private readonly Dictionary<string, RenderTexture?> _liveLinkIconTextures = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _liveLinkLoggedMissingIcons = new(StringComparer.OrdinalIgnoreCase);
     private int _liveLinkIconShaderProgram;
@@ -703,6 +705,13 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
         }
 
+        if (leftPressed && TryHandleLiveLinkIconClick(point.Position))
+        {
+            Focus();
+            e.Handled = true;
+            return;
+        }
+
         if (rightPressed)
         {
             BeginFreecam(point.Position);
@@ -942,6 +951,12 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
 
         if (leftPressed && TryHandlePinClick(position))
+        {
+            Focus();
+            return;
+        }
+
+        if (leftPressed && TryHandleLiveLinkIconClick(position))
         {
             Focus();
             return;
@@ -3555,6 +3570,67 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         return found;
     }
 
+    private bool TryHandleLiveLinkIconClick(Point position)
+    {
+        List<LiveLinkIconHit> hits;
+        lock (_liveLinkIconHitLock)
+        {
+            if (_liveLinkIconHitCache.Count == 0)
+                return false;
+            hits = new List<LiveLinkIconHit>(_liveLinkIconHitCache);
+        }
+
+        LiveLinkIconHit? bestHit = null;
+        var bestArea = double.MaxValue;
+        foreach (var hit in hits)
+        {
+            if (position.X < hit.X0 || position.X > hit.X1 || position.Y < hit.Y0 || position.Y > hit.Y1)
+                continue;
+
+            var area = Math.Max(1.0, (hit.X1 - hit.X0) * (hit.Y1 - hit.Y0));
+            if (area < bestArea)
+            {
+                bestArea = area;
+                bestHit = hit;
+            }
+        }
+
+        if (bestHit == null)
+            return false;
+
+        ActivateFreecamAtPosition(bestHit.Value.World);
+        return true;
+    }
+
+    private void ActivateFreecamAtPosition(Vector3 position)
+    {
+        var keepInputEnabled = _freecamInputEnabled;
+        if (!_freecamActive)
+        {
+            _orbitTargetBeforeFreecam = _target;
+            _orbitYawBeforeFreecam = _yaw;
+            _orbitPitchBeforeFreecam = _pitch;
+            _orbitDistanceBeforeFreecam = _distance;
+            _orbitStateSaved = true;
+
+            if (!_freecamInitialized)
+                InitializeFreecamFromOrbit();
+            else
+                ResetFreecamFromOrbit();
+        }
+
+        _freecamTransform.Position = position;
+        _freecamSmoothed = _freecamTransform;
+        _freecamOutput = _freecamTransform;
+        _freecamSmoothedQuat = _freecamSmoothed.Orientation;
+        _freecamActive = true;
+        _freecamInitialized = true;
+        _freecamInputEnabled = keepInputEnabled;
+        _freecamLastUpdate = DateTime.UtcNow;
+        ResetFreecamState();
+        RequestNextFrame();
+    }
+
     private void ActivateFreecamAtPin(PinRenderData pin)
     {
         var keepInputEnabled = _freecamInputEnabled;
@@ -4365,6 +4441,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private void ClearLiveLinkNodes()
     {
+        ClearLiveLinkIconHitCache();
         foreach (var entityId in _liveLinkNodes.Keys.ToArray())
         {
             RemoveLiveLinkNode(entityId);
@@ -4650,12 +4727,19 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private void DrawLiveLinkIcons(int width, int height)
     {
         if (!_liveLinkItemIconsEnabledCached || _renderer == null || _liveLinkIconBillboards.Count == 0)
+        {
+            ClearLiveLinkIconHitCache();
             return;
+        }
 
         if (!EnsureLiveLinkIconResources())
+        {
+            ClearLiveLinkIconHitCache();
             return;
+        }
 
         var camera = _renderer.Camera;
+        var iconHits = new List<LiveLinkIconHit>(_liveLinkIconBillboards.Count);
         var blendEnabled = GL.IsEnabled(EnableCap.Blend);
         var depthEnabled = GL.IsEnabled(EnableCap.DepthTest);
         var cullEnabled = GL.IsEnabled(EnableCap.CullFace);
@@ -4695,6 +4779,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             var x1 = (float)screen.X + iconWidth * 0.5f;
             var y0 = (float)screen.Y - iconHeight * 0.5f;
             var y1 = (float)screen.Y + iconHeight * 0.5f;
+            iconHits.Add(new LiveLinkIconHit(billboard.World, x0, y0, x1, y1));
 
             Span<float> vertices =
             [
@@ -4725,8 +4810,22 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         if (!blendEnabled)
             GL.Disable(EnableCap.Blend);
 
+        lock (_liveLinkIconHitLock)
+        {
+            _liveLinkIconHitCache = iconHits;
+        }
+
         static float ToNdcX(float x, int w) => 2f * x / Math.Max(1, w) - 1f;
         static float ToNdcY(float y, int h) => 1f - 2f * y / Math.Max(1, h);
+    }
+
+    private void ClearLiveLinkIconHitCache()
+    {
+        lock (_liveLinkIconHitLock)
+        {
+            if (_liveLinkIconHitCache.Count != 0)
+                _liveLinkIconHitCache = new List<LiveLinkIconHit>();
+        }
     }
 
     private bool EnsureLiveLinkIconResources()
@@ -6248,6 +6347,7 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
     private sealed record LiveLinkModelNode(string ModelName, ModelSceneNode Node);
 
     private readonly record struct LiveLinkIconBillboard(Vector3 World, string IconKey, bool Projectile, Vector3 Tint);
+    private readonly record struct LiveLinkIconHit(Vector3 World, double X0, double Y0, double X1, double Y1);
 
     private enum GizmoMode
     {
