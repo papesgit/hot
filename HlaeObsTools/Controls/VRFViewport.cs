@@ -67,6 +67,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         "weapon_mach_",
         "weapon_",
     ];
+    private static readonly Vector3 LiveLinkProjectileIconTint = new(1.0f, 0.9f, 0.15f);
 
     public static readonly StyledProperty<string?> MapPathProperty =
         AvaloniaProperty.Register<VRFViewport, string?>(nameof(MapPath));
@@ -4259,7 +4260,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                     new Vector3(entity.Transform.M41, entity.Transform.M42, entity.Transform.M43 + 18f),
                     iconKey,
                     entity.Projectile,
-                    Vector3.One));
+                    entity.Projectile ? LiveLinkProjectileIconTint : Vector3.One));
             }
 
             if (observerSlot is >= 0 and <= 9
