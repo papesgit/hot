@@ -409,19 +409,36 @@
             <TabItem Header="3D">
                 <ScrollViewer>
                     <StackPanel Margin="10" Spacing="10">
-                        <TextBlock Text="Map file"
+                        <TextBlock Text="Counter-Strike 2 folder"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBox Width="320"
-                                    Text="{Binding Viewport3DSettings.MapObjPath, Mode=TwoWay}"
-                                    PlaceholderText="path\\to\\map.vmap_c or map.vpk"/>
+                                    Text="{Binding Viewport3DSettings.Cs2GameFolder, Mode=TwoWay}"
+                                    PlaceholderText="C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive"/>
                             <Button Content="Browse"
                                     Command="{Binding BrowseMapObjCommand}"/>
                             <Button Content="Clear"
                                     Command="{Binding ClearMapObjCommand}"/>
                         </StackPanel>
-                        <TextBlock Text="Load a Source 2 map (.vmap_c/.vpk)."
+                        <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
+                            <ComboBox MinWidth="60"
+                                      ItemsSource="{Binding Viewport3DSettings.AvailableMaps}"
+                                      SelectedItem="{Binding Viewport3DSettings.SelectedMap, Mode=TwoWay}"
+                                      PlaceholderText="Select map">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayName}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <CheckBox IsChecked="{Binding Viewport3DSettings.ActiveDutyMapsOnly, Mode=TwoWay}"
+                                      Content="Active Duty Maps"
+                                      Foreground="#E6E6E6"
+                                      VerticalAlignment="Center"
+                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.ActiveDutyMapsOnly"/>
+                        </WrapPanel>
+                        <TextBlock Text="{Binding Viewport3DSettings.MapObjPath}" TextWrapping="Wrap"
                                 Foreground="#888888"
                                 FontSize="12"/>
                         <TextBlock Text="Viewport mouse scale"

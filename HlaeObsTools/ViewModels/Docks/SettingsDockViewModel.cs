@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -95,6 +96,16 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly HlaeInputSender? _inputSender;
         private readonly VideoDisplayDockViewModel? _videoDisplayDockViewModel;
         private readonly DispatcherTimer _networkHealthTimer;
+        private static readonly HashSet<string> ActiveDutyMapNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "de_anubis",
+            "de_overpass",
+            "de_inferno",
+            "de_mirage",
+            "de_dust2",
+            "de_nuke",
+            "de_ancient"
+        };
         private bool _suppressFreecamSave;
         private bool _suppressSettingsSave;
         private bool _isLoadingPresets;
@@ -187,8 +198,8 @@ namespace HlaeObsTools.ViewModels.Docks
             _refreshVmixStateCommand = new AsyncRelay(RefreshVmixStateAsync);
             _addVmixHotkeyCommand = new Relay(AddVmixHotkey);
             _addCommandHotkeyCommand = new Relay(AddCommandHotkey);
-            _browseMapObjCommand = new AsyncRelay(BrowseMapObjAsync);
-            _clearMapObjCommand = new Relay(() => _viewport3DSettings.MapObjPath = string.Empty);
+            _browseMapObjCommand = new AsyncRelay(BrowseCs2GameFolderAsync);
+            _clearMapObjCommand = new Relay(ClearCs2MapSelection);
             _resetTargetOrbitCommand = new Relay(() => _viewport3DSettings.TargetOrbitResetRequest++);
             _cycleForceDeathnoticesCommand = new Relay(CycleForceDeathnoticesMode);
             _toggleDemouiCommand = new AsyncRelay(() => _ws.SendExecCommandAsync("demoui"));
@@ -339,6 +350,9 @@ namespace HlaeObsTools.ViewModels.Docks
 
             _networkHealthTimer.Tick += (_, _) => RefreshNetworkHealth();
             _networkHealthTimer.Start();
+            _suppressSettingsSave = true;
+            RefreshViewportMapOptions();
+            _suppressSettingsSave = false;
             RefreshNetworkHealth();
         }
 
@@ -681,17 +695,18 @@ namespace HlaeObsTools.ViewModels.Docks
         public ICommand ClearMapObjCommand => _clearMapObjCommand;
         public ICommand ResetTargetOrbitCommand => _resetTargetOrbitCommand;
 
-        private async Task BrowseMapObjAsync()
+        private async Task BrowseCs2GameFolderAsync()
         {
-            var path = await PickObjFileToLoadAsync();
+            var path = await PickCs2GameFolderAsync();
             if (string.IsNullOrWhiteSpace(path))
                 return;
 
-            _viewport3DSettings.MapObjPath = path;
-            Console.WriteLine($"[Viewport3D] Map path set: {path}");
+            _viewport3DSettings.Cs2GameFolder = path;
+            RefreshViewportMapOptions();
+            Console.WriteLine($"[Viewport3D] CS2 folder set: {path}");
         }
 
-        private async Task<string?> PickObjFileToLoadAsync()
+        private async Task<string?> PickCs2GameFolderAsync()
         {
             if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime lifetime)
                 return null;
@@ -700,24 +715,83 @@ namespace HlaeObsTools.ViewModels.Docks
             if (window is null)
                 return null;
 
-            var result = await window.StorageProvider.OpenFilePickerAsync(
-                new FilePickerOpenOptions
+            var result = await window.StorageProvider.OpenFolderPickerAsync(
+                new FolderPickerOpenOptions
                 {
-                    Title = "Load Map File",
-                    AllowMultiple = false,
-                    FileTypeFilter = new List<FilePickerFileType>
-                        {
-                            new FilePickerFileType("Source 2 Map (.vmap_c, .vpk)")
-                            {
-                                Patterns = ["*.vmap_c", "*.vpk"]
-                            }
-                        }
+                    Title = "Select Counter-Strike 2 Folder",
+                    AllowMultiple = false
                 });
 
             if (result is { Count: > 0 })
                 return result[0].Path.LocalPath;
 
             return null;
+        }
+
+        private void ClearCs2MapSelection()
+        {
+            _viewport3DSettings.Cs2GameFolder = string.Empty;
+            _viewport3DSettings.SelectedMapName = string.Empty;
+            _viewport3DSettings.SelectedMap = null;
+            _viewport3DSettings.MapObjPath = string.Empty;
+            _viewport3DSettings.AvailableMaps.Clear();
+        }
+
+        private void RefreshViewportMapOptions()
+        {
+            var selectedName = !string.IsNullOrWhiteSpace(_viewport3DSettings.SelectedMapName)
+                ? _viewport3DSettings.SelectedMapName
+                : Path.GetFileNameWithoutExtension(_viewport3DSettings.MapObjPath);
+
+            _viewport3DSettings.AvailableMaps.Clear();
+            foreach (var option in DiscoverViewportMaps())
+            {
+                _viewport3DSettings.AvailableMaps.Add(option);
+            }
+
+            var selected = _viewport3DSettings.AvailableMaps
+                .FirstOrDefault(map => string.Equals(map.Name, selectedName, StringComparison.OrdinalIgnoreCase));
+            _viewport3DSettings.SelectedMap = selected;
+            if (selected != null)
+            {
+                _viewport3DSettings.SelectedMapName = selected.Name;
+                _viewport3DSettings.MapObjPath = selected.Path;
+            }
+        }
+
+        private IEnumerable<ViewportMapOption> DiscoverViewportMaps()
+        {
+            var mapsDirectory = GetCs2MapsDirectory(_viewport3DSettings.Cs2GameFolder);
+            if (string.IsNullOrWhiteSpace(mapsDirectory) || !Directory.Exists(mapsDirectory))
+                return Enumerable.Empty<ViewportMapOption>();
+
+            return Directory.EnumerateFiles(mapsDirectory, "*.vpk", SearchOption.TopDirectoryOnly)
+                .Select(path => new ViewportMapOption
+                {
+                    Name = Path.GetFileNameWithoutExtension(path),
+                    Path = path
+                })
+                .Where(option => IsUsefulViewportMap(option.Name))
+                .Where(option => !_viewport3DSettings.ActiveDutyMapsOnly || ActiveDutyMapNames.Contains(option.Name))
+                .OrderBy(option => option.Name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private static string GetCs2MapsDirectory(string cs2GameFolder)
+        {
+            return string.IsNullOrWhiteSpace(cs2GameFolder)
+                ? string.Empty
+                : Path.Combine(cs2GameFolder, "game", "csgo", "maps");
+        }
+
+        private static bool IsUsefulViewportMap(string mapName)
+        {
+            return !string.IsNullOrWhiteSpace(mapName)
+                && !mapName.StartsWith("workshop_preview", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(mapName, "graphics_settings", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(mapName, "lobby_mapveto", StringComparison.OrdinalIgnoreCase)
+                && !mapName.EndsWith("_vanity", StringComparison.OrdinalIgnoreCase)
+                && !mapName.EndsWith("_new_sky", StringComparison.OrdinalIgnoreCase);
         }
 
         #endregion
@@ -1666,6 +1740,9 @@ namespace HlaeObsTools.ViewModels.Docks
                 NetConsoleHostPort = _storedSettings.NetConsoleHostPort,
                 GsiRelayUris = gsiRelayUris,
                 MapObjPath = _viewport3DSettings.MapObjPath,
+                Cs2GameFolder = _viewport3DSettings.Cs2GameFolder,
+                ViewportSelectedMapName = _viewport3DSettings.SelectedMapName,
+                ViewportActiveDutyMapsOnly = _viewport3DSettings.ActiveDutyMapsOnly,
                 ViewportShowPlayerPins = _viewport3DSettings.ShowPlayerPins,
                 PinScale = _viewport3DSettings.PinScale,
                 PinOffsetZ = _viewport3DSettings.PinOffsetZ,
@@ -2103,6 +2180,25 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             if (_suppressSettingsSave)
                 return;
+
+            if (e.PropertyName == nameof(Viewport3DSettings.Cs2GameFolder) ||
+                e.PropertyName == nameof(Viewport3DSettings.ActiveDutyMapsOnly))
+            {
+                _suppressSettingsSave = true;
+                RefreshViewportMapOptions();
+                _suppressSettingsSave = false;
+            }
+            else if (e.PropertyName == nameof(Viewport3DSettings.SelectedMap))
+            {
+                var selected = _viewport3DSettings.SelectedMap;
+                if (selected != null)
+                {
+                    _suppressSettingsSave = true;
+                    _viewport3DSettings.SelectedMapName = selected.Name;
+                    _viewport3DSettings.MapObjPath = selected.Path;
+                    _suppressSettingsSave = false;
+                }
+            }
 
             SaveSettings();
         }

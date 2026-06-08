@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using ValveResourceFormat.Renderer.Materials;
 
@@ -10,6 +11,10 @@ namespace HlaeObsTools.ViewModels;
 public sealed class Viewport3DSettings : ViewModelBase
 {
     private string _mapObjPath = string.Empty;
+    private string _cs2GameFolder = string.Empty;
+    private string _selectedMapName = string.Empty;
+    private ViewportMapOption? _selectedMap;
+    private bool _activeDutyMapsOnly = true;
     private bool _useAltPlayerBinds;
     private bool _showPlayerPins = true;
     private float _pinScale = 200.0f;
@@ -48,6 +53,7 @@ public sealed class Viewport3DSettings : ViewModelBase
 
     public IReadOnlyList<int> ShadowTextureSizeOptions { get; } = new[] { 256, 512, 1024, 2048, 4096 };
     public IReadOnlyList<int> MaxTextureSizeOptions { get; } = new[] { 64, 128, 256, 512, 1024, 2048 };
+    public ObservableCollection<ViewportMapOption> AvailableMaps { get; } = new();
 
     /// <summary>
     /// Path to the Source 2 map file.
@@ -56,6 +62,39 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _mapObjPath;
         set => SetProperty(ref _mapObjPath, value ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Counter-Strike 2 installation folder.
+    /// </summary>
+    public string Cs2GameFolder
+    {
+        get => _cs2GameFolder;
+        set => SetProperty(ref _cs2GameFolder, value ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Name of the selected map package without extension.
+    /// </summary>
+    public string SelectedMapName
+    {
+        get => _selectedMapName;
+        set => SetProperty(ref _selectedMapName, value ?? string.Empty);
+    }
+
+    public ViewportMapOption? SelectedMap
+    {
+        get => _selectedMap;
+        set => SetProperty(ref _selectedMap, value);
+    }
+
+    /// <summary>
+    /// Show only the current active duty map pool in the map dropdown.
+    /// </summary>
+    public bool ActiveDutyMapsOnly
+    {
+        get => _activeDutyMapsOnly;
+        set => SetProperty(ref _activeDutyMapsOnly, value);
     }
 
     /// <summary>

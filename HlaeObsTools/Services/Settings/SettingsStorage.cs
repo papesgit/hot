@@ -80,6 +80,9 @@ public class AppSettingsData
     public string NetConsoleHostPort { get; set; } = "127.0.0.1:54545";
     public List<string> GsiRelayUris { get; set; } = new();
     public string MapObjPath { get; set; } = string.Empty;
+    public string Cs2GameFolder { get; set; } = string.Empty;
+    public string ViewportSelectedMapName { get; set; } = string.Empty;
+    public bool ViewportActiveDutyMapsOnly { get; set; } = true;
     public bool ViewportShowPlayerPins { get; set; } = true;
     public double PinScale { get; set; } = 200.0;
     public double PinOffsetZ { get; set; } = 55.0;

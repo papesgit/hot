@@ -4,6 +4,7 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -29,6 +30,8 @@ namespace HlaeObsTools.ViewModels;
 
 public class MainDockFactory : Factory, IDisposable
 {
+    private const string DefaultCs2GameFolder = @"C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive";
+
     private readonly object _context;
     private readonly HlaeWebSocketClient _webSocketClient;
     private readonly HlaeInputSender _inputSender;
@@ -195,6 +198,11 @@ public class MainDockFactory : Factory, IDisposable
         return CreateLayoutCoreAsync(null).GetAwaiter().GetResult();
     }
 
+    private static string GetDefaultCs2GameFolder()
+    {
+        return Directory.Exists(DefaultCs2GameFolder) ? DefaultCs2GameFolder : string.Empty;
+    }
+
     private async Task<IRootDock> CreateLayoutCoreAsync(Func<string, string, double, Task>? reportProgressAsync)
     {
         if (reportProgressAsync != null)
@@ -226,9 +234,15 @@ public class MainDockFactory : Factory, IDisposable
         }
         _freecamSettings = freecamSettings;
         var campathEditor = new CampathEditorViewModel();
+        var cs2GameFolder = string.IsNullOrWhiteSpace(_storedSettings.Cs2GameFolder)
+            ? GetDefaultCs2GameFolder()
+            : _storedSettings.Cs2GameFolder;
         var viewport3DSettings = new Viewport3DSettings
         {
             MapObjPath = _storedSettings.MapObjPath ?? string.Empty,
+            Cs2GameFolder = cs2GameFolder,
+            SelectedMapName = _storedSettings.ViewportSelectedMapName ?? string.Empty,
+            ActiveDutyMapsOnly = _storedSettings.ViewportActiveDutyMapsOnly,
             UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds,
             ShowPlayerPins = _storedSettings.ViewportShowPlayerPins,
             PinScale = (float)_storedSettings.PinScale,
