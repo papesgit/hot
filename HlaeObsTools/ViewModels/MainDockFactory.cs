@@ -110,6 +110,7 @@ public class MainDockFactory : Factory, IDisposable
         _rawInputHandler = new RawInputHandler();
         _rawInputHandler.CaptureOnlyWhenAppFocused = !_storedSettings.DisableFocusInputGate;
         _rawInputHandler.SetInputSender(_inputSender);
+        KeyboardInputGate.SetSuppressionSink(suppress => _rawInputHandler.SuppressKeyboard = suppress);
         _rawInputHandler.KeyPressed += OnRawInputKeyPressed;
         _rawInputHandler.MiddleMousePressed += OnRawInputMiddleMousePressed;
         _rawInputHandler.KeyStateChanged += OnRawInputKeyStateChanged;
@@ -523,7 +524,7 @@ public class MainDockFactory : Factory, IDisposable
 
     public void SetKeyboardSuppression(bool suppress)
     {
-        _rawInputHandler.SuppressKeyboard = suppress;
+        KeyboardInputGate.SetFocusSuppression(suppress);
     }
 
     public bool HandleHotkeyKeyDown(KeyEventArgs e)
@@ -640,6 +641,7 @@ public class MainDockFactory : Factory, IDisposable
         _rawInputHandler.KeyPressed -= OnRawInputKeyPressed;
         _rawInputHandler.MiddleMousePressed -= OnRawInputMiddleMousePressed;
         _rawInputHandler.KeyStateChanged -= OnRawInputKeyStateChanged;
+        KeyboardInputGate.SetSuppressionSink(null);
         _rawInputHandler.Dispose();
         _inputSender.Dispose();
         if (_freecamSettings != null)

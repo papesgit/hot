@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using HlaeObsTools.Services.Input;
 using HlaeObsTools.ViewModels.Docks;
 using HlaeObsTools.Views;
 
@@ -76,12 +77,13 @@ public partial class CampathsDockView : UserControl
         if (storageProvider == null)
             return null;
 
-        var result = await storageProvider.OpenFilePickerAsync(
-            new FilePickerOpenOptions
-            {
-                Title = title,
-                AllowMultiple = false
-            });
+        var result = await KeyboardInputGate.RunSuppressedAsync(() =>
+            storageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
+                {
+                    Title = title,
+                    AllowMultiple = false
+                }));
 
         if (result is { Count: > 0 })
             return result[0].Path.LocalPath;
@@ -99,12 +101,13 @@ public partial class CampathsDockView : UserControl
         if (storageProvider == null)
             return null;
 
-        var result = await storageProvider.OpenFolderPickerAsync(
-            new FolderPickerOpenOptions
-            {
-                Title = title,
-                AllowMultiple = false
-            });
+        var result = await KeyboardInputGate.RunSuppressedAsync(() =>
+            storageProvider.OpenFolderPickerAsync(
+                new FolderPickerOpenOptions
+                {
+                    Title = title,
+                    AllowMultiple = false
+                }));
 
         if (result is { Count: > 0 })
             return result[0].Path.LocalPath;
@@ -122,12 +125,13 @@ public partial class CampathsDockView : UserControl
         if (storageProvider == null)
             return null;
 
-        var result = await storageProvider.OpenFilePickerAsync(
-            new FilePickerOpenOptions
-            {
-                Title = title,
-                AllowMultiple = true
-            });
+        var result = await KeyboardInputGate.RunSuppressedAsync(() =>
+            storageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
+                {
+                    Title = title,
+                    AllowMultiple = true
+                }));
 
         return result?.Select(item => item.Path.LocalPath).ToList();
     }

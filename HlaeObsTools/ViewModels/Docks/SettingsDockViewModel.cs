@@ -715,12 +715,13 @@ namespace HlaeObsTools.ViewModels.Docks
             if (window is null)
                 return null;
 
-            var result = await window.StorageProvider.OpenFolderPickerAsync(
-                new FolderPickerOpenOptions
-                {
-                    Title = "Select Counter-Strike 2 Folder",
-                    AllowMultiple = false
-                });
+            var result = await KeyboardInputGate.RunSuppressedAsync(() =>
+                window.StorageProvider.OpenFolderPickerAsync(
+                    new FolderPickerOpenOptions
+                    {
+                        Title = "Select Counter-Strike 2 Folder",
+                        AllowMultiple = false
+                    }));
 
             if (result is { Count: > 0 })
                 return result[0].Path.LocalPath;
@@ -2079,12 +2080,13 @@ namespace HlaeObsTools.ViewModels.Docks
             if (window is null)
                 return null;
 
-            var result = await window.StorageProvider.OpenFilePickerAsync(
-                new FilePickerOpenOptions
-                {
-                    Title = "Load Campath",
-                    AllowMultiple = false
-                });
+            var result = await KeyboardInputGate.RunSuppressedAsync(() =>
+                window.StorageProvider.OpenFilePickerAsync(
+                    new FilePickerOpenOptions
+                    {
+                        Title = "Load Campath",
+                        AllowMultiple = false
+                    }));
 
             if (result is { Count: > 0 })
                 return result[0].Path.LocalPath;
@@ -2101,11 +2103,12 @@ namespace HlaeObsTools.ViewModels.Docks
             if (window is null)
                 return null;
 
-            var result = await window.StorageProvider.SaveFilePickerAsync(
-                new FilePickerSaveOptions
-                {
-                    Title = "Save Campath"
-                });
+            var result = await KeyboardInputGate.RunSuppressedAsync(() =>
+                window.StorageProvider.SaveFilePickerAsync(
+                    new FilePickerSaveOptions
+                    {
+                        Title = "Save Campath"
+                    }));
 
             return result?.Path.LocalPath;
         }
