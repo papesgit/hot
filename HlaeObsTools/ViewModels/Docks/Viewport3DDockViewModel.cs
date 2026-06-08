@@ -36,10 +36,14 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private bool _campathPreviewOverrideActive;
     private bool _gizmoDragActive;
     private readonly string _campathSyncDirectory;
+    private readonly Dictionary<int, ViewportPlayerStatus> _retainedDeadPlayerStatusesBySlot = new();
+    private string? _lastPlayerStatusMapName;
+    private int _lastPlayerStatusRoundNumber = -1;
 
     private static readonly string[] AltBindLabels = { "Q", "E", "R", "T", "Z" };
 
     public event Action<IReadOnlyList<ViewportPin>>? PinsUpdated;
+    public event Action<IReadOnlyList<ViewportPlayerStatus>>? PlayerStatusesUpdated;
 
     public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, CampathEditorViewModel? campathEditor = null, HlaeWebSocketClient? webSocketClient = null, VideoDisplayDockViewModel? videoDisplay = null, GsiServer? gsiServer = null, Cs2LiveLinkReceiver? liveLinkReceiver = null)
     {
@@ -231,10 +235,43 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             return;
         _lastHeartbeat = state.Heartbeat;
 
+        if (!string.Equals(_lastPlayerStatusMapName, state.MapName, StringComparison.OrdinalIgnoreCase) ||
+            _lastPlayerStatusRoundNumber != state.RoundNumber)
+        {
+            _retainedDeadPlayerStatusesBySlot.Clear();
+            _lastPlayerStatusMapName = state.MapName;
+            _lastPlayerStatusRoundNumber = state.RoundNumber;
+        }
+
         var pins = new List<ViewportPin>();
+        var playerStatusesBySlot = new Dictionary<int, ViewportPlayerStatus>();
         foreach (var p in state.Players)
         {
-            if (p == null || !p.IsAlive)
+            if (p == null)
+                continue;
+
+            if (p.Slot is >= 0 and <= 9)
+            {
+                var playerStatus = new ViewportPlayerStatus
+                {
+                    Slot = p.Slot,
+                    IsAlive = p.IsAlive,
+                    Health = p.Health,
+                    Team = p.Team,
+                    Name = p.Name
+                };
+                playerStatusesBySlot[p.Slot] = playerStatus;
+                if (p.IsAlive)
+                {
+                    _retainedDeadPlayerStatusesBySlot.Remove(p.Slot);
+                }
+                else
+                {
+                    _retainedDeadPlayerStatusesBySlot[p.Slot] = playerStatus;
+                }
+            }
+
+            if (!p.IsAlive)
                 continue;
 
             var label = GetSlotLabel(p.Slot, _settings.UseAltPlayerBinds);
@@ -249,7 +286,21 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             });
         }
 
-        Dispatcher.UIThread.Post(() => PinsUpdated?.Invoke(pins));
+        foreach (var retained in _retainedDeadPlayerStatusesBySlot)
+        {
+            if (!playerStatusesBySlot.TryGetValue(retained.Key, out var currentStatus) || !currentStatus.IsAlive)
+            {
+                playerStatusesBySlot[retained.Key] = retained.Value;
+            }
+        }
+
+        var playerStatuses = playerStatusesBySlot.Values.ToList();
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            PinsUpdated?.Invoke(pins);
+            PlayerStatusesUpdated?.Invoke(playerStatuses);
+        });
     }
 
     private void AddKeyframeFromViewport()

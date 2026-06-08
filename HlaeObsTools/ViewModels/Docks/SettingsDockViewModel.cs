@@ -1688,6 +1688,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 ViewportLiveLinkGrenadeIconsEnabled = _viewport3DSettings.LiveLinkGrenadeIconsEnabled,
                 ViewportLiveLinkProjectileIconsEnabled = _viewport3DSettings.LiveLinkProjectileIconsEnabled,
                 ViewportLiveLinkObjectiveIconsEnabled = _viewport3DSettings.LiveLinkObjectiveIconsEnabled,
+                ViewportLiveLinkDeadPlayerIconsEnabled = _viewport3DSettings.LiveLinkDeadPlayerIconsEnabled,
                 ViewportLiveLinkPort = _viewport3DSettings.LiveLinkPort,
                 ViewportShadowTextureSize = _viewport3DSettings.ShadowTextureSize,
                 ViewportMaxTextureSize = _viewport3DSettings.MaxTextureSize,

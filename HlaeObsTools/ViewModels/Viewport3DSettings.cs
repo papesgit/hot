@@ -33,6 +33,7 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _liveLinkGrenadeIconsEnabled = true;
     private bool _liveLinkProjectileIconsEnabled = true;
     private bool _liveLinkObjectiveIconsEnabled = true;
+    private bool _liveLinkDeadPlayerIconsEnabled = true;
     private int _liveLinkPort = 31237;
     private int _targetOrbitResetRequest;
     private int _shadowTextureSize = 1024;
@@ -262,6 +263,15 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _liveLinkObjectiveIconsEnabled;
         set => SetProperty(ref _liveLinkObjectiveIconsEnabled, value);
+    }
+
+    /// <summary>
+    /// Draw HUD icon billboards for dead LiveLink players.
+    /// </summary>
+    public bool LiveLinkDeadPlayerIconsEnabled
+    {
+        get => _liveLinkDeadPlayerIconsEnabled;
+        set => SetProperty(ref _liveLinkDeadPlayerIconsEnabled, value);
     }
 
     /// <summary>

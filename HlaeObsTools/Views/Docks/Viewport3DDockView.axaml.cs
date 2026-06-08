@@ -21,6 +21,7 @@ public partial class Viewport3DDockView : UserControl
     private IViewport3DControl? _viewport;
     private Control? _viewportControl;
     private IReadOnlyList<ViewportPin>? _lastPins;
+    private IReadOnlyList<ViewportPlayerStatus>? _lastPlayerStatuses;
     private CampathEditorViewModel? _campathEditor;
     private bool _frameTickSubscribed;
     private bool _gizmoSubscribed;
@@ -42,6 +43,7 @@ public partial class Viewport3DDockView : UserControl
         if (_viewModel != null)
         {
             _viewModel.PinsUpdated -= OnPinsUpdated;
+            _viewModel.PlayerStatusesUpdated -= OnPlayerStatusesUpdated;
             _viewModel.Viewport3DSettings.PropertyChanged -= OnViewportSettingsChanged;
             if (_campathEditor != null)
             {
@@ -59,6 +61,7 @@ public partial class Viewport3DDockView : UserControl
         if (_viewModel != null)
         {
             _viewModel.PinsUpdated += OnPinsUpdated;
+            _viewModel.PlayerStatusesUpdated += OnPlayerStatusesUpdated;
             _viewModel.Viewport3DSettings.PropertyChanged += OnViewportSettingsChanged;
             _campathEditor = _viewModel.CampathEditor;
             AttachCampathEditor(_campathEditor);
@@ -108,6 +111,11 @@ public partial class Viewport3DDockView : UserControl
         if (_lastPins != null)
         {
             _viewport.SetPins(_lastPins);
+        }
+
+        if (_lastPlayerStatuses != null)
+        {
+            _viewport.SetPlayerStatuses(_lastPlayerStatuses);
         }
 
         UpdateCampathPreview();
@@ -178,6 +186,12 @@ public partial class Viewport3DDockView : UserControl
     {
         _lastPins = pins;
         _viewport?.SetPins(pins);
+    }
+
+    private void OnPlayerStatusesUpdated(IReadOnlyList<ViewportPlayerStatus> statuses)
+    {
+        _lastPlayerStatuses = statuses;
+        _viewport?.SetPlayerStatuses(statuses);
     }
 
     private void OnCampathEditorChanged(object? sender, PropertyChangedEventArgs e)
@@ -577,6 +591,7 @@ public partial class Viewport3DDockView : UserControl
         viewport.Bind(VRFViewport.LiveLinkGrenadeIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkGrenadeIconsEnabled"));
         viewport.Bind(VRFViewport.LiveLinkProjectileIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkProjectileIconsEnabled"));
         viewport.Bind(VRFViewport.LiveLinkObjectiveIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkObjectiveIconsEnabled"));
+        viewport.Bind(VRFViewport.LiveLinkDeadPlayerIconsEnabledProperty, new Binding("Viewport3DSettings.LiveLinkDeadPlayerIconsEnabled"));
         viewport.Bind(VRFViewport.LiveLinkPortProperty, new Binding("Viewport3DSettings.LiveLinkPort"));
         viewport.Bind(VRFViewport.TargetOrbitResetRequestProperty, new Binding("Viewport3DSettings.TargetOrbitResetRequest"));
         viewport.Bind(VRFViewport.ViewportMouseScaleProperty, new Binding("Viewport3DSettings.ViewportMouseScale"));

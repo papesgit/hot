@@ -482,6 +482,10 @@
                                       Content="Defusers &amp; C4"
                                       Foreground="#E6E6E6"
                                       hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkObjectiveIconsEnabled"/>
+                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkDeadPlayerIconsEnabled, Mode=TwoWay}"
+                                      Content="Dead players"
+                                      Foreground="#E6E6E6"
+                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkDeadPlayerIconsEnabled"/>
                         </WrapPanel>
 
                         <TextBlock Text="Player pin scale"

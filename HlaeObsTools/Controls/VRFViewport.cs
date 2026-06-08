@@ -118,6 +118,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkProjectileIconsEnabled), true);
     public static readonly StyledProperty<bool> LiveLinkObjectiveIconsEnabledProperty =
         AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkObjectiveIconsEnabled), true);
+    public static readonly StyledProperty<bool> LiveLinkDeadPlayerIconsEnabledProperty =
+        AvaloniaProperty.Register<VRFViewport, bool>(nameof(LiveLinkDeadPlayerIconsEnabled), true);
     public static readonly StyledProperty<int> LiveLinkPortProperty =
         AvaloniaProperty.Register<VRFViewport, int>(nameof(LiveLinkPort), 31237);
     public static readonly StyledProperty<int> TargetOrbitResetRequestProperty =
@@ -144,6 +146,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private bool _renderLogged;
     private bool _mapHasExternalReferences;
     private readonly Dictionary<int, LiveLinkModelNode> _liveLinkNodes = new();
+    private readonly Dictionary<int, int> _liveLinkObserverSlotsByEntityId = new();
     private uint _lastLiveLinkFrameId = uint.MaxValue;
     private Cs2LiveLinkReceiver? _liveLinkReceiverCached;
     private bool _liveLinkEnabledCached;
@@ -152,6 +155,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private bool _liveLinkGrenadeIconsEnabledCached = true;
     private bool _liveLinkProjectileIconsEnabledCached = true;
     private bool _liveLinkObjectiveIconsEnabledCached = true;
+    private bool _liveLinkDeadPlayerIconsEnabledCached = true;
     private int _liveLinkPortCached = 31237;
     private readonly HashSet<int> _liveLinkLoggedMissingSkeletons = new();
     private readonly HashSet<string> _liveLinkLoggedModelFailures = new(StringComparer.OrdinalIgnoreCase);
@@ -160,6 +164,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private readonly HashSet<string> _liveLinkLoggedMissingIcons = new(StringComparer.OrdinalIgnoreCase);
     private int _liveLinkIconShaderProgram;
     private int _liveLinkIconSamplerLocation = -1;
+    private int _liveLinkIconTintLocation = -1;
     private int _liveLinkIconVao;
     private int _liveLinkIconVbo;
 
@@ -177,6 +182,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private readonly List<PinLabel> _pinLabels = new();
     private IReadOnlyList<ViewportPin>? _pinSource;
     private readonly object _pinLock = new();
+    private readonly object _playerStatusLock = new();
+    private Dictionary<int, ViewportPlayerStatus> _playerStatusesBySlot = new();
     private List<PinLabel> _labelHitCache = new();
     private readonly object _labelLock = new();
 
@@ -360,6 +367,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         LiveLinkGrenadeIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkIconFilterChanged());
         LiveLinkProjectileIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkIconFilterChanged());
         LiveLinkObjectiveIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkIconFilterChanged());
+        LiveLinkDeadPlayerIconsEnabledProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.OnLiveLinkIconFilterChanged());
         LiveLinkPortProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ApplyLiveLinkReceiverSettings());
         TargetOrbitResetRequestProperty.Changed.AddClassHandler<VRFViewport>((sender, _) => sender.ResetTargetOrbit());
     }
@@ -514,6 +522,12 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         set => SetValue(LiveLinkObjectiveIconsEnabledProperty, value);
     }
 
+    public bool LiveLinkDeadPlayerIconsEnabled
+    {
+        get => GetValue(LiveLinkDeadPlayerIconsEnabledProperty);
+        set => SetValue(LiveLinkDeadPlayerIconsEnabledProperty, value);
+    }
+
     public int LiveLinkPort
     {
         get => GetValue(LiveLinkPortProperty);
@@ -591,6 +605,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _liveLinkGrenadeIconsEnabledCached = LiveLinkGrenadeIconsEnabled;
         _liveLinkProjectileIconsEnabledCached = LiveLinkProjectileIconsEnabled;
         _liveLinkObjectiveIconsEnabledCached = LiveLinkObjectiveIconsEnabled;
+        _liveLinkDeadPlayerIconsEnabledCached = LiveLinkDeadPlayerIconsEnabled;
         _liveLinkPortCached = LiveLinkPort;
         ApplyLiveLinkReceiverSettings();
         if (_hwnd != IntPtr.Zero)
@@ -3208,6 +3223,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _liveLinkGrenadeIconsEnabledCached = LiveLinkGrenadeIconsEnabled;
         _liveLinkProjectileIconsEnabledCached = LiveLinkProjectileIconsEnabled;
         _liveLinkObjectiveIconsEnabledCached = LiveLinkObjectiveIconsEnabled;
+        _liveLinkDeadPlayerIconsEnabledCached = LiveLinkDeadPlayerIconsEnabled;
         RequestNextFrame();
     }
 
@@ -3339,6 +3355,20 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         _pinSource = pins;
         UpdatePinsFromSource();
+    }
+
+    public void SetPlayerStatuses(IReadOnlyList<ViewportPlayerStatus> statuses)
+    {
+        var snapshot = statuses
+            .Where(status => status.Slot is >= 0 and <= 9)
+            .GroupBy(status => status.Slot)
+            .ToDictionary(group => group.Key, group => group.Last());
+
+        lock (_playerStatusLock)
+        {
+            _playerStatusesBySlot = snapshot;
+        }
+        RequestNextFrame();
     }
 
     public void SetCampathOverlay(CampathOverlayData? data)
@@ -4177,6 +4207,11 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         _lastLiveLinkFrameId = frame.FrameId;
         _liveLinkIconBillboards.Clear();
+        Dictionary<int, ViewportPlayerStatus> playerStatusesBySlot;
+        lock (_playerStatusLock)
+        {
+            playerStatusesBySlot = new Dictionary<int, ViewportPlayerStatus>(_playerStatusesBySlot);
+        }
 
         foreach (var hiddenId in frame.HiddenEntityIds)
         {
@@ -4189,6 +4224,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             if (entity.ViewModel)
                 continue;
 
+            var observerSlot = ResolveLiveLinkObserverSlot(entity);
+
             if (!entity.Visible)
             {
                 RemoveLiveLinkNode(entity.Id);
@@ -4198,7 +4235,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             activeEntityIds.Add(entity.Id);
             var skeleton = receiver.GetSkeleton(entity.Id);
             var modelName = skeleton?.ModelName;
-            if (string.IsNullOrWhiteSpace(modelName))
+            if (skeleton == null || string.IsNullOrWhiteSpace(modelName))
             {
                 if (_liveLinkLoggedMissingSkeletons.Add(entity.Id))
                     LogMessage($"LiveLink skipped entity {entity.Id}: missing skeleton metadata.");
@@ -4221,7 +4258,23 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 _liveLinkIconBillboards.Add(new LiveLinkIconBillboard(
                     new Vector3(entity.Transform.M41, entity.Transform.M42, entity.Transform.M43 + 18f),
                     iconKey,
-                    entity.Projectile));
+                    entity.Projectile,
+                    Vector3.One));
+            }
+
+            if (observerSlot is >= 0 and <= 9
+                && _liveLinkDeadPlayerIconsEnabledCached
+                && playerStatusesBySlot.TryGetValue(observerSlot, out var playerStatus)
+                && !playerStatus.IsAlive)
+            {
+                var deadIconWorld = TryGetLiveLinkBoneWorldPosition(entity, skeleton, out var pelvisWorld)
+                    ? pelvisWorld + new Vector3(0f, 0f, 20f)
+                    : new Vector3(entity.Transform.M41, entity.Transform.M42, entity.Transform.M43 + 64f);
+                _liveLinkIconBillboards.Add(new LiveLinkIconBillboard(
+                    deadIconWorld,
+                    "dead_player",
+                    false,
+                    GetTeamColor(playerStatus.Team)));
             }
 
             _renderer.Scene.MarkParentOctreeDirty(node.Node);
@@ -4234,6 +4287,19 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 RemoveLiveLinkNode(entityId);
             }
         }
+    }
+
+    private int ResolveLiveLinkObserverSlot(Cs2LiveLinkEntity entity)
+    {
+        if (entity.ObserverSlot is >= 0 and <= 9)
+        {
+            _liveLinkObserverSlotsByEntityId[entity.Id] = entity.ObserverSlot;
+            return entity.ObserverSlot;
+        }
+
+        return _liveLinkObserverSlotsByEntityId.TryGetValue(entity.Id, out var cachedSlot)
+            ? cachedSlot
+            : -1;
     }
 
     private LiveLinkModelNode? GetOrCreateLiveLinkNode(int entityId, string modelName)
@@ -4281,6 +4347,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private void RemoveLiveLinkNode(int entityId)
     {
+        _liveLinkObserverSlotsByEntityId.Remove(entityId);
         if (!_liveLinkNodes.Remove(entityId, out var liveNode))
             return;
 
@@ -4616,6 +4683,11 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             if (!TryProjectToScreen(billboard.World, camera, width, height, out var screen))
                 continue;
 
+            if (_liveLinkIconTintLocation >= 0)
+            {
+                GL.Uniform3(_liveLinkIconTintLocation, billboard.Tint.X, billboard.Tint.Y, billboard.Tint.Z);
+            }
+
             var iconHeight = billboard.Projectile ? 30f : 28f;
             var iconWidth = Math.Max(20f, iconHeight * texture.Width / Math.Max(1f, texture.Height));
             var x0 = (float)screen.X - iconWidth * 0.5f;
@@ -4665,6 +4737,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 return false;
 
             _liveLinkIconSamplerLocation = GL.GetUniformLocation(_liveLinkIconShaderProgram, "uTexture");
+            _liveLinkIconTintLocation = GL.GetUniformLocation(_liveLinkIconShaderProgram, "uTint");
         }
 
         if (_liveLinkIconVao == 0)
@@ -4718,9 +4791,12 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private static Uri GetLiveLinkIconUri(string iconKey)
     {
-        return iconKey == "planted_c4"
-            ? new Uri("avares://HlaeObsTools/Assets/hud/icons/planted-bomb.svg")
-            : new Uri($"avares://HlaeObsTools/Assets/hud/weapons/{iconKey}.svg");
+        return iconKey switch
+        {
+            "dead_player" => new Uri("avares://HlaeObsTools/Assets/hud/icons/dead.svg"),
+            "planted_c4" => new Uri("avares://HlaeObsTools/Assets/hud/icons/planted-bomb.svg"),
+            _ => new Uri($"avares://HlaeObsTools/Assets/hud/weapons/{iconKey}.svg")
+        };
     }
 
     private static SKBitmap RasterizeSvg(SKSvg svg, int size)
@@ -4782,6 +4858,85 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             or "breachcharge"
             or "breachcharge_projectile"
             or "bumpmine";
+    }
+
+    private static bool TryGetLiveLinkBoneWorldPosition(Cs2LiveLinkEntity entity, Cs2LiveLinkSkeleton skeleton, out Vector3 world)
+    {
+        world = default;
+        if (!entity.HasBones || entity.LocalBoneTransforms.Count == 0 || skeleton.BoneNames.Count == 0)
+            return false;
+
+        var boneIndex = FindLiveLinkAnchorBoneIndex(skeleton);
+        if (boneIndex < 0 || boneIndex >= entity.LocalBoneTransforms.Count)
+            return false;
+
+        var worldTransforms = new Matrix4x4[entity.LocalBoneTransforms.Count];
+        var resolved = new bool[entity.LocalBoneTransforms.Count];
+        var boneWorld = ResolveLiveLinkBoneWorldTransform(boneIndex, entity, skeleton, worldTransforms, resolved);
+        world = new Vector3(boneWorld.M41, boneWorld.M42, boneWorld.M43);
+        return true;
+    }
+
+    private static Matrix4x4 ResolveLiveLinkBoneWorldTransform(
+        int boneIndex,
+        Cs2LiveLinkEntity entity,
+        Cs2LiveLinkSkeleton skeleton,
+        Matrix4x4[] worldTransforms,
+        bool[] resolved)
+    {
+        if (boneIndex < 0 || boneIndex >= entity.LocalBoneTransforms.Count)
+            return entity.Transform;
+
+        if (resolved[boneIndex])
+            return worldTransforms[boneIndex];
+
+        var local = entity.LocalBoneTransforms[boneIndex];
+        var parentIndex = boneIndex < skeleton.BoneParents.Count ? skeleton.BoneParents[boneIndex] : -1;
+        var parentWorld = parentIndex >= 0 && parentIndex < entity.LocalBoneTransforms.Count
+            ? ResolveLiveLinkBoneWorldTransform(parentIndex, entity, skeleton, worldTransforms, resolved)
+            : entity.Transform;
+
+        var boneWorld = local * parentWorld;
+        worldTransforms[boneIndex] = boneWorld;
+        resolved[boneIndex] = true;
+        return boneWorld;
+    }
+
+    private static int FindLiveLinkAnchorBoneIndex(Cs2LiveLinkSkeleton skeleton)
+    {
+        var exactCandidates = new[]
+        {
+            "pelvis",
+            "valvebiped.bip01_pelvis",
+            "bip01_pelvis"
+        };
+
+        foreach (var candidate in exactCandidates)
+        {
+            for (var i = 0; i < skeleton.BoneNames.Count; ++i)
+            {
+                if (string.Equals(skeleton.BoneNames[i], candidate, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+        }
+
+        for (var i = 0; i < skeleton.BoneNames.Count; ++i)
+        {
+            if (skeleton.BoneNames[i].Contains("pelvis", StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+
+        var fallbackCandidates = new[] { "spine_0", "spine", "root" };
+        foreach (var candidate in fallbackCandidates)
+        {
+            for (var i = 0; i < skeleton.BoneNames.Count; ++i)
+            {
+                if (string.Equals(skeleton.BoneNames[i], candidate, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+        }
+
+        return -1;
     }
 
     private static string? TryGetLiveLinkIconKey(string modelName, Cs2LiveLinkEntity entity)
@@ -4855,9 +5010,11 @@ void main()
 in vec2 vTex;
 out vec4 FragColor;
 uniform sampler2D uTexture;
+uniform vec3 uTint;
 void main()
 {
-    FragColor = texture(uTexture, vTex);
+    vec4 tex = texture(uTexture, vTex);
+    FragColor = vec4(tex.rgb * uTint, tex.a);
 }";
         const string Vertex120 = @"#version 120
 attribute vec2 aPos;
@@ -4871,9 +5028,11 @@ void main()
         const string Fragment120 = @"#version 120
 varying vec2 vTex;
 uniform sampler2D uTexture;
+uniform vec3 uTint;
 void main()
 {
-    gl_FragColor = texture2D(uTexture, vTex);
+    vec4 tex = texture2D(uTexture, vTex);
+    gl_FragColor = vec4(tex.rgb * uTint, tex.a);
 }";
         const string VertexEs300 = @"#version 300 es
 precision mediump float;
@@ -4890,9 +5049,11 @@ precision mediump float;
 in vec2 vTex;
 out vec4 FragColor;
 uniform sampler2D uTexture;
+uniform vec3 uTint;
 void main()
 {
-    FragColor = texture(uTexture, vTex);
+    vec4 tex = texture(uTexture, vTex);
+    FragColor = vec4(tex.rgb * uTint, tex.a);
 }";
         const string VertexEs100 = @"#version 100
 precision mediump float;
@@ -4908,9 +5069,11 @@ void main()
 precision mediump float;
 varying vec2 vTex;
 uniform sampler2D uTexture;
+uniform vec3 uTint;
 void main()
 {
-    gl_FragColor = texture2D(uTexture, vTex);
+    vec4 tex = texture2D(uTexture, vTex);
+    gl_FragColor = vec4(tex.rgb * uTint, tex.a);
 }";
 
         var version = GL.GetString(StringName.Version) ?? "unknown";
@@ -6083,7 +6246,7 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
 
     private sealed record LiveLinkModelNode(string ModelName, ModelSceneNode Node);
 
-    private readonly record struct LiveLinkIconBillboard(Vector3 World, string IconKey, bool Projectile);
+    private readonly record struct LiveLinkIconBillboard(Vector3 World, string IconKey, bool Projectile, Vector3 Tint);
 
     private enum GizmoMode
     {

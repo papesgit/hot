@@ -27,6 +27,7 @@ public interface IViewport3DControl
     void SetFreecamPose(Vector3 position, Quaternion rotation, float fov);
     void ClearFreecamPreview();
     void SetPins(IReadOnlyList<ViewportPin> pins);
+    void SetPlayerStatuses(IReadOnlyList<ViewportPlayerStatus> statuses);
     void SetCampathOverlay(CampathOverlayData? data);
     void SetCampathGizmo(CampathGizmoState? state);
 

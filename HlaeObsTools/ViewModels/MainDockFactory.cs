@@ -252,6 +252,7 @@ public class MainDockFactory : Factory, IDisposable
             LiveLinkGrenadeIconsEnabled = _storedSettings.ViewportLiveLinkGrenadeIconsEnabled,
             LiveLinkProjectileIconsEnabled = _storedSettings.ViewportLiveLinkProjectileIconsEnabled,
             LiveLinkObjectiveIconsEnabled = _storedSettings.ViewportLiveLinkObjectiveIconsEnabled,
+            LiveLinkDeadPlayerIconsEnabled = _storedSettings.ViewportLiveLinkDeadPlayerIconsEnabled,
             LiveLinkPort = _storedSettings.ViewportLiveLinkPort,
             ShadowTextureSize = _storedSettings.ViewportShadowTextureSize,
             MaxTextureSize = _storedSettings.ViewportMaxTextureSize,

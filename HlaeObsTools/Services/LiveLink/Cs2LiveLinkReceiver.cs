@@ -356,6 +356,8 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
         var id = reader.ReadInt32();
         reader.Stage = $"{entityStage}.ownerId";
         var ownerId = reader.ReadInt32();
+        reader.Stage = $"{entityStage}.observerSlot";
+        var observerSlot = reader.ReadInt32();
         reader.Stage = $"{entityStage}.projectile";
         var projectile = reader.ReadByte() != 0;
         reader.Stage = $"{entityStage}.visible";
@@ -380,7 +382,7 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
             localBones[i] = reader.ReadMatrix3x4();
         }
 
-        return new Cs2LiveLinkEntity(id, ownerId, clientClassName, projectile, visible, viewModel, transform, hasBones, localBones);
+        return new Cs2LiveLinkEntity(id, ownerId, observerSlot, clientClassName, projectile, visible, viewModel, transform, hasBones, localBones);
     }
 
     private static int[] ReadHiddenIds(ref PacketReader reader)
@@ -579,6 +581,7 @@ public sealed record Cs2LiveLinkFrame(
 public sealed record Cs2LiveLinkEntity(
     int Id,
     int OwnerId,
+    int ObserverSlot,
     string ClientClassName,
     bool Projectile,
     bool Visible,
