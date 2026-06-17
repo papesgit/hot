@@ -117,6 +117,15 @@ public class AppSettingsData
     public double VmixReplayPreSeconds { get; set; } = 2.0;
     public double VmixReplayPostSeconds { get; set; } = 2.0;
     public double VmixReplayExtendWindowSeconds { get; set; } = 3.0;
+    public string ReplayDirectorRole { get; set; } = "Off";
+    public int ReplayDirectorPublisherPort { get; set; } = 31341;
+    public string ReplayDirectorFollowerEndpoint { get; set; } = "http://127.0.0.1:31341/replay-director/events";
+    public double ReplayDirectorPreSwitchSeconds { get; set; } = 2.0;
+    public double ReplayDirectorMergeWindowSeconds { get; set; } = 3.0;
+    public double ReplayDirectorSwitchLockSeconds { get; set; } = 0.75;
+    public bool ReplayDirectorDelayedVmixEnabled { get; set; } = true;
+    public string ReplayDirectorDelayedVmixChannel { get; set; } = "B";
+    public int ReplayDirectorDelayedVmixCamera { get; set; } = 2;
     public bool DisableFocusInputGate { get; set; }
     public int GraphicsTargetFps { get; set; } = 30;
     public List<HotkeyBindingData> Hotkeys { get; set; } = new();

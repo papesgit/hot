@@ -83,6 +83,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly Func<NetworkSettingsData, Task>? _applyNetworkSettingsAsync;
         private readonly VmixSettings _vmixSettings;
         private readonly VmixReplaySettings _vmixReplaySettings;
+        private readonly ReplayDirectorSettings _replayDirectorSettings;
         private readonly VmixApiClient _vmixApiClient;
         private readonly VmixShortcutCatalog _vmixShortcutCatalog;
         private readonly Dictionary<string, List<VmixFunctionDefinition>> _vmixFunctionsByCategory = new(StringComparer.Ordinal);
@@ -145,7 +146,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort, IReadOnlyList<string> GsiRelayUris);
 
-        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixSettings? vmixSettings = null, VmixReplaySettings? vmixReplaySettings = null, VmixApiClient? vmixApiClient = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
+        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixSettings? vmixSettings = null, VmixReplaySettings? vmixReplaySettings = null, ReplayDirectorSettings? replayDirectorSettings = null, VmixApiClient? vmixApiClient = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
         {
             _radarSettings = radarSettings;
             _hudSettings = hudSettings;
@@ -156,6 +157,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _applyNetworkSettingsAsync = applyNetworkSettingsAsync;
             _vmixSettings = vmixSettings ?? new VmixSettings();
             _vmixReplaySettings = vmixReplaySettings ?? new VmixReplaySettings();
+            _replayDirectorSettings = replayDirectorSettings ?? new ReplayDirectorSettings();
             _vmixApiClient = vmixApiClient ?? new VmixApiClient(_vmixSettings);
             _vmixShortcutCatalog = VmixShortcutCatalogLoader.LoadFromAssets();
             _setFocusInputGateDisabled = setFocusInputGateDisabled;
@@ -347,6 +349,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _freecamSettings.PropertyChanged += OnFreecamSettingsChanged;
             _vmixSettings.PropertyChanged += OnVmixSettingsChanged;
             _vmixReplaySettings.PropertyChanged += OnVmixSettingsChanged;
+            _replayDirectorSettings.PropertyChanged += OnVmixSettingsChanged;
 
             _networkHealthTimer.Tick += (_, _) => RefreshNetworkHealth();
             _networkHealthTimer.Start();
@@ -362,6 +365,8 @@ namespace HlaeObsTools.ViewModels.Docks
         public Viewport3DSettings Viewport3DSettings => _viewport3DSettings;
         public VmixSettings VmixSettings => _vmixSettings;
         public VmixReplaySettings VmixReplaySettings => _vmixReplaySettings;
+        public ReplayDirectorSettings ReplayDirectorSettings => _replayDirectorSettings;
+        public ObservableCollection<string> ReplayDirectorRoleOptions => HlaeObsTools.ViewModels.ReplayDirectorSettings.RoleOptions;
         public CampathEditorViewModel CampathEditor => _campathEditor;
         public AttachPresetAnimationDockViewModel AttachPresetAnimationEditor { get; }
         public ObservableCollection<HotkeyBindingViewModel> HotkeyBindings { get; } = new();
@@ -1778,6 +1783,15 @@ namespace HlaeObsTools.ViewModels.Docks
                 VmixReplayPreSeconds = _vmixReplaySettings.PreSeconds,
                 VmixReplayPostSeconds = _vmixReplaySettings.PostSeconds,
                 VmixReplayExtendWindowSeconds = _vmixReplaySettings.ExtendWindowSeconds,
+                ReplayDirectorRole = _replayDirectorSettings.Role,
+                ReplayDirectorPublisherPort = _replayDirectorSettings.PublisherPort,
+                ReplayDirectorFollowerEndpoint = _replayDirectorSettings.FollowerEndpoint,
+                ReplayDirectorPreSwitchSeconds = _replayDirectorSettings.PreSwitchSeconds,
+                ReplayDirectorMergeWindowSeconds = _replayDirectorSettings.MergeWindowSeconds,
+                ReplayDirectorSwitchLockSeconds = _replayDirectorSettings.SwitchLockSeconds,
+                ReplayDirectorDelayedVmixEnabled = _replayDirectorSettings.DelayedVmixEnabled,
+                ReplayDirectorDelayedVmixChannel = _replayDirectorSettings.DelayedVmixChannel,
+                ReplayDirectorDelayedVmixCamera = _replayDirectorSettings.DelayedVmixCamera,
                 DisableFocusInputGate = _disableFocusInputGate,
                 Hotkeys = HotkeyBindings.Select(binding => binding.ToData()).ToList()
             };
@@ -2211,7 +2225,20 @@ namespace HlaeObsTools.ViewModels.Docks
             if (_suppressSettingsSave)
                 return;
 
+            if (ReferenceEquals(sender, _replayDirectorSettings) && IsReplayDirectorStatusProperty(e.PropertyName))
+                return;
+
             SaveSettings();
+        }
+
+        private static bool IsReplayDirectorStatusProperty(string? propertyName)
+        {
+            return propertyName == nameof(ReplayDirectorSettings.Status)
+                || propertyName == nameof(ReplayDirectorSettings.LastKill)
+                || propertyName == nameof(ReplayDirectorSettings.LocalGameTime)
+                || propertyName == nameof(ReplayDirectorSettings.ScheduledTarget)
+                || propertyName == nameof(ReplayDirectorSettings.LastSwitch)
+                || propertyName == nameof(ReplayDirectorSettings.LastVmixMark);
         }
 
         #endregion

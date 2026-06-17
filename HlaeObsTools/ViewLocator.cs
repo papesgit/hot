@@ -19,6 +19,7 @@ public sealed class ViewLocator : IDataTemplate
         [typeof(CampathsDockViewModel)] = () => new CampathsDockView(),
         [typeof(NetConsoleDockViewModel)] = () => new NetConsoleDockView(),
         [typeof(GraphicsDockViewModel)] = () => new GraphicsDockView(),
+        [typeof(ReplayDockViewModel)] = () => new ReplayDockView(),
         [typeof(Viewport3DDockViewModel)] = () => new Viewport3DDockView(),
         [typeof(AttachPresetAnimationDockViewModel)] = () => new AttachPresetAnimationDockView()
     };

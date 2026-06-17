@@ -183,12 +183,21 @@ public sealed class VmixApiClient : IDisposable
                 .OrderBy(v => v, StringComparer.Ordinal)
                 .ToList() ?? new List<string>();
 
+            var replay = root.Descendants()
+                .FirstOrDefault(e => string.Equals(e.Name.LocalName, "replay", StringComparison.OrdinalIgnoreCase));
+
             return new VmixStateSnapshot
             {
                 Inputs = inputs,
                 Transitions = transitions,
                 Active = root.Element("active")?.Value,
-                Preview = root.Element("preview")?.Value
+                Preview = root.Element("preview")?.Value,
+                ReplayEventsA = ReadIntAttribute(replay, "eventsA"),
+                ReplayEventsB = ReadIntAttribute(replay, "eventsB"),
+                ReplayEventsTotal = ReadIntAttribute(replay, "events"),
+                ReplayChannelMode = ReadStringAttribute(replay, "channelMode"),
+                ReplayCameraA = ReadIntAttribute(replay, "cameraA"),
+                ReplayCameraB = ReadIntAttribute(replay, "cameraB")
             };
         }
         catch (Exception ex)
@@ -196,6 +205,24 @@ public sealed class VmixApiClient : IDisposable
             Console.WriteLine($"[VMIX] Failed to parse state XML: {ex.Message}");
             return null;
         }
+    }
+
+    private static int ReadIntAttribute(XElement? element, string name)
+    {
+        if (element == null)
+            return 0;
+
+        var value = ReadStringAttribute(element, name);
+        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : 0;
+    }
+
+    private static string? ReadStringAttribute(XElement? element, string name)
+    {
+        return element?.Attributes()
+            .FirstOrDefault(a => string.Equals(a.Name.LocalName, name, StringComparison.OrdinalIgnoreCase))
+            ?.Value;
     }
 
     public void Dispose()

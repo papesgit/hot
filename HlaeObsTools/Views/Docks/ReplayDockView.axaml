@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:vmix="using:HlaeObsTools.Services.Vmix"
+             x:Class="HlaeObsTools.Views.Docks.ReplayDockView"
+             x:DataType="vm:ReplayDockViewModel">
+    <Border Background="#202020" Padding="8">
+        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="Play Selection"
+                        Command="{Binding PlaySelectedCommand}"
+                        MinWidth="116"/>
+                <Button Content="Last Round"
+                        Command="{Binding PlayLastRoundCommand}"
+                        MinWidth="96"/>
+                <Button Content="Clear"
+                        Command="{Binding ClearCommand}"
+                        MinWidth="70"/>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1"
+                       Text="{Binding Status}"
+                       Foreground="#BDBDBD"
+                       FontSize="12"
+                       TextWrapping="Wrap"/>
+
+            <Grid Grid.Row="2"
+                  ColumnDefinitions="64,54,*"
+                  Background="#303030"
+                  Height="26">
+                <TextBlock Text="ID" Margin="6,0" VerticalAlignment="Center" Foreground="#BDBDBD"/>
+                <TextBlock Grid.Column="1" Text="Kills" Margin="6,0" VerticalAlignment="Center" Foreground="#BDBDBD"/>
+                <TextBlock Grid.Column="2" Text="Label" Margin="6,0" VerticalAlignment="Center" Foreground="#BDBDBD"/>
+            </Grid>
+
+            <ListBox Grid.Row="3"
+                     ItemsSource="{Binding Events}"
+                     SelectionMode="Multiple"
+                     SelectionChanged="OnReplaySelectionChanged"
+                     Background="#252525"
+                     BorderBrush="#3A3A3A"
+                     BorderThickness="1">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vmix:ReplayEventRecord">
+                        <Grid ColumnDefinitions="64,54,*"
+                              MinHeight="28">
+                            <TextBlock Text="{Binding VmixEventId}"
+                                       Margin="6,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#E6E6E6"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding KillCount}"
+                                       Margin="6,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#E6E6E6"/>
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding Label}"
+                                       Margin="6,0"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="#E6E6E6"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+    </Border>
+</UserControl>

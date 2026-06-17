@@ -172,6 +172,52 @@
                                 <TextBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" />
                             </Grid>
                         </StackPanel>
+
+                        <Separator Margin="0,10,0,6"/>
+                        <TextBlock Text="Replay Director"
+                                   Foreground="#CCCCCC"
+                                   FontWeight="SemiBold"/>
+                        <StackPanel Spacing="6" Margin="0,0,0,12">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock VerticalAlignment="Center" Text="Role" Foreground="#AAAAAA"/>
+                                <ComboBox MinWidth="150"
+                                          ItemsSource="{Binding ReplayDirectorRoleOptions}"
+                                          SelectedItem="{Binding ReplayDirectorSettings.Role, Mode=TwoWay}"/>
+                                <TextBlock VerticalAlignment="Center" Text="Publisher port" Foreground="#AAAAAA"/>
+                                <TextBox MaxWidth="80" Text="{Binding ReplayDirectorSettings.PublisherPort, Mode=TwoWay}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock VerticalAlignment="Center" Text="Follower endpoint" Foreground="#AAAAAA"/>
+                                <TextBox MinWidth="280"
+                                         Text="{Binding ReplayDirectorSettings.FollowerEndpoint, Mode=TwoWay}" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto"
+                                  RowDefinitions="Auto,Auto,Auto"
+                                  ColumnSpacing="8"
+                                  RowSpacing="6">
+                                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Pre-switch (s)" Foreground="#AAAAAA"/>
+                                <TextBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding ReplayDirectorSettings.PreSwitchSeconds, Mode=TwoWay}" />
+                                <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Text="Merge window (s)" Foreground="#AAAAAA"/>
+                                <TextBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding ReplayDirectorSettings.MergeWindowSeconds, Mode=TwoWay}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Switch lock (s)" Foreground="#AAAAAA"/>
+                                <TextBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding ReplayDirectorSettings.SwitchLockSeconds, Mode=TwoWay}" />
+                                <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" Text="Channel / camera" Foreground="#AAAAAA"/>
+                                <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" Spacing="6">
+                                    <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixChannel, Mode=TwoWay}" />
+                                    <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixCamera, Mode=TwoWay}" />
+                                </StackPanel>
+                            </Grid>
+                            <ToggleSwitch IsChecked="{Binding ReplayDirectorSettings.DelayedVmixEnabled, Mode=TwoWay}"
+                                          Content="Enable delayed vMix replay marking"
+                                          Foreground="#E6E6E6"/>
+                            <TextBlock Text="{Binding ReplayDirectorSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding ReplayDirectorSettings.LocalGameTime}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding ReplayDirectorSettings.ScheduledTarget}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding ReplayDirectorSettings.LastSwitch}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

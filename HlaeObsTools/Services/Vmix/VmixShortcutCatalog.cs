@@ -81,4 +81,10 @@ public sealed class VmixStateSnapshot
     public IReadOnlyList<string> Transitions { get; init; } = new List<string>();
     public string? Active { get; init; }
     public string? Preview { get; init; }
+    public int ReplayEventsA { get; init; }
+    public int ReplayEventsB { get; init; }
+    public int ReplayEventsTotal { get; init; }
+    public string? ReplayChannelMode { get; init; }
+    public int ReplayCameraA { get; init; }
+    public int ReplayCameraB { get; init; }
 }

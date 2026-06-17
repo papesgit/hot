@@ -21,6 +21,7 @@ using HlaeObsTools.ViewModels;
 using HlaeObsTools.Services.Settings;
 using HlaeObsTools.ViewModels.Hud;
 using HlaeObsTools.Services.Vmix;
+using HlaeObsTools.Services.ReplayDirector;
 using HlaeObsTools.Services.Graphics;
 using HlaeObsTools.Services.Hotkeys;
 using HlaeObsTools.Services.LiveLink;
@@ -45,15 +46,22 @@ public class MainDockFactory : Factory, IDisposable
     private readonly AppSettingsData _storedSettings;
     private readonly HotkeyService _hotkeyService;
     private readonly VmixApiClient _vmixApiClient;
+    private readonly ReplayEventRegistry _replayEventRegistry;
+    private readonly VmixReplayCoordinator _vmixReplayCoordinator;
     private readonly VmixReplayService _vmixReplayService;
     private readonly VmixSettings _vmixSettings;
     private readonly VmixReplaySettings _vmixReplaySettings;
+    private readonly ReplayDirectorSettings _replayDirectorSettings;
+    private readonly VmixReplayMarker _delayedReplayMarker;
+    private readonly ReplayDirectorPublisher _replayDirectorPublisher;
+    private readonly ReplayDirectorFollower _replayDirectorFollower;
     private readonly GraphicsProfileStorage _graphicsProfileStorage;
     private readonly GraphicsService _graphicsService;
     private readonly GraphicsProducerClient _producerClient;
     private readonly Cs2LiveLinkReceiver _liveLinkReceiver;
     private VideoDisplayDockViewModel? _videoDisplayVm;
     private GraphicsDockViewModel? _graphicsDockVm;
+    private ReplayDockViewModel? _replayDockVm;
     private bool _disposed;
     public HotkeyService HotkeyService => _hotkeyService;
 
@@ -91,9 +99,26 @@ public class MainDockFactory : Factory, IDisposable
             PostSeconds = _storedSettings.VmixReplayPostSeconds,
             ExtendWindowSeconds = _storedSettings.VmixReplayExtendWindowSeconds
         };
+        _replayDirectorSettings = new ReplayDirectorSettings
+        {
+            Role = _storedSettings.ReplayDirectorRole,
+            PublisherPort = _storedSettings.ReplayDirectorPublisherPort,
+            FollowerEndpoint = _storedSettings.ReplayDirectorFollowerEndpoint,
+            PreSwitchSeconds = _storedSettings.ReplayDirectorPreSwitchSeconds,
+            MergeWindowSeconds = _storedSettings.ReplayDirectorMergeWindowSeconds,
+            SwitchLockSeconds = _storedSettings.ReplayDirectorSwitchLockSeconds,
+            DelayedVmixEnabled = _storedSettings.ReplayDirectorDelayedVmixEnabled,
+            DelayedVmixChannel = _storedSettings.ReplayDirectorDelayedVmixChannel,
+            DelayedVmixCamera = _storedSettings.ReplayDirectorDelayedVmixCamera
+        };
         _vmixApiClient = new VmixApiClient(_vmixSettings);
+        _replayEventRegistry = new ReplayEventRegistry();
+        _vmixReplayCoordinator = new VmixReplayCoordinator(_vmixApiClient, _replayEventRegistry);
         _hotkeyService.SetVmixApiClient(_vmixApiClient);
-        _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixApiClient, _vmixReplaySettings);
+        _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixApiClient, _vmixReplayCoordinator, _vmixReplaySettings);
+        _delayedReplayMarker = new VmixReplayMarker(_vmixApiClient, _vmixReplayCoordinator);
+        _replayDirectorPublisher = new ReplayDirectorPublisher(_webSocketClient, _gsiServer, _replayDirectorSettings, _vmixReplaySettings, _delayedReplayMarker);
+        _replayDirectorFollower = new ReplayDirectorFollower(_webSocketClient, _gsiServer, _replayDirectorSettings);
 
         _graphicsProfileStorage = new GraphicsProfileStorage();
         _producerClient = new GraphicsProducerClient(_storedSettings.WebSocketHost, _storedSettings.GraphicsProducerPort);
@@ -307,6 +332,11 @@ public class MainDockFactory : Factory, IDisposable
             Id = "Graphics",
             Title = "Graphics"
         };
+        _replayDockVm = new ReplayDockViewModel(_vmixReplayCoordinator)
+        {
+            Id = "Replay",
+            Title = "Replay"
+        };
 
         if (reportProgressAsync != null)
         {
@@ -327,6 +357,7 @@ public class MainDockFactory : Factory, IDisposable
             _storedSettings,
             _vmixSettings,
             _vmixReplaySettings,
+            _replayDirectorSettings,
             _vmixApiClient,
             setFocusInputGateDisabled: disable => _rawInputHandler.CaptureOnlyWhenAppFocused = !disable,
             campathEditor: campathEditor,
@@ -364,6 +395,7 @@ public class MainDockFactory : Factory, IDisposable
         _hotkeyService.RegisterCommandContext(campathEditor);
         _hotkeyService.RegisterCommandContext(hudOverlayVm);
         _hotkeyService.RegisterCommandContext(_graphicsDockVm);
+        _hotkeyService.RegisterCommandContext(_replayDockVm);
         _hotkeyService.RegisterCommandContext(bottomLeft.AttachPresetAnimationEditor);
         ConfigureAnalogInput(freecamSettings);
         _videoDisplayVm.SetRtpConfig(new RtpReceiverConfig
@@ -405,7 +437,7 @@ public class MainDockFactory : Factory, IDisposable
             Id = "TopRightDock",
             Proportion = 0.2,
             ActiveDockable = topRight,
-            VisibleDockables = CreateList<IDockable>(topRight, _graphicsDockVm)
+            VisibleDockables = CreateList<IDockable>(topRight, _graphicsDockVm, _replayDockVm)
         };
 
         var bottomLeftDock = new ToolDock
@@ -655,8 +687,12 @@ public class MainDockFactory : Factory, IDisposable
         _webSocketClient.Dispose();
         _producerClient.Dispose();
         _liveLinkReceiver.Dispose();
-        _vmixApiClient.Dispose();
         _vmixReplayService.Dispose();
+        _replayDirectorFollower.Dispose();
+        _replayDirectorPublisher.Dispose();
+        _delayedReplayMarker.Dispose();
+        _vmixApiClient.Dispose();
+        _replayDockVm?.Dispose();
         _graphicsDockVm?.Dispose();
         _graphicsService.Dispose();
 
