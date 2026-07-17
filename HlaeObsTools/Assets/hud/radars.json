@@ -208,7 +208,7 @@
 
 	"de_cache": {
 		"radarImageTransparentBackgrond": true,
-		"radarImageUrl": "/hud/img/radars/simpleradar/de_cache.webp",
+		"radarImageUrl": "/hud/img/radars/jts/de_cache.png",
 
 		"pos_x": -2000,
 		"pos_y": 3250,
