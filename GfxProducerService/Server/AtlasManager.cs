@@ -61,6 +61,7 @@ public sealed class AtlasManager : IDisposable
                 BrowserSubprocessPath = subprocessPath
             };
             settings.CefCommandLineArgs.Add("no-sandbox", "1");
+            settings.CefCommandLineArgs.Add("allow-file-access-from-files", "1");
             CefInitAttempted = true;
             CefInitSucceeded = Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null);
             if (!CefInitSucceeded && Cef.IsInitialized != true)
