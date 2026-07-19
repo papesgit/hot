@@ -15,7 +15,6 @@ public sealed class RadarConfig
     public double PosX { get; init; }
     public double PosY { get; init; }
     public double Scale { get; init; }
-    public bool TransparentBackground { get; init; }
     public string? ImagePath { get; init; }
     public bool IsUserImagePath { get; init; }
     public string ImageMapName { get; init; } = string.Empty;
@@ -106,9 +105,6 @@ public sealed class RadarConfigProvider
             PosX = GetDoubleOrFallback(obj, "pos_x", fallback?.PosX ?? 0),
             PosY = GetDoubleOrFallback(obj, "pos_y", fallback?.PosY ?? 0),
             Scale = GetDoubleOrFallback(obj, "scale", fallback?.Scale ?? 1),
-            TransparentBackground = obj.TryGetProperty("radarImageTransparentBackgrond", out var transparent)
-                ? transparent.GetBoolean()
-                : fallback?.TransparentBackground ?? false,
             ImagePath = hasImagePath ? imagePathElement.GetString() : fallback?.ImagePath,
             IsUserImagePath = isUserOverride && hasImagePath,
             ImageMapName = obj.TryGetProperty("imageMapName", out var imageMapName)

@@ -1,6 +1,5 @@
 {
 	"ar_baggage": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -1316,
 		"pos_y": 1288,
 		"scale": 2.539062,
@@ -25,14 +24,12 @@
 	},
 
 	"ar_shoots": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -1368,
 		"pos_y": 1952,
 		"scale": 2.6875
 	},
 
 	"cs_italy": {
-		"radarImageTransparentBackgrond": true,
 		"radarImageUrl": "/hud/img/radars/ingame-transparent/cs_italy.png",
 
 		"pos_x": -2647,
@@ -41,35 +38,30 @@
 	},
 
 	"cs_office": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -1838,
 		"pos_y": 1858,
 		"scale": 4.1
 	},
 
 	"de_ancient": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -2953,
 		"pos_y": 2164,
 		"scale": 5
 	},
 
 	"de_anubis": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -2796,
 		"pos_y": 3328,
 		"scale": 5.22
 	},
 
 	"de_basalt": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -2345.6,
 		"pos_y": 2391.8,
 		"scale": 4.37
 	},
 
 	"de_dust2": {
-		"radarImageTransparentBackgrond": true,
 		"radarImageUrl": "/hud/img/radars/simpleradar/de_dust2.webp",
 
 		"pos_x": -2476,
@@ -78,21 +70,18 @@
 	},
 
 	"de_edin": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -383.30038,
 		"pos_y": 4420.2134,
 		"scale": 4.803717
 	},
 
 	"de_inferno": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -2087,
 		"pos_y": 3870,
 		"scale": 4.9
 	},
 
 	"de_mirage": {
-		"radarImageTransparentBackgrond": true,
 		"radarImageUrl": "/hud/img/radars/simpleradar/de_mirage.webp",
 
 		"pos_x": -3230,
@@ -101,7 +90,6 @@
 	},
 
 	"de_nuke": {
-		"radarImageTransparentBackgrond": true,
 		"radarImageUrl": "/hud/img/radars/simpleradar/de_nuke.webp",
 
 		"pos_x": -3453,
@@ -128,7 +116,6 @@
 	},
 
 	"de_overpass": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": -4831,
 		"pos_y": 1781,
 		"scale": 5.2
@@ -158,7 +145,6 @@
 	},
 
 	"de_train": {
-		"radarImageTransparentBackgrond": true,
 		"radarImageUrl": "/hud/img/radars/ingame/de_train_lower.png",
 
 		"pos_x": -2308,
@@ -179,7 +165,6 @@
 	},
 
 	"de_vertigo": {
-		"radarImageTransparentBackgrond": true,
 		"pos_x": "-3168",
 		"pos_y": 1762,
 		"scale": 4,
@@ -198,7 +183,6 @@
 	},
 
 	"de_whistle": {
-		"radarImageTransparentBackgrond": true,
 		"radarImageUrl": "/hud/img/radars/ingame-transparent/de_whistle.png",
 
 		"pos_x": -1825.6,
@@ -207,7 +191,6 @@
 	},
 
 	"de_cache": {
-		"radarImageTransparentBackgrond": true,
 		"radarImageUrl": "/hud/img/radars/jts/de_cache.png",
 
 		"pos_x": -2000,
