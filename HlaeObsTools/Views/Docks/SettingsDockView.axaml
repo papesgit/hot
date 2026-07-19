@@ -360,6 +360,12 @@
             <TabItem Header="Radar">
                 <ScrollViewer>
                     <StackPanel Margin="10" Spacing="10">
+                        <TextBlock Text="Style"
+                                Foreground="#CCCCCC"
+                                FontWeight="SemiBold"/>
+                        <ComboBox ItemsSource="{Binding RadarSettings.RadarStyles}"
+                                  SelectedItem="{Binding RadarSettings.RadarStyle, Mode=TwoWay}"
+                                  Width="200"/>
                         <TextBlock Text="Radar scale"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>

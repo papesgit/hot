@@ -1736,6 +1736,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 UseAltPlayerBinds = _radarSettings.UseAltPlayerBinds,
                 DisplayNumbersTopmost = _radarSettings.DisplayNumbersTopmost,
                 ShowPlayerNames = _radarSettings.ShowPlayerNames,
+                RadarStyle = _radarSettings.RadarStyle,
                 WebSocketHost = WebSocketHost,
                 WebSocketPort = WebSocketPort,
                 GraphicsProducerHost = WebSocketHost,

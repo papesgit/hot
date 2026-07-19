@@ -244,7 +244,8 @@ public class MainDockFactory : Factory, IDisposable
             HeightScaleMultiplier = _storedSettings.HeightScaleMultiplier,
             UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds,
             DisplayNumbersTopmost = _storedSettings.DisplayNumbersTopmost,
-            ShowPlayerNames = _storedSettings.ShowPlayerNames
+            ShowPlayerNames = _storedSettings.ShowPlayerNames,
+            RadarStyle = _storedSettings.RadarStyle
         };
         var hudSettings = new HudSettings
         {

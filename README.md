@@ -61,9 +61,11 @@ Starting from v0.2.3, this project is licensed under a source-available license.
 Some included assets (e.g. Counter-Strike HUD icons) are © Valve Corporation
 and are not covered by the included LICENSE. See `THIRD_PARTY_LICENSES.md` for details.
 
-Thanks to the HLAE team, this project would not be possible without their decades long contributions to the Counter-Strike scene.
+Thanks to the [HLAE](https://github.com/advancedfx/advancedfx) team, this project would not be possible without their decades long contributions to the Counter-Strike scene.
 
-Thanks to @drweissbrot , his cs-hud repo helped greatly in designing the radar and hud.
+Thanks to [JT](https://github.com/JohnTimmermann) for allowing the use of his radar images, originally created for [JTs-Hud](https://github.com/JohnTimmermann/JTs-Hud) (check it out!).
+
+Thanks to [drweissbrot](https://github.com/drweissbrot) , his [cs-hud](https://github.com/drweissbrot/cs-hud) repo helped greatly in designing the radar and hud.
 
 
 ## Donate

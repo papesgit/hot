@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.ViewModels;
@@ -9,12 +11,31 @@ namespace HlaeObsTools.ViewModels;
 /// </summary>
 public sealed class RadarSettings : ViewModelBase
 {
+    public static readonly IReadOnlyList<string> RadarStyleOptions = ["ingame", "simpleradar", "JTs"];
+
+    public IReadOnlyList<string> RadarStyles => RadarStyleOptions;
+
     private double _radarScale = 1.0;
     private double _markerScale = 1.0;
     private double _heightScaleMultiplier = 1.0;
     private bool _useAltPlayerBinds;
     private bool _displayNumbersTopmost = true;
     private bool _showPlayerNames = true;
+    private string _radarStyle = "ingame";
+
+    /// <summary>
+    /// The visual style used for the radar map images.
+    /// </summary>
+    public string RadarStyle
+    {
+        get => _radarStyle;
+        set
+        {
+            var normalized = RadarStyleOptions.FirstOrDefault(style =>
+                string.Equals(style, value, StringComparison.OrdinalIgnoreCase)) ?? "ingame";
+            SetProperty(ref _radarStyle, normalized);
+        }
+    }
 
     /// <summary>
     /// Scale factor for the radar view.

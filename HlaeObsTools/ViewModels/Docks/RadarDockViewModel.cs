@@ -1559,26 +1559,54 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
         HasRadar = true;
         RadarImage?.Dispose();
+        RadarImage = null;
 
-        try
-        {
-            var relative = cfg.ImagePath ?? $"/hud/img/radars/ingame/{RadarConfigProvider.Sanitize(mapName)}.png";
-
-            // Our assets live under Assets/hud/... (no extra /img segment). Normalize if needed.
-            if (relative.StartsWith("/hud/img/", StringComparison.OrdinalIgnoreCase))
+        var sanitizedMapName = RadarConfigProvider.Sanitize(mapName);
+        var ingameImage = $"/hud/img/radars/ingame/{sanitizedMapName}.png";
+        var imageCandidates = sanitizedMapName == "de_nuke" && _settings.RadarStyle != "JTs"
+            ? new[] { "/hud/img/radars/simpleradar/de_nuke.webp" }
+            : _settings.RadarStyle switch
             {
-                relative = "/hud/" + relative.Substring("/hud/img/".Length);
-            }
+                "simpleradar" => new[]
+                {
+                    $"/hud/img/radars/simpleradar/{sanitizedMapName}.webp",
+                    ingameImage,
+                    cfg.ImagePath
+                },
+                "JTs" => new[]
+                {
+                    $"/hud/img/radars/jts/{sanitizedMapName}.png",
+                    ingameImage,
+                    cfg.ImagePath
+                },
+                _ => new[] { ingameImage, cfg.ImagePath }
+            };
 
-            var trimmed = relative.TrimStart('/');
-            var uri = new Uri($"avares://HlaeObsTools/Assets/{trimmed}");
-            RadarImage = new Bitmap(AssetLoader.Open(uri));
-        }
-        catch (Exception ex)
+        foreach (var imagePath in imageCandidates.Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            Console.WriteLine($"Failed to load radar image for {mapName}: {ex.Message}");
-            RadarImage = null;
+            try
+            {
+                RadarImage = new Bitmap(AssetLoader.Open(CreateRadarAssetUri(imagePath!)));
+                return;
+            }
+            catch
+            {
+                // The requested style does not cover this map. Try the next fallback.
+            }
         }
+
+        Console.WriteLine($"Failed to load radar image for {mapName}.");
+    }
+
+    private static Uri CreateRadarAssetUri(string imagePath)
+    {
+        // Our assets live under Assets/hud/... (no extra /img segment). Normalize if needed.
+        if (imagePath.StartsWith("/hud/img/", StringComparison.OrdinalIgnoreCase))
+        {
+            imagePath = "/hud/" + imagePath.Substring("/hud/img/".Length);
+        }
+
+        return new Uri($"avares://HlaeObsTools/Assets/{imagePath.TrimStart('/')}");
     }
 
     public void Dispose()
@@ -1611,6 +1639,10 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             {
                 droppedDefuser.SetBaseScale(_settings.MarkerScale);
             }
+        }
+        else if (e.PropertyName == nameof(RadarSettings.RadarStyle) && !string.IsNullOrWhiteSpace(_currentMap))
+        {
+            LoadRadarResources(_currentMap);
         }
         else if (e.PropertyName == nameof(RadarSettings.UseAltPlayerBinds))
         {

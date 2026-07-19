@@ -70,6 +70,7 @@ public class AppSettingsData
     public bool UseAltPlayerBinds { get; set; } = false;
     public bool DisplayNumbersTopmost { get; set; } = true;
     public bool ShowPlayerNames { get; set; } = true;
+    public string RadarStyle { get; set; } = "ingame";
     public string WebSocketHost { get; set; } = "127.0.0.1";
     public int WebSocketPort { get; set; } = 31338;
     public string GraphicsProducerHost { get; set; } = "127.0.0.1";
