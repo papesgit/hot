@@ -17,8 +17,12 @@ public class HlaeWebSocketClient : IDisposable
     private int _serverPort;
     private ClientWebSocket? _webSocket;
     private CancellationTokenSource? _cancellationTokenSource;
+    private readonly CancellationTokenSource _retryCancellationTokenSource = new();
     private Task? _receiveTask;
     private bool _disposed;
+    private int _retryScheduled;
+
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(1);
 
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
 
@@ -35,6 +39,9 @@ public class HlaeWebSocketClient : IDisposable
 
     public async Task<bool> ConnectAsync()
     {
+        if (_disposed)
+            return false;
+
         if (IsConnected)
             return true;
 
@@ -57,6 +64,7 @@ public class HlaeWebSocketClient : IDisposable
             Console.WriteLine($"WebSocket connection failed: {ex.Message}");
             ErrorOccurred?.Invoke(this, ex);
             await DisconnectAsync();
+            ScheduleReconnect();
             return false;
         }
     }
@@ -183,6 +191,7 @@ public class HlaeWebSocketClient : IDisposable
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
                     await DisconnectAsync();
+                    ScheduleReconnect();
                     break;
                 }
 
@@ -203,7 +212,43 @@ public class HlaeWebSocketClient : IDisposable
             {
                 Console.WriteLine($"WebSocket receive error: {ex.Message}");
                 ErrorOccurred?.Invoke(this, ex);
+                await DisconnectAsync();
+                ScheduleReconnect();
             }
+        }
+    }
+
+    private void ScheduleReconnect()
+    {
+        if (_disposed || Interlocked.Exchange(ref _retryScheduled, 1) != 0)
+        {
+            return;
+        }
+
+        _ = RetryConnectAsync();
+    }
+
+    private async Task RetryConnectAsync()
+    {
+        try
+        {
+            while (!_disposed && !_retryCancellationTokenSource.IsCancellationRequested)
+            {
+                await Task.Delay(RetryDelay, _retryCancellationTokenSource.Token);
+
+                if (IsConnected || await ConnectAsync())
+                {
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal shutdown.
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _retryScheduled, 0);
         }
     }
 
@@ -212,7 +257,9 @@ public class HlaeWebSocketClient : IDisposable
         if (_disposed)
             return;
 
-        DisconnectAsync().Wait();
         _disposed = true;
+        _retryCancellationTokenSource.Cancel();
+        DisconnectAsync().Wait();
+        _retryCancellationTokenSource.Dispose();
     }
 }
