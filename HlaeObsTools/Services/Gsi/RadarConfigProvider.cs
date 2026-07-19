@@ -17,6 +17,8 @@ public sealed class RadarConfig
     public double Scale { get; init; }
     public bool TransparentBackground { get; init; }
     public string? ImagePath { get; init; }
+    public bool IsUserImagePath { get; init; }
+    public string ImageMapName { get; init; } = string.Empty;
     public double? ScaleMinAltitude { get; init; }
     public double? ScaleMaxAltitude { get; init; }
     public IReadOnlyList<RadarLevel> Levels { get; init; } = Array.Empty<RadarLevel>();
@@ -34,11 +36,15 @@ public sealed class RadarLevel
 }
 
 /// <summary>
-/// Loads radar metadata (pos/scale/image) from the bundled radars.json.
+/// Loads radar metadata from the bundled radars.json, with optional per-user overrides.
 /// </summary>
 public sealed class RadarConfigProvider
 {
     private readonly Dictionary<string, RadarConfig> _configs = new(StringComparer.OrdinalIgnoreCase);
+    public static string UserRadarDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HlaeObsTools", "radars");
+
+    public static string UserRadarConfigPath => Path.Combine(UserRadarDirectory, "radars.json");
 
     public RadarConfigProvider()
     {
@@ -64,64 +70,75 @@ public sealed class RadarConfigProvider
             var uri = new Uri("avares://HlaeObsTools/Assets/hud/radars.json");
             using var asset = AssetLoader.Open(uri);
             using var reader = new StreamReader(asset);
-            var json = reader.ReadToEnd();
-            using var doc = JsonDocument.Parse(json);
-            foreach (var entry in doc.RootElement.EnumerateObject())
+            LoadConfigJson(reader.ReadToEnd(), isUserOverride: false);
+
+            if (File.Exists(UserRadarConfigPath))
             {
-                var name = entry.Name;
-                var obj = entry.Value;
-                var posX = obj.TryGetProperty("pos_x", out var px) ? GetDouble(px) : 0;
-                var posY = obj.TryGetProperty("pos_y", out var py) ? GetDouble(py) : 0;
-                var scale = obj.TryGetProperty("scale", out var sc) ? GetDouble(sc) : 1;
-                var transparent = obj.TryGetProperty("radarImageTransparentBackgrond", out var tb) && tb.GetBoolean();
-                string? imageUrl = obj.TryGetProperty("radarImageUrl", out var ru) ? ru.GetString() : null;
-                var scaleMinAltitude = GetNullableDouble(obj, "ScaleMinAltitude", "ScaleAltitudeMin");
-                var scaleMaxAltitude = GetNullableDouble(obj, "ScaleMaxAltitude", "ScaleAltitudeMax");
-
-                var levels = new List<RadarLevel>();
-                if (obj.TryGetProperty("verticalsections", out var vsElem))
-                {
-                    foreach (var level in vsElem.EnumerateObject())
-                    {
-                        var levelObj = level.Value;
-                        var altMin = levelObj.TryGetProperty("AltitudeMin", out var altMinProp) ? GetDouble(altMinProp) : 0;
-                        var altMax = levelObj.TryGetProperty("AltitudeMax", out var altMaxProp) ? GetDouble(altMaxProp) : 0;
-                        var offsetX = levelObj.TryGetProperty("OffsetX", out var offsetXProp) ? GetDouble(offsetXProp) : 0;
-                        var offsetY = levelObj.TryGetProperty("OffsetY", out var offsetYProp) ? GetDouble(offsetYProp) : 0;
-                        var levelScaleMin = GetNullableDouble(levelObj, "ScaleMinAltitude", "ScaleAltitudeMin");
-                        var levelScaleMax = GetNullableDouble(levelObj, "ScaleMaxAltitude", "ScaleAltitudeMax");
-
-                        levels.Add(new RadarLevel
-                        {
-                            Name = level.Name,
-                            AltitudeMin = altMin,
-                            AltitudeMax = altMax,
-                            OffsetX = offsetX,
-                            OffsetY = offsetY,
-                            ScaleMinAltitude = levelScaleMin,
-                            ScaleMaxAltitude = levelScaleMax
-                        });
-                    }
-                }
-
-                _configs[Sanitize(name)] = new RadarConfig
-                {
-                    MapName = name,
-                    PosX = posX,
-                    PosY = posY,
-                    Scale = scale,
-                    TransparentBackground = transparent,
-                    ImagePath = imageUrl,
-                    ScaleMinAltitude = scaleMinAltitude,
-                    ScaleMaxAltitude = scaleMaxAltitude,
-                    Levels = levels.OrderByDescending(l => l.AltitudeMin).ToList()
-                };
+                LoadConfigJson(File.ReadAllText(UserRadarConfigPath), isUserOverride: true);
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to load radar configs: {ex.Message}");
         }
+    }
+
+    private void LoadConfigJson(string json, bool isUserOverride)
+    {
+        using var doc = JsonDocument.Parse(json);
+        foreach (var entry in doc.RootElement.EnumerateObject())
+        {
+            var key = Sanitize(entry.Name);
+            _configs.TryGetValue(key, out var bundledConfig);
+            _configs[key] = ParseConfig(entry.Name, entry.Value, bundledConfig, isUserOverride);
+        }
+    }
+
+    private static RadarConfig ParseConfig(string name, JsonElement obj, RadarConfig? fallback, bool isUserOverride)
+    {
+        var hasImagePath = obj.TryGetProperty("radarImageUrl", out var imagePathElement);
+        var hasLevels = obj.TryGetProperty("verticalsections", out var levelsElement);
+        var levels = hasLevels ? ParseLevels(levelsElement) : fallback?.Levels ?? Array.Empty<RadarLevel>();
+
+        return new RadarConfig
+        {
+            MapName = name,
+            PosX = GetDoubleOrFallback(obj, "pos_x", fallback?.PosX ?? 0),
+            PosY = GetDoubleOrFallback(obj, "pos_y", fallback?.PosY ?? 0),
+            Scale = GetDoubleOrFallback(obj, "scale", fallback?.Scale ?? 1),
+            TransparentBackground = obj.TryGetProperty("radarImageTransparentBackgrond", out var transparent)
+                ? transparent.GetBoolean()
+                : fallback?.TransparentBackground ?? false,
+            ImagePath = hasImagePath ? imagePathElement.GetString() : fallback?.ImagePath,
+            IsUserImagePath = isUserOverride && hasImagePath,
+            ImageMapName = obj.TryGetProperty("imageMapName", out var imageMapName)
+                ? Sanitize(imageMapName.GetString() ?? name)
+                : fallback?.ImageMapName ?? Sanitize(name),
+            ScaleMinAltitude = GetNullableDoubleOrFallback(obj, fallback?.ScaleMinAltitude, "ScaleMinAltitude", "ScaleAltitudeMin"),
+            ScaleMaxAltitude = GetNullableDoubleOrFallback(obj, fallback?.ScaleMaxAltitude, "ScaleMaxAltitude", "ScaleAltitudeMax"),
+            Levels = levels.OrderByDescending(level => level.AltitudeMin).ToList()
+        };
+    }
+
+    private static IReadOnlyList<RadarLevel> ParseLevels(JsonElement levelsElement)
+    {
+        var levels = new List<RadarLevel>();
+        foreach (var level in levelsElement.EnumerateObject())
+        {
+            var levelObj = level.Value;
+            levels.Add(new RadarLevel
+            {
+                Name = level.Name,
+                AltitudeMin = GetDoubleOrFallback(levelObj, "AltitudeMin", 0),
+                AltitudeMax = GetDoubleOrFallback(levelObj, "AltitudeMax", 0),
+                OffsetX = GetDoubleOrFallback(levelObj, "OffsetX", 0),
+                OffsetY = GetDoubleOrFallback(levelObj, "OffsetY", 0),
+                ScaleMinAltitude = GetNullableDouble(levelObj, "ScaleMinAltitude", "ScaleAltitudeMin"),
+                ScaleMaxAltitude = GetNullableDouble(levelObj, "ScaleMaxAltitude", "ScaleAltitudeMax")
+            });
+        }
+
+        return levels;
     }
 
     public static string Sanitize(string mapName)
@@ -146,6 +163,11 @@ public sealed class RadarConfigProvider
         }
     }
 
+    private static double GetDoubleOrFallback(JsonElement obj, string name, double fallback)
+    {
+        return obj.TryGetProperty(name, out var property) ? GetDouble(property) : fallback;
+    }
+
     private static double? GetNullableDouble(JsonElement obj, params string[] names)
     {
         foreach (var name in names)
@@ -157,5 +179,18 @@ public sealed class RadarConfigProvider
         }
 
         return null;
+    }
+
+    private static double? GetNullableDoubleOrFallback(JsonElement obj, double? fallback, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (obj.TryGetProperty(name, out var property))
+            {
+                return GetDouble(property);
+            }
+        }
+
+        return fallback;
     }
 }

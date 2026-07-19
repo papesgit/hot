@@ -1561,26 +1561,38 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         RadarImage?.Dispose();
         RadarImage = null;
 
-        var sanitizedMapName = RadarConfigProvider.Sanitize(mapName);
-        var ingameImage = $"/hud/img/radars/ingame/{sanitizedMapName}.png";
-        var imageCandidates = sanitizedMapName == "de_nuke" && _settings.RadarStyle != "JTs"
+        if (cfg.IsUserImagePath && TryLoadUserRadarImage(cfg.ImagePath))
+        {
+            return;
+        }
+
+        var imageMapName = cfg.ImageMapName;
+        var ingameImage = $"/hud/img/radars/ingame/{imageMapName}.png";
+        var imageCandidates = imageMapName == "de_nuke" && _settings.RadarStyle != "JTs"
             ? new[] { "/hud/img/radars/simpleradar/de_nuke.webp" }
             : _settings.RadarStyle switch
             {
                 "simpleradar" => new[]
                 {
-                    $"/hud/img/radars/simpleradar/{sanitizedMapName}.webp",
+                    $"/hud/img/radars/simpleradar/{imageMapName}.webp",
                     ingameImage,
                     cfg.ImagePath
                 },
                 "JTs" => new[]
                 {
-                    $"/hud/img/radars/jts/{sanitizedMapName}.png",
+                    $"/hud/img/radars/jts/{imageMapName}.png",
                     ingameImage,
                     cfg.ImagePath
                 },
                 _ => new[] { ingameImage, cfg.ImagePath }
             };
+
+        var userStyleDirectory = Path.Combine(RadarConfigProvider.UserRadarDirectory, _settings.RadarStyle);
+        var userStyleExtension = _settings.RadarStyle == "simpleradar" ? ".webp" : ".png";
+        if (TryLoadUserRadarImage(Path.Combine(userStyleDirectory, imageMapName + userStyleExtension)))
+        {
+            return;
+        }
 
         foreach (var imagePath in imageCandidates.Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
@@ -1596,6 +1608,35 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         }
 
         Console.WriteLine($"Failed to load radar image for {mapName}.");
+    }
+
+    private bool TryLoadUserRadarImage(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return false;
+        }
+
+        var resolvedPath = Path.IsPathRooted(imagePath)
+            ? imagePath
+            : Path.Combine(RadarConfigProvider.UserRadarDirectory, imagePath.TrimStart('/', '\\'));
+
+        if (!File.Exists(resolvedPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var stream = File.OpenRead(resolvedPath);
+            RadarImage = new Bitmap(stream);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load user radar image '{resolvedPath}': {ex.Message}");
+            return false;
+        }
     }
 
     private static Uri CreateRadarAssetUri(string imagePath)
