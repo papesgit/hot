@@ -196,6 +196,7 @@ public sealed class ReplayDirectorFollower : IDisposable
 
         var dueCandidates = _pending
             .Where(IsCandidateValid)
+            .Where(e => !_settings.OnlyFollowMissedKills || !e.MainCaught)
             .Where(e => !IsMissedSwitchWindow(e))
             .Where(IsDueForSwitch)
             .ToArray();

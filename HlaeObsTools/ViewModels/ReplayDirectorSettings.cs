@@ -18,6 +18,7 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     private double _preSwitchSeconds = 2.0;
     private double _mergeWindowSeconds = 3.0;
     private double _switchLockSeconds = 0.75;
+    private bool _onlyFollowMissedKills;
     private string _delayedVmixChannel = "B";
     private int _delayedVmixCamera = 2;
     private bool _delayedVmixEnabled = true;
@@ -70,6 +71,15 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     {
         get => _switchLockSeconds;
         set => SetProperty(ref _switchLockSeconds, Math.Max(0, value));
+    }
+
+    /// <summary>
+    /// When enabled, the delayed follower only covers kills the main observer did not catch.
+    /// </summary>
+    public bool OnlyFollowMissedKills
+    {
+        get => _onlyFollowMissedKills;
+        set => SetProperty(ref _onlyFollowMissedKills, value);
     }
 
     public string DelayedVmixChannel

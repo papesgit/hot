@@ -109,6 +109,7 @@ public class MainDockFactory : Factory, IDisposable
             PreSwitchSeconds = _storedSettings.ReplayDirectorPreSwitchSeconds,
             MergeWindowSeconds = _storedSettings.ReplayDirectorMergeWindowSeconds,
             SwitchLockSeconds = _storedSettings.ReplayDirectorSwitchLockSeconds,
+            OnlyFollowMissedKills = _storedSettings.ReplayDirectorOnlyFollowMissedKills,
             DelayedVmixEnabled = _storedSettings.ReplayDirectorDelayedVmixEnabled,
             DelayedVmixChannel = _storedSettings.ReplayDirectorDelayedVmixChannel,
             DelayedVmixCamera = _storedSettings.ReplayDirectorDelayedVmixCamera

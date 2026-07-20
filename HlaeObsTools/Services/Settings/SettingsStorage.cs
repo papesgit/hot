@@ -128,6 +128,7 @@ public class AppSettingsData
     public double ReplayDirectorPreSwitchSeconds { get; set; } = 2.0;
     public double ReplayDirectorMergeWindowSeconds { get; set; } = 3.0;
     public double ReplayDirectorSwitchLockSeconds { get; set; } = 0.75;
+    public bool ReplayDirectorOnlyFollowMissedKills { get; set; }
     public bool ReplayDirectorDelayedVmixEnabled { get; set; } = true;
     public string ReplayDirectorDelayedVmixChannel { get; set; } = "B";
     public int ReplayDirectorDelayedVmixCamera { get; set; } = 2;

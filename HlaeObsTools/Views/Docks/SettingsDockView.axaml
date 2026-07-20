@@ -215,6 +215,9 @@
                                     <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixChannel, Mode=TwoWay}" />
                                     <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixCamera, Mode=TwoWay}" />
                                 </StackPanel>
+                                <CheckBox IsChecked="{Binding ReplayDirectorSettings.OnlyFollowMissedKills, Mode=TwoWay}"
+                                          Content="Only follow missed kills"
+                                          Foreground="#E6E6E6"/>
                                 <ToggleSwitch IsChecked="{Binding ReplayDirectorSettings.DelayedVmixEnabled, Mode=TwoWay}"
                                               Content="Enable delayed vMix replay marking"
                                               Foreground="#E6E6E6"/>

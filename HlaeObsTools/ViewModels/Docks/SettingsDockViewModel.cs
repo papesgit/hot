@@ -1792,6 +1792,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 ReplayDirectorPreSwitchSeconds = _replayDirectorSettings.PreSwitchSeconds,
                 ReplayDirectorMergeWindowSeconds = _replayDirectorSettings.MergeWindowSeconds,
                 ReplayDirectorSwitchLockSeconds = _replayDirectorSettings.SwitchLockSeconds,
+                ReplayDirectorOnlyFollowMissedKills = _replayDirectorSettings.OnlyFollowMissedKills,
                 ReplayDirectorDelayedVmixEnabled = _replayDirectorSettings.DelayedVmixEnabled,
                 ReplayDirectorDelayedVmixChannel = _replayDirectorSettings.DelayedVmixChannel,
                 ReplayDirectorDelayedVmixCamera = _replayDirectorSettings.DelayedVmixCamera,
