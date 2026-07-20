@@ -14,7 +14,7 @@ public sealed class ReplayDirectorSettings : ViewModelBase
 
     private string _role = "Off";
     private int _publisherPort = 31341;
-    private string _followerEndpoint = "http://127.0.0.1:31341/replay-director/events";
+    private string _publisherIp = "127.0.0.1";
     private double _preSwitchSeconds = 2.0;
     private double _mergeWindowSeconds = 3.0;
     private double _switchLockSeconds = 0.75;
@@ -31,7 +31,15 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     public string Role
     {
         get => _role;
-        set => SetProperty(ref _role, string.IsNullOrWhiteSpace(value) ? "Off" : value);
+        set
+        {
+            if (!SetProperty(ref _role, string.IsNullOrWhiteSpace(value) ? "Off" : value))
+                return;
+
+            OnPropertyChanged(nameof(IsPublisher));
+            OnPropertyChanged(nameof(IsFollower));
+            OnPropertyChanged(nameof(IsActive));
+        }
     }
 
     public int PublisherPort
@@ -40,10 +48,10 @@ public sealed class ReplayDirectorSettings : ViewModelBase
         set => SetProperty(ref _publisherPort, Math.Clamp(value, 1, 65535));
     }
 
-    public string FollowerEndpoint
+    public string PublisherIp
     {
-        get => _followerEndpoint;
-        set => SetProperty(ref _followerEndpoint, value ?? string.Empty);
+        get => _publisherIp;
+        set => SetProperty(ref _publisherIp, value?.Trim() ?? string.Empty);
     }
 
     public double PreSwitchSeconds
@@ -117,4 +125,10 @@ public sealed class ReplayDirectorSettings : ViewModelBase
         get => _lastVmixMark;
         set => SetProperty(ref _lastVmixMark, value ?? string.Empty);
     }
+
+    public bool IsPublisher => string.Equals(Role, "Main Publisher", StringComparison.Ordinal);
+
+    public bool IsFollower => string.Equals(Role, "Delayed Follower", StringComparison.Ordinal);
+
+    public bool IsActive => IsPublisher || IsFollower;
 }

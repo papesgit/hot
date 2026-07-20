@@ -118,9 +118,13 @@ public class AppSettingsData
     public double VmixReplayPreSeconds { get; set; } = 2.0;
     public double VmixReplayPostSeconds { get; set; } = 2.0;
     public double VmixReplayExtendWindowSeconds { get; set; } = 3.0;
+    public string VmixReplayChannel { get; set; } = "A";
+    public int VmixReplayCamera { get; set; } = 1;
     public string ReplayDirectorRole { get; set; } = "Off";
     public int ReplayDirectorPublisherPort { get; set; } = 31341;
-    public string ReplayDirectorFollowerEndpoint { get; set; } = "http://127.0.0.1:31341/replay-director/events";
+    public string ReplayDirectorPublisherIp { get; set; } = "";
+    // Retained solely to migrate configurations written by older versions.
+    public string ReplayDirectorFollowerEndpoint { get; set; } = "";
     public double ReplayDirectorPreSwitchSeconds { get; set; } = 2.0;
     public double ReplayDirectorMergeWindowSeconds { get; set; } = 3.0;
     public double ReplayDirectorSwitchLockSeconds { get; set; } = 0.75;

@@ -54,7 +54,8 @@ public sealed class ReplayDirectorFollower : IDisposable
         _settings.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ReplayDirectorSettings.Role) ||
-                e.PropertyName == nameof(ReplayDirectorSettings.FollowerEndpoint))
+                e.PropertyName == nameof(ReplayDirectorSettings.PublisherIp) ||
+                e.PropertyName == nameof(ReplayDirectorSettings.PublisherPort))
             {
                 ApplyRole();
             }
@@ -146,12 +147,9 @@ public sealed class ReplayDirectorFollower : IDisposable
 
     private Uri BuildEventsUri()
     {
-        var configured = _settings.FollowerEndpoint;
-        if (string.IsNullOrWhiteSpace(configured))
-            configured = "http://127.0.0.1:31341/replay-director/events";
-
-        var separator = configured.Contains('?') ? "&" : "?";
-        return new Uri($"{configured}{separator}after={_lastEventId}");
+        var builder = CreatePublisherUriBuilder("/replay-director/events");
+        builder.Query = $"after={_lastEventId}";
+        return builder.Uri;
     }
 
     private async Task CurtimeLoopAsync(CancellationToken token)
@@ -363,17 +361,20 @@ public sealed class ReplayDirectorFollower : IDisposable
 
     private Uri BuildReplayMarkUri()
     {
-        var configured = _settings.FollowerEndpoint;
-        if (string.IsNullOrWhiteSpace(configured))
-            configured = "http://127.0.0.1:31341/replay-director/events";
+        return CreatePublisherUriBuilder("/replay-director/replay/mark").Uri;
+    }
 
-        var eventsUri = new Uri(configured);
-        var builder = new UriBuilder(eventsUri)
-        {
-            Path = "/replay-director/replay/mark",
-            Query = string.Empty
-        };
-        return builder.Uri;
+    private UriBuilder CreatePublisherUriBuilder(string path)
+    {
+        var host = _settings.PublisherIp;
+        if (string.IsNullOrWhiteSpace(host))
+            host = "127.0.0.1";
+
+        // Accept a pasted URL too, while the UI only requires the publisher IP/hostname.
+        if (Uri.TryCreate(host, UriKind.Absolute, out var uri) && !string.IsNullOrWhiteSpace(uri.Host))
+            host = uri.Host;
+
+        return new UriBuilder(Uri.UriSchemeHttp, host, _settings.PublisherPort, path);
     }
 
     private void OnGameStateUpdated(object? sender, GsiGameState state)

@@ -97,13 +97,15 @@ public class MainDockFactory : Factory, IDisposable
             Enabled = _storedSettings.VmixReplayEnabled,
             PreSeconds = _storedSettings.VmixReplayPreSeconds,
             PostSeconds = _storedSettings.VmixReplayPostSeconds,
-            ExtendWindowSeconds = _storedSettings.VmixReplayExtendWindowSeconds
+            ExtendWindowSeconds = _storedSettings.VmixReplayExtendWindowSeconds,
+            Channel = _storedSettings.VmixReplayChannel,
+            Camera = _storedSettings.VmixReplayCamera
         };
         _replayDirectorSettings = new ReplayDirectorSettings
         {
             Role = _storedSettings.ReplayDirectorRole,
             PublisherPort = _storedSettings.ReplayDirectorPublisherPort,
-            FollowerEndpoint = _storedSettings.ReplayDirectorFollowerEndpoint,
+            PublisherIp = GetReplayDirectorPublisherHost(_storedSettings),
             PreSwitchSeconds = _storedSettings.ReplayDirectorPreSwitchSeconds,
             MergeWindowSeconds = _storedSettings.ReplayDirectorMergeWindowSeconds,
             SwitchLockSeconds = _storedSettings.ReplayDirectorSwitchLockSeconds,
@@ -142,6 +144,17 @@ public class MainDockFactory : Factory, IDisposable
         _inputFlushTimer = new Timer(_ => _rawInputHandler.FlushToSender(), null, 0, 4);
 
         Console.WriteLine("Observer tools initialized: WebSocket (127.0.0.1:31338), UDP (127.0.0.1:31339)");
+    }
+
+    private static string GetReplayDirectorPublisherHost(AppSettingsData settings)
+    {
+        if (!string.IsNullOrWhiteSpace(settings.ReplayDirectorPublisherIp))
+            return settings.ReplayDirectorPublisherIp;
+
+        if (Uri.TryCreate(settings.ReplayDirectorFollowerEndpoint, UriKind.Absolute, out var endpoint) && !string.IsNullOrWhiteSpace(endpoint.Host))
+            return endpoint.Host;
+
+        return "127.0.0.1";
     }
 
     private void OnHlaeMessage(object? sender, string json)

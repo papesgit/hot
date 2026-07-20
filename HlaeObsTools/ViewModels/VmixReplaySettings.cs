@@ -8,6 +8,8 @@ public sealed class VmixReplaySettings : ViewModelBase
     private double _preSeconds = 2.0;
     private double _postSeconds = 2.0;
     private double _extendWindowSeconds = 3.0;
+    private string _channel = "A";
+    private int _camera = 1;
 
     public bool Enabled
     {
@@ -40,5 +42,23 @@ public sealed class VmixReplaySettings : ViewModelBase
     {
         get => _extendWindowSeconds;
         set => SetProperty(ref _extendWindowSeconds, Math.Max(0, value));
+    }
+
+    /// <summary>
+    /// vMix replay camera to assign to automatically created main replay events.
+    /// </summary>
+    public int Camera
+    {
+        get => _camera;
+        set => SetProperty(ref _camera, Math.Clamp(value, 1, 8));
+    }
+
+    /// <summary>
+    /// vMix replay channel to use for automatically created main replay events (A, B, or AB).
+    /// </summary>
+    public string Channel
+    {
+        get => _channel;
+        set => SetProperty(ref _channel, (value ?? string.Empty).Trim());
     }
 }
