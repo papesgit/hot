@@ -259,24 +259,28 @@ public sealed class VmixReplayService : IDisposable
                 valueSeconds = config.PreSeconds + config.PostSeconds;
 
             Console.WriteLine($"[VMIX] Marking replay: in ~{valueSeconds:F1}s before now (first kill {firstKill:O}, last kill {lastKill:O})");
-            await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false);
-            await SafeExecuteAsync(FunctionMark, Math.Ceiling(valueSeconds).ToString(CultureInfo.InvariantCulture), lockedToken, "ReplayMarkInOutLive").ConfigureAwait(false);
-            await SafeExecuteAsync(FunctionSelectLast, null, lockedToken, "ReplaySelectLastEvent (main camera)").ConfigureAwait(false);
-            await SafeExecuteAsync(FunctionLastEventSingleCameraOn, config.Camera.ToString(CultureInfo.InvariantCulture), lockedToken, "ReplayLastEventSingleCameraOn (main)").ConfigureAwait(false);
+            if (!await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false) ||
+                !await SafeExecuteAsync(FunctionMark, Math.Ceiling(valueSeconds).ToString(CultureInfo.InvariantCulture), lockedToken, "ReplayMarkInOutLive").ConfigureAwait(false) ||
+                !await SafeExecuteAsync(FunctionSelectLast, null, lockedToken, "ReplaySelectLastEvent (main camera)").ConfigureAwait(false) ||
+                !await SafeExecuteAsync(FunctionLastEventSingleCameraOn, config.Camera.ToString(CultureInfo.InvariantCulture), lockedToken, "ReplayLastEventSingleCameraOn (main)").ConfigureAwait(false))
+            {
+                Console.WriteLine("[VMIX] Replay marker was not registered because the vMix API command failed.");
+                return new VmixReplayCommandResult(false, null, "vMix API command failed");
+            }
 
             string? label;
             int? eventRound;
             int killCount;
             lock (_sync)
             {
-                _markCreated = true;
-                _markCts = null;
                 label = BuildLabel();
                 eventRound = _eventRoundNumber;
                 killCount = _eventKills.Count;
             }
 
-            await ApplyLabelCoreAsync(lockedToken).ConfigureAwait(false);
+            if (!await ApplyLabelCoreAsync(config, lockedToken).ConfigureAwait(false))
+                return new VmixReplayCommandResult(false, label, "vMix label command failed");
+            lockedToken.ThrowIfCancellationRequested();
             if (!string.IsNullOrWhiteSpace(label))
             {
                 var record = await _replayCoordinator.RegisterCreatedEventAsync(new ReplayEventDraft
@@ -294,6 +298,12 @@ public sealed class VmixReplayService : IDisposable
                 {
                     _activeReplayRecordId = record.LocalId;
                 }
+            }
+
+            lock (_sync)
+            {
+                _markCreated = true;
+                _markCts = null;
             }
 
             return new VmixReplayCommandResult(true, label, "Marked");
@@ -316,17 +326,23 @@ public sealed class VmixReplayService : IDisposable
                 await Task.Delay(delay, cts.Token).ConfigureAwait(false);
                 await _replayCoordinator.RunAsync(async lockedToken =>
                 {
-                    await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false);
+                    if (!await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false))
+                        return new VmixReplayCommandResult(false, null, "vMix API command failed");
                     Console.WriteLine("[VMIX] Selecting last replay event for extension");
-                    await SafeExecuteAsync(FunctionSelectLast, null, lockedToken, "ReplaySelectLastEvent").ConfigureAwait(false);
+                    if (!await SafeExecuteAsync(FunctionSelectLast, null, lockedToken, "ReplaySelectLastEvent").ConfigureAwait(false))
+                        return new VmixReplayCommandResult(false, null, "vMix API command failed");
                     Console.WriteLine("[VMIX] Jumping replay to live before extending");
-                    await SafeExecuteAsync(FunctionJumpToNow, null, lockedToken, "ReplayJumpToNow").ConfigureAwait(false);
+                    if (!await SafeExecuteAsync(FunctionJumpToNow, null, lockedToken, "ReplayJumpToNow").ConfigureAwait(false))
+                        return new VmixReplayCommandResult(false, null, "vMix API command failed");
                     // Give vMix a brief moment to apply the jump before updating out point
                     await Task.Delay(200, lockedToken).ConfigureAwait(false);
                     Console.WriteLine($"[VMIX] Extending last replay out point (new out at {DateTimeOffset.UtcNow:O})");
-                    await SafeExecuteAsync(FunctionUpdateOut, null, lockedToken, "ReplayUpdateSelectedOutPoint").ConfigureAwait(false);
-                    await SafeExecuteAsync(FunctionLastEventSingleCameraOn, config.Camera.ToString(CultureInfo.InvariantCulture), lockedToken, "ReplayLastEventSingleCameraOn (main extend)").ConfigureAwait(false);
-                    await ApplyLabelCoreAsync(lockedToken).ConfigureAwait(false);
+                    if (!await SafeExecuteAsync(FunctionUpdateOut, null, lockedToken, "ReplayUpdateSelectedOutPoint").ConfigureAwait(false) ||
+                        !await SafeExecuteAsync(FunctionLastEventSingleCameraOn, config.Camera.ToString(CultureInfo.InvariantCulture), lockedToken, "ReplayLastEventSingleCameraOn (main extend)").ConfigureAwait(false) ||
+                        !await ApplyLabelCoreAsync(config, lockedToken).ConfigureAwait(false))
+                    {
+                        return new VmixReplayCommandResult(false, null, "vMix API command failed");
+                    }
                     UpdateRegistryRecord("Updated");
                     return new VmixReplayCommandResult(true, BuildLabel(), "Updated");
                 }, cts.Token).ConfigureAwait(false);
@@ -414,7 +430,7 @@ public sealed class VmixReplayService : IDisposable
         return new VmixConfig(_settings.Enabled, pre, post, extend, channel, Math.Clamp(_settings.Camera, 1, 8));
     }
 
-    private async Task ApplyLabelCoreAsync(CancellationToken token)
+    private async Task<bool> ApplyLabelCoreAsync(VmixConfig config, CancellationToken token)
     {
         string? label;
         lock (_sync)
@@ -423,19 +439,15 @@ public sealed class VmixReplayService : IDisposable
         }
 
         if (string.IsNullOrWhiteSpace(label))
-            return;
+            return true;
 
-        try
-        {
-            await SelectReplayChannelAsync(SnapshotSettings(), token).ConfigureAwait(false);
-            await SafeExecuteAsync(FunctionSelectLast, null, token, "ReplaySelectLastEvent (label)").ConfigureAwait(false);
-            await SafeExecuteAsync(FunctionSetText, label, token, "ReplaySetLastEventText").ConfigureAwait(false);
-            Console.WriteLine($"[VMIX] Labeled replay event: {label}");
-        }
-        catch (OperationCanceledException)
-        {
-            // ignore
-        }
+        if (!await SelectReplayChannelAsync(config, token).ConfigureAwait(false) ||
+            !await SafeExecuteAsync(FunctionSelectLast, null, token, "ReplaySelectLastEvent (label)").ConfigureAwait(false) ||
+            !await SafeExecuteAsync(FunctionSetText, label, token, "ReplaySetLastEventText").ConfigureAwait(false))
+            return false;
+
+        Console.WriteLine($"[VMIX] Labeled replay event: {label}");
+        return true;
     }
 
     private void UpdateRegistryRecord(string status)
@@ -465,7 +477,7 @@ public sealed class VmixReplayService : IDisposable
         });
     }
 
-    private Task SelectReplayChannelAsync(VmixConfig config, CancellationToken token)
+    private Task<bool> SelectReplayChannelAsync(VmixConfig config, CancellationToken token)
     {
         var function = config.Channel switch
         {
@@ -476,7 +488,7 @@ public sealed class VmixReplayService : IDisposable
         return SafeExecuteAsync(function, null, token, function);
     }
 
-    private Task SafeExecuteAsync(string function, string? value, CancellationToken token, string? label = null)
+    private Task<bool> SafeExecuteAsync(string function, string? value, CancellationToken token, string? label = null)
     {
         return _vmixApiClient.ExecuteFunctionAsync(function, value, token, label);
     }

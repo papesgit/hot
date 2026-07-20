@@ -52,6 +52,7 @@ public sealed class ReplayDirectorPublisher : IDisposable
         _delayedReplayMarker = delayedReplayMarker;
         _webSocketClient.MessageReceived += OnWebSocketMessage;
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
+        _delayedReplayMarker.StatusChanged += OnDelayedReplayMarkerStatusChanged;
         _settings.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ReplayDirectorSettings.Role) ||
@@ -136,6 +137,11 @@ public sealed class ReplayDirectorPublisher : IDisposable
         }
 
         _settings.LastKill = $"{kill.AttackerName} kill at {(kill.GameTime.HasValue ? kill.GameTime.Value.ToString("F2") : "no time")} ({(kill.MainCaught ? "main caught" : "uncaught")})";
+    }
+
+    private void OnDelayedReplayMarkerStatusChanged(object? sender, string status)
+    {
+        _settings.LastVmixMark = status;
     }
 
     private int GetLabelRound(int roundNumber, string roundPhase)
@@ -333,5 +339,6 @@ public sealed class ReplayDirectorPublisher : IDisposable
         Stop();
         _webSocketClient.MessageReceived -= OnWebSocketMessage;
         _gsiServer.GameStateUpdated -= OnGameStateUpdated;
+        _delayedReplayMarker.StatusChanged -= OnDelayedReplayMarkerStatusChanged;
     }
 }

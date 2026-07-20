@@ -19,16 +19,16 @@ public sealed class VmixApiClient : IDisposable
     public VmixApiClient(VmixSettings settings)
     {
         _settings = settings;
-        _httpClient = new HttpClient();
+        _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
     }
 
-    public async Task ExecuteFunctionAsync(string function, string? value, CancellationToken token, string? label = null)
+    public async Task<bool> ExecuteFunctionAsync(string function, string? value, CancellationToken token, string? label = null)
     {
         if (string.IsNullOrWhiteSpace(function))
-            return;
+            return false;
 
         var uri = BuildFunctionUri(function, value);
-        _ = await SendAsync(uri, token, label).ConfigureAwait(false);
+        return await SendAsync(uri, token, label).ConfigureAwait(false);
     }
 
     public async Task<bool> ExecuteFunctionAsync(VmixFunctionCall call, CancellationToken token, string? label = null)
@@ -68,6 +68,11 @@ public sealed class VmixApiClient : IDisposable
             using var response = await _httpClient.GetAsync(uri, token).ConfigureAwait(false);
             _ = response.EnsureSuccessStatusCode();
             return true;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // A superseded marker must stop immediately; it must never create a stale dock record.
+            throw;
         }
         catch
         {

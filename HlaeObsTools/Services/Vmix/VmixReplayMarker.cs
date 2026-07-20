@@ -196,24 +196,31 @@ public sealed class VmixReplayMarker : IDisposable
             }
 
             var valueSeconds = Math.Ceiling((lastKill - firstKill).TotalSeconds + config.PreSeconds + config.PostSeconds);
-            await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false);
-            await ExecuteAsync(FunctionMark, valueSeconds.ToString(CultureInfo.InvariantCulture), config, lockedToken).ConfigureAwait(false);
-            await ExecuteAsync(FunctionSelectLast, null, config, lockedToken).ConfigureAwait(false);
-            await ApplyEventCameraAsync(config, lockedToken).ConfigureAwait(false);
+            if (!await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false) ||
+                !await ExecuteAsync(FunctionMark, valueSeconds.ToString(CultureInfo.InvariantCulture), config, lockedToken).ConfigureAwait(false) ||
+                !await ExecuteAsync(FunctionSelectLast, null, config, lockedToken).ConfigureAwait(false) ||
+                !await ApplyEventCameraAsync(config, lockedToken).ConfigureAwait(false))
+            {
+                StatusChanged?.Invoke(this, "Delayed replay marker failed: vMix API command failed.");
+                return new VmixReplayCommandResult(false, null, "vMix API command failed");
+            }
 
             string? label;
             int roundNumber;
             int killCount;
             lock (_sync)
             {
-                _markCreated = true;
-                _markCts = null;
                 label = BuildLabel();
                 roundNumber = _roundNumber;
                 killCount = _eventKills.Count;
             }
 
-            await ApplyLabelCoreAsync(config, lockedToken).ConfigureAwait(false);
+            if (!await ApplyLabelCoreAsync(config, lockedToken).ConfigureAwait(false))
+            {
+                StatusChanged?.Invoke(this, "Delayed replay marker failed: vMix label command failed.");
+                return new VmixReplayCommandResult(false, label, "vMix label command failed");
+            }
+            lockedToken.ThrowIfCancellationRequested();
             if (!string.IsNullOrWhiteSpace(label))
             {
                 var record = await _replayCoordinator.RegisterCreatedEventAsync(new ReplayEventDraft
@@ -231,6 +238,12 @@ public sealed class VmixReplayMarker : IDisposable
                 {
                     _activeReplayRecordId = record.LocalId;
                 }
+            }
+
+            lock (_sync)
+            {
+                _markCreated = true;
+                _markCts = null;
             }
 
             StatusChanged?.Invoke(this, $"Delayed replay marked: {BuildLabel() ?? "unlabeled"}");
@@ -253,13 +266,15 @@ public sealed class VmixReplayMarker : IDisposable
                 await Task.Delay(delay, cts.Token).ConfigureAwait(false);
                 await _replayCoordinator.RunAsync(async lockedToken =>
                 {
-                    await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false);
-                    await ExecuteAsync(FunctionSelectLast, null, config, lockedToken).ConfigureAwait(false);
-                    await ExecuteAsync(FunctionJumpToNow, null, config, lockedToken).ConfigureAwait(false);
+                    if (!await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false) ||
+                        !await ExecuteAsync(FunctionSelectLast, null, config, lockedToken).ConfigureAwait(false) ||
+                        !await ExecuteAsync(FunctionJumpToNow, null, config, lockedToken).ConfigureAwait(false))
+                        return new VmixReplayCommandResult(false, null, "vMix API command failed");
                     await Task.Delay(200, lockedToken).ConfigureAwait(false);
-                    await ExecuteAsync(FunctionUpdateOut, null, config, lockedToken).ConfigureAwait(false);
-                    await ApplyEventCameraAsync(config, lockedToken).ConfigureAwait(false);
-                    await ApplyLabelCoreAsync(config, lockedToken).ConfigureAwait(false);
+                    if (!await ExecuteAsync(FunctionUpdateOut, null, config, lockedToken).ConfigureAwait(false) ||
+                        !await ApplyEventCameraAsync(config, lockedToken).ConfigureAwait(false) ||
+                        !await ApplyLabelCoreAsync(config, lockedToken).ConfigureAwait(false))
+                        return new VmixReplayCommandResult(false, null, "vMix API command failed");
                     UpdateRegistryRecord("Updated");
                     StatusChanged?.Invoke(this, $"Delayed replay extended: {BuildLabel() ?? "unlabeled"}");
                     return new VmixReplayCommandResult(true, BuildLabel(), "Updated");
@@ -271,16 +286,17 @@ public sealed class VmixReplayMarker : IDisposable
         }, cts.Token);
     }
 
-    private async Task ApplyLabelCoreAsync(MarkerConfig config, CancellationToken token)
+    private async Task<bool> ApplyLabelCoreAsync(MarkerConfig config, CancellationToken token)
     {
         var label = BuildLabel();
         if (string.IsNullOrWhiteSpace(label))
-            return;
+            return true;
 
-        await SelectReplayChannelAsync(config, token).ConfigureAwait(false);
-        await ExecuteAsync(FunctionSelectLast, null, config, token).ConfigureAwait(false);
+        if (!await SelectReplayChannelAsync(config, token).ConfigureAwait(false) ||
+            !await ExecuteAsync(FunctionSelectLast, null, config, token).ConfigureAwait(false))
+            return false;
         var value = $"{config.Camera.ToString(CultureInfo.InvariantCulture)},{label}";
-        await ExecuteAsync(FunctionSetTextCamera, value, config, token).ConfigureAwait(false);
+        return await ExecuteAsync(FunctionSetTextCamera, value, config, token).ConfigureAwait(false);
     }
 
     private void UpdateRegistryRecord(string status)
@@ -346,7 +362,7 @@ public sealed class VmixReplayMarker : IDisposable
         }
     }
 
-    private Task ExecuteAsync(string function, string? value, MarkerConfig config, CancellationToken token)
+    private Task<bool> ExecuteAsync(string function, string? value, MarkerConfig config, CancellationToken token)
     {
         return _vmixApiClient.ExecuteFunctionAsync(new VmixFunctionCall
         {
@@ -355,12 +371,12 @@ public sealed class VmixReplayMarker : IDisposable
         }, token, function);
     }
 
-    private Task ApplyEventCameraAsync(MarkerConfig config, CancellationToken token)
+    private Task<bool> ApplyEventCameraAsync(MarkerConfig config, CancellationToken token)
     {
         return ExecuteAsync(FunctionLastEventSingleCameraOn, config.Camera.ToString(CultureInfo.InvariantCulture), config, token);
     }
 
-    private Task SelectReplayChannelAsync(MarkerConfig config, CancellationToken token)
+    private Task<bool> SelectReplayChannelAsync(MarkerConfig config, CancellationToken token)
     {
         var channel = string.IsNullOrWhiteSpace(config.Channel) ? "B" : config.Channel.Trim().ToUpperInvariant();
         var function = channel switch
