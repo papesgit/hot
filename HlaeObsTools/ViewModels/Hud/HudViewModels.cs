@@ -405,6 +405,7 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
 
     public event EventHandler<HudPlayerActionRequestedEventArgs>? PlayerActionRequested;
     public event EventHandler? AttachTargetSelected;
+    public event EventHandler? AnimateToPovRequested;
 
     public IBrush DisplayBorderBrush => IsFocused
         ? new SolidColorBrush(Color.FromArgb(255, 255, 255, 255))
@@ -508,6 +509,11 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     public void RequestAttachTargetSelection()
     {
         AttachTargetSelected?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void RequestAnimateToPov()
+    {
+        AnimateToPovRequested?.Invoke(this, EventArgs.Empty);
     }
 
     public void OpenAttachSubMenu(int pageIndex, IEnumerable<HlaeObsTools.ViewModels.HudSettings.AttachmentPreset> presets)

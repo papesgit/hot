@@ -206,6 +206,13 @@ public partial class HudPlayerCardControl : UserControl
         if (!point.Properties.IsLeftButtonPressed)
             return;
 
+        if ((e.KeyModifiers & KeyModifiers.Control) != 0)
+        {
+            ContextMenu?.Open(this);
+            e.Handled = true;
+            return;
+        }
+
         PositionRadialMenu(e);
         _currentViewModel.OpenRadialMenu();
         _currentViewModel.HighlightRadialAction(null, true);
@@ -264,6 +271,11 @@ public partial class HudPlayerCardControl : UserControl
         }
 
         CloseRadialMenu();
+    }
+
+    private void OnAnimToClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        _currentViewModel?.RequestAnimateToPov();
     }
 
     private void CloseRadialMenu()

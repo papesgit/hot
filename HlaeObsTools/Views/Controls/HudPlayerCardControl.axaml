@@ -8,6 +8,11 @@
              x:Class="HlaeObsTools.Views.Controls.HudPlayerCardControl"
              x:DataType="hud:HudPlayerCardViewModel"
              x:Name="RootControl">
+    <UserControl.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="AnimTo" Click="OnAnimToClick" />
+        </ContextMenu>
+    </UserControl.ContextMenu>
     <UserControl.Resources>
         <conv:BooleanToOpacityConverter x:Key="AliveOpacityConverter"
                                         TrueOpacity="1"

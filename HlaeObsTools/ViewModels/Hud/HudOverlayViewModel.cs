@@ -331,6 +331,9 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         player.AttachTargetSelected -= OnAttachTargetSelected;
         player.AttachTargetSelected += OnAttachTargetSelected;
 
+        player.AnimateToPovRequested -= OnAnimateToPovRequested;
+        player.AnimateToPovRequested += OnAnimateToPovRequested;
+
         player.IsAttachTargetSelectionActive = _isAwaitingAttachTarget;
     }
 
@@ -582,6 +585,18 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
             BuildAttachCameraArgs(_pendingAttachSourceObserverSlot, preset, targetObserverSlot: targetPlayer.ObserverSlot));
 
         CancelPendingAttachTargetSelection();
+    }
+
+    private void OnAnimateToPovRequested(object? sender, EventArgs e)
+    {
+        if (sender is not HudPlayerCardViewModel player || player.ObserverSlot is < 0 or > 9)
+            return;
+
+        CancelPendingAttachTargetSelection();
+        _ = _webSocketClient.SendCommandAsync("animate_to_pov", new
+        {
+            observer_slot = player.ObserverSlot
+        });
     }
 
     private void BeginAwaitAttachTargetSelection(int sourceObserverSlot, int pageIndex, int presetIndex)
