@@ -227,7 +227,10 @@ public sealed class CurveEditorControl : Control
         var hit = _keyHits.LastOrDefault(h => h.rect.Contains(point));
         if (hit.key != null)
         {
-            if (!e.KeyModifiers.HasFlag(KeyModifiers.Shift)) ClearSelection();
+            // Preserve an existing multi-selection when starting a drag from one of
+            // its members. An unselected key still becomes the sole selection unless
+            // Shift is held.
+            if (!e.KeyModifiers.HasFlag(KeyModifiers.Shift) && !hit.key.Selected) ClearSelection();
             hit.key.Selected = true;
             _dragKey = hit.key; _dragChannel = hit.channel; _lastPointer = point; _dragStartPoint = point; _dragAxis = DragAxis.Free;
             _dragOrigins.Clear();
