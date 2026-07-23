@@ -310,13 +310,21 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         if (state == null)
             return;
 
-        CampathEditor.AddKeyframe(
-            CampathEditor.PlayheadTime,
-            state.Value.RawPosition,
-            state.Value.RawOrientation,
-            state.Value.RawFov);
-        if (_curveEditor != null)
-            _curveEditor.AddKeys(_curveEditor.Document.Channels, useEvaluatedValue: false);
+        CampathEditor.BeginHistoryTransaction();
+        try
+        {
+            CampathEditor.AddKeyframe(
+                CampathEditor.PlayheadTime,
+                state.Value.RawPosition,
+                state.Value.RawOrientation,
+                state.Value.RawFov);
+            if (_curveEditor != null)
+                _curveEditor.AddKeys(_curveEditor.Document.Channels, useEvaluatedValue: false);
+        }
+        finally
+        {
+            CampathEditor.CommitHistoryTransaction();
+        }
     }
 
     public void SetCurveEditor(CurveEditorDockViewModel curveEditor) => _curveEditor = curveEditor;

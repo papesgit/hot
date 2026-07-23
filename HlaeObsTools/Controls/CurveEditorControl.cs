@@ -57,6 +57,7 @@ public sealed class CurveEditorControl : Control
     private TangentSide _dragTangent;
     private Point _dragStartPoint;
     private DragAxis _dragAxis;
+    private bool _historyEditActive;
     private readonly Dictionary<CampathCurveKey, (CampathCurveChannel channel, double time, double value)> _dragOrigins = new();
     private readonly HashSet<CampathCurveKey> _selectionBeforeBox = new();
     private readonly List<(Rect rect, CampathCurveChannel channel, CampathCurveKey key)> _keyHits = new();
@@ -89,6 +90,8 @@ public sealed class CurveEditorControl : Control
     public event Action? CampathPreviewRequested;
     public event Action? CampathPreviewEnded;
     public event Action? PlayheadDragEnded;
+    public event Action? HistoryEditStarted;
+    public event Action? HistoryEditCompleted;
 
     public override void Render(DrawingContext context)
     {
@@ -220,7 +223,7 @@ public sealed class CurveEditorControl : Control
             _draggingPlayhead = true; e.Pointer.Capture(this); e.Handled = true; return;
         }
         var tangent = _tangentHits.LastOrDefault(h => h.rect.Contains(point));
-        if (tangent.key != null) { _dragKey = tangent.key; _dragChannel = tangent.channel; _dragTangent = tangent.side; _dragStartPoint = point; e.Pointer.Capture(this); e.Handled = true; return; }
+        if (tangent.key != null) { _dragKey = tangent.key; _dragChannel = tangent.channel; _dragTangent = tangent.side; _dragStartPoint = point; BeginHistoryEdit(); e.Pointer.Capture(this); e.Handled = true; return; }
         var hit = _keyHits.LastOrDefault(h => h.rect.Contains(point));
         if (hit.key != null)
         {
@@ -231,6 +234,7 @@ public sealed class CurveEditorControl : Control
             foreach (var channel in Channels ?? [])
                 foreach (var key in channel.Keys.Where(key => key.Selected))
                     _dragOrigins[key] = (channel, key.Time, key.Value);
+            BeginHistoryEdit();
             e.Pointer.Capture(this); InvalidateVisual(); e.Handled = true;
             SelectionChanged?.Invoke();
         }
@@ -341,6 +345,7 @@ public sealed class CurveEditorControl : Control
         base.OnPointerReleased(e);
         if (_dragKey != null && _dragTangent == TangentSide.None)
             foreach (var channel in _dragOrigins.Values.Select(value => value.channel).Distinct()) SortKeys(channel);
+        EndHistoryEdit();
         if (_draggingPlayhead)
         {
             PlayheadDragEnded?.Invoke();
@@ -377,7 +382,15 @@ public sealed class CurveEditorControl : Control
         base.OnKeyDown(e);
         if (e.Key == Key.F) { if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) FitSelection(); else FitAll(); e.Handled = true; }
         else if (e.Key == Key.A && e.KeyModifiers.HasFlag(KeyModifiers.Control)) { foreach (var k in VisibleKeys()) k.Selected = true; InvalidateVisual(); SelectionChanged?.Invoke(); e.Handled = true; }
-        else if (e.Key == Key.Delete) { foreach (var c in Channels ?? []) foreach (var k in c.Keys.Where(k => k.Selected).ToList()) c.Keys.Remove(k); InvalidateVisual(); SelectionChanged?.Invoke(); e.Handled = true; }
+        else if (e.Key == Key.Delete)
+        {
+            var selected = VisibleKeys().Where(key => key.Selected).ToHashSet();
+            if (selected.Count == 0) return;
+            BeginHistoryEdit();
+            foreach (var c in Channels ?? []) foreach (var k in c.Keys.Where(selected.Contains).ToList()) c.Keys.Remove(k);
+            EndHistoryEdit();
+            InvalidateVisual(); SelectionChanged?.Invoke(); e.Handled = true;
+        }
     }
 
     public CurveWeightSelectionState GetWeightSelectionState()
@@ -401,22 +414,30 @@ public sealed class CurveEditorControl : Control
     {
         var selected = VisibleKeys().Where(key => key.Selected).ToList();
         if (selected.Count == 0) return;
+        BeginHistoryEdit();
         var makeWeighted = selected.Any(key => !key.WeightedTangents);
         foreach (var key in selected) key.WeightedTangents = makeWeighted;
+        EndHistoryEdit();
         SelectionChanged?.Invoke(); InvalidateVisual();
     }
 
     public void FlattenSelectedTangents()
     {
-        foreach (var key in VisibleKeys().Where(key => key.Selected))
+        var selected = VisibleKeys().Where(key => key.Selected).ToList();
+        if (selected.Count == 0) return;
+        BeginHistoryEdit();
+        foreach (var key in selected)
         {
             key.InTangent = 0; key.OutTangent = 0; key.TangentMode = CurveTangentMode.Smooth;
         }
+        EndHistoryEdit();
         InvalidateVisual();
     }
 
     public void StraightenSelectedTangents()
     {
+        if (!VisibleKeys().Any(key => key.Selected)) return;
+        BeginHistoryEdit();
         foreach (var channel in Channels ?? [])
         {
             var ordered = channel.Keys.OrderBy(key => key.Time).ToList();
@@ -429,7 +450,22 @@ public sealed class CurveEditorControl : Control
                 key.InTangent = slope; key.OutTangent = slope; key.TangentMode = CurveTangentMode.Smooth;
             }
         }
+        EndHistoryEdit();
         InvalidateVisual();
+    }
+
+    private void BeginHistoryEdit()
+    {
+        if (_historyEditActive) return;
+        _historyEditActive = true;
+        HistoryEditStarted?.Invoke();
+    }
+
+    private void EndHistoryEdit()
+    {
+        if (!_historyEditActive) return;
+        _historyEditActive = false;
+        HistoryEditCompleted?.Invoke();
     }
 
     private double? FindCrossChannelSnap(CampathCurveChannel source, double candidate, Rect plot)

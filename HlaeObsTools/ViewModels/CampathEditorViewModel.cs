@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -32,6 +33,11 @@ public sealed class CampathEditorViewModel : ViewModelBase
     private int _curveDocumentRevision;
     private bool _isDofEditorOpen;
     private bool _dofOverride;
+    private readonly List<EditorHistorySnapshot> _undoHistory = new();
+    private readonly List<EditorHistorySnapshot> _redoHistory = new();
+    private EditorHistorySnapshot? _pendingHistorySnapshot;
+    private int _historyTransactionDepth;
+    private bool _restoringHistory;
     private bool _sequencerCurvesUnlocked;
 
     public CampathEditorViewModel()
@@ -230,6 +236,46 @@ public sealed class CampathEditorViewModel : ViewModelBase
         RaiseDofPropertiesChanged();
     }
 
+    public void BeginHistoryTransaction()
+    {
+        if (_restoringHistory) return;
+        if (_historyTransactionDepth++ == 0)
+            _pendingHistorySnapshot = CaptureHistorySnapshot();
+    }
+
+    public void CommitHistoryTransaction()
+    {
+        if (_restoringHistory || _historyTransactionDepth == 0) return;
+        if (--_historyTransactionDepth != 0) return;
+
+        var before = _pendingHistorySnapshot;
+        _pendingHistorySnapshot = null;
+        if (before == null || HistoryEquals(before, CaptureHistorySnapshot())) return;
+        _undoHistory.Add(before);
+        if (_undoHistory.Count > 100) _undoHistory.RemoveAt(0);
+        _redoHistory.Clear();
+    }
+
+    public void Undo()
+    {
+        if (_historyTransactionDepth != 0 || _undoHistory.Count == 0) return;
+        var index = _undoHistory.Count - 1;
+        var snapshot = _undoHistory[index];
+        _undoHistory.RemoveAt(index);
+        _redoHistory.Add(CaptureHistorySnapshot());
+        RestoreHistorySnapshot(snapshot);
+    }
+
+    public void Redo()
+    {
+        if (_historyTransactionDepth != 0 || _redoHistory.Count == 0) return;
+        var index = _redoHistory.Count - 1;
+        var snapshot = _redoHistory[index];
+        _redoHistory.RemoveAt(index);
+        _undoHistory.Add(CaptureHistorySnapshot());
+        RestoreHistorySnapshot(snapshot);
+    }
+
     public ICommand TogglePlayCommand { get; }
     public ICommand ClearCommand { get; }
 
@@ -260,22 +306,30 @@ public sealed class CampathEditorViewModel : ViewModelBase
     {
         if (SelectedKeyframe == null)
             return;
+        BeginHistoryTransaction();
         Keyframes.Remove(SelectedKeyframe);
         SelectedKeyframe = Keyframes.FirstOrDefault();
+        CommitHistoryTransaction();
     }
 
     public void Clear()
     {
+        BeginHistoryTransaction();
         Keyframes.Clear();
         SelectedKeyframe = null;
         foreach (var channel in CurveDocument.Channels)
             channel.Keys.Clear();
         RebuildCurve();
         NotifyCurveDocumentChanged();
+        CommitHistoryTransaction();
     }
 
     public void LoadFromData(CampathFileIo.CampathFileData data)
     {
+        _undoHistory.Clear();
+        _redoHistory.Clear();
+        _pendingHistorySnapshot = null;
+        _historyTransactionDepth = 0;
         foreach (var key in Keyframes)
             key.PropertyChanged -= OnKeyframePropertyChanged;
         _suppressCollectionEvents = true;
@@ -328,6 +382,95 @@ public sealed class CampathEditorViewModel : ViewModelBase
         }
         NotifyCurveDocumentChanged();
     }
+
+    private EditorHistorySnapshot CaptureHistorySnapshot()
+    {
+        var legacyKeys = Keyframes.Select(key => new LegacyKeySnapshot(
+            key.Time, key.Position, key.Rotation, key.Fov, key.Selected, key.Dof)).ToList();
+        var channels = CurveDocument.Channels.Select(channel => new CurveChannelSnapshot(
+            channel.Id, channel.Name, channel.Group, channel.Color,
+            channel.Keys.Select(key => new CurveKeySnapshot(
+                key.Time, key.Value, key.InTangent, key.OutTangent, key.InWeight, key.OutWeight,
+                key.Selected, key.Interpolation, key.TangentMode, key.WeightedTangents)).ToList())).ToList();
+        return new EditorHistorySnapshot(legacyKeys, channels, Duration);
+    }
+
+    private void RestoreHistorySnapshot(EditorHistorySnapshot snapshot)
+    {
+        _restoringHistory = true;
+        try
+        {
+            foreach (var key in Keyframes)
+                key.PropertyChanged -= OnKeyframePropertyChanged;
+            _suppressCollectionEvents = true;
+            Keyframes.Clear();
+            foreach (var key in snapshot.LegacyKeys)
+                Keyframes.Add(new CampathKeyframeViewModel
+                {
+                    Time = key.Time, Position = key.Position, Rotation = key.Rotation,
+                    Fov = key.Fov, Selected = key.Selected, Dof = key.Dof
+                });
+            _suppressCollectionEvents = false;
+            HookKeyframeHandlers();
+            _selectedKeyframe = Keyframes.FirstOrDefault(key => key.Selected);
+            OnPropertyChanged(nameof(SelectedKeyframe));
+            RebuildCurve();
+
+            foreach (var channel in CurveDocument.Channels)
+                channel.Keys.Clear();
+            foreach (var source in snapshot.Channels)
+            {
+                var target = CurveDocument.Find(source.Id);
+                if (target == null)
+                {
+                    target = new CampathCurveChannel
+                    {
+                        Id = source.Id, Name = source.Name, Group = source.Group, Color = source.Color
+                    };
+                    CurveDocument.Channels.Add(target);
+                }
+                foreach (var key in source.Keys)
+                    target.Keys.Add(new CampathCurveKey
+                    {
+                        Time = key.Time, Value = key.Value, InTangent = key.InTangent,
+                        OutTangent = key.OutTangent, InWeight = key.InWeight, OutWeight = key.OutWeight,
+                        Selected = key.Selected, Interpolation = key.Interpolation,
+                        TangentMode = key.TangentMode, WeightedTangents = key.WeightedTangents
+                    });
+            }
+            Duration = snapshot.Duration;
+            NotifyCurveDocumentChanged();
+        }
+        finally
+        {
+            _suppressCollectionEvents = false;
+            _restoringHistory = false;
+        }
+    }
+
+    private static bool HistoryEquals(EditorHistorySnapshot left, EditorHistorySnapshot right)
+    {
+        if (left.Duration != right.Duration || !left.LegacyKeys.SequenceEqual(right.LegacyKeys)
+            || left.Channels.Count != right.Channels.Count) return false;
+        for (var i = 0; i < left.Channels.Count; i++)
+        {
+            var a = left.Channels[i];
+            var b = right.Channels[i];
+            if (a.Id != b.Id || a.Name != b.Name || a.Group != b.Group || a.Color != b.Color
+                || !a.Keys.SequenceEqual(b.Keys)) return false;
+        }
+        return true;
+    }
+
+    private sealed record EditorHistorySnapshot(
+        List<LegacyKeySnapshot> LegacyKeys, List<CurveChannelSnapshot> Channels, double Duration);
+    private sealed record LegacyKeySnapshot(double Time, Vector3 Position, Quaternion Rotation,
+        double Fov, bool Selected, CampathDofSettings Dof);
+    private sealed record CurveChannelSnapshot(string Id, string Name, string Group, string Color,
+        List<CurveKeySnapshot> Keys);
+    private sealed record CurveKeySnapshot(double Time, double Value, double InTangent,
+        double OutTangent, double InWeight, double OutWeight, bool Selected,
+        CurveInterpolationMode Interpolation, CurveTangentMode TangentMode, bool WeightedTangents);
 
     public void ShiftAllTimes(double delta)
     {

@@ -14,13 +14,33 @@ public partial class CurveEditorDockView : UserControl
     public CurveEditorDockView()
     {
         InitializeComponent();
+        AddHandler(KeyDownEvent, OnUndoRedoKeyDown, RoutingStrategies.Tunnel, true);
         CurveCanvas.SelectionChanged += UpdateWeightedButton;
         CurveCanvas.FreecamPreviewRequested += OnFreecamPreviewRequested;
         CurveCanvas.FreecamPreviewEnded += OnFreecamPreviewEnded;
         CurveCanvas.CampathPreviewRequested += OnCampathPreviewRequested;
         CurveCanvas.CampathPreviewEnded += OnCampathPreviewEnded;
         CurveCanvas.PlayheadDragEnded += OnPlayheadDragEnded;
+        CurveCanvas.HistoryEditStarted += OnHistoryEditStarted;
+        CurveCanvas.HistoryEditCompleted += OnHistoryEditCompleted;
         UpdateWeightedButton();
+    }
+
+    private void OnUndoRedoKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) || DataContext is not CurveEditorDockViewModel vm)
+            return;
+        if (e.Key == Key.Z)
+        {
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) vm.CampathEditor.Redo();
+            else vm.CampathEditor.Undo();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Y)
+        {
+            vm.CampathEditor.Redo();
+            e.Handled = true;
+        }
     }
 
     private void OnFitAll(object? sender, RoutedEventArgs e)
@@ -136,6 +156,16 @@ public partial class CurveEditorDockView : UserControl
     private void OnPlayheadDragEnded()
     {
         if (DataContext is CurveEditorDockViewModel vm) vm.NotifyPlayheadDragEnded();
+    }
+
+    private void OnHistoryEditStarted()
+    {
+        if (DataContext is CurveEditorDockViewModel vm) vm.CampathEditor.BeginHistoryTransaction();
+    }
+
+    private void OnHistoryEditCompleted()
+    {
+        if (DataContext is CurveEditorDockViewModel vm) vm.CampathEditor.CommitHistoryTransaction();
     }
 
 }

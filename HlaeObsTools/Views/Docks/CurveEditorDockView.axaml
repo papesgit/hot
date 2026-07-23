@@ -22,7 +22,7 @@
             </WrapPanel>
                 <Border Grid.Column="1" Width="22" Height="22" CornerRadius="11" Background="#EEEEEE" Margin="8,0,0,0"
                         ToolTip.Placement="Bottom"
-                        ToolTip.Tip="Selection: drag empty space; Shift adds.&#10;Channels: Ctrl-click a channel visibility box to solo it.&#10;Move keys: drag; Shift locks time or value; Alt snaps time to other channels.&#10;Playhead: Shift snaps to nearest key; Ctrl previews freecam; Alt previews campath camera.&#10;Tangents: drag linked; Alt breaks sides; Shift changes length only.&#10;Navigation: MMB/RMB pan; wheel zoom; Shift+wheel horizontal; Ctrl+wheel vertical.&#10;Fit: F fits all; Shift+F fits selection. Ctrl+A selects all; Delete removes keys.">
+                        ToolTip.Tip="Selection: drag empty space; Shift adds.&#10;Channels: Ctrl-click a channel visibility box to solo it.&#10;Move keys: drag; Shift locks time or value; Alt snaps time to other channels.&#10;Playhead: Shift snaps to nearest key; Ctrl previews freecam; Alt previews campath camera.&#10;Tangents: drag linked; Alt breaks sides; Shift changes length only.&#10;Navigation: MMB/RMB pan; wheel zoom; Shift+wheel horizontal; Ctrl+wheel vertical.&#10;Fit: F fits all; Shift+F fits selection. Ctrl+A selects all; Delete removes keys.&#10;History: Ctrl+Z undo; Ctrl+Y or Ctrl+Shift+Z redo.">
                     <TextBlock Text="i" Foreground="#222222" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
             </Grid>

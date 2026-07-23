@@ -85,31 +85,39 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
     }
     public void AddKeys(IEnumerable<CampathCurveChannel> channels, bool useEvaluatedValue)
     {
-        var time = _editor.PlayheadTime;
-        var liveState = useEvaluatedValue ? null : _viewport.CampathStateProvider?.Invoke();
-        var liveEuler = liveState.HasValue ? QuaternionToEuler(liveState.Value.RawOrientation) : default;
-        foreach (var channel in channels)
+        _editor.BeginHistoryTransaction();
+        try
         {
-            var value = useEvaluatedValue && channel.Keys.Count > 0
-                ? channel.Evaluate(time)
-                : GetCurrentValue(channel.Id, liveState, liveEuler, time);
-            var existing = channel.Keys.FirstOrDefault(key => Math.Abs(key.Time - time) < 0.0001);
-            if (channel.Id.StartsWith("rotation.", StringComparison.Ordinal))
-                value = UnwrapValue(channel, time, value, existing);
-            if (existing != null) existing.Value = value;
-            else
+            var time = _editor.PlayheadTime;
+            var liveState = useEvaluatedValue ? null : _viewport.CampathStateProvider?.Invoke();
+            var liveEuler = liveState.HasValue ? QuaternionToEuler(liveState.Value.RawOrientation) : default;
+            foreach (var channel in channels)
             {
-                var key = new CampathCurveKey
+                var value = useEvaluatedValue && channel.Keys.Count > 0
+                    ? channel.Evaluate(time)
+                    : GetCurrentValue(channel.Id, liveState, liveEuler, time);
+                var existing = channel.Keys.FirstOrDefault(key => Math.Abs(key.Time - time) < 0.0001);
+                if (channel.Id.StartsWith("rotation.", StringComparison.Ordinal))
+                    value = UnwrapValue(channel, time, value, existing);
+                if (existing != null) existing.Value = value;
+                else
                 {
-                    Time = time, Value = value, Selected = true,
-                    Interpolation = channel.Id == "dof.enabled" ? CurveInterpolationMode.Constant : CurveInterpolationMode.Bezier
-                };
-                var index = 0; while (index < channel.Keys.Count && channel.Keys[index].Time < time) index++;
-                channel.Keys.Insert(index, key);
+                    var key = new CampathCurveKey
+                    {
+                        Time = time, Value = value, Selected = true,
+                        Interpolation = channel.Id == "dof.enabled" ? CurveInterpolationMode.Constant : CurveInterpolationMode.Bezier
+                    };
+                    var index = 0; while (index < channel.Keys.Count && channel.Keys[index].Time < time) index++;
+                    channel.Keys.Insert(index, key);
+                }
             }
+            AutoTangents();
+            _editor.NotifyCurveDocumentChanged();
         }
-        AutoTangents();
-        _editor.NotifyCurveDocumentChanged();
+        finally
+        {
+            _editor.CommitHistoryTransaction();
+        }
     }
 
     private double GetCurrentValue(string id, ViewportFreecamState? state,

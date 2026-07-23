@@ -119,6 +119,8 @@ public sealed class CampathTimelineControl : Control
     public event Action? KeyframeDragEnded;
     public event Action? CurveDocumentEdited;
     public event Action? PlayheadDragEnded;
+    public event Action? HistoryEditStarted;
+    public event Action? HistoryEditCompleted;
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
@@ -335,6 +337,7 @@ public sealed class CampathTimelineControl : Control
         var selectedCurveKeys = GetAllCurveKeys().Where(item => item.key.Selected).Select(item => item.key).ToHashSet();
         if (e.Key == Key.Delete && selectedCurveKeys.Count > 0 && CurveDocument != null)
         {
+            HistoryEditStarted?.Invoke();
             var deletedBundleTimes = BuildCurveMarkers(CurveDocument).bundles
                 .Where(bundle => bundle.IsComplete && bundle.Members.All(member => selectedCurveKeys.Contains(member.key)))
                 .Select(bundle => bundle.Time).ToList();
@@ -347,14 +350,17 @@ public sealed class CampathTimelineControl : Control
                         legacyItems.RemoveAt(i);
             SelectedItem = null;
             CurveDocumentEdited?.Invoke();
+            HistoryEditCompleted?.Invoke();
             e.Handled = true;
         }
         else if (e.Key == Key.Delete && SelectedItem != null)
         {
             if (Items is IList<CampathKeyframeViewModel> list)
             {
+                HistoryEditStarted?.Invoke();
                 list.Remove(SelectedItem);
                 SelectedItem = null;
+                HistoryEditCompleted?.Invoke();
                 e.Handled = true;
             }
         }
