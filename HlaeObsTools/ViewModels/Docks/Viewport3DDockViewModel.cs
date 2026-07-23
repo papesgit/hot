@@ -37,6 +37,10 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private bool _gizmoDragActive;
     private CurveEditorDockViewModel? _curveEditor;
     private readonly string _campathSyncDirectory;
+    private readonly DispatcherTimer _campathSyncTimer;
+    private bool _campathSyncPending;
+    private bool _campathSyncTimerScheduled;
+    private DateTime _lastCampathSyncUtc = DateTime.MinValue;
     private readonly Dictionary<int, ViewportPlayerStatus> _retainedDeadPlayerStatusesBySlot = new();
     private string? _lastPlayerStatusMapName;
     private int _lastPlayerStatusRoundNumber = -1;
@@ -63,6 +67,11 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "HlaeObsTools",
             "campath-sync");
+        _campathSyncTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(175)
+        };
+        _campathSyncTimer.Tick += OnCampathSyncTimerTick;
 
         Title = "3D Viewport";
         CanFloat = true;
@@ -219,6 +228,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     public void Dispose()
     {
+        _campathSyncTimer.Stop();
+        _campathSyncTimer.Tick -= OnCampathSyncTimerTick;
         if (_gsiServer != null)
             _gsiServer.GameStateUpdated -= OnGameStateUpdated;
         _settings.PropertyChanged -= OnViewportSettingsChanged;
@@ -389,6 +400,12 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         {
             if (_settings.ViewportCampathSyncEnabled)
                 RequestCampathSync();
+            else
+            {
+                _campathSyncTimer.Stop();
+                _campathSyncPending = false;
+                _campathSyncTimerScheduled = false;
+            }
         }
     }
 
@@ -455,9 +472,6 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         if (_gizmoDragActive)
             return;
 
-        if (e.PropertyName == nameof(CampathKeyframeViewModel.Time) && CampathEditor.IsTimeDragActive)
-            return;
-
         if (e.PropertyName is nameof(CampathKeyframeViewModel.Time)
             or nameof(CampathKeyframeViewModel.Position)
             or nameof(CampathKeyframeViewModel.Rotation)
@@ -504,8 +518,52 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private void RequestCampathSync()
     {
         if (!IsHlaeSyncActive())
+        {
+            _campathSyncTimer.Stop();
+            _campathSyncPending = false;
+            _campathSyncTimerScheduled = false;
+            return;
+        }
+
+        _campathSyncPending = true;
+        if (CampathEditor.IsHistoryTransactionActive)
+        {
+            // During a drag, keep feedback live but cap publication at twenty loads per
+            // second. Repeated key notifications do not postpone the scheduled update.
+            if (_campathSyncTimerScheduled)
+                return;
+            var elapsed = DateTime.UtcNow - _lastCampathSyncUtc;
+            ScheduleCampathSync(Math.Max(1.0, 50.0 - elapsed.TotalMilliseconds));
+            return;
+        }
+
+        // Outside a drag, use trailing-edge debounce so an undo/redo restoration or
+        // multi-key command becomes one load of the final document.
+        ScheduleCampathSync(175.0);
+    }
+
+    private void ScheduleCampathSync(double delayMilliseconds)
+    {
+        _campathSyncTimer.Stop();
+        _campathSyncTimer.Interval = TimeSpan.FromMilliseconds(delayMilliseconds);
+        _campathSyncTimer.Start();
+        _campathSyncTimerScheduled = true;
+    }
+
+    private void OnCampathSyncTimerTick(object? sender, EventArgs e)
+    {
+        _campathSyncTimer.Stop();
+        _campathSyncTimerScheduled = false;
+        if (!IsHlaeSyncActive())
+        {
+            _campathSyncPending = false;
+            return;
+        }
+        if (!_campathSyncPending)
             return;
 
+        _campathSyncPending = false;
+        _lastCampathSyncUtc = DateTime.UtcNow;
         if (!CampathEditor.CanEvaluate())
         {
             _ = _webSocketClient?.SendExecCommandAsync("mirv_campath clear");
@@ -529,7 +587,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     private void CleanupSyncFiles()
     {
-        const int keepCount = 10;
+        const int keepCount = 20;
+        var safeDeleteBefore = DateTime.UtcNow - TimeSpan.FromMinutes(2);
         try
         {
             var files = Directory.GetFiles(_campathSyncDirectory, "viewport-campath-*.xml")
@@ -539,6 +598,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
             for (var i = keepCount; i < files.Count; i++)
             {
+                if (files[i].LastWriteTimeUtc >= safeDeleteBefore)
+                    continue;
                 try
                 {
                     files[i].Delete();

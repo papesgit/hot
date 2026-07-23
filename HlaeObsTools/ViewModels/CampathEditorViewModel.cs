@@ -144,6 +144,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
     }
 
     public bool IsTimeDragActive => _timeDragActive;
+    public bool IsHistoryTransactionActive => _historyTransactionDepth > 0;
 
     public double TimeOffset
     {
