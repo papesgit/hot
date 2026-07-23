@@ -35,6 +35,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private bool _freecamPreviewActive;
     private bool _campathPreviewOverrideActive;
     private bool _gizmoDragActive;
+    private CurveEditorDockViewModel? _curveEditor;
     private readonly string _campathSyncDirectory;
     private readonly Dictionary<int, ViewportPlayerStatus> _retainedDeadPlayerStatusesBySlot = new();
     private string? _lastPlayerStatusMapName;
@@ -314,15 +315,19 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             state.Value.RawPosition,
             state.Value.RawOrientation,
             state.Value.RawFov);
+        if (_curveEditor != null)
+            _curveEditor.AddKeys(_curveEditor.Document.Channels, useEvaluatedValue: false);
     }
+
+    public void SetCurveEditor(CurveEditorDockViewModel curveEditor) => _curveEditor = curveEditor;
 
     public void ApplyFreecamPreviewAtTime(double time)
     {
         if (CampathStateProvider == null)
             return;
 
-        var sample = CampathEditor.Curve.CanEvaluate()
-            ? CampathEditor.Curve.Evaluate(time)
+        var sample = CampathEditor.CanEvaluate()
+            ? CampathEditor.Evaluate(time)
             : (CampathSample?)null;
         if (sample == null)
             return;
@@ -398,6 +403,10 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
                 RequestCampathSync();
         }
         else if (e.PropertyName == nameof(CampathEditorViewModel.TimeOffset))
+        {
+            RequestCampathSync();
+        }
+        else if (e.PropertyName == nameof(CampathEditorViewModel.CurveDocumentRevision))
         {
             RequestCampathSync();
         }
@@ -489,7 +498,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         if (!IsHlaeSyncActive())
             return;
 
-        if (CampathEditor.Keyframes.Count == 0)
+        if (!CampathEditor.CanEvaluate())
         {
             _ = _webSocketClient?.SendExecCommandAsync("mirv_campath clear");
             return;
@@ -497,7 +506,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
         Directory.CreateDirectory(_campathSyncDirectory);
         var syncPath = GetSyncPath();
-        CampathFileIo.Save(syncPath, CampathEditor);
+        CampathFileIo.Save(syncPath, CampathEditor, includeLegacyCompatibility: false);
         CleanupSyncFiles();
         var cmd = $"mirv_campath load \"{syncPath}\"";
         _ = _webSocketClient?.SendExecCommandAsync(cmd);

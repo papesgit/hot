@@ -1,5 +1,6 @@
 using System;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using HlaeObsTools.Controls;
 using HlaeObsTools.ViewModels.Docks;
 
@@ -28,6 +29,7 @@ public partial class CampathSequencerView : UserControl
         timeline.CampathPreviewEnded -= OnCampathPreviewEnded;
         timeline.KeyframeDragStarted -= OnKeyframeDragStarted;
         timeline.KeyframeDragEnded -= OnKeyframeDragEnded;
+        timeline.CurveDocumentEdited -= OnCurveDocumentEdited;
         timeline.PlayheadDragEnded -= OnPlayheadDragEnded;
         timeline.FreecamPreviewRequested += OnFreecamPreviewRequested;
         timeline.FreecamPreviewEnded += OnFreecamPreviewEnded;
@@ -35,6 +37,7 @@ public partial class CampathSequencerView : UserControl
         timeline.CampathPreviewEnded += OnCampathPreviewEnded;
         timeline.KeyframeDragStarted += OnKeyframeDragStarted;
         timeline.KeyframeDragEnded += OnKeyframeDragEnded;
+        timeline.CurveDocumentEdited += OnCurveDocumentEdited;
         timeline.PlayheadDragEnded += OnPlayheadDragEnded;
     }
 
@@ -86,11 +89,24 @@ public partial class CampathSequencerView : UserControl
         vm.CampathEditor.EndTimeDrag();
     }
 
+    private void OnCurveDocumentEdited()
+    {
+        if (DataContext is Viewport3DDockViewModel vm)
+            vm.CampathEditor.NotifyCurveDocumentChanged();
+    }
+
     private void OnPlayheadDragEnded()
     {
         if (DataContext is not Viewport3DDockViewModel vm)
             return;
 
         vm.NotifyPlayheadDragEnded();
+    }
+
+    private void OnDofToggleClicked(object? sender, RoutedEventArgs e)
+    {
+        DofPopup.IsOpen = !DofPopup.IsOpen;
+        if (DataContext is Viewport3DDockViewModel vm)
+            vm.CampathEditor.IsDofEditorOpen = DofPopup.IsOpen;
     }
 }

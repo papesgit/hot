@@ -301,6 +301,12 @@
                                               Foreground="#E6E6E6"
                                     hotkeys:HotkeyTarget.Path="CampathEditor.PreviewDuringPlayback"
                                               Margin="0,0,10,0"/>
+                                <ToggleSwitch IsChecked="{Binding CampathEditor.LockPreview, Mode=TwoWay}"
+                                              Content="Lock-Preview"
+                                              Foreground="#E6E6E6"
+                                    hotkeys:HotkeyTarget.Path="CampathEditor.LockPreview"
+                                              Margin="0,0,10,0"
+                                              ToolTip.Tip="Keep the viewport camera locked to the campath evaluation at the current playhead."/>
                                 <ToggleSwitch IsChecked="{Binding CampathEditor.UseCubic, Mode=TwoWay}"
                                               Content="Cubic Interp"
                                               Foreground="#E6E6E6"
@@ -316,6 +322,16 @@
                                               Content="Draw Path"
                                               Foreground="#E6E6E6"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathOverlayEnabled"
+                                              Margin="0,0,10,0"/>
+                                <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathDofEnabled, Mode=TwoWay}"
+                                              Content="DOF"
+                                              Foreground="#E6E6E6"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathDofEnabled"
+                                              Margin="0,0,10,0"/>
+                                <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathGizmoEnabled, Mode=TwoWay}"
+                                              Content="Show Gizmo"
+                                              Foreground="#E6E6E6"
+                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathGizmoEnabled"
                                               Margin="0,0,10,0"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.CampathGizmoLocalSpace, Mode=TwoWay}"
                                               Content="Gizmo Local"
@@ -344,30 +360,13 @@
                                         Command="{Binding LoadViewportCampathCommand}"/>
                                 <Button Content="Save"
                                         Command="{Binding SaveViewportCampathCommand}"/>
+                                <CheckBox Content="Legacy compatibility"
+                                          IsChecked="{Binding Viewport3DSettings.ViewportCampathLegacyCompatibility, Mode=TwoWay}"
+                                          VerticalAlignment="Center"
+                                          ToolTip.Tip="Include an adaptive traditional points track for older HLAE versions."/>
                                 <Button Content="Clear"
                                         Command="{Binding CampathEditor.ClearCommand}"/>
                             </StackPanel>
-                            <TextBlock Text="Keyframes"
-                                       Foreground="#AAAAAA"
-                                       Margin="0,4,0,0"/>
-                            <ListBox ItemsSource="{Binding CampathEditor.Keyframes}"
-                                     SelectedItem="{Binding CampathEditor.SelectedKeyframe, Mode=TwoWay}"
-                                     MaxHeight="220"
-                                     Width="220"
-                                     HorizontalAlignment="Left">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <TextBlock Text="t" Foreground="#888888"/>
-                                            <TextBox Width="70"
-                                                     Text="{Binding Time, Mode=TwoWay, StringFormat={}{0:F2}}"/>
-                                            <TextBlock Text="fov" Foreground="#888888"/>
-                                            <TextBox Width="60"
-                                                     Text="{Binding Fov, Mode=TwoWay, StringFormat={}{0:F1}}"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
                         </StackPanel>
 
                     </StackPanel>

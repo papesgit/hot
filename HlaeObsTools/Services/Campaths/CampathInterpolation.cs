@@ -26,22 +26,32 @@ public sealed class CampathKeyframe
     public Quaternion Rotation { get; set; }
     public double Fov { get; set; } = 90.0;
     public bool Selected { get; set; }
+    public CampathDofSettings Dof { get; set; } = CampathDofSettings.Default;
+}
+
+/// <summary>Viewport DOF values corresponding to CS2's r_dof2 and r_dof_override distance controls.</summary>
+public readonly record struct CampathDofSettings(bool Enabled, double NearBlurry, double NearCrisp,
+    double FarCrisp, double FarBlurry, double MaxBlurSize, double RadiusScale)
+{
+    public static CampathDofSettings Default { get; } = new(false, -100.0, 0.0, 180.0, 2000.0, 5.0, 0.25);
 }
 
 public readonly struct CampathSample
 {
-    public CampathSample(Vector3 position, Quaternion rotation, double fov, bool selected)
+    public CampathSample(Vector3 position, Quaternion rotation, double fov, bool selected, CampathDofSettings dof)
     {
         Position = position;
         Rotation = rotation;
         Fov = fov;
         Selected = selected;
+        Dof = dof;
     }
 
     public Vector3 Position { get; }
     public Quaternion Rotation { get; }
     public double Fov { get; }
     public bool Selected { get; }
+    public CampathDofSettings Dof { get; }
 }
 
 public sealed class CampathCurve
@@ -54,6 +64,13 @@ public sealed class CampathCurve
     private readonly CampathDoubleSpline _fovSpline = new();
     private readonly CampathQuaternionSpline _rotSpline = new();
     private readonly CampathBoolAndSpline _selectedSpline = new();
+    private readonly CampathBoolAndSpline _dofEnabledSpline = new();
+    private readonly CampathDoubleSpline _nearBlurrySpline = new();
+    private readonly CampathDoubleSpline _nearCrispSpline = new();
+    private readonly CampathDoubleSpline _farCrispSpline = new();
+    private readonly CampathDoubleSpline _farBlurrySpline = new();
+    private readonly CampathDoubleSpline _maxBlurSizeSpline = new();
+    private readonly CampathDoubleSpline _radiusScaleSpline = new();
     private bool _dirty = true;
 
     public CampathDoubleInterp PositionInterp { get; set; } = CampathDoubleInterp.Default;
@@ -112,7 +129,10 @@ public sealed class CampathCurve
         var fov = _fovSpline.Eval(time);
         var rotation = _rotSpline.Eval(time);
         var selected = _selectedSpline.Eval(time);
-        return new CampathSample(new Vector3((float)x, (float)y, (float)z), rotation, fov, selected);
+        var dof = new CampathDofSettings(_dofEnabledSpline.Eval(time), _nearBlurrySpline.Eval(time),
+            _nearCrispSpline.Eval(time), _farCrispSpline.Eval(time), _farBlurrySpline.Eval(time),
+            _maxBlurSizeSpline.Eval(time), _radiusScaleSpline.Eval(time));
+        return new CampathSample(new Vector3((float)x, (float)y, (float)z), rotation, fov, selected, dof);
     }
 
     private CampathDoubleInterp EffectivePositionInterp =>
@@ -135,6 +155,13 @@ public sealed class CampathCurve
         _fovSpline.SetPoints(_splineKeyframes, k => k.Fov, EffectiveFovInterp);
         _rotSpline.SetPoints(_splineKeyframes, k => k.Rotation, EffectiveRotationInterp);
         _selectedSpline.SetPoints(_splineKeyframes, k => k.Selected);
+        _dofEnabledSpline.SetPoints(_splineKeyframes, k => k.Dof.Enabled);
+        _nearBlurrySpline.SetPoints(_splineKeyframes, k => k.Dof.NearBlurry, EffectiveFovInterp);
+        _nearCrispSpline.SetPoints(_splineKeyframes, k => k.Dof.NearCrisp, EffectiveFovInterp);
+        _farCrispSpline.SetPoints(_splineKeyframes, k => k.Dof.FarCrisp, EffectiveFovInterp);
+        _farBlurrySpline.SetPoints(_splineKeyframes, k => k.Dof.FarBlurry, EffectiveFovInterp);
+        _maxBlurSizeSpline.SetPoints(_splineKeyframes, k => k.Dof.MaxBlurSize, EffectiveFovInterp);
+        _radiusScaleSpline.SetPoints(_splineKeyframes, k => k.Dof.RadiusScale, EffectiveFovInterp);
     }
 
     private IReadOnlyList<CampathKeyframe> BuildSplineKeyframes()

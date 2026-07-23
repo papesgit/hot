@@ -299,7 +299,10 @@ public class MainDockFactory : Factory, IDisposable
             ShowFps = _storedSettings.ViewportShowFps,
             ViewportCampathMode = _storedSettings.ViewportCampathMode,
             ViewportCampathOverlayEnabled = _storedSettings.ViewportCampathOverlayEnabled,
+            ViewportCampathDofEnabled = _storedSettings.ViewportCampathDofEnabled,
+            ViewportCampathGizmoEnabled = _storedSettings.ViewportCampathGizmoEnabled,
             ViewportCampathSyncEnabled = _storedSettings.ViewportCampathSyncEnabled,
+            ViewportCampathLegacyCompatibility = _storedSettings.ViewportCampathLegacyCompatibility,
             CampathGizmoLocalSpace = _storedSettings.CampathGizmoLocalSpace,
             LiveLinkEnabled = _storedSettings.ViewportLiveLinkEnabled,
             LiveLinkItemIconsEnabled = _storedSettings.ViewportLiveLinkItemIconsEnabled,
@@ -388,6 +391,8 @@ public class MainDockFactory : Factory, IDisposable
         }
 
         var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer, _liveLinkReceiver) { Id = "BottomCenter", Title = "3D Viewport" };
+        var curveEditor = new CurveEditorDockViewModel(campathEditor, bottomCenter);
+        bottomCenter.SetCurveEditor(curveEditor);
         bottomCenter.SetInputSender(_inputSender);
 
         if (reportProgressAsync != null)
@@ -468,7 +473,7 @@ public class MainDockFactory : Factory, IDisposable
             Id = "BottomCenterDock",
             Proportion = 0.4,
             ActiveDockable = bottomCenter,
-            VisibleDockables = CreateList<IDockable>(bottomCenter)
+            VisibleDockables = CreateList<IDockable>(bottomCenter, curveEditor)
         };
 
         var bottomRightDock = new ToolDock

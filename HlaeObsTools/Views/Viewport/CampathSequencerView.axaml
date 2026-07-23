@@ -48,13 +48,102 @@
 
             </StackPanel>
 
-            <controls:CampathTimelineControl x:Name="Timeline"
-                                             Grid.Column="1"
-                                             Items="{Binding CampathEditor.Keyframes}"
-                                             SelectedItem="{Binding CampathEditor.SelectedKeyframe, Mode=TwoWay}"
-                                             PlayheadTime="{Binding CampathEditor.PlayheadTime, Mode=TwoWay}"
-                                             Duration="{Binding CampathEditor.Duration}"
-                                             IsPlaying="{Binding CampathEditor.IsPlaying}"/>
+            <Grid Grid.Column="1" ClipToBounds="False">
+                <controls:CampathTimelineControl x:Name="Timeline"
+                                                 Items="{Binding CampathEditor.Keyframes}"
+                                                 CurveDocument="{Binding CampathEditor.CurveDocument}"
+                                                 CurvesUnlocked="{Binding CampathEditor.SequencerCurvesUnlocked}"
+                                                 SelectedItem="{Binding CampathEditor.SelectedKeyframe, Mode=TwoWay}"
+                                                 PlayheadTime="{Binding CampathEditor.PlayheadTime, Mode=TwoWay}"
+                                                 Duration="{Binding CampathEditor.Duration}"
+                                                 IsPlaying="{Binding CampathEditor.IsPlaying}"/>
+
+                <!-- The popup sits above VRFViewport's native child HWND without light-dismiss behavior. -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Spacing="3"
+                            Margin="0,0,4,4">
+                    <ToggleButton Width="40"
+                                  Height="16"
+                                  Padding="0"
+                                  FontSize="9"
+                                  IsChecked="{Binding CampathEditor.SequencerCurvesUnlocked, Mode=TwoWay}"
+                                  ToolTip.Tip="Unlock individual curve keys and box selection in the sequencer">
+                        <TextBlock Text="{Binding CampathEditor.SequencerCurveLockLabel}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </ToggleButton>
+                    <Button x:Name="DofToggle"
+                            Width="32"
+                            Height="16"
+                            Padding="0"
+                            FontSize="9"
+                            Click="OnDofToggleClicked"
+                            ToolTip.Tip="Depth of field keyframe settings">
+                        <TextBlock Text="DOF" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Button>
+                </StackPanel>
+
+                <Popup x:Name="DofPopup"
+                       PlacementTarget="{Binding ElementName=DofToggle}"
+                       Placement="Top"
+                       VerticalOffset="-56"
+                       IsLightDismissEnabled="False">
+                            <Border Width="250"
+                                    Padding="8"
+                                    Background="#252525"
+                                    BorderBrush="#555555"
+                                    BorderThickness="1">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="Depth of Field" FontWeight="SemiBold"/>
+                                    <CheckBox Content="Override"
+                                              IsChecked="{Binding CampathEditor.DofOverride, Mode=TwoWay}"
+                                              ToolTip.Tip="Override the evaluated DOF values for editing and left-click keyframing."/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Near blurry"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding CampathEditor.DofNearBlurry, StringFormat={}{0:0.###}}" Foreground="#AAAAAA"/>
+                                    </Grid>
+                                    <Slider Minimum="-200" Maximum="400"
+                                            IsEnabled="{Binding CampathEditor.DofOverride}"
+                                            Value="{Binding CampathEditor.DofNearBlurry, Mode=TwoWay}"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Near crisp"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding CampathEditor.DofNearCrisp, StringFormat={}{0:0.###}}" Foreground="#AAAAAA"/>
+                                    </Grid>
+                                    <Slider Minimum="0" Maximum="1000"
+                                            IsEnabled="{Binding CampathEditor.DofOverride}"
+                                            Value="{Binding CampathEditor.DofNearCrisp, Mode=TwoWay}"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Far crisp"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding CampathEditor.DofFarCrisp, StringFormat={}{0:0.###}}" Foreground="#AAAAAA"/>
+                                    </Grid>
+                                    <Slider Minimum="0" Maximum="10000"
+                                            IsEnabled="{Binding CampathEditor.DofOverride}"
+                                            Value="{Binding CampathEditor.DofFarCrisp, Mode=TwoWay}"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Far blurry"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding CampathEditor.DofFarBlurry, StringFormat={}{0:0.###}}" Foreground="#AAAAAA"/>
+                                    </Grid>
+                                    <Slider Minimum="0" Maximum="10000"
+                                            IsEnabled="{Binding CampathEditor.DofOverride}"
+                                            Value="{Binding CampathEditor.DofFarBlurry, Mode=TwoWay}"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Max blur size"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding CampathEditor.DofMaxBlurSize, StringFormat={}{0:0.###}}" Foreground="#AAAAAA"/>
+                                    </Grid>
+                                    <Slider Minimum="0" Maximum="11"
+                                            IsEnabled="{Binding CampathEditor.DofOverride}"
+                                            Value="{Binding CampathEditor.DofMaxBlurSize, Mode=TwoWay}"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Radius scale"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding CampathEditor.DofRadiusScale, StringFormat={}{0:0.###}}" Foreground="#AAAAAA"/>
+                                    </Grid>
+                                    <Slider Minimum="0.25" Maximum="10"
+                                            IsEnabled="{Binding CampathEditor.DofOverride}"
+                                            Value="{Binding CampathEditor.DofRadiusScale, Mode=TwoWay}"/>
+                                </StackPanel>
+                            </Border>
+                </Popup>
+            </Grid>
         </Grid>
     </Border>
 </UserControl>

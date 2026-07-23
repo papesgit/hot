@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:controls="using:HlaeObsTools.Controls"
+             xmlns:campath="using:HlaeObsTools.Services.Campaths"
+             x:Class="HlaeObsTools.Views.Docks.CurveEditorDockView"
+             x:DataType="vm:CurveEditorDockViewModel">
+    <Grid RowDefinitions="Auto,*" Background="#111318">
+        <Border Grid.Row="0" Background="#20232A" Padding="6,4">
+            <Grid ColumnDefinitions="*,Auto">
+            <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="Fit All" Click="OnFitAll"/>
+                <Button Content="Fit Selection" Click="OnFitSelection" Margin="4,0,0,0"/>
+                <Button Content="Flatten" Click="OnFlattenTangents" Margin="8,0,0,0"/>
+                <Button Content="Straighten" Click="OnStraightenTangents" Margin="4,0,0,0"/>
+                <Button x:Name="WeightedButton" Content="Weighted" Click="OnToggleWeightedTangents" Margin="8,0,0,0"/>
+                <CheckBox Content="Snap" IsChecked="{Binding SnapEnabled, Mode=TwoWay}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Step" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="#AAAAAA"/>
+                <TextBox Width="42" MinWidth="42" Margin="3,0,0,0" Text="{Binding SnapInterval, Mode=TwoWay, StringFormat={}{0:0.###}}"/>
+                <TextBlock Text="View" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="#AAAAAA"/>
+                <ComboBox Width="105" Margin="3,0,0,0" ItemsSource="{Binding ViewModes}" SelectedItem="{Binding ViewMode, Mode=TwoWay}"/>
+            </WrapPanel>
+                <Border Grid.Column="1" Width="22" Height="22" CornerRadius="11" Background="#EEEEEE" Margin="8,0,0,0"
+                        ToolTip.Placement="Bottom"
+                        ToolTip.Tip="Selection: drag empty space; Shift adds.&#10;Channels: Ctrl-click a channel visibility box to solo it.&#10;Move keys: drag; Shift locks time or value; Alt snaps time to other channels.&#10;Playhead: Shift snaps to nearest key; Ctrl previews freecam; Alt previews campath camera.&#10;Tangents: drag linked; Alt breaks sides; Shift changes length only.&#10;Navigation: MMB/RMB pan; wheel zoom; Shift+wheel horizontal; Ctrl+wheel vertical.&#10;Fit: F fits all; Shift+F fits selection. Ctrl+A selects all; Delete removes keys.">
+                    <TextBlock Text="i" Foreground="#222222" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="180,*">
+            <Border Grid.Column="0" Background="#181A20" BorderBrush="#30333B" BorderThickness="0,0,1,0">
+                <ScrollViewer>
+                  <StackPanel>
+                    <ItemsControl ItemsSource="{Binding AllChannelGroups}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CurveChannelGroupViewModel">
+                          <Grid ColumnDefinitions="Auto,*,Auto" Margin="5,5,5,3">
+                            <CheckBox IsChecked="{Binding IsVisible, Mode=TwoWay}"/>
+                            <TextBlock Grid.Column="1" Text="All" FontWeight="Bold" Foreground="#E1E3E8" VerticalAlignment="Center"
+                                       Cursor="Hand" PointerPressed="OnChannelGroupPressed"/>
+                            <Border Grid.Column="2" Width="11" Height="11" CornerRadius="6" Background="#D94B4B"
+                                    Cursor="Hand" PointerPressed="OnAddGroupKeyPressed"
+                                    ToolTip.Tip="Add every channel at playhead: left-click captures live camera/DOF controls; right-click samples the curves."/>
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding ChannelGroups}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CurveChannelGroupViewModel">
+                                <StackPanel>
+                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="5,5,5,1">
+                                        <CheckBox IsChecked="{Binding IsVisible, Mode=TwoWay}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" Foreground="#C4C7CE" VerticalAlignment="Center"
+                                                   Cursor="Hand" PointerPressed="OnChannelGroupPressed"/>
+                                        <Border Grid.Column="2" Width="11" Height="11" CornerRadius="6" Background="#D94B4B"
+                                                Cursor="Hand" PointerPressed="OnAddGroupKeyPressed"
+                                                ToolTip.Tip="Add group keys at playhead: left-click captures live camera/DOF controls; right-click samples the curves."/>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Channels}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="campath:CampathCurveChannel">
+                                                <Grid ColumnDefinitions="Auto,12,*,Auto" Margin="17,1,5,1">
+                                                    <Border Background="Transparent" Cursor="Hand"
+                                                            PointerPressed="OnChannelVisibilityPressed">
+                                                        <CheckBox IsChecked="{Binding IsVisible}"
+                                                                  IsHitTestVisible="False"/>
+                                                    </Border>
+                                                    <Border Grid.Column="1" Width="8" Height="8" CornerRadius="4" Background="{Binding Color}" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Name}" Foreground="#D8D9DC" VerticalAlignment="Center"
+                                                               Cursor="Hand" PointerPressed="OnChannelPressed"/>
+                                                    <Border Grid.Column="3" Width="9" Height="9" CornerRadius="5" Background="#D94B4B"
+                                                            Cursor="Hand" PointerPressed="OnAddChannelKeyPressed"
+                                                            ToolTip.Tip="Add key at playhead: left-click captures the live value; right-click samples the curve."/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </ScrollViewer>
+            </Border>
+            <controls:CurveEditorControl x:Name="CurveCanvas"
+                                         Grid.Column="1"
+                                         Channels="{Binding Channels}"
+                                         PlayheadTime="{Binding CampathEditor.PlayheadTime, Mode=TwoWay}"
+                                         ViewMode="{Binding ViewMode}"
+                                         SnapEnabled="{Binding SnapEnabled}"
+                                         SnapInterval="{Binding SnapInterval}"
+                                         FitAllRequest="{Binding FitAllRequest}"
+                                         FitSelectionRequest="{Binding FitSelectionRequest}"/>
+        </Grid>
+    </Grid>
+</UserControl>

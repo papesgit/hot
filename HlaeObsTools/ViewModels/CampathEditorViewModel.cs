@@ -19,7 +19,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
     private CampathKeyframeViewModel? _selectedKeyframe;
     private bool _suppressCollectionEvents;
     private bool _isPlaying;
-    private bool _isPreviewEnabled = true;
+    private bool _lockPreview;
     private bool _previewDuringPlayback = true;
     private double _playbackRate = 1.0;
     private readonly DispatcherTimer _playTimer;
@@ -28,6 +28,11 @@ public sealed class CampathEditorViewModel : ViewModelBase
     private bool _hold = true;
     private double _timeOffset;
     private bool _timeDragActive;
+    private CampathDofSettings _currentDofSettings = CampathDofSettings.Default;
+    private int _curveDocumentRevision;
+    private bool _isDofEditorOpen;
+    private bool _dofOverride;
+    private bool _sequencerCurvesUnlocked;
 
     public CampathEditorViewModel()
     {
@@ -44,6 +49,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
     public ObservableCollection<CampathKeyframeViewModel> Keyframes { get; } = new();
 
     public CampathCurve Curve => _curve;
+    public CampathCurveDocument CurveDocument { get; } = new();
 
     public double PlayheadTime
     {
@@ -55,6 +61,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
                 if (ClampPlayhead())
                     OnPropertyChanged();
                 OnPropertyChanged(nameof(PlayheadSample));
+                RaiseDofPropertiesChanged();
             }
         }
     }
@@ -95,10 +102,10 @@ public sealed class CampathEditorViewModel : ViewModelBase
         private set => SetProperty(ref _isPlaying, value);
     }
 
-    public bool IsPreviewEnabled
+    public bool LockPreview
     {
-        get => _isPreviewEnabled;
-        set => SetProperty(ref _isPreviewEnabled, value);
+        get => _lockPreview;
+        set => SetProperty(ref _lockPreview, value);
     }
 
     public bool PreviewDuringPlayback
@@ -155,10 +162,72 @@ public sealed class CampathEditorViewModel : ViewModelBase
     {
         get
         {
-            if (!_curve.CanEvaluate())
+            if (!CanEvaluate())
                 return null;
-            return _curve.Evaluate(PlayheadTime);
+            return Evaluate(PlayheadTime);
         }
+    }
+
+    public CampathDofSettings CurrentDofSettings =>
+        DofOverride ? _currentDofSettings : PlayheadSample?.Dof ?? _currentDofSettings;
+    public int CurveDocumentRevision => _curveDocumentRevision;
+    public bool IsDofEditorOpen { get => _isDofEditorOpen; set => SetProperty(ref _isDofEditorOpen, value); }
+    public bool DofOverride
+    {
+        get => _dofOverride;
+        set
+        {
+            if (_dofOverride == value) return;
+            var displayedSettings = CurrentDofSettings;
+            _dofOverride = value;
+            OnPropertyChanged();
+            if (value)
+                _currentDofSettings = displayedSettings;
+            RaiseDofPropertiesChanged();
+        }
+    }
+    public bool SequencerCurvesUnlocked
+    {
+        get => _sequencerCurvesUnlocked;
+        set
+        {
+            if (SetProperty(ref _sequencerCurvesUnlocked, value))
+                OnPropertyChanged(nameof(SequencerCurveLockLabel));
+        }
+    }
+    public string SequencerCurveLockLabel => SequencerCurvesUnlocked ? "EDIT" : "LOCK";
+    public double DofNearBlurry { get => CurrentDofSettings.NearBlurry; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { NearBlurry = value }); } }
+    public double DofNearCrisp { get => CurrentDofSettings.NearCrisp; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { NearCrisp = value }); } }
+    public double DofFarCrisp { get => CurrentDofSettings.FarCrisp; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { FarCrisp = value }); } }
+    public double DofFarBlurry { get => CurrentDofSettings.FarBlurry; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { FarBlurry = value }); } }
+    public double DofMaxBlurSize { get => CurrentDofSettings.MaxBlurSize; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { MaxBlurSize = Math.Clamp(value, 0.0, 11.0) }); } }
+    public double DofRadiusScale { get => CurrentDofSettings.RadiusScale; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { RadiusScale = Math.Clamp(value, 0.25, 10.0) }); } }
+
+    private void SetCurrentDof(CampathDofSettings value)
+    {
+        if (_currentDofSettings == value) return;
+        _currentDofSettings = value;
+        RaiseDofPropertiesChanged();
+    }
+
+    private void RaiseDofPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(CurrentDofSettings));
+        OnPropertyChanged(nameof(DofNearBlurry)); OnPropertyChanged(nameof(DofNearCrisp));
+        OnPropertyChanged(nameof(DofFarCrisp)); OnPropertyChanged(nameof(DofFarBlurry));
+        OnPropertyChanged(nameof(DofMaxBlurSize)); OnPropertyChanged(nameof(DofRadiusScale));
+    }
+
+    public bool CanEvaluate() => CurveDocument.CanEvaluateCamera || _curve.CanEvaluate();
+
+    public CampathSample Evaluate(double time) => CurveDocument.CanEvaluateCamera ? CurveDocument.Evaluate(time) : _curve.Evaluate(time);
+
+    public void NotifyCurveDocumentChanged()
+    {
+        _curveDocumentRevision++;
+        OnPropertyChanged(nameof(CurveDocumentRevision));
+        OnPropertyChanged(nameof(PlayheadSample));
+        RaiseDofPropertiesChanged();
     }
 
     public ICommand TogglePlayCommand { get; }
@@ -199,11 +268,16 @@ public sealed class CampathEditorViewModel : ViewModelBase
     {
         Keyframes.Clear();
         SelectedKeyframe = null;
+        foreach (var channel in CurveDocument.Channels)
+            channel.Keys.Clear();
         RebuildCurve();
+        NotifyCurveDocumentChanged();
     }
 
     public void LoadFromData(CampathFileIo.CampathFileData data)
     {
+        foreach (var key in Keyframes)
+            key.PropertyChanged -= OnKeyframePropertyChanged;
         _suppressCollectionEvents = true;
         Keyframes.Clear();
         foreach (var key in data.Keyframes.OrderBy(k => k.Time))
@@ -214,7 +288,8 @@ public sealed class CampathEditorViewModel : ViewModelBase
                 Position = key.Position,
                 Rotation = key.Rotation,
                 Fov = key.Fov,
-                Selected = key.Selected
+                Selected = key.Selected,
+                Dof = key.Dof
             });
         }
         _suppressCollectionEvents = false;
@@ -228,6 +303,30 @@ public sealed class CampathEditorViewModel : ViewModelBase
         Duration = GetKeyframeDuration();
         PlayheadTime = SelectedKeyframe?.Time ?? 0.0;
         RebuildCurve();
+        foreach (var channel in CurveDocument.Channels)
+            channel.Keys.Clear();
+        if (data.CurveDocument != null)
+        {
+            foreach (var source in data.CurveDocument.Channels)
+            {
+                var target = CurveDocument.Find(source.Id);
+                if (target == null)
+                {
+                    target = new CampathCurveChannel { Id = source.Id, Name = source.Name, Group = source.Group, Color = source.Color };
+                    CurveDocument.Channels.Add(target);
+                }
+                target.Keys.Clear();
+                foreach (var key in source.Keys)
+                    target.Keys.Add(new CampathCurveKey
+                    {
+                        Time = key.Time, Value = key.Value, InTangent = key.InTangent, OutTangent = key.OutTangent,
+                        InWeight = key.InWeight, OutWeight = key.OutWeight, WeightedTangents = key.WeightedTangents,
+                        Interpolation = key.Interpolation, TangentMode = key.TangentMode
+                    });
+            }
+            Duration = Math.Max(Duration, CurveDocument.Channels.SelectMany(channel => channel.Keys).Select(key => key.Time).DefaultIfEmpty(0).Max());
+        }
+        NotifyCurveDocumentChanged();
     }
 
     public void ShiftAllTimes(double delta)
@@ -503,6 +602,7 @@ public sealed class CampathKeyframeViewModel : ViewModelBase
     private Quaternion _rotation = Quaternion.Identity;
     private double _fov = 90.0;
     private bool _selected;
+    private CampathDofSettings _dof = CampathDofSettings.Default;
 
     public double Time
     {
@@ -534,6 +634,72 @@ public sealed class CampathKeyframeViewModel : ViewModelBase
         set => SetProperty(ref _selected, value);
     }
 
+    public CampathDofSettings Dof
+    {
+        get => _dof;
+        set
+        {
+            if (SetProperty(ref _dof, value))
+                OnPropertyChanged(nameof(DofEnabled));
+        }
+    }
+
+    public bool DofEnabled
+    {
+        get => Dof.Enabled;
+        set => SetDof(Dof with { Enabled = value });
+    }
+
+    public double DofNearBlurry
+    {
+        get => Dof.NearBlurry;
+        set => SetDof(Dof with { NearBlurry = value });
+    }
+
+    public double DofNearCrisp
+    {
+        get => Dof.NearCrisp;
+        set => SetDof(Dof with { NearCrisp = value });
+    }
+
+    public double DofFarCrisp
+    {
+        get => Dof.FarCrisp;
+        set => SetDof(Dof with { FarCrisp = value });
+    }
+
+    public double DofFarBlurry
+    {
+        get => Dof.FarBlurry;
+        set => SetDof(Dof with { FarBlurry = value });
+    }
+
+    public double DofMaxBlurSize
+    {
+        get => Dof.MaxBlurSize;
+        set => SetDof(Dof with { MaxBlurSize = value });
+    }
+
+    public double DofRadiusScale
+    {
+        get => Dof.RadiusScale;
+        set => SetDof(Dof with { RadiusScale = value });
+    }
+
+    private void SetDof(CampathDofSettings value)
+    {
+        if (!SetProperty(ref _dof, value, nameof(Dof)))
+            return;
+
+        OnPropertyChanged(nameof(DofEnabled));
+        OnPropertyChanged(nameof(DofNearBlurry));
+        OnPropertyChanged(nameof(DofNearCrisp));
+        OnPropertyChanged(nameof(DofFarCrisp));
+        OnPropertyChanged(nameof(DofFarBlurry));
+        OnPropertyChanged(nameof(DofMaxBlurSize));
+        OnPropertyChanged(nameof(DofRadiusScale));
+    }
+
     public CampathKeyframe ToModel()
     {
         return new CampathKeyframe
@@ -542,7 +708,8 @@ public sealed class CampathKeyframeViewModel : ViewModelBase
             Position = Position,
             Rotation = Rotation,
             Fov = Fov,
-            Selected = Selected
+            Selected = Selected,
+            Dof = Dof
         };
     }
 }

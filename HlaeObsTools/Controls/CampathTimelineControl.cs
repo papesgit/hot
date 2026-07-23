@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.Controls;
@@ -28,9 +29,26 @@ public sealed class CampathTimelineControl : Control
     public static readonly StyledProperty<bool> IsPlayingProperty =
         AvaloniaProperty.Register<CampathTimelineControl, bool>(nameof(IsPlaying));
 
+    public static readonly StyledProperty<CampathCurveDocument?> CurveDocumentProperty =
+        AvaloniaProperty.Register<CampathTimelineControl, CampathCurveDocument?>(nameof(CurveDocument));
+
+    public static readonly StyledProperty<bool> CurvesUnlockedProperty =
+        AvaloniaProperty.Register<CampathTimelineControl, bool>(nameof(CurvesUnlocked));
+
     private readonly List<(Rect rect, CampathKeyframeViewModel keyframe)> _keyframeRects = new();
+    private readonly List<(Rect rect, CurveBundle bundle)> _bundleRects = new();
+    private readonly List<(Rect rect, CampathCurveChannel channel, CampathCurveKey key)> _curveKeyRects = new();
     private bool _draggingPlayhead;
     private CampathKeyframeViewModel? _draggingKeyframe;
+    private double _curveDragAnchorTime;
+    private Dictionary<CampathCurveKey, double>? _curveOriginalTimes;
+    private Dictionary<CampathKeyframeViewModel, double>? _legacyOriginalTimes;
+    private List<(CampathCurveChannel channel, CampathCurveKey key)>? _draggingCurveKeys;
+    private bool _boxSelecting;
+    private bool _boxSelectionActive;
+    private Point _boxStart;
+    private Point _boxCurrent;
+    private HashSet<CampathCurveKey>? _boxBaseSelection;
     private bool _keyframeDragActive;
     private bool _itemsHooked;
     private bool _freecamPreviewActive;
@@ -46,8 +64,9 @@ public sealed class CampathTimelineControl : Control
 
     static CampathTimelineControl()
     {
-        AffectsRender<CampathTimelineControl>(ItemsProperty, SelectedItemProperty, PlayheadTimeProperty, DurationProperty, IsPlayingProperty);
+        AffectsRender<CampathTimelineControl>(ItemsProperty, SelectedItemProperty, PlayheadTimeProperty, DurationProperty, IsPlayingProperty, CurveDocumentProperty, CurvesUnlockedProperty);
         ItemsProperty.Changed.AddClassHandler<CampathTimelineControl>((ctrl, args) => ctrl.OnItemsChanged(args));
+        CurveDocumentProperty.Changed.AddClassHandler<CampathTimelineControl>((ctrl, args) => ctrl.OnCurveDocumentChanged(args));
     }
 
     public IReadOnlyList<CampathKeyframeViewModel>? Items
@@ -80,12 +99,25 @@ public sealed class CampathTimelineControl : Control
         set => SetValue(IsPlayingProperty, value);
     }
 
+    public CampathCurveDocument? CurveDocument
+    {
+        get => GetValue(CurveDocumentProperty);
+        set => SetValue(CurveDocumentProperty, value);
+    }
+
+    public bool CurvesUnlocked
+    {
+        get => GetValue(CurvesUnlockedProperty);
+        set => SetValue(CurvesUnlockedProperty, value);
+    }
+
     public event Action<double>? FreecamPreviewRequested;
     public event Action? FreecamPreviewEnded;
     public event Action? CampathPreviewRequested;
     public event Action? CampathPreviewEnded;
     public event Action? KeyframeDragStarted;
     public event Action? KeyframeDragEnded;
+    public event Action? CurveDocumentEdited;
     public event Action? PlayheadDragEnded;
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -105,6 +137,25 @@ public sealed class CampathTimelineControl : Control
                 return;
             }
 
+            var bundle = HitTestBundle(pt);
+            if (bundle != null)
+            {
+                SelectCurveKeys(bundle.Members.Select(member => member.key), e.KeyModifiers);
+                SelectedItem = bundle.IsComplete ? Items?.FirstOrDefault(key => Math.Abs(key.Time - bundle.Time) <= TimeEpsilon) : null;
+                BeginCurveDrag(pt, bundle.Time, e.Pointer);
+                e.Handled = true;
+                return;
+            }
+
+            if (CurvesUnlocked && HitTestCurveKey(pt) is { } curveKey)
+            {
+                SelectCurveKeys([curveKey.key], e.KeyModifiers);
+                SelectedItem = null;
+                BeginCurveDrag(pt, curveKey.key.Time, e.Pointer);
+                e.Handled = true;
+                return;
+            }
+
             var keyframe = HitTestKeyframe(pt);
             if (keyframe != null)
             {
@@ -117,9 +168,25 @@ public sealed class CampathTimelineControl : Control
                 return;
             }
 
-            if (SelectedItem != null)
+            if (CurveDocument != null)
+            {
+                _boxSelecting = true;
+                _boxSelectionActive = false;
+                _boxStart = _boxCurrent = pt;
+                _boxBaseSelection = IsShiftDown(e.KeyModifiers)
+                    ? GetAllCurveKeys().Where(item => item.key.Selected).Select(item => item.key).ToHashSet()
+                    : new HashSet<CampathCurveKey>();
+                if (!IsShiftDown(e.KeyModifiers)) ClearCurveSelection();
+                SelectedItem = null;
+                e.Pointer.Capture(this);
+                e.Handled = true;
+                return;
+            }
+
+            if (SelectedItem != null || GetAllCurveKeys().Any(item => item.key.Selected))
             {
                 SelectedItem = null;
+                ClearCurveSelection();
                 e.Handled = true;
             }
         }
@@ -168,6 +235,42 @@ public sealed class CampathTimelineControl : Control
             return;
         }
 
+        if (_boxSelecting)
+        {
+            _boxCurrent = e.GetPosition(this);
+            var delta = _boxCurrent - _boxStart;
+            if (!_boxSelectionActive && Math.Abs(delta.X) + Math.Abs(delta.Y) > DragThreshold)
+                _boxSelectionActive = true;
+            if (_boxSelectionActive) UpdateBoxSelection();
+            InvalidateVisual();
+            e.Handled = true;
+            return;
+        }
+
+        if (_draggingCurveKeys != null && _curveOriginalTimes != null)
+        {
+            var pt = e.GetPosition(this);
+            var deltaPixels = pt - _pressPoint;
+            if (!_keyframeDragActive && (Math.Abs(deltaPixels.X) + Math.Abs(deltaPixels.Y) > DragThreshold))
+            {
+                _keyframeDragActive = true;
+                KeyframeDragStarted?.Invoke();
+            }
+
+            if (_keyframeDragActive)
+            {
+                var requestedDelta = XToTime(pt.X) - _curveDragAnchorTime;
+                var delta = ClampCurveDelta(_draggingCurveKeys, requestedDelta);
+                foreach (var member in _draggingCurveKeys)
+                    member.key.Time = _curveOriginalTimes[member.key] + delta;
+                if (_legacyOriginalTimes != null)
+                    foreach (var legacy in _legacyOriginalTimes)
+                        legacy.Key.Time = legacy.Value + delta;
+            }
+            e.Handled = true;
+            return;
+        }
+
         if (_draggingKeyframe != null)
         {
             var pt = e.GetPosition(this);
@@ -187,16 +290,26 @@ public sealed class CampathTimelineControl : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        if (_draggingPlayhead || _draggingKeyframe != null)
+        if (_draggingPlayhead || _draggingKeyframe != null || _draggingCurveKeys != null || _boxSelecting)
         {
             var playheadReleased = _draggingPlayhead;
+            var curveInteractionReleased = _draggingCurveKeys != null || _boxSelecting;
             _draggingPlayhead = false;
             _draggingKeyframe = null;
+            _draggingCurveKeys = null;
+            _curveOriginalTimes = null;
+            _legacyOriginalTimes = null;
+            _boxSelecting = false;
+            _boxSelectionActive = false;
+            _boxBaseSelection = null;
+            InvalidateVisual();
             if (_keyframeDragActive)
             {
                 _keyframeDragActive = false;
                 KeyframeDragEnded?.Invoke();
             }
+            if (curveInteractionReleased)
+                CurveDocumentEdited?.Invoke();
             if (playheadReleased)
             {
                 PlayheadDragEnded?.Invoke();
@@ -219,7 +332,24 @@ public sealed class CampathTimelineControl : Control
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Key == Key.Delete && SelectedItem != null)
+        var selectedCurveKeys = GetAllCurveKeys().Where(item => item.key.Selected).Select(item => item.key).ToHashSet();
+        if (e.Key == Key.Delete && selectedCurveKeys.Count > 0 && CurveDocument != null)
+        {
+            var deletedBundleTimes = BuildCurveMarkers(CurveDocument).bundles
+                .Where(bundle => bundle.IsComplete && bundle.Members.All(member => selectedCurveKeys.Contains(member.key)))
+                .Select(bundle => bundle.Time).ToList();
+            foreach (var channel in CurveDocument.Channels)
+                for (var i = channel.Keys.Count - 1; i >= 0; i--)
+                    if (selectedCurveKeys.Contains(channel.Keys[i])) channel.Keys.RemoveAt(i);
+            if (Items is IList<CampathKeyframeViewModel> legacyItems)
+                for (var i = legacyItems.Count - 1; i >= 0; i--)
+                    if (deletedBundleTimes.Any(time => Math.Abs(legacyItems[i].Time - time) <= TimeEpsilon))
+                        legacyItems.RemoveAt(i);
+            SelectedItem = null;
+            CurveDocumentEdited?.Invoke();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Delete && SelectedItem != null)
         {
             if (Items is IList<CampathKeyframeViewModel> list)
             {
@@ -239,6 +369,8 @@ public sealed class CampathTimelineControl : Control
             return;
 
         _keyframeRects.Clear();
+        _bundleRects.Clear();
+        _curveKeyRects.Clear();
 
         var background = new SolidColorBrush(Color.Parse("#0E0E0E"));
         context.FillRectangle(background, bounds);
@@ -259,6 +391,12 @@ public sealed class CampathTimelineControl : Control
 
         DrawTimeRuler(context, stripLeft, stripRight, paddingTop + 2.0);
         DrawKeyframes(context, stripLeft, stripRight, stripMid);
+        if (_boxSelecting && _boxSelectionActive)
+        {
+            var selectionRect = RectFromPoints(_boxStart, _boxCurrent);
+            context.FillRectangle(new SolidColorBrush(Color.FromArgb(35, 110, 165, 255)), selectionRect);
+            context.DrawRectangle(null, new Pen(new SolidColorBrush(Color.Parse("#6EA5FF")), 1), selectionRect);
+        }
         DrawPlayhead(context, stripLeft, stripRight, paddingTop + 2.0, stripBottom);
         DrawCurrentTimeText(context, stripLeft, stripRight, paddingTop);
     }
@@ -294,6 +432,12 @@ public sealed class CampathTimelineControl : Control
 
     private void DrawKeyframes(DrawingContext context, double left, double right, double midY)
     {
+        if (CurveDocument is { Channels.Count: > 0 } document && document.Channels.Any(channel => channel.Keys.Count > 0))
+        {
+            DrawCurveKeyframes(context, document, left, right, midY);
+            return;
+        }
+
         if (Items == null || Items.Count == 0)
             return;
 
@@ -319,6 +463,58 @@ public sealed class CampathTimelineControl : Control
             }
             context.DrawGeometry(brush, null, diamond);
         }
+    }
+
+    private void DrawCurveKeyframes(DrawingContext context, CampathCurveDocument document, double left, double right, double midY)
+    {
+        var (bundles, splitKeys) = BuildCurveMarkers(document);
+        foreach (var bundle in bundles)
+        {
+            var bundleSize = bundle.IsComplete ? 16.0 : 13.0;
+            var x = TimeToX(bundle.Time, left, right);
+            var rect = new Rect(x - bundleSize * .5, midY - bundleSize * .5, bundleSize, bundleSize);
+            _bundleRects.Add((rect.Inflate(3), bundle));
+            var selected = bundle.Members.All(member => member.key.Selected);
+            DrawDiamond(context, x, midY, bundleSize,
+                bundle.IsComplete ? Color.Parse("#AAAAAA") : Color.Parse("#777A82"), selected);
+        }
+
+        foreach (var cluster in ClusterSplitKeys(splitKeys))
+        {
+            var x = TimeToX(cluster.Average(item => item.key.Time), left, right);
+            const double markerSize = 7.0;
+            var spread = Math.Min(14.0, Math.Max(0.0, (cluster.Count - 1) * 1.5));
+            for (var i = 0; i < cluster.Count; i++)
+            {
+                var offset = cluster.Count == 1 ? 0 : -spread * .5 + spread * i / (cluster.Count - 1);
+                var color = TryParseColor(cluster[i].channel.Color, Color.Parse("#AAAAAA"));
+                var rect = new Rect(x + offset - markerSize * .5, midY - markerSize * .5, markerSize, markerSize);
+                _curveKeyRects.Add((rect.Inflate(2), cluster[i].channel, cluster[i].key));
+                DrawDiamond(context, x + offset, midY, markerSize, color, cluster[i].key.Selected);
+            }
+        }
+    }
+
+    private static void DrawDiamond(DrawingContext context, double x, double y, double size, Color color, bool selected = false)
+    {
+        var half = size * .5;
+        var diamond = new StreamGeometry();
+        using (var gc = diamond.Open())
+        {
+            gc.BeginFigure(new Point(x, y - half), true);
+            gc.LineTo(new Point(x + half, y));
+            gc.LineTo(new Point(x, y + half));
+            gc.LineTo(new Point(x - half, y));
+            gc.EndFigure(true);
+        }
+        var outline = selected ? new Pen(Brushes.White, 1.5) : null;
+        context.DrawGeometry(new SolidColorBrush(color), outline, diamond);
+    }
+
+    private static Color TryParseColor(string value, Color fallback)
+    {
+        try { return Color.Parse(value); }
+        catch { return fallback; }
     }
 
     private void DrawPlayhead(DrawingContext context, double left, double right, double top, double bottom)
@@ -362,6 +558,146 @@ public sealed class CampathTimelineControl : Control
         return null;
     }
 
+    private CurveBundle? HitTestBundle(Point pt)
+    {
+        for (var i = _bundleRects.Count - 1; i >= 0; i--)
+            if (_bundleRects[i].rect.Contains(pt)) return _bundleRects[i].bundle;
+        return null;
+    }
+
+    private (CampathCurveChannel channel, CampathCurveKey key)? HitTestCurveKey(Point pt)
+    {
+        for (var i = _curveKeyRects.Count - 1; i >= 0; i--)
+            if (_curveKeyRects[i].rect.Contains(pt)) return (_curveKeyRects[i].channel, _curveKeyRects[i].key);
+        return null;
+    }
+
+    private static (List<CurveBundle> bundles, List<(CampathCurveChannel channel, CampathCurveKey key)> splitKeys)
+        BuildCurveMarkers(CampathCurveDocument document)
+    {
+        var channels = document.Channels.Where(channel => channel.Keys.Count > 0).ToList();
+        var allKeys = channels.SelectMany(channel => channel.Keys.Select(key => (channel, key)))
+            .OrderBy(item => item.key.Time).ToList();
+        var bundled = new HashSet<CampathCurveKey>();
+        var bundles = new List<CurveBundle>();
+        var requiredChannels = Math.Max(2, (channels.Count + 1) / 2);
+        foreach (var cluster in ClusterSplitKeys(allKeys))
+        {
+            var center = cluster.Average(item => item.key.Time);
+            var members = cluster.GroupBy(item => item.channel)
+                .Select(group => group.MinBy(item => Math.Abs(item.key.Time - center)))
+                .Where(item => item != default).ToList();
+            if (members.Count < requiredChannels) continue;
+            foreach (var member in members) bundled.Add(member.key);
+            bundles.Add(new CurveBundle(members.Average(member => member.key.Time), members, members.Count == channels.Count));
+        }
+
+        var split = allKeys.Where(item => !bundled.Contains(item.key)).ToList();
+        return (bundles, split);
+    }
+
+    private static List<List<(CampathCurveChannel channel, CampathCurveKey key)>> ClusterSplitKeys(
+        List<(CampathCurveChannel channel, CampathCurveKey key)> keys)
+    {
+        var result = new List<List<(CampathCurveChannel channel, CampathCurveKey key)>>();
+        foreach (var item in keys)
+        {
+            if (result.Count == 0 || Math.Abs(item.key.Time - result[^1][0].key.Time) > TimeEpsilon)
+                result.Add(new List<(CampathCurveChannel channel, CampathCurveKey key)>());
+            result[^1].Add(item);
+        }
+        return result;
+    }
+
+    private void BeginCurveDrag(Point point, double anchorTime, IPointer pointer)
+    {
+        _pressPoint = point;
+        _curveDragAnchorTime = anchorTime;
+        _draggingCurveKeys = GetAllCurveKeys().Where(item => item.key.Selected).ToList();
+        _curveOriginalTimes = _draggingCurveKeys.ToDictionary(member => member.key, member => member.key.Time);
+        _legacyOriginalTimes = new Dictionary<CampathKeyframeViewModel, double>();
+        if (CurveDocument != null && Items != null)
+        {
+            var selected = _draggingCurveKeys.Select(member => member.key).ToHashSet();
+            foreach (var bundle in BuildCurveMarkers(CurveDocument).bundles.Where(bundle => bundle.IsComplete))
+            {
+                if (!bundle.Members.All(member => selected.Contains(member.key))) continue;
+                var legacy = Items.FirstOrDefault(key => Math.Abs(key.Time - bundle.Time) <= TimeEpsilon);
+                if (legacy != null) _legacyOriginalTimes[legacy] = legacy.Time;
+            }
+        }
+        _keyframeDragActive = false;
+        pointer.Capture(this);
+        InvalidateVisual();
+    }
+
+    private void SelectCurveKeys(IEnumerable<CampathCurveKey> keys, KeyModifiers modifiers)
+    {
+        var targets = keys.Distinct().ToList();
+        if (IsShiftDown(modifiers))
+        {
+            foreach (var key in targets) key.Selected = true;
+        }
+        else if (IsCtrlDown(modifiers))
+        {
+            foreach (var key in targets) key.Selected = !key.Selected;
+        }
+        else if (!targets.All(key => key.Selected))
+        {
+            ClearCurveSelection();
+            foreach (var key in targets) key.Selected = true;
+        }
+        InvalidateVisual();
+    }
+
+    private void ClearCurveSelection()
+    {
+        foreach (var item in GetAllCurveKeys()) item.key.Selected = false;
+    }
+
+    private List<(CampathCurveChannel channel, CampathCurveKey key)> GetAllCurveKeys() =>
+        CurveDocument?.Channels.SelectMany(channel => channel.Keys.Select(key => (channel, key))).ToList()
+        ?? new List<(CampathCurveChannel channel, CampathCurveKey key)>();
+
+    private void UpdateBoxSelection()
+    {
+        var selected = _boxBaseSelection != null
+            ? new HashSet<CampathCurveKey>(_boxBaseSelection)
+            : new HashSet<CampathCurveKey>();
+        var box = RectFromPoints(_boxStart, _boxCurrent);
+        foreach (var marker in _bundleRects)
+            if (marker.rect.Intersects(box))
+                foreach (var member in marker.bundle.Members) selected.Add(member.key);
+        if (CurvesUnlocked)
+            foreach (var marker in _curveKeyRects)
+                if (marker.rect.Intersects(box)) selected.Add(marker.key);
+        foreach (var item in GetAllCurveKeys()) item.key.Selected = selected.Contains(item.key);
+    }
+
+    private static Rect RectFromPoints(Point a, Point b) =>
+        new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Max(1, Math.Abs(a.X - b.X)), Math.Max(1, Math.Abs(a.Y - b.Y)));
+
+    private double ClampCurveDelta(List<(CampathCurveChannel channel, CampathCurveKey key)> keys, double requestedDelta)
+    {
+        if (_curveOriginalTimes == null || CurveDocument == null) return 0;
+        var lower = double.NegativeInfinity;
+        var upper = double.PositiveInfinity;
+        var moving = keys.Select(member => member.key).ToHashSet();
+        foreach (var member in keys)
+        {
+            var original = _curveOriginalTimes[member.key];
+            lower = Math.Max(lower, -original);
+            upper = Math.Min(upper, Math.Max(0.01, Duration) - original);
+            foreach (var other in member.channel.Keys)
+            {
+                if (moving.Contains(other)) continue;
+                if (other.Time < original) lower = Math.Max(lower, other.Time + TimeEpsilon - original);
+                if (other.Time > original) upper = Math.Min(upper, other.Time - TimeEpsilon - original);
+            }
+        }
+        return lower <= upper ? Math.Clamp(requestedDelta, lower, upper) : 0;
+    }
+
     private bool HitTestPlayhead(Point pt)
     {
         var left = 6.0;
@@ -402,6 +738,12 @@ public sealed class CampathTimelineControl : Control
 
     private double? FindNearestKeyframeTime(double time)
     {
+        if (CurveDocument is { } document)
+        {
+            var curveKey = document.Channels.SelectMany(channel => channel.Keys)
+                .MinBy(key => Math.Abs(key.Time - time));
+            if (curveKey != null) return curveKey.Time;
+        }
         if (Items == null || Items.Count == 0)
             return null;
         var nearest = Items.OrderBy(k => Math.Abs(k.Time - time)).FirstOrDefault();
@@ -424,6 +766,45 @@ public sealed class CampathTimelineControl : Control
 
         HookKeyframeItems();
     }
+
+    private void OnCurveDocumentChanged(AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.OldValue is CampathCurveDocument oldDocument) HookCurveDocument(oldDocument, false);
+        if (e.NewValue is CampathCurveDocument newDocument) HookCurveDocument(newDocument, true);
+        InvalidateVisual();
+    }
+
+    private void HookCurveDocument(CampathCurveDocument document, bool hook)
+    {
+        if (hook) document.Channels.CollectionChanged += OnCurveChannelsChanged;
+        else document.Channels.CollectionChanged -= OnCurveChannelsChanged;
+        foreach (var channel in document.Channels) HookCurveChannel(channel, hook);
+    }
+
+    private void HookCurveChannel(CampathCurveChannel channel, bool hook)
+    {
+        if (hook) channel.Keys.CollectionChanged += OnCurveKeysChanged;
+        else channel.Keys.CollectionChanged -= OnCurveKeysChanged;
+        foreach (var key in channel.Keys)
+            if (hook) key.PropertyChanged += OnCurveKeyPropertyChanged;
+            else key.PropertyChanged -= OnCurveKeyPropertyChanged;
+    }
+
+    private void OnCurveChannelsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null) foreach (CampathCurveChannel channel in e.OldItems) HookCurveChannel(channel, false);
+        if (e.NewItems != null) foreach (CampathCurveChannel channel in e.NewItems) HookCurveChannel(channel, true);
+        InvalidateVisual();
+    }
+
+    private void OnCurveKeysChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null) foreach (CampathCurveKey key in e.OldItems) key.PropertyChanged -= OnCurveKeyPropertyChanged;
+        if (e.NewItems != null) foreach (CampathCurveKey key in e.NewItems) key.PropertyChanged += OnCurveKeyPropertyChanged;
+        InvalidateVisual();
+    }
+
+    private void OnCurveKeyPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => InvalidateVisual();
 
     private void OnItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -486,4 +867,7 @@ public sealed class CampathTimelineControl : Control
         var sec = seconds - mins * 60.0;
         return $"{mins:0}m{sec:00}s";
     }
+
+    private const double TimeEpsilon = 0.001;
+    private sealed record CurveBundle(double Time, List<(CampathCurveChannel channel, CampathCurveKey key)> Members, bool IsComplete);
 }

@@ -77,13 +77,14 @@ public partial class Viewport3DDockView : UserControl
     private void OnViewportSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathMode) ||
-                 e.PropertyName == nameof(Viewport3DSettings.ViewportCampathOverlayEnabled))
+                 e.PropertyName == nameof(Viewport3DSettings.ViewportCampathOverlayEnabled) ||
+                 e.PropertyName == nameof(Viewport3DSettings.ViewportCampathDofEnabled))
         {
             UpdateCampathPreview();
             UpdateCampathOverlay();
             UpdateCampathGizmo();
         }
-        else if (e.PropertyName == nameof(Viewport3DSettings.CampathGizmoLocalSpace))
+        else if (e.PropertyName is nameof(Viewport3DSettings.CampathGizmoLocalSpace) or nameof(Viewport3DSettings.ViewportCampathGizmoEnabled))
         {
             UpdateCampathGizmo();
         }
@@ -199,22 +200,29 @@ public partial class Viewport3DDockView : UserControl
         if (e.PropertyName == nameof(CampathEditorViewModel.PlayheadSample) ||
             e.PropertyName == nameof(CampathEditorViewModel.PlayheadTime) ||
             e.PropertyName == nameof(CampathEditorViewModel.IsPlaying) ||
-            e.PropertyName == nameof(CampathEditorViewModel.PreviewDuringPlayback))
+            e.PropertyName == nameof(CampathEditorViewModel.PreviewDuringPlayback) ||
+            e.PropertyName == nameof(CampathEditorViewModel.LockPreview) ||
+            e.PropertyName == nameof(CampathEditorViewModel.DofOverride) ||
+            e.PropertyName == nameof(CampathEditorViewModel.CurrentDofSettings) ||
+            e.PropertyName == nameof(CampathEditorViewModel.IsDofEditorOpen))
         {
             UpdateCampathPreview();
         }
 
         if (e.PropertyName == nameof(CampathEditorViewModel.UseCubic) ||
             e.PropertyName == nameof(CampathEditorViewModel.Duration) ||
+            e.PropertyName == nameof(CampathEditorViewModel.CurveDocumentRevision) ||
             e.PropertyName == nameof(CampathEditorViewModel.PlayheadTime) ||
             e.PropertyName == nameof(CampathEditorViewModel.IsPlaying) ||
-            e.PropertyName == nameof(CampathEditorViewModel.PreviewDuringPlayback))
+            e.PropertyName == nameof(CampathEditorViewModel.PreviewDuringPlayback) ||
+            e.PropertyName == nameof(CampathEditorViewModel.LockPreview))
         {
             UpdateCampathOverlay();
         }
 
         if (e.PropertyName == nameof(CampathEditorViewModel.SelectedKeyframe))
         {
+            UpdateDepthOfField();
             UpdateCampathGizmo();
         }
     }
@@ -242,6 +250,7 @@ public partial class Viewport3DDockView : UserControl
 
     private void OnCampathKeyframeChanged(object? sender, PropertyChangedEventArgs e)
     {
+        UpdateDepthOfField();
         UpdateCampathOverlay();
         UpdateCampathGizmo();
     }
@@ -282,15 +291,17 @@ public partial class Viewport3DDockView : UserControl
         if (!_viewModel.Viewport3DSettings.ViewportCampathMode)
         {
             _viewport.ClearExternalCamera();
+            UpdateDepthOfField();
             return;
         }
 
         var editor = _viewModel.CampathEditor;
         var allowPlaybackPreview = editor.IsPlaying && editor.PreviewDuringPlayback;
-        var allowPreview = allowPlaybackPreview || _viewModel.IsCampathPreviewOverrideActive;
+        var allowPreview = editor.LockPreview || allowPlaybackPreview || _viewModel.IsCampathPreviewOverrideActive;
         if (!allowPreview)
         {
             _viewport.ClearExternalCamera();
+            UpdateDepthOfField();
             return;
         }
 
@@ -298,10 +309,37 @@ public partial class Viewport3DDockView : UserControl
         if (sample == null)
         {
             _viewport.ClearExternalCamera();
+            UpdateDepthOfField();
             return;
         }
 
         _viewport.SetExternalCamera(sample.Value.Position, sample.Value.Rotation, (float)sample.Value.Fov);
+        UpdateDepthOfField();
+    }
+
+    /// <summary>
+    /// Applies the selected keyframe while editing, and the interpolated sample while previewing a campath.
+    /// This keeps the DOF controls useful even when camera preview is not currently active.
+    /// </summary>
+    private void UpdateDepthOfField()
+    {
+        if (_viewport == null || _viewModel == null || _campathEditor == null)
+            return;
+
+        if (!_viewModel.Viewport3DSettings.ViewportCampathMode || !_viewModel.Viewport3DSettings.ViewportCampathDofEnabled)
+        {
+            _viewport.SetDepthOfField(CampathDofSettings.Default);
+            return;
+        }
+
+        var editor = _campathEditor;
+        if (!editor.IsDofEditorOpen && editor.PlayheadSample is { } sample)
+        {
+            _viewport.SetDepthOfField(sample.Dof with { Enabled = true });
+            return;
+        }
+
+        _viewport.SetDepthOfField(editor.CurrentDofSettings with { Enabled = true });
     }
 
     private void OnCampathPreviewOverrideChanged()
@@ -322,7 +360,8 @@ public partial class Viewport3DDockView : UserControl
             return;
         }
 
-        var hidePlayheadFrustum = (_campathEditor.IsPlaying && _campathEditor.PreviewDuringPlayback)
+        var hidePlayheadFrustum = _campathEditor.LockPreview
+            || (_campathEditor.IsPlaying && _campathEditor.PreviewDuringPlayback)
             || _viewModel.IsCampathPreviewOverrideActive
             || _viewModel.IsFreecamPreviewActive;
         var overlay = BuildCampathOverlay(_campathEditor, _campathEditor.PlayheadTime, hidePlayheadFrustum);
@@ -334,7 +373,7 @@ public partial class Viewport3DDockView : UserControl
         if (_viewport == null || _viewModel == null || _campathEditor == null)
             return;
 
-        if (!_viewModel.Viewport3DSettings.ViewportCampathMode)
+        if (!_viewModel.Viewport3DSettings.ViewportCampathMode || !_viewModel.Viewport3DSettings.ViewportCampathGizmoEnabled)
         {
             _viewport.SetCampathGizmo(null);
             return;
@@ -392,43 +431,58 @@ public partial class Viewport3DDockView : UserControl
 
     private static CampathOverlayData? BuildCampathOverlay(CampathEditorViewModel editor, double playheadTime, bool hidePlayheadFrustum)
     {
-        if (editor.Keyframes.Count == 0)
+        if (!editor.CanEvaluate())
             return null;
 
         var vertices = new List<CampathOverlayVertex>();
         var duration = Math.Max(editor.Duration, 0.001);
         var playheadNorm = (float)Math.Clamp(playheadTime / duration, 0.0, 1.0);
 
-        if (editor.Curve.CanEvaluate() && editor.Keyframes.Count > 1)
+        if (editor.CanEvaluate())
         {
             var sampleCount = Math.Clamp((int)Math.Ceiling(duration * 30.0), 32, 512);
-            var prevSample = editor.Curve.Evaluate(0.0);
+            var prevSample = editor.Evaluate(0.0);
             var prevPos = prevSample.Position;
 
             for (var i = 1; i <= sampleCount; i++)
             {
                 var t = duration * i / sampleCount;
-                var sample = editor.Curve.Evaluate(t);
+                var sample = editor.Evaluate(t);
                 var color = GetPlayheadGradientColor((float)Math.Clamp(t / duration, 0.0, 1.0), playheadNorm);
                 AddLine(vertices, prevPos, sample.Position, color);
                 prevPos = sample.Position;
             }
         }
 
-        if (!hidePlayheadFrustum && editor.Curve.CanEvaluate())
+        if (!hidePlayheadFrustum && editor.CanEvaluate())
         {
-            var sample = editor.Curve.Evaluate(playheadTime);
+            var sample = editor.Evaluate(playheadTime);
             var color = new Vector3(0.9f, 0.95f, 1.0f);
             AddCameraFrustum(vertices, sample.Position, sample.Rotation, (float)sample.Fov, color);
         }
 
-        foreach (var keyframe in editor.Keyframes)
+        if (editor.CurveDocument.CanEvaluateCamera)
         {
-            var tNorm = duration > 0.0 ? keyframe.Time / duration : 0.0;
-            var color = keyframe.Selected
-                ? new Vector3(1.0f, 1.0f, 0.2f)
-                : GetPlayheadGradientColor((float)Math.Clamp(tNorm, 0.0, 1.0), playheadNorm);
-            AddCameraFrustum(vertices, keyframe.Position, keyframe.Rotation, (float)keyframe.Fov, color);
+            foreach (var bundle in editor.CurveDocument.GetBundleMarkers())
+            {
+                var sample = editor.CurveDocument.Evaluate(bundle.Time);
+                var tNorm = duration > 0.0 ? bundle.Time / duration : 0.0;
+                var color = bundle.Selected
+                    ? new Vector3(1.0f, 1.0f, 0.2f)
+                    : GetPlayheadGradientColor((float)Math.Clamp(tNorm, 0.0, 1.0), playheadNorm);
+                AddCameraFrustum(vertices, sample.Position, sample.Rotation, (float)sample.Fov, color);
+            }
+        }
+        else
+        {
+            foreach (var keyframe in editor.Keyframes)
+            {
+                var tNorm = duration > 0.0 ? keyframe.Time / duration : 0.0;
+                var color = keyframe.Selected
+                    ? new Vector3(1.0f, 1.0f, 0.2f)
+                    : GetPlayheadGradientColor((float)Math.Clamp(tNorm, 0.0, 1.0), playheadNorm);
+                AddCameraFrustum(vertices, keyframe.Position, keyframe.Rotation, (float)keyframe.Fov, color);
+            }
         }
 
         return vertices.Count > 0 ? new CampathOverlayData(vertices) : null;

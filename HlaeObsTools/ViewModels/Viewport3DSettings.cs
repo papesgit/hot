@@ -30,8 +30,11 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _showFps;
     private bool _viewportCampathMode;
     private bool _viewportCampathOverlayEnabled = true;
+    private bool _viewportCampathDofEnabled = true;
+    private bool _viewportCampathGizmoEnabled = true;
     private bool _campathGizmoLocalSpace = true;
     private bool _viewportCampathSyncEnabled;
+    private bool _viewportCampathLegacyCompatibility = true;
     private bool _liveLinkEnabled;
     private bool _liveLinkItemIconsEnabled = true;
     private bool _liveLinkWeaponIconsEnabled = true;
@@ -233,6 +236,24 @@ public sealed class Viewport3DSettings : ViewModelBase
     }
 
     /// <summary>
+    /// Apply campath depth-of-field settings in the viewport independently of camera preview.
+    /// </summary>
+    public bool ViewportCampathDofEnabled
+    {
+        get => _viewportCampathDofEnabled;
+        set => SetProperty(ref _viewportCampathDofEnabled, value);
+    }
+
+    /// <summary>
+    /// Draw the transform gizmo for the selected camera keyframe.
+    /// </summary>
+    public bool ViewportCampathGizmoEnabled
+    {
+        get => _viewportCampathGizmoEnabled;
+        set => SetProperty(ref _viewportCampathGizmoEnabled, value);
+    }
+
+    /// <summary>
     /// Use local-space axes for the campath gizmo.
     /// </summary>
     public bool CampathGizmoLocalSpace
@@ -248,6 +269,15 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _viewportCampathSyncEnabled;
         set => SetProperty(ref _viewportCampathSyncEnabled, value);
+    }
+
+    /// <summary>
+    /// Include an adaptively sampled legacy points track when saving curve campaths.
+    /// </summary>
+    public bool ViewportCampathLegacyCompatibility
+    {
+        get => _viewportCampathLegacyCompatibility;
+        set => SetProperty(ref _viewportCampathLegacyCompatibility, value);
     }
 
     /// <summary>

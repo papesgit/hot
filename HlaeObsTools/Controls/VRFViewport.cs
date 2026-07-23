@@ -135,6 +135,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private RendererContext? _rendererContext;
     private Renderer? _renderer;
+    private CampathDofSettings _campathDofSettings = CampathDofSettings.Default;
     private TextRenderer? _textRenderer;
     private Framebuffer? _mainFramebuffer;
     private Framebuffer? _defaultFramebuffer;
@@ -1153,6 +1154,32 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         _externalCameraActive = false;
         RequestNextFrame();
+    }
+
+    public void SetDepthOfField(CampathDofSettings settings)
+    {
+        _campathDofSettings = settings;
+        ApplyDepthOfField();
+        RequestNextFrame();
+    }
+
+    private void ApplyDepthOfField()
+    {
+        if (_renderer == null)
+            return;
+
+        var dof = _renderer.Postprocess.DOF;
+        dof.Enabled = _campathDofSettings.Enabled;
+        // CS2 r_dof_override distances are measured from the camera plane. VRF's
+        // standalone DOF defaults to a 100-unit focal-plane offset, which would make
+        // near crisp 0 blur geometry between the camera and that focal plane.
+        dof.FocalDistance = 0.0f;
+        dof.NearBlurry = (float)Math.Min(_campathDofSettings.NearBlurry, _campathDofSettings.NearCrisp - 0.001);
+        dof.NearCrisp = (float)_campathDofSettings.NearCrisp;
+        dof.FarCrisp = (float)_campathDofSettings.FarCrisp;
+        dof.FarBlurry = (float)Math.Max(_campathDofSettings.FarBlurry, _campathDofSettings.FarCrisp + 0.001);
+        dof.MaxBlurSize = (float)Math.Max(0.0, _campathDofSettings.MaxBlurSize);
+        dof.RadScale = (float)Math.Max(0.0, _campathDofSettings.RadiusScale);
     }
 
     public void SetFreecamPose(Vector3 position, Quaternion rotation, float fov)
@@ -4057,6 +4084,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 _renderer.Postprocess.Load(1);
                 _renderer.Postprocess.Enabled = _postprocessEnabledCached && IsRenderModeDefault();
                 _renderer.Postprocess.ColorCorrectionEnabled = _colorCorrectionEnabledCached;
+                ApplyDepthOfField();
                 _renderer.Initialize();
                 _textRenderer.Load();
                 LogMessage("Renderer initialized.");
