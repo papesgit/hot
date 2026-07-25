@@ -11,12 +11,15 @@ using HlaeObsTools.Services.Campaths;
 
 namespace HlaeObsTools.ViewModels;
 
+public sealed record CampathEditorModeOption(CampathEditorMode Mode, string DisplayName);
+
 public sealed class CampathEditorViewModel : ViewModelBase
 {
     private readonly CampathCurve _curve = new();
     private double _playheadTime;
     private double _duration = 20.0;
-    private bool _useCubic = true;
+    private CameraPathModel _pathModel = CameraPathModel.Classic;
+    private ClassicCampathInterpolation _classicInterpolation = ClassicCampathInterpolation.CatmullRom;
     private CampathKeyframeViewModel? _selectedKeyframe;
     private bool _suppressCollectionEvents;
     private bool _isPlaying;
@@ -50,12 +53,15 @@ public sealed class CampathEditorViewModel : ViewModelBase
         _playTimer.Tick += OnPlayTick;
         TogglePlayCommand = new RelayCommand(_ => TogglePlay());
         ClearCommand = new RelayCommand(_ => Clear());
+        ApplyClassicInterpolation();
+        CampathPathConversion.EnsureStandardChannels(CurveDocument);
     }
 
     public ObservableCollection<CampathKeyframeViewModel> Keyframes { get; } = new();
 
     public CampathCurve Curve => _curve;
     public CampathCurveDocument CurveDocument { get; } = new();
+    public CampathCurveDocument? ActiveCurveDocument => IsCurveMode ? CurveDocument : null;
 
     public double PlayheadTime
     {
@@ -87,18 +93,67 @@ public sealed class CampathEditorViewModel : ViewModelBase
         }
     }
 
-    public bool UseCubic
+    public CameraPathModel PathModel => _pathModel;
+    public ClassicCampathInterpolation ClassicInterpolation => _classicInterpolation;
+    public CampathEditorMode EditorMode => PathModel == CameraPathModel.Curves
+        ? CampathEditorMode.Curves
+        : ClassicInterpolation == ClassicCampathInterpolation.Linear
+            ? CampathEditorMode.Linear
+            : CampathEditorMode.CatmullRom;
+    public IReadOnlyList<CampathEditorMode> EditorModes { get; } = Enum.GetValues<CampathEditorMode>();
+    public IReadOnlyList<CampathEditorModeOption> EditorModeOptions { get; } =
+    [
+        new(CampathEditorMode.Linear, "Linear"),
+        new(CampathEditorMode.CatmullRom, "Catmull–Rom"),
+        new(CampathEditorMode.Curves, "Editable Curves")
+    ];
+    public CampathEditorModeOption SelectedEditorModeOption =>
+        EditorModeOptions.First(option => option.Mode == EditorMode);
+    public bool IsCurveMode => PathModel == CameraPathModel.Curves;
+    public bool IsClassicMode => PathModel == CameraPathModel.Classic;
+    public bool HasAuthoredKeys => PathModel == CameraPathModel.Curves
+        ? CurveDocument.Channels.Any(channel => channel.Keys.Count > 0)
+        : Keyframes.Count > 0;
+
+    public void SetEditorMode(CampathEditorMode mode)
     {
-        get => _useCubic;
-        set
+        if (mode == EditorMode)
+            return;
+
+        BeginHistoryTransaction();
+        try
         {
-            if (SetProperty(ref _useCubic, value))
+            if (mode == CampathEditorMode.Curves)
             {
-                _curve.PositionInterp = value ? CampathDoubleInterp.Cubic : CampathDoubleInterp.Linear;
-                _curve.RotationInterp = value ? CampathQuaternionInterp.SCubic : CampathQuaternionInterp.SLinear;
-                _curve.FovInterp = value ? CampathDoubleInterp.Cubic : CampathDoubleInterp.Linear;
-                RebuildCurve();
+                CampathPathConversion.ClassicToCurves(
+                    Keyframes.Select(key => key.ToModel()), ClassicInterpolation, CurveDocument);
+                ClearClassicKeyframes();
+                _pathModel = CameraPathModel.Curves;
+                NotifyModeChanged();
+                NotifyCurveDocumentChanged();
+                return;
             }
+
+            var targetInterpolation = mode == CampathEditorMode.Linear
+                ? ClassicCampathInterpolation.Linear
+                : ClassicCampathInterpolation.CatmullRom;
+            if (PathModel == CameraPathModel.Curves)
+            {
+                ReplaceClassicKeyframes(CampathPathConversion.CurvesToClassic(CurveDocument));
+                foreach (var channel in CurveDocument.Channels)
+                    channel.Keys.Clear();
+                _pathModel = CameraPathModel.Classic;
+            }
+
+            _classicInterpolation = targetInterpolation;
+            ApplyClassicInterpolation();
+            RebuildCurve();
+            NotifyModeChanged();
+            NotifyCurveDocumentChanged();
+        }
+        finally
+        {
+            CommitHistoryTransaction();
         }
     }
 
@@ -225,9 +280,13 @@ public sealed class CampathEditorViewModel : ViewModelBase
         OnPropertyChanged(nameof(DofMaxBlurSize)); OnPropertyChanged(nameof(DofRadiusScale));
     }
 
-    public bool CanEvaluate() => CurveDocument.CanEvaluateCamera || _curve.CanEvaluate();
+    public bool CanEvaluate() => PathModel == CameraPathModel.Curves
+        ? CurveDocument.CanEvaluateCamera
+        : _curve.CanEvaluate();
 
-    public CampathSample Evaluate(double time) => CurveDocument.CanEvaluateCamera ? CurveDocument.Evaluate(time) : _curve.Evaluate(time);
+    public CampathSample Evaluate(double time) => PathModel == CameraPathModel.Curves
+        ? CurveDocument.Evaluate(time)
+        : _curve.Evaluate(time);
 
     public void NotifyCurveDocumentChanged()
     {
@@ -282,6 +341,9 @@ public sealed class CampathEditorViewModel : ViewModelBase
 
     public void AddKeyframe(double time, Vector3 position, Quaternion rotation, double fov)
     {
+        if (PathModel != CameraPathModel.Classic)
+            return;
+
         const double timeEpsilon = 0.0001;
         var existing = Keyframes.FirstOrDefault(k => Math.Abs(k.Time - time) <= timeEpsilon);
         if (existing != null)
@@ -305,7 +367,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
 
     public void RemoveSelectedKeyframe()
     {
-        if (SelectedKeyframe == null)
+        if (PathModel != CameraPathModel.Classic || SelectedKeyframe == null)
             return;
         BeginHistoryTransaction();
         Keyframes.Remove(SelectedKeyframe);
@@ -316,10 +378,16 @@ public sealed class CampathEditorViewModel : ViewModelBase
     public void Clear()
     {
         BeginHistoryTransaction();
-        Keyframes.Clear();
-        SelectedKeyframe = null;
-        foreach (var channel in CurveDocument.Channels)
-            channel.Keys.Clear();
+        if (PathModel == CameraPathModel.Curves)
+        {
+            foreach (var channel in CurveDocument.Channels)
+                channel.Keys.Clear();
+        }
+        else
+        {
+            Keyframes.Clear();
+            SelectedKeyframe = null;
+        }
         RebuildCurve();
         NotifyCurveDocumentChanged();
         CommitHistoryTransaction();
@@ -350,7 +418,10 @@ public sealed class CampathEditorViewModel : ViewModelBase
         _suppressCollectionEvents = false;
         HookKeyframeHandlers();
 
-        UseCubic = data.UseCubic;
+        _pathModel = data.PathModel;
+        _classicInterpolation = data.ClassicInterpolation;
+        ApplyClassicInterpolation();
+        NotifyModeChanged();
         Hold = data.Hold;
         TimeOffset = data.TimeOffset;
 
@@ -393,7 +464,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
             channel.Keys.Select(key => new CurveKeySnapshot(
                 key.Time, key.Value, key.InTangent, key.OutTangent, key.InWeight, key.OutWeight,
                 key.Selected, key.Interpolation, key.TangentMode, key.WeightedTangents)).ToList())).ToList();
-        return new EditorHistorySnapshot(legacyKeys, channels, Duration);
+        return new EditorHistorySnapshot(PathModel, ClassicInterpolation, legacyKeys, channels, Duration);
     }
 
     private void RestoreHistorySnapshot(EditorHistorySnapshot snapshot)
@@ -401,6 +472,9 @@ public sealed class CampathEditorViewModel : ViewModelBase
         _restoringHistory = true;
         try
         {
+            _pathModel = snapshot.PathModel;
+            _classicInterpolation = snapshot.ClassicInterpolation;
+            ApplyClassicInterpolation();
             foreach (var key in Keyframes)
                 key.PropertyChanged -= OnKeyframePropertyChanged;
             _suppressCollectionEvents = true;
@@ -440,6 +514,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
                     });
             }
             Duration = snapshot.Duration;
+            NotifyModeChanged();
             NotifyCurveDocumentChanged();
         }
         finally
@@ -451,7 +526,8 @@ public sealed class CampathEditorViewModel : ViewModelBase
 
     private static bool HistoryEquals(EditorHistorySnapshot left, EditorHistorySnapshot right)
     {
-        if (left.Duration != right.Duration || !left.LegacyKeys.SequenceEqual(right.LegacyKeys)
+        if (left.PathModel != right.PathModel || left.ClassicInterpolation != right.ClassicInterpolation
+            || left.Duration != right.Duration || !left.LegacyKeys.SequenceEqual(right.LegacyKeys)
             || left.Channels.Count != right.Channels.Count) return false;
         for (var i = 0; i < left.Channels.Count; i++)
         {
@@ -464,6 +540,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
     }
 
     private sealed record EditorHistorySnapshot(
+        CameraPathModel PathModel, ClassicCampathInterpolation ClassicInterpolation,
         List<LegacyKeySnapshot> LegacyKeys, List<CurveChannelSnapshot> Channels, double Duration);
     private sealed record LegacyKeySnapshot(double Time, Vector3 Position, Quaternion Rotation,
         double Fov, bool Selected, CampathDofSettings Dof);
@@ -473,11 +550,80 @@ public sealed class CampathEditorViewModel : ViewModelBase
         double OutTangent, double InWeight, double OutWeight, bool Selected,
         CurveInterpolationMode Interpolation, CurveTangentMode TangentMode, bool WeightedTangents);
 
+    private void ApplyClassicInterpolation()
+    {
+        var cubic = ClassicInterpolation == ClassicCampathInterpolation.CatmullRom;
+        _curve.PositionInterp = cubic ? CampathDoubleInterp.Cubic : CampathDoubleInterp.Linear;
+        _curve.RotationInterp = cubic ? CampathQuaternionInterp.SCubic : CampathQuaternionInterp.SLinear;
+        _curve.FovInterp = cubic ? CampathDoubleInterp.Cubic : CampathDoubleInterp.Linear;
+    }
+
+    private void NotifyModeChanged()
+    {
+        OnPropertyChanged(nameof(PathModel));
+        OnPropertyChanged(nameof(ClassicInterpolation));
+        OnPropertyChanged(nameof(EditorMode));
+        OnPropertyChanged(nameof(SelectedEditorModeOption));
+        OnPropertyChanged(nameof(IsCurveMode));
+        OnPropertyChanged(nameof(IsClassicMode));
+        OnPropertyChanged(nameof(ActiveCurveDocument));
+        OnPropertyChanged(nameof(HasAuthoredKeys));
+        OnPropertyChanged(nameof(PlayheadSample));
+        RaiseDofPropertiesChanged();
+    }
+
+    private void ClearClassicKeyframes()
+    {
+        foreach (var key in Keyframes)
+            key.PropertyChanged -= OnKeyframePropertyChanged;
+        _suppressCollectionEvents = true;
+        Keyframes.Clear();
+        _suppressCollectionEvents = false;
+        _selectedKeyframe = null;
+        OnPropertyChanged(nameof(SelectedKeyframe));
+        RebuildCurve();
+    }
+
+    private void ReplaceClassicKeyframes(IEnumerable<CampathKeyframe> keyframes)
+    {
+        foreach (var key in Keyframes)
+            key.PropertyChanged -= OnKeyframePropertyChanged;
+        _suppressCollectionEvents = true;
+        Keyframes.Clear();
+        foreach (var key in keyframes.OrderBy(key => key.Time))
+        {
+            Keyframes.Add(new CampathKeyframeViewModel
+            {
+                Time = key.Time,
+                Position = key.Position,
+                Rotation = key.Rotation,
+                Fov = key.Fov,
+                Dof = key.Dof
+            });
+        }
+        _suppressCollectionEvents = false;
+        HookKeyframeHandlers();
+        _selectedKeyframe = Keyframes.FirstOrDefault();
+        if (_selectedKeyframe != null)
+            _selectedKeyframe.Selected = true;
+        OnPropertyChanged(nameof(SelectedKeyframe));
+    }
+
     public void ShiftAllTimes(double delta)
     {
+        if (PathModel == CameraPathModel.Curves)
+        {
+            var keys = CurveDocument.Channels.SelectMany(channel => channel.Keys).ToList();
+            if (keys.Count == 0)
+                return;
+            foreach (var key in keys)
+                key.Time += delta;
+            NotifyCurveDocumentChanged();
+            return;
+        }
+
         if (Keyframes.Count == 0)
             return;
-
         _suppressCollectionEvents = true;
         foreach (var key in Keyframes)
             key.Time += delta;
@@ -499,6 +645,15 @@ public sealed class CampathEditorViewModel : ViewModelBase
         }
 
         var scale = newDuration / currentDuration;
+        if (PathModel == CameraPathModel.Curves)
+        {
+            foreach (var key in CurveDocument.Channels.SelectMany(channel => channel.Keys))
+                key.Time *= scale;
+            Duration = newDuration;
+            NotifyCurveDocumentChanged();
+            return;
+        }
+
         _suppressCollectionEvents = true;
         foreach (var key in Keyframes)
             key.Time *= scale;
@@ -518,6 +673,13 @@ public sealed class CampathEditorViewModel : ViewModelBase
 
     public double GetKeyframeDuration()
     {
+        if (PathModel == CameraPathModel.Curves)
+        {
+            var times = CurveDocument.Channels.SelectMany(channel => channel.Keys)
+                .Select(key => key.Time).ToList();
+            return times.Count == 0 ? 0.0 : Math.Max(0.0, times.Max() - times.Min());
+        }
+
         if (Keyframes.Count == 0)
             return 0.0;
         var min = Keyframes.Min(k => k.Time);

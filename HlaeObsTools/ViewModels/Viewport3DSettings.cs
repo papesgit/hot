@@ -34,7 +34,6 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _viewportCampathGizmoEnabled = true;
     private bool _campathGizmoLocalSpace = true;
     private bool _viewportCampathSyncEnabled;
-    private bool _viewportCampathLegacyCompatibility = true;
     private bool _liveLinkEnabled;
     private bool _liveLinkItemIconsEnabled = true;
     private bool _liveLinkWeaponIconsEnabled = true;
@@ -269,15 +268,6 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _viewportCampathSyncEnabled;
         set => SetProperty(ref _viewportCampathSyncEnabled, value);
-    }
-
-    /// <summary>
-    /// Include an adaptively sampled legacy points track when saving curve campaths.
-    /// </summary>
-    public bool ViewportCampathLegacyCompatibility
-    {
-        get => _viewportCampathLegacyCompatibility;
-        set => SetProperty(ref _viewportCampathLegacyCompatibility, value);
     }
 
     /// <summary>

@@ -324,13 +324,18 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         CampathEditor.BeginHistoryTransaction();
         try
         {
-            CampathEditor.AddKeyframe(
-                CampathEditor.PlayheadTime,
-                state.Value.RawPosition,
-                state.Value.RawOrientation,
-                state.Value.RawFov);
-            if (_curveEditor != null)
+            if (CampathEditor.IsCurveMode && _curveEditor != null)
+            {
                 _curveEditor.AddKeys(_curveEditor.Document.Channels, useEvaluatedValue: false);
+            }
+            else
+            {
+                CampathEditor.AddKeyframe(
+                    CampathEditor.PlayheadTime,
+                    state.Value.RawPosition,
+                    state.Value.RawOrientation,
+                    state.Value.RawFov);
+            }
         }
         finally
         {
@@ -572,7 +577,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
         Directory.CreateDirectory(_campathSyncDirectory);
         var syncPath = GetSyncPath();
-        CampathFileIo.Save(syncPath, CampathEditor, includeLegacyCompatibility: false);
+        CampathFileIo.Save(syncPath, CampathEditor);
         CleanupSyncFiles();
         var cmd = $"mirv_campath load \"{syncPath}\"";
         _ = _webSocketClient?.SendExecCommandAsync(cmd);

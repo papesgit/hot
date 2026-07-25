@@ -302,7 +302,6 @@ public class MainDockFactory : Factory, IDisposable
             ViewportCampathDofEnabled = _storedSettings.ViewportCampathDofEnabled,
             ViewportCampathGizmoEnabled = _storedSettings.ViewportCampathGizmoEnabled,
             ViewportCampathSyncEnabled = _storedSettings.ViewportCampathSyncEnabled,
-            ViewportCampathLegacyCompatibility = _storedSettings.ViewportCampathLegacyCompatibility,
             CampathGizmoLocalSpace = _storedSettings.CampathGizmoLocalSpace,
             LiveLinkEnabled = _storedSettings.ViewportLiveLinkEnabled,
             LiveLinkItemIconsEnabled = _storedSettings.ViewportLiveLinkItemIconsEnabled,

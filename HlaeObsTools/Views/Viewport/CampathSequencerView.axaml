@@ -51,7 +51,7 @@
             <Grid Grid.Column="1" ClipToBounds="False">
                 <controls:CampathTimelineControl x:Name="Timeline"
                                                  Items="{Binding CampathEditor.Keyframes}"
-                                                 CurveDocument="{Binding CampathEditor.CurveDocument}"
+                                                 CurveDocument="{Binding CampathEditor.ActiveCurveDocument}"
                                                  CurvesUnlocked="{Binding CampathEditor.SequencerCurvesUnlocked}"
                                                  SelectedItem="{Binding CampathEditor.SelectedKeyframe, Mode=TwoWay}"
                                                  PlayheadTime="{Binding CampathEditor.PlayheadTime, Mode=TwoWay}"
@@ -69,6 +69,7 @@
                                   Padding="0"
                                   FontSize="9"
                                   IsChecked="{Binding CampathEditor.SequencerCurvesUnlocked, Mode=TwoWay}"
+                                  IsVisible="{Binding CampathEditor.IsCurveMode}"
                                   ToolTip.Tip="Unlock individual curve keys and box selection in the sequencer">
                         <TextBlock Text="{Binding CampathEditor.SequencerCurveLockLabel}" VerticalAlignment="Center" HorizontalAlignment="Center" />
                     </ToggleButton>

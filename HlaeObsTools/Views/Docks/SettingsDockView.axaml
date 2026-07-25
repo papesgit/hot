@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:rootvm="using:HlaeObsTools.ViewModels"
              xmlns:conv="using:HlaeObsTools.Converters"
              xmlns:hk="using:HlaeObsTools.ViewModels.Hotkeys"
              xmlns:hotkeys="using:HlaeObsTools.Services.Hotkeys"
@@ -295,6 +296,17 @@
                             <TextBlock Text="Viewport campath editor"
                                        Foreground="#CCCCCC"
                                        FontWeight="SemiBold"/>
+                            <ComboBox Width="150"
+                                        ItemsSource="{Binding CampathEditor.EditorModeOptions}"
+                                        SelectedItem="{Binding CampathEditor.SelectedEditorModeOption, Mode=OneWay}"
+                                        SelectionChanged="OnCampathEditorModeChanged"
+                                        Margin="0,0,10,0">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="rootvm:CampathEditorModeOption">
+                                        <TextBlock Text="{Binding DisplayName}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
                             <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
                                 <ToggleSwitch IsChecked="{Binding CampathEditor.PreviewDuringPlayback, Mode=TwoWay}"
                                               Content="Play-Preview"
@@ -307,11 +319,6 @@
                                     hotkeys:HotkeyTarget.Path="CampathEditor.LockPreview"
                                               Margin="0,0,10,0"
                                               ToolTip.Tip="Keep the viewport camera locked to the campath evaluation at the current playhead."/>
-                                <ToggleSwitch IsChecked="{Binding CampathEditor.UseCubic, Mode=TwoWay}"
-                                              Content="Cubic Interp"
-                                              Foreground="#E6E6E6"
-                                    hotkeys:HotkeyTarget.Path="CampathEditor.UseCubic"
-                                              Margin="0,0,10,0"/>
                                 <ToggleSwitch IsChecked="{Binding CampathEditor.Hold, Mode=TwoWay}"
                                               Content="Hold"
                                     hotkeys:HotkeyTarget.Path="CampathEditor.Hold"
@@ -360,10 +367,6 @@
                                         Command="{Binding LoadViewportCampathCommand}"/>
                                 <Button Content="Save"
                                         Command="{Binding SaveViewportCampathCommand}"/>
-                                <CheckBox Content="Legacy compatibility"
-                                          IsChecked="{Binding Viewport3DSettings.ViewportCampathLegacyCompatibility, Mode=TwoWay}"
-                                          VerticalAlignment="Center"
-                                          ToolTip.Tip="Include an adaptive traditional points track for older HLAE versions."/>
                                 <Button Content="Clear"
                                         Command="{Binding CampathEditor.ClearCommand}"/>
                             </StackPanel>

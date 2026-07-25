@@ -20,21 +20,6 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
     private double _snapInterval = 0.1;
     private int _fitAllRequest;
     private int _fitSelectionRequest;
-    private bool _rebuildingCurves;
-    private bool _independentCurveEdits;
-
-    private static readonly (string id, string name, string group, string color)[] Definitions =
-    [
-        ("position.x", "X", "Position", "#F05A5A"), ("position.y", "Y", "Position", "#62C96B"),
-        ("position.z", "Z", "Position", "#5C8FF0"), ("rotation.pitch", "Pitch", "Rotation", "#E68A45"),
-        ("rotation.yaw", "Yaw", "Rotation", "#AF6BE8"), ("rotation.roll", "Roll", "Rotation", "#47C6CE"),
-        ("fov", "FOV", "Camera", "#F1D65C"), ("dof.enabled", "Enabled", "DOF", "#F18AB8"),
-        ("dof.nearBlurry", "Near blurry", "DOF", "#EF6AA8"),
-        ("dof.nearCrisp", "Near crisp", "DOF", "#D981B5"), ("dof.farCrisp", "Far crisp", "DOF", "#67B7E8"),
-        ("dof.farBlurry", "Far blurry", "DOF", "#438BC7"), ("dof.maxBlur", "Max blur", "DOF", "#C9A65C"),
-        ("dof.radiusScale", "Radius scale", "DOF", "#8FCB71")
-    ];
-
     public CurveEditorDockViewModel(CampathEditorViewModel editor, Viewport3DDockViewModel viewport)
     {
         _editor = editor;
@@ -44,17 +29,13 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
         CanFloat = true;
         CanPin = true;
         CanClose = false;
-        foreach (var definition in Definitions)
-            if (Document.Find(definition.id) == null)
-                Document.Channels.Add(new CampathCurveChannel { Id = definition.id, Name = definition.name, Group = definition.group, Color = definition.color });
+        CampathPathConversion.EnsureStandardChannels(Document);
         AllChannels = new CurveChannelGroupViewModel("All", Document.Channels.ToList());
         AllChannelGroups.Add(AllChannels);
         foreach (var group in Document.Channels.GroupBy(channel => channel.Group))
             ChannelGroups.Add(new CurveChannelGroupViewModel(group.Key, group.ToList()));
-        _editor.Keyframes.CollectionChanged += OnKeyframesChanged;
-        HookKeys(_editor.Keyframes);
+        _editor.PropertyChanged += OnEditorPropertyChanged;
         HookCurveDocument();
-        RebuildFromCampath();
     }
 
     public CampathCurveDocument Document => _editor.CurveDocument;
@@ -64,6 +45,7 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
     public CurveChannelGroupViewModel AllChannels { get; }
     public IReadOnlyList<CurveEditorViewMode> ViewModes { get; } = Enum.GetValues<CurveEditorViewMode>();
     public CampathEditorViewModel CampathEditor => _editor;
+    public bool IsCurveMode => _editor.IsCurveMode;
     public CurveEditorViewMode ViewMode { get => _viewMode; set => SetProperty(ref _viewMode, value); }
     public bool SnapEnabled { get => _snapEnabled; set => SetProperty(ref _snapEnabled, value); }
     public double SnapInterval { get => _snapInterval; set => SetProperty(ref _snapInterval, Math.Max(0.001, value)); }
@@ -85,6 +67,9 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
     }
     public void AddKeys(IEnumerable<CampathCurveChannel> channels, bool useEvaluatedValue)
     {
+        if (!IsCurveMode)
+            return;
+
         _editor.BeginHistoryTransaction();
         try
         {
@@ -154,47 +139,6 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
         return value;
     }
 
-    private void OnKeyframesChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.Action == NotifyCollectionChangedAction.Reset) _independentCurveEdits = false;
-        if (e.OldItems != null) HookKeys(e.OldItems.Cast<CampathKeyframeViewModel>(), false);
-        if (e.NewItems != null) HookKeys(e.NewItems.Cast<CampathKeyframeViewModel>());
-        RebuildFromCampath();
-    }
-
-    private void HookKeys(IEnumerable<CampathKeyframeViewModel> keys, bool hook = true)
-    {
-        foreach (var key in keys)
-            if (hook) key.PropertyChanged += OnSourceKeyChanged; else key.PropertyChanged -= OnSourceKeyChanged;
-    }
-
-    private void OnSourceKeyChanged(object? sender, PropertyChangedEventArgs e) => RebuildFromCampath();
-
-    private void RebuildFromCampath()
-    {
-        if (_independentCurveEdits) return;
-        _rebuildingCurves = true;
-        foreach (var channel in Document.Channels) channel.Keys.Clear();
-        foreach (var key in _editor.Keyframes.OrderBy(k => k.Time))
-        {
-            var (pitch, yaw, roll) = QuaternionToEuler(key.Rotation);
-            Add("position.x", key.Time, key.Position.X); Add("position.y", key.Time, key.Position.Y); Add("position.z", key.Time, key.Position.Z);
-            Add("rotation.pitch", key.Time, pitch); Add("rotation.yaw", key.Time, yaw); Add("rotation.roll", key.Time, roll);
-            Add("fov", key.Time, key.Fov); Add("dof.nearBlurry", key.Time, key.Dof.NearBlurry);
-            Add("dof.enabled", key.Time, key.Dof.Enabled ? 1 : 0);
-            Add("dof.nearCrisp", key.Time, key.Dof.NearCrisp); Add("dof.farCrisp", key.Time, key.Dof.FarCrisp);
-            Add("dof.farBlurry", key.Time, key.Dof.FarBlurry); Add("dof.maxBlur", key.Time, key.Dof.MaxBlurSize);
-            Add("dof.radiusScale", key.Time, key.Dof.RadiusScale);
-        }
-        UnwrapAngles("rotation.pitch");
-        UnwrapAngles("rotation.yaw");
-        UnwrapAngles("rotation.roll");
-        AutoTangents();
-        _rebuildingCurves = false;
-        _editor.NotifyCurveDocumentChanged();
-        OnPropertyChanged(nameof(Channels));
-    }
-
     private void HookCurveDocument()
     {
         foreach (var channel in Document.Channels)
@@ -208,49 +152,21 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
     {
         if (e.OldItems != null) foreach (CampathCurveKey key in e.OldItems) key.PropertyChanged -= OnCurveKeyChanged;
         if (e.NewItems != null) foreach (CampathCurveKey key in e.NewItems) key.PropertyChanged += OnCurveKeyChanged;
-        if (_rebuildingCurves) return;
-        _independentCurveEdits = true;
         _editor.NotifyCurveDocumentChanged();
     }
 
     private void OnCurveKeyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (_rebuildingCurves || e.PropertyName == nameof(CampathCurveKey.Selected)) return;
-        _independentCurveEdits = true;
+        if (e.PropertyName == nameof(CampathCurveKey.Selected)) return;
         _editor.NotifyCurveDocumentChanged();
     }
 
-    private void Add(string id, double time, double value) => Document.Find(id)!.Keys.Add(new CampathCurveKey
-    {
-        Time = time,
-        Value = value,
-        Interpolation = id == "dof.enabled" ? CurveInterpolationMode.Constant : CurveInterpolationMode.Bezier
-    });
+    private void AutoTangents() => CampathPathConversion.AutoTangents(Document);
 
-    private void UnwrapAngles(string id)
+    private void OnEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        var keys = Document.Find(id)?.Keys;
-        if (keys == null) return;
-        for (var i = 1; i < keys.Count; i++)
-        {
-            while (keys[i].Value - keys[i - 1].Value > 180) keys[i].Value -= 360;
-            while (keys[i].Value - keys[i - 1].Value < -180) keys[i].Value += 360;
-        }
-    }
-
-    private void AutoTangents()
-    {
-        foreach (var channel in Document.Channels)
-            for (var i = 0; i < channel.Keys.Count; i++)
-            {
-                if (channel.Keys[i].TangentMode != CurveTangentMode.Auto) continue;
-                var prev = channel.Keys[Math.Max(0, i - 1)];
-                var next = channel.Keys[Math.Min(channel.Keys.Count - 1, i + 1)];
-                var slope = Math.Abs(next.Time - prev.Time) < 1e-9 ? 0 : (next.Value - prev.Value) / (next.Time - prev.Time);
-                channel.Keys[i].InTangent = channel.Keys[i].OutTangent = slope;
-                channel.Keys[i].InWeight = i > 0 ? Math.Max(0.001, (channel.Keys[i].Time - channel.Keys[i - 1].Time) / 3.0) : 0.25;
-                channel.Keys[i].OutWeight = i + 1 < channel.Keys.Count ? Math.Max(0.001, (channel.Keys[i + 1].Time - channel.Keys[i].Time) / 3.0) : 0.25;
-            }
+        if (e.PropertyName == nameof(CampathEditorViewModel.IsCurveMode))
+            OnPropertyChanged(nameof(IsCurveMode));
     }
 
     private static (double pitch, double yaw, double roll) QuaternionToEuler(Quaternion q)
@@ -268,8 +184,7 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
 
     public void Dispose()
     {
-        _editor.Keyframes.CollectionChanged -= OnKeyframesChanged;
-        HookKeys(_editor.Keyframes, false);
+        _editor.PropertyChanged -= OnEditorPropertyChanged;
         foreach (var channel in Document.Channels)
         {
             channel.Keys.CollectionChanged -= OnCurveKeysChanged;

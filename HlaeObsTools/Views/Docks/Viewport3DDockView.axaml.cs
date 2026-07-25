@@ -209,7 +209,7 @@ public partial class Viewport3DDockView : UserControl
             UpdateCampathPreview();
         }
 
-        if (e.PropertyName == nameof(CampathEditorViewModel.UseCubic) ||
+        if (e.PropertyName == nameof(CampathEditorViewModel.EditorMode) ||
             e.PropertyName == nameof(CampathEditorViewModel.Duration) ||
             e.PropertyName == nameof(CampathEditorViewModel.CurveDocumentRevision) ||
             e.PropertyName == nameof(CampathEditorViewModel.PlayheadTime) ||
@@ -461,7 +461,7 @@ public partial class Viewport3DDockView : UserControl
             AddCameraFrustum(vertices, sample.Position, sample.Rotation, (float)sample.Fov, color);
         }
 
-        if (editor.CurveDocument.CanEvaluateCamera)
+        if (editor.IsCurveMode)
         {
             foreach (var bundle in editor.CurveDocument.GetBundleMarkers())
             {

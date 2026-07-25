@@ -254,7 +254,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 if (string.IsNullOrWhiteSpace(path))
                     return;
 
-                CampathFileIo.Save(path, _campathEditor, _viewport3DSettings.ViewportCampathLegacyCompatibility);
+                CampathFileIo.Save(path, _campathEditor);
             });
             _getCurrentTimeOffsetCommand = new AsyncRelay(GetCurrentTimeOffsetAsync);
             _resetFreecamSettingsCommand = new Relay(ResetFreecamSettings);
@@ -1767,7 +1767,6 @@ namespace HlaeObsTools.ViewModels.Docks
                 ViewportCampathDofEnabled = _viewport3DSettings.ViewportCampathDofEnabled,
                 ViewportCampathGizmoEnabled = _viewport3DSettings.ViewportCampathGizmoEnabled,
                 ViewportCampathSyncEnabled = _viewport3DSettings.ViewportCampathSyncEnabled,
-                ViewportCampathLegacyCompatibility = _viewport3DSettings.ViewportCampathLegacyCompatibility,
                 CampathGizmoLocalSpace = _viewport3DSettings.CampathGizmoLocalSpace,
                 ViewportLiveLinkEnabled = _viewport3DSettings.LiveLinkEnabled,
                 ViewportLiveLinkItemIconsEnabled = _viewport3DSettings.LiveLinkItemIconsEnabled,

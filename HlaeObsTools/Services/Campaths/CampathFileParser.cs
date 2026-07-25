@@ -68,7 +68,9 @@ public static class CampathFileParser
 
             while (reader.Read())
             {
-                if (reader.NodeType == XmlNodeType.Element && reader.Name.Equals("points", StringComparison.Ordinal))
+                if (reader.NodeType == XmlNodeType.Element
+                    && (reader.Name.Equals("points", StringComparison.Ordinal)
+                        || reader.Name.Equals("curveEditor", StringComparison.Ordinal)))
                     return true;
             }
 
@@ -91,6 +93,9 @@ public static class CampathFileParser
             var root = doc.Element("campath");
             if (root == null)
                 return null;
+
+            if (string.Equals(root.Attribute("model")?.Value, "curves", StringComparison.OrdinalIgnoreCase))
+                return ParseCurves(path);
 
             var positionInterp = root.Attribute("positionInterp")?.Value;
             bool isLinearPosition = string.Equals(positionInterp, "linear", StringComparison.OrdinalIgnoreCase);
@@ -130,6 +135,41 @@ public static class CampathFileParser
         {
             return null;
         }
+    }
+
+    private static CampathFile? ParseCurves(string path)
+    {
+        var data = CampathFileIo.Load(path);
+        var document = data?.CurveDocument;
+        if (document?.CanEvaluateCamera != true)
+            return null;
+
+        var times = document.GetCameraKeyTimes();
+        if (times.Count == 0)
+            return null;
+
+        var start = times[0];
+        var end = times[^1];
+        var duration = Math.Max(0.0, end - start);
+        var sampleCount = duration <= 0.0
+            ? 1
+            : Math.Clamp((int)Math.Ceiling(duration * 30.0), 32, 512);
+        var points = new List<CampathPoint>(sampleCount + 1);
+        for (var i = 0; i <= sampleCount; i++)
+        {
+            var time = sampleCount == 0 ? start : start + duration * i / sampleCount;
+            var sample = document.Evaluate(time);
+            points.Add(new CampathPoint
+            {
+                Time = time + data!.TimeOffset,
+                Position = new Vec3(sample.Position.X, sample.Position.Y, sample.Position.Z),
+                Forward = RotateForward(sample.Rotation)
+            });
+        }
+
+        // These points already sample the authored curves; the radar must connect
+        // them directly instead of applying a second Catmull-Rom interpolation.
+        return new CampathFile(points, isLinearPosition: true);
     }
 
     private static double ParseDouble(string? value)

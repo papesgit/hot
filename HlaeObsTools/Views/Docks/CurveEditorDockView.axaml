@@ -6,7 +6,7 @@
              x:Class="HlaeObsTools.Views.Docks.CurveEditorDockView"
              x:DataType="vm:CurveEditorDockViewModel">
     <Grid RowDefinitions="Auto,*" Background="#111318">
-        <Border Grid.Row="0" Background="#20232A" Padding="6,4">
+        <Border Grid.Row="0" Background="#20232A" Padding="6,4" IsVisible="{Binding IsCurveMode}">
             <Grid ColumnDefinitions="*,Auto">
             <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button Content="Fit All" Click="OnFitAll"/>
@@ -28,7 +28,7 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" ColumnDefinitions="180,*">
+        <Grid Grid.Row="1" ColumnDefinitions="180,*" IsVisible="{Binding IsCurveMode}">
             <Border Grid.Column="0" Background="#181A20" BorderBrush="#30333B" BorderThickness="0,0,1,0">
                 <ScrollViewer>
                   <StackPanel>
@@ -94,5 +94,16 @@
                                          FitAllRequest="{Binding FitAllRequest}"
                                          FitSelectionRequest="{Binding FitSelectionRequest}"/>
         </Grid>
+        <StackPanel Grid.RowSpan="2"
+                    IsVisible="{Binding !IsCurveMode}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="6">
+            <TextBlock Text="Curve editing is available in Editable Curves mode."
+                       Foreground="#C4C7CE"/>
+            <TextBlock Text="Choose Editable Curves in the campath editor to convert this path."
+                       Foreground="#888C95"
+                       FontSize="11"/>
+        </StackPanel>
     </Grid>
 </UserControl>
