@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
@@ -7,6 +10,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.Views;
@@ -35,12 +39,15 @@ public sealed class CampathSequenceTimelineControl : Panel
     private readonly HashSet<ClassicSelection> _classicSelections = new();
     private readonly HashSet<CampathKeyframeViewModel> _linkedClassicDragKeys = new();
     private readonly HashSet<CampathEditorViewModel> _historyEditors = new();
+    private readonly HashSet<ObservableCollection<CampathCurveKey>> _observedCurveKeyCollections = new();
+    private readonly HashSet<CampathCurveKey> _observedCurveKeys = new();
     private readonly List<ValueEditorEntry> _valueEditors = new();
     private readonly List<ModeEditorEntry> _modeEditors = new();
     private readonly TimelineDrawingSurface _drawingSurface;
     private bool _updatingValueEditors;
     private bool _updatingModeEditors;
     private bool _rebuildingValueEditors;
+    private bool _curveSelectionRefreshPending;
     private bool _panning;
     private bool _scrubbing;
     private bool _marqueeSelecting;
@@ -1790,6 +1797,7 @@ public sealed class CampathSequenceTimelineControl : Panel
         }
         if (e.NewValue is CampathSequenceViewModel newSequence)
             newSequence.PropertyChanged += OnSequencePropertyChanged;
+        RefreshCurveSelectionSubscriptions();
         PublishGizmoSelection();
         EnsureValueEditorLayout();
         InvalidateMeasure();
@@ -1798,6 +1806,8 @@ public sealed class CampathSequenceTimelineControl : Panel
 
     private void OnSequencePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(CampathSequenceViewModel.ContentEnd))
+            RefreshCurveSelectionSubscriptions();
         if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))
             PublishGizmoSelection();
         EnsureValueEditorLayout();
@@ -1810,6 +1820,76 @@ public sealed class CampathSequenceTimelineControl : Panel
             && e.PropertyName != nameof(CampathSequenceViewModel.SelectedCamera))
             InvalidateMeasure();
         InvalidateVisual();
+    }
+
+    private void RefreshCurveSelectionSubscriptions()
+    {
+        var desiredCollections = Sequence?.Cameras
+            .SelectMany(camera => camera.Editor.CurveDocument.Channels)
+            .Select(channel => channel.Keys)
+            .ToHashSet() ?? [];
+        foreach (var collection in _observedCurveKeyCollections
+                     .Where(collection => !desiredCollections.Contains(collection)).ToList())
+        {
+            collection.CollectionChanged -= OnObservedCurveKeysChanged;
+            _observedCurveKeyCollections.Remove(collection);
+        }
+        foreach (var collection in desiredCollections
+                     .Where(collection => !_observedCurveKeyCollections.Contains(collection)))
+        {
+            collection.CollectionChanged += OnObservedCurveKeysChanged;
+            _observedCurveKeyCollections.Add(collection);
+        }
+
+        var desiredKeys = desiredCollections.SelectMany(collection => collection).ToHashSet();
+        foreach (var key in _observedCurveKeys.Where(key => !desiredKeys.Contains(key)).ToList())
+        {
+            key.PropertyChanged -= OnObservedCurveKeyChanged;
+            _observedCurveKeys.Remove(key);
+        }
+        foreach (var key in desiredKeys.Where(key => !_observedCurveKeys.Contains(key)))
+        {
+            key.PropertyChanged += OnObservedCurveKeyChanged;
+            _observedCurveKeys.Add(key);
+        }
+    }
+
+    private void OnObservedCurveKeysChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+            foreach (CampathCurveKey key in e.OldItems)
+            {
+                key.PropertyChanged -= OnObservedCurveKeyChanged;
+                _observedCurveKeys.Remove(key);
+            }
+        if (e.NewItems != null)
+            foreach (CampathCurveKey key in e.NewItems)
+            {
+                key.PropertyChanged += OnObservedCurveKeyChanged;
+                _observedCurveKeys.Add(key);
+            }
+        QueueCurveSelectionRefresh();
+    }
+
+    private void OnObservedCurveKeyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CampathCurveKey.Selected))
+            return;
+        QueueCurveSelectionRefresh();
+    }
+
+    private void QueueCurveSelectionRefresh()
+    {
+        if (_curveSelectionRefreshPending)
+            return;
+        _curveSelectionRefreshPending = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _curveSelectionRefreshPending = false;
+            PublishGizmoSelection();
+            UpdateValueEditors();
+            InvalidateVisual();
+        }, DispatcherPriority.Input);
     }
 
     private enum RowKind { Cuts, Camera, Group, Channel }
