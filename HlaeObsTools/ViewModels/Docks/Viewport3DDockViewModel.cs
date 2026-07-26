@@ -51,6 +51,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     public event Action<IReadOnlyList<ViewportPin>>? PinsUpdated;
     public event Action<IReadOnlyList<ViewportPlayerStatus>>? PlayerStatusesUpdated;
     public event Action<CampathSample?>? SequencerPreviewChanged;
+    public event Action<CampathEditorViewModel?>? SelectedCampathEditorChanged;
     public bool IsSequencerPiloting => _sequence?.IsPiloting == true;
     public bool IsSequencerPlaying => _sequence?.IsPlaying == true;
 
@@ -104,6 +105,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     public HlaeInputSender? InputSender => _inputSender;
     public Cs2LiveLinkReceiver? LiveLinkReceiver => _liveLinkReceiver;
     public CampathEditorViewModel CampathEditor { get; }
+    public CampathEditorViewModel? SelectedCampathEditor =>
+        _sequence == null ? CampathEditor : _sequence.SelectedCamera?.Editor;
     public Func<ViewportFreecamState?>? CampathStateProvider { get; set; }
     public bool HasSequencerPossession => _sequence?.Possession.Kind != SequencerPossessionKind.None;
 
@@ -383,10 +386,14 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         _sequence.CameraKeyRequested += OnSequenceCameraKeyRequested;
         _sequence.PropertyChanged += OnSequencePropertyChanged;
         _sequence.PlayheadScrubCompleted += OnPlayheadScrubCompleted;
+        SelectedCampathEditorChanged?.Invoke(SelectedCampathEditor);
     }
 
     private void OnSequencePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))
+            SelectedCampathEditorChanged?.Invoke(SelectedCampathEditor);
+
         if (e.PropertyName == nameof(CampathSequenceViewModel.IsPlaying) && IsHlaeSyncActive())
         {
             _ = _webSocketClient?.SendExecCommandAsync(

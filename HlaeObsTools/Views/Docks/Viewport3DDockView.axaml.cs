@@ -46,10 +46,12 @@ public partial class Viewport3DDockView : UserControl
             _viewModel.PinsUpdated -= OnPinsUpdated;
             _viewModel.PlayerStatusesUpdated -= OnPlayerStatusesUpdated;
             _viewModel.Viewport3DSettings.PropertyChanged -= OnViewportSettingsChanged;
+            _viewModel.SelectedCampathEditorChanged -= OnSelectedCampathEditorChanged;
             if (_campathEditor != null)
             {
                 DetachCampathEditor(_campathEditor);
             }
+            _campathEditor = null;
             _viewModel.CampathStateProvider = null;
             _viewModel.SequencerPreviewChanged -= OnSequencerPreviewChanged;
             UnsubscribeFrameTick();
@@ -62,13 +64,35 @@ public partial class Viewport3DDockView : UserControl
             _viewModel.PinsUpdated += OnPinsUpdated;
             _viewModel.PlayerStatusesUpdated += OnPlayerStatusesUpdated;
             _viewModel.Viewport3DSettings.PropertyChanged += OnViewportSettingsChanged;
-            _campathEditor = _viewModel.CampathEditor;
-            AttachCampathEditor(_campathEditor);
+            _viewModel.SelectedCampathEditorChanged += OnSelectedCampathEditorChanged;
+            SetCampathEditor(_viewModel.SelectedCampathEditor);
             _viewModel.CampathStateProvider = CaptureFreecamState;
             _viewModel.SequencerPreviewChanged += OnSequencerPreviewChanged;
         }
 
         EnsureViewport();
+    }
+
+    private void OnSelectedCampathEditorChanged(CampathEditorViewModel? editor)
+    {
+        SetCampathEditor(editor);
+        UpdateDepthOfField();
+        UpdateCampathOverlay();
+        UpdateCampathGizmo();
+    }
+
+    private void SetCampathEditor(CampathEditorViewModel? editor)
+    {
+        if (ReferenceEquals(_campathEditor, editor))
+            return;
+
+        if (_campathEditor != null)
+            DetachCampathEditor(_campathEditor);
+
+        _campathEditor = editor;
+
+        if (_campathEditor != null)
+            AttachCampathEditor(_campathEditor);
     }
 
     private void OnViewportSettingsChanged(object? sender, PropertyChangedEventArgs e)
@@ -382,11 +406,12 @@ public partial class Viewport3DDockView : UserControl
 
     private void UpdateCampathOverlay()
     {
-        if (_viewport == null || _viewModel == null || _campathEditor == null)
+        if (_viewport == null || _viewModel == null)
             return;
 
         if (!_viewModel.Viewport3DSettings.ViewportCampathMode ||
-            !_viewModel.Viewport3DSettings.ViewportCampathOverlayEnabled)
+            !_viewModel.Viewport3DSettings.ViewportCampathOverlayEnabled ||
+            _campathEditor == null)
         {
             _viewport.SetCampathOverlay(null);
             return;
@@ -400,10 +425,12 @@ public partial class Viewport3DDockView : UserControl
 
     private void UpdateCampathGizmo()
     {
-        if (_viewport == null || _viewModel == null || _campathEditor == null)
+        if (_viewport == null || _viewModel == null)
             return;
 
-        if (!_viewModel.Viewport3DSettings.ViewportCampathMode || !_viewModel.Viewport3DSettings.ViewportCampathGizmoEnabled)
+        if (!_viewModel.Viewport3DSettings.ViewportCampathMode ||
+            !_viewModel.Viewport3DSettings.ViewportCampathGizmoEnabled ||
+            _campathEditor == null)
         {
             _viewport.SetCampathGizmo(null);
             return;
