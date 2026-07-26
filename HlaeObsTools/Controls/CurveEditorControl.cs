@@ -253,14 +253,46 @@ public sealed class CurveEditorControl : Control
         if (showIn)
         {
             context.DrawLine(tangentPen, inPoint, keyPoint);
-            AddHandle(context, inPoint, channel, key, TangentSide.In,
+            var handlePoint = key.WeightedTangents
+                ? inPoint
+                : FixedLengthHandlePoint(keyPoint, inPoint);
+            if (!key.WeightedTangents)
+                DrawSecondaryTangentEndpoint(context, handlePoint, inPoint);
+            AddHandle(context, handlePoint, channel, key, TangentSide.In,
                 interactive: key.Interpolation == CurveInterpolationMode.Bezier);
         }
         if (showOut)
         {
             context.DrawLine(tangentPen, keyPoint, outPoint);
-            AddHandle(context, outPoint, channel, key, TangentSide.Out, interactive: true);
+            var handlePoint = key.WeightedTangents
+                ? outPoint
+                : FixedLengthHandlePoint(keyPoint, outPoint);
+            if (!key.WeightedTangents)
+                DrawSecondaryTangentEndpoint(context, handlePoint, outPoint);
+            AddHandle(context, handlePoint, channel, key, TangentSide.Out, interactive: true);
         }
+    }
+
+    private static Point FixedLengthHandlePoint(Point keyPoint, Point endpoint)
+    {
+        const double handleLength = 50.0;
+        var delta = endpoint - keyPoint;
+        var length = Math.Sqrt(delta.X * delta.X + delta.Y * delta.Y);
+        return length <= 1e-6
+            ? keyPoint
+            : new Point(
+                keyPoint.X + delta.X * handleLength / length,
+                keyPoint.Y + delta.Y * handleLength / length);
+    }
+
+    private static void DrawSecondaryTangentEndpoint(
+        DrawingContext context, Point handlePoint, Point endpoint)
+    {
+        var dx = endpoint.X - handlePoint.X;
+        var dy = endpoint.Y - handlePoint.Y;
+        if (Math.Sqrt(dx * dx + dy * dy) < 2.0)
+            return;
+        context.DrawEllipse(null, new Pen(Brushes.Gray, 1), endpoint, 3, 3);
     }
 
     private void AddHandle(DrawingContext context, Point p, CampathCurveChannel channel,
@@ -361,8 +393,12 @@ public sealed class CurveEditorControl : Control
         if (_dragKey == null || _dragChannel == null) return;
         if (_dragTangent != TangentSide.None)
         {
-            var dt = XToTime(point.X, plot) - _dragKey.Time;
-            if (Math.Abs(dt) > 1e-6)
+            var rawDt = XToTime(point.X, plot) - _dragKey.Time;
+            var side = _dragTangent == TangentSide.In ? -1.0 : 1.0;
+            var minimumDt = Math.Max(1e-9,
+                (_timeMax - _timeMin) / Math.Max(1.0, plot.Width) * 0.5);
+            var dt = side * Math.Max(minimumDt, side * rawDt);
+            if (Math.Abs(dt) > 1e-9)
             {
                 var weight = Math.Abs(dt);
                 if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
