@@ -24,13 +24,20 @@ public readonly record struct SequencerPossession(SequencerPossessionKind Kind, 
     public static SequencerPossession CameraCuts => new(SequencerPossessionKind.CameraCuts, Guid.Empty);
 }
 
-public sealed record SequencerGizmoSelection(
-    CampathEditorViewModel Editor,
+public sealed record SequencerGizmoTarget(
     double Time,
     CampathKeyframeViewModel? ClassicKey,
     IReadOnlyDictionary<string, CampathCurveKey> CurveKeys,
     CampathGizmoAxes TranslationAxes,
-    CampathGizmoAxes RotationAxes)
+    CampathGizmoAxes RotationAxes);
+
+public sealed record SequencerGizmoSelection(
+    CampathEditorViewModel Editor,
+    IReadOnlyList<SequencerGizmoTarget> Targets,
+    CampathGizmoAxes TranslationAxes,
+    CampathGizmoAxes RotationAxes,
+    double? PivotAnchorTime,
+    Quaternion CenterRotation)
 {
     public bool HasHandles =>
         TranslationAxes != CampathGizmoAxes.None || RotationAxes != CampathGizmoAxes.None;
@@ -147,6 +154,11 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     private SequencerGizmoSelection? _gizmoSelection;
     private bool _gizmoEditActive;
     private CampathEditorViewModel? _gizmoEditEditor;
+    private List<GizmoTargetOrigin>? _gizmoTargetOrigins;
+    private Vector3 _gizmoPivotOrigin;
+    private Quaternion _gizmoPivotRotationOrigin = Quaternion.Identity;
+    private Vector3 _activeGizmoPosition;
+    private Quaternion _activeGizmoRotation = Quaternion.Identity;
 
     public CampathSequenceViewModel(
         CampathEditorViewModel initialCamera,
@@ -220,14 +232,38 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
         if (selection == null)
             return null;
 
-        var sample = selection.ClassicKey is { } classic
-            ? new CampathSample(classic.Position, classic.Rotation, classic.Fov, true, classic.Dof)
-            : selection.Editor.Evaluate(selection.Time);
+        // Do not feed curve reevaluation back into a gizmo that is already being
+        // dragged. Sparse/partial channels can move the evaluated center by tiny
+        // amounts while rotating, which otherwise makes the manipulator jitter.
+        if (_gizmoEditActive)
+        {
+            var activeLocalSpace = selection.Targets.Count == 1 && useLocalSpace &&
+                (selection.TranslationAxes is CampathGizmoAxes.None or CampathGizmoAxes.All);
+            return new CampathGizmoState(true, _activeGizmoPosition, _activeGizmoRotation,
+                activeLocalSpace, selection.TranslationAxes, selection.RotationAxes);
+        }
+
+        var samples = selection.Targets.Select(target => (
+            Target: target,
+            Sample: EvaluateGizmoTarget(selection.Editor, target))).ToList();
+        if (samples.Count == 0)
+            return null;
+        var anchor = selection.PivotAnchorTime is { } anchorTime
+            ? samples.FirstOrDefault(item => Math.Abs(item.Target.Time - anchorTime) <= 0.000001)
+            : default;
+        var hasAnchor = anchor.Target != null;
+        var position = hasAnchor
+            ? anchor.Sample.Position
+            : new Vector3(
+                samples.Average(item => item.Sample.Position.X),
+                samples.Average(item => item.Sample.Position.Y),
+                samples.Average(item => item.Sample.Position.Z));
+        var rotation = hasAnchor ? anchor.Sample.Rotation : selection.CenterRotation;
         // A partial position-channel selection represents world-space scalar values.
         // Keeping it in world space prevents a local axis drag from changing hidden channels.
-        var effectiveLocalSpace = useLocalSpace &&
+        var effectiveLocalSpace = selection.Targets.Count == 1 && useLocalSpace &&
             (selection.TranslationAxes is CampathGizmoAxes.None or CampathGizmoAxes.All);
-        return new CampathGizmoState(true, sample.Position, sample.Rotation, effectiveLocalSpace,
+        return new CampathGizmoState(true, position, rotation, effectiveLocalSpace,
             selection.TranslationAxes, selection.RotationAxes);
     }
 
@@ -235,8 +271,19 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     {
         if (_gizmoEditActive || GizmoSelection == null)
             return;
+        var state = GetGizmoState(useLocalSpace: false);
+        if (state == null)
+            return;
         _gizmoEditActive = true;
         _gizmoEditEditor = GizmoSelection.Editor;
+        _gizmoPivotOrigin = state.Value.Position;
+        _gizmoPivotRotationOrigin = state.Value.Rotation;
+        _activeGizmoPosition = state.Value.Position;
+        _activeGizmoRotation = state.Value.Rotation;
+        _gizmoTargetOrigins = GizmoSelection.Targets
+            .Select(target => new GizmoTargetOrigin(
+                target, EvaluateGizmoTarget(GizmoSelection.Editor, target)))
+            .ToList();
         BeginHistoryTransaction();
         _gizmoEditEditor.BeginHistoryTransaction();
     }
@@ -248,33 +295,61 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
             return;
         BeginGizmoEdit();
 
-        if (selection.ClassicKey is { } classic)
-        {
-            classic.Position = ApplyPositionAxes(classic.Position, position, selection.TranslationAxes);
-            classic.Rotation = ApplyRotationAxes(classic.Rotation, rotation, selection.RotationAxes);
+        if (_gizmoTargetOrigins == null)
             return;
-        }
 
+        _activeGizmoPosition = position;
+        _activeGizmoRotation = Quaternion.Normalize(rotation);
         var changedChannels = new HashSet<CampathCurveChannel>();
-        var euler = QuaternionToEuler(rotation);
-        foreach (var (channelId, key) in selection.CurveKeys)
+        var translation = position - _gizmoPivotOrigin;
+        var groupRotation = selection.Targets.Count == 1
+            ? Quaternion.Normalize(rotation)
+            : Quaternion.Normalize(rotation * Quaternion.Inverse(_gizmoPivotRotationOrigin));
+        foreach (var origin in _gizmoTargetOrigins)
         {
-            var value = channelId switch
+            var target = origin.Target;
+            var transformedPosition = origin.Sample.Position + translation;
+            var transformedRotation = rotation;
+            if (selection.Targets.Count > 1)
             {
-                "position.x" => position.X,
-                "position.y" => position.Y,
-                "position.z" => position.Z,
-                "rotation.pitch" => ClosestEquivalentAngle(euler.Pitch, key.Value),
-                "rotation.yaw" => ClosestEquivalentAngle(euler.Yaw, key.Value),
-                "rotation.roll" => ClosestEquivalentAngle(euler.Roll, key.Value),
-                _ => key.Value
-            };
-            if (Math.Abs(key.Value - value) < 1e-9)
+                if (target.TranslationAxes != CampathGizmoAxes.None)
+                {
+                    transformedPosition = _gizmoPivotOrigin
+                        + Vector3.Transform(origin.Sample.Position - _gizmoPivotOrigin, groupRotation)
+                        + translation;
+                }
+                transformedRotation = Quaternion.Normalize(groupRotation * origin.Sample.Rotation);
+            }
+
+            if (target.ClassicKey is { } classic)
+            {
+                classic.Position = ApplyPositionAxes(
+                    origin.Sample.Position, transformedPosition, target.TranslationAxes);
+                classic.Rotation = ApplyRotationAxes(
+                    origin.Sample.Rotation, transformedRotation, target.RotationAxes);
                 continue;
-            key.Value = value;
-            var channel = selection.Editor.CurveDocument.Find(channelId);
-            if (channel != null)
-                changedChannels.Add(channel);
+            }
+
+            var euler = QuaternionToEuler(transformedRotation);
+            foreach (var (channelId, key) in target.CurveKeys)
+            {
+                var value = channelId switch
+                {
+                    "position.x" => transformedPosition.X,
+                    "position.y" => transformedPosition.Y,
+                    "position.z" => transformedPosition.Z,
+                    "rotation.pitch" => ClosestEquivalentAngle(euler.Pitch, key.Value),
+                    "rotation.yaw" => ClosestEquivalentAngle(euler.Yaw, key.Value),
+                    "rotation.roll" => ClosestEquivalentAngle(euler.Roll, key.Value),
+                    _ => key.Value
+                };
+                if (Math.Abs(key.Value - value) < 1e-9)
+                    continue;
+                key.Value = value;
+                var channel = selection.Editor.CurveDocument.Find(channelId);
+                if (channel != null)
+                    changedChannels.Add(channel);
+            }
         }
         foreach (var channel in changedChannels)
             CampathPathConversion.AutoTangents(channel);
@@ -289,7 +364,10 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
         _gizmoEditActive = false;
         _gizmoEditEditor?.CommitHistoryTransaction();
         _gizmoEditEditor = null;
+        _gizmoTargetOrigins = null;
         CommitHistoryTransaction();
+        if (GizmoSelection is { PivotAnchorTime: null, Targets.Count: > 1 } selection)
+            GizmoSelection = selection with { CenterRotation = _activeGizmoRotation };
     }
 
     private static Vector3 ApplyPositionAxes(
@@ -341,6 +419,15 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
         while (angle - reference < -180.0) angle += 360.0;
         return angle;
     }
+
+    private static CampathSample EvaluateGizmoTarget(
+        CampathEditorViewModel editor, SequencerGizmoTarget target) =>
+        target.ClassicKey is { } classic
+            ? new CampathSample(classic.Position, classic.Rotation, classic.Fov, true, classic.Dof)
+            : editor.Evaluate(target.Time);
+
+    private sealed record GizmoTargetOrigin(
+        SequencerGizmoTarget Target, CampathSample Sample);
 
     public double PlayheadTime
     {

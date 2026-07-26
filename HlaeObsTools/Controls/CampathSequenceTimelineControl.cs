@@ -1606,39 +1606,81 @@ public sealed class CampathSequenceTimelineControl : Panel
         }
 
         var editor = selected[0].Editor;
-        var time = selected[0].Time;
-        if (selected.Any(key => !ReferenceEquals(key.Editor, editor)
-            || Math.Abs(key.Time - time) > 0.000001))
+        if (selected.Any(key => !ReferenceEquals(key.Editor, editor)))
         {
             Sequence.SetGizmoSelection(null);
             return;
         }
 
-        var translationAxes = CampathGizmoAxes.None;
-        var rotationAxes = CampathGizmoAxes.None;
-        var curveKeys = new Dictionary<string, CampathCurveKey>();
-        CampathKeyframeViewModel? classicKey = null;
-        foreach (var key in selected)
+        const double timeEpsilon = 0.0001;
+        var clusters = selected
+            .GroupBy(key => Math.Round(key.Time, 4))
+            .OrderBy(cluster => cluster.Key)
+            .Select(cluster => cluster.ToList())
+            .ToList();
+
+        var targets = new List<SequencerGizmoTarget>();
+        var allTranslationAxes = CampathGizmoAxes.None;
+        var allRotationAxes = CampathGizmoAxes.None;
+        foreach (var cluster in clusters)
         {
-            if (key.ClassicKey != null)
+            var translationAxes = CampathGizmoAxes.None;
+            var rotationAxes = CampathGizmoAxes.None;
+            var curveKeys = new Dictionary<string, CampathCurveKey>();
+            CampathKeyframeViewModel? classicKey = null;
+            foreach (var key in cluster)
             {
-                if (classicKey != null && !ReferenceEquals(classicKey, key.ClassicKey))
+                if (key.ClassicKey != null)
                 {
-                    Sequence.SetGizmoSelection(null);
-                    return;
+                    if (classicKey != null && !ReferenceEquals(classicKey, key.ClassicKey))
+                    {
+                        Sequence.SetGizmoSelection(null);
+                        return;
+                    }
+                    classicKey = key.ClassicKey;
+                    AddScopeAxes(key.ClassicScope, ref translationAxes, ref rotationAxes);
                 }
-                classicKey = key.ClassicKey;
-                AddScopeAxes(key.ClassicScope, ref translationAxes, ref rotationAxes);
+                else if (key.CurveKey != null && key.CurveChannel != null)
+                {
+                    curveKeys[key.CurveChannel.Id] = key.CurveKey;
+                    AddChannelAxes(key.CurveChannel.Id, ref translationAxes, ref rotationAxes);
+                }
             }
-            else if (key.CurveKey != null && key.CurveChannel != null)
-            {
-                curveKeys[key.CurveChannel.Id] = key.CurveKey;
-                AddChannelAxes(key.CurveChannel.Id, ref translationAxes, ref rotationAxes);
-            }
+
+            if (translationAxes == CampathGizmoAxes.None && rotationAxes == CampathGizmoAxes.None)
+                continue;
+            var target = new SequencerGizmoTarget(
+                cluster.Average(key => key.Time), classicKey, curveKeys,
+                translationAxes, rotationAxes);
+            targets.Add(target);
+            allTranslationAxes |= translationAxes;
+            allRotationAxes |= rotationAxes;
         }
 
+        if (targets.Count == 0)
+        {
+            Sequence.SetGizmoSelection(null);
+            return;
+        }
+
+        var previous = Sequence.GizmoSelection;
+        double? pivotAnchorTime = null;
+        if (targets.Count == 1)
+        {
+            pivotAnchorTime = targets[0].Time;
+        }
+        else if (previous?.PivotAnchorTime is { } previousAnchor
+            && targets.Any(target => Math.Abs(target.Time - previousAnchor) <= timeEpsilon))
+        {
+            pivotAnchorTime = previousAnchor;
+        }
+        var centerRotation = pivotAnchorTime == null
+            && previous is { PivotAnchorTime: null, Targets.Count: > 1 }
+            ? previous.CenterRotation
+            : Quaternion.Identity;
+
         Sequence.SetGizmoSelection(new SequencerGizmoSelection(
-            editor, time, classicKey, curveKeys, translationAxes, rotationAxes));
+            editor, targets, allTranslationAxes, allRotationAxes, pivotAnchorTime, centerRotation));
     }
 
     private static void AddScopeAxes(string? scope,
