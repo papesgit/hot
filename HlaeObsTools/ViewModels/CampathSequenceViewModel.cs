@@ -496,6 +496,43 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
         return camera;
     }
 
+    public CampathCameraTrackViewModel? DuplicateCamera(CampathCameraTrackViewModel source)
+    {
+        var sourceIndex = Cameras.IndexOf(source);
+        if (sourceIndex < 0)
+            return null;
+
+        var editor = new CampathEditorViewModel();
+        editor.RestoreHistorySnapshot(source.Editor.CaptureHistorySnapshot());
+        editor.Hold = source.Editor.Hold;
+        editor.TimeOffset = source.Editor.TimeOffset;
+        editor.SelectedKeyframe = null;
+        foreach (var key in editor.CurveDocument.Channels.SelectMany(channel => channel.Keys))
+            key.Selected = false;
+
+        BeginHistoryTransaction();
+        var duplicate = new CampathCameraTrackViewModel(GetDuplicateCameraName(source.Name), editor);
+        _knownCameras.Add(duplicate);
+        Cameras.Insert(sourceIndex + 1, duplicate);
+        SelectedCamera = duplicate;
+        CommitHistoryTransaction();
+        return duplicate;
+    }
+
+    private string GetDuplicateCameraName(string sourceName)
+    {
+        var baseName = $"{sourceName} Copy";
+        if (Cameras.All(camera => !string.Equals(camera.Name, baseName, StringComparison.OrdinalIgnoreCase)))
+            return baseName;
+        for (var suffix = 2; ; suffix++)
+        {
+            var candidate = $"{baseName} {suffix}";
+            if (Cameras.All(camera =>
+                    !string.Equals(camera.Name, candidate, StringComparison.OrdinalIgnoreCase)))
+                return candidate;
+        }
+    }
+
     public void LoadFromData(CampathFileIo.CampathSequenceFileData data)
     {
         if (data.Cameras.Count == 0)

@@ -104,6 +104,8 @@ public sealed class CampathSequenceTimelineControl : Panel
         set => SetValue(SecondsPerPixelProperty, Math.Clamp(value, 0.0001, 10.0));
     }
 
+    public event Action<CampathCameraTrackViewModel>? SaveCameraRequested;
+
     protected override Size MeasureOverride(Size availableSize)
     {
         var height = RulerHeight + RowHeight;
@@ -1396,14 +1398,26 @@ public sealed class CampathSequenceTimelineControl : Panel
     {
         if (Sequence == null)
             return;
-        var remove = new MenuItem { Header = "Remove Camera Track" };
+        var duplicate = new MenuItem { Header = "Duplicate" };
+        duplicate.Click += (_, _) =>
+        {
+            Sequence.DuplicateCamera(camera);
+            InvalidateMeasure();
+            InvalidateVisual();
+        };
+        var save = new MenuItem { Header = "Save Campath" };
+        save.Click += (_, _) => SaveCameraRequested?.Invoke(camera);
+        var remove = new MenuItem { Header = "Remove" };
         remove.Click += (_, _) =>
         {
             Sequence.RemoveCamera(camera);
             InvalidateMeasure();
             InvalidateVisual();
         };
-        new ContextMenu { ItemsSource = new Control[] { remove } }.Open(this);
+        new ContextMenu
+        {
+            ItemsSource = new Control[] { duplicate, save, new Separator(), remove }
+        }.Open(this);
     }
 
     private void OpenDofEnabledMenu(CampathCameraTrackViewModel camera)

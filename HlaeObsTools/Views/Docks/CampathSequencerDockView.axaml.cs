@@ -3,7 +3,11 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using HlaeObsTools.Services.Campaths;
+using HlaeObsTools.Services.Input;
+using HlaeObsTools.ViewModels;
 using HlaeObsTools.ViewModels.Docks;
 
 namespace HlaeObsTools.Views.Docks;
@@ -15,9 +19,25 @@ public partial class CampathSequencerDockView : UserControl
     public CampathSequencerDockView()
     {
         InitializeComponent();
+        SequenceTimeline.SaveCameraRequested += OnSaveCameraRequested;
         AddHandler(KeyDownEvent, OnUndoRedoKeyDown, RoutingStrategies.Tunnel, true);
         AttachedToVisualTree += OnAttachedToVisualTree;
         DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+
+    private async void OnSaveCameraRequested(CampathCameraTrackViewModel camera)
+    {
+        var host = TopLevel.GetTopLevel(this);
+        if (host?.StorageProvider == null)
+            return;
+
+        var result = await KeyboardInputGate.RunSuppressedAsync(() =>
+            host.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = $"Save {camera.Name} Campath"
+            }));
+        if (result != null)
+            CampathFileIo.Save(result.Path.LocalPath, camera.Editor);
     }
 
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)

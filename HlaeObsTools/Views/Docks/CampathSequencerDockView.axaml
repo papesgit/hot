@@ -9,7 +9,8 @@
         <ScrollViewer
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
-            <controls:CampathSequenceTimelineControl Sequence="{Binding Sequence}"
+            <controls:CampathSequenceTimelineControl x:Name="SequenceTimeline"
+                                                     Sequence="{Binding Sequence}"
                                                      ViewStart="{Binding ViewStart, Mode=TwoWay}"
                                                      SecondsPerPixel="{Binding SecondsPerPixel, Mode=TwoWay}"
                                                      MinHeight="180"/>
