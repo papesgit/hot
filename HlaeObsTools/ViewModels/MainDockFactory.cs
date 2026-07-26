@@ -389,7 +389,8 @@ public class MainDockFactory : Factory, IDisposable
         }
 
         var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer, _liveLinkReceiver) { Id = "BottomCenter", Title = "3D Viewport" };
-        var sequence = new CampathSequenceViewModel(campathEditor);
+        var sequence = new CampathSequenceViewModel(
+            campathEditor, bottomLeft.DefaultCampathInterpMode);
         var sequencer = new CampathSequencerDockViewModel(sequence);
         bottomLeft.SetCampathSequence(sequence);
         var curveEditor = new CurveEditorDockViewModel(campathEditor, bottomCenter);

@@ -296,10 +296,11 @@
                             <TextBlock Text="Viewport campath editor"
                                        Foreground="#CCCCCC"
                                        FontWeight="SemiBold"/>
+                            <TextBlock Text="Default campath interp"
+                                       Foreground="#AAAAAA"/>
                             <ComboBox Width="150"
-                                        ItemsSource="{Binding CampathEditor.EditorModeOptions}"
-                                        SelectedItem="{Binding CampathEditor.SelectedEditorModeOption, Mode=OneWay}"
-                                        SelectionChanged="OnCampathEditorModeChanged"
+                                        ItemsSource="{Binding DefaultCampathInterpOptions}"
+                                        SelectedItem="{Binding DefaultCampathInterp, Mode=TwoWay}"
                                         Margin="0,0,10,0">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate x:DataType="rootvm:CampathEditorModeOption">
@@ -312,13 +313,13 @@
                                               Content="Hold"
                                     hotkeys:HotkeyTarget.Path="CampathEditor.Hold"
                                               Foreground="#E6E6E6"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathOverlayEnabled, Mode=TwoWay}"
                                               Content="Draw Path"
                                               Foreground="#E6E6E6"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathOverlayEnabled"
                                               Margin="0,0,10,0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathGizmoEnabled, Mode=TwoWay}"
                                               Content="Show Gizmo"
                                               Foreground="#E6E6E6"

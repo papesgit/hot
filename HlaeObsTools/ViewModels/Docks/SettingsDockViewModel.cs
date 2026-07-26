@@ -78,7 +78,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly Viewport3DSettings _viewport3DSettings;
         private readonly CampathEditorViewModel _campathEditor;
         private CampathSequenceViewModel? _campathSequence;
-        private bool _isSynchronizingCampathEditor;
+        private CampathEditorMode _defaultCampathInterp = CampathEditorMode.Curves;
         private readonly SettingsStorage _settingsStorage;
         private readonly AppSettingsData _storedSettings;
         private readonly HlaeWebSocketClient? _ws;
@@ -181,6 +181,9 @@ namespace HlaeObsTools.ViewModels.Docks
             // Initialize network fields
             var settings = storedSettings ?? new AppSettingsData();
             _storedSettings = settings;
+            if (Enum.TryParse<CampathEditorMode>(
+                    settings.DefaultCampathInterp, ignoreCase: true, out var defaultCampathInterp))
+                _defaultCampathInterp = defaultCampathInterp;
             _webSocketHost = settings.WebSocketHost;
             _webSocketPort = settings.WebSocketPort;
             _graphicsProducerPort = settings.GraphicsProducerPort;
@@ -380,8 +383,23 @@ namespace HlaeObsTools.ViewModels.Docks
         public ObservableCollection<string> ReplayDirectorRoleOptions => HlaeObsTools.ViewModels.ReplayDirectorSettings.RoleOptions;
         public CampathEditorViewModel CampathEditor =>
             _campathSequence?.SelectedCamera?.Editor ?? _campathEditor;
-        public bool IsSynchronizingCampathEditor => _isSynchronizingCampathEditor;
-
+        public IReadOnlyList<CampathEditorModeOption> DefaultCampathInterpOptions =>
+            _campathEditor.EditorModeOptions;
+        public CampathEditorMode DefaultCampathInterpMode => _defaultCampathInterp;
+        public CampathEditorModeOption DefaultCampathInterp
+        {
+            get => DefaultCampathInterpOptions.First(option => option.Mode == _defaultCampathInterp);
+            set
+            {
+                if (value == null || value.Mode == _defaultCampathInterp)
+                    return;
+                _defaultCampathInterp = value.Mode;
+                if (_campathSequence != null)
+                    _campathSequence.DefaultCameraMode = value.Mode;
+                OnPropertyChanged();
+                SaveSettings();
+            }
+        }
         public void SetCampathSequence(CampathSequenceViewModel sequence)
         {
             if (_campathSequence == sequence)
@@ -389,6 +407,7 @@ namespace HlaeObsTools.ViewModels.Docks
             if (_campathSequence != null)
                 _campathSequence.PropertyChanged -= OnCampathSequenceChanged;
             _campathSequence = sequence;
+            _campathSequence.DefaultCameraMode = _defaultCampathInterp;
             _campathSequence.PropertyChanged += OnCampathSequenceChanged;
             OnPropertyChanged(nameof(CampathEditor));
         }
@@ -396,12 +415,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private void OnCampathSequenceChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))
-            {
-                _isSynchronizingCampathEditor = true;
                 OnPropertyChanged(nameof(CampathEditor));
-                Dispatcher.UIThread.Post(() => _isSynchronizingCampathEditor = false,
-                    DispatcherPriority.Background);
-            }
         }
         public AttachPresetAnimationDockViewModel AttachPresetAnimationEditor { get; }
         public ObservableCollection<HotkeyBindingViewModel> HotkeyBindings { get; } = new();
@@ -1801,6 +1815,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 ViewportSkipTranslucentEnabled = _viewport3DSettings.SkipTranslucentEnabled,
                 ViewportShowFps = _viewport3DSettings.ShowFps,
                 ViewportCampathMode = _viewport3DSettings.ViewportCampathMode,
+                DefaultCampathInterp = _defaultCampathInterp.ToString(),
                 ViewportCampathOverlayEnabled = _viewport3DSettings.ViewportCampathOverlayEnabled,
                 ViewportCampathGizmoEnabled = _viewport3DSettings.ViewportCampathGizmoEnabled,
                 ViewportCampathSyncEnabled = _viewport3DSettings.ViewportCampathSyncEnabled,

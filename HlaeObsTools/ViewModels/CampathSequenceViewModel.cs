@@ -132,8 +132,13 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     private CampathCameraTrackViewModel? _selectedCamera;
     private SequencerPossession _possession = SequencerPossession.None;
 
-    public CampathSequenceViewModel(CampathEditorViewModel initialCamera)
+    public CampathSequenceViewModel(
+        CampathEditorViewModel initialCamera,
+        CampathEditorMode defaultCameraMode = CampathEditorMode.Curves)
     {
+        DefaultCameraMode = defaultCameraMode;
+        if (!initialCamera.HasAuthoredKeys)
+            initialCamera.SetEditorMode(DefaultCameraMode);
         Cameras.CollectionChanged += OnCamerasChanged;
         CameraCuts.CollectionChanged += OnCutsChanged;
         AddCamera("Camera 1", initialCamera);
@@ -145,6 +150,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<CampathCameraTrackViewModel> Cameras { get; } = new();
     public ObservableCollection<CameraCutSectionViewModel> CameraCuts { get; } = new();
+    public CampathEditorMode DefaultCameraMode { get; set; }
     public CampathCameraTrackViewModel? SelectedCamera
     {
         get => _selectedCamera;
@@ -226,8 +232,13 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     public CampathCameraTrackViewModel AddCamera(string? name = null, CampathEditorViewModel? editor = null)
     {
         BeginHistoryTransaction();
+        if (editor == null)
+        {
+            editor = new CampathEditorViewModel();
+            editor.SetEditorMode(DefaultCameraMode);
+        }
         var camera = new CampathCameraTrackViewModel(
-            name ?? $"Camera {Cameras.Count + 1}", editor ?? new CampathEditorViewModel());
+            name ?? $"Camera {Cameras.Count + 1}", editor);
         _knownCameras.Add(camera);
         Cameras.Add(camera);
         SelectedCamera ??= camera;

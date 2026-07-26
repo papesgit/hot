@@ -97,6 +97,7 @@ public class AppSettingsData
     public bool ViewportSkipTranslucentEnabled { get; set; }
     public bool ViewportShowFps { get; set; }
     public bool ViewportCampathMode { get; set; }
+    public string DefaultCampathInterp { get; set; } = "Curves";
     public bool ViewportCampathOverlayEnabled { get; set; } = true;
     public bool ViewportCampathGizmoEnabled { get; set; } = true;
     public bool ViewportCampathSyncEnabled { get; set; }
