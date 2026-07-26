@@ -60,7 +60,7 @@ public sealed class CampathCurveChannel : ViewModelBase
         if (time >= Keys[^1].Time) return Keys[^1].Value;
 
         var index = 0;
-        while (index + 1 < Keys.Count && Keys[index + 1].Time < time) index++;
+        while (index + 1 < Keys.Count && Keys[index + 1].Time <= time) index++;
         var a = Keys[index];
         var b = Keys[index + 1];
         var dt = Math.Max(1e-9, b.Time - a.Time);

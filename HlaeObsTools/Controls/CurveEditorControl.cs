@@ -64,6 +64,7 @@ public sealed class CurveEditorControl : Control
 
     private enum TangentSide { None, In, Out }
     private enum DragAxis { Free, Horizontal, Vertical }
+    private enum KeyCurveMode { Auto, Manual, Linear, Constant }
 
     static CurveEditorControl()
     {
@@ -170,15 +171,56 @@ public sealed class CurveEditorControl : Control
         if (channel.Keys.Count == 0) return;
         var color = Color.Parse(channel.Color);
         var pen = new Pen(new SolidColorBrush(color), 1.7);
-        Point? previous = null;
-        var samples = Math.Clamp((int)plot.Width / 3, 32, 600);
-        for (var i = 0; i <= samples; i++)
+
+        void DrawCurveLine(double fromTime, double fromValue, double toTime, double toValue)
         {
-            var time = _timeMin + (_timeMax - _timeMin) * i / samples;
-            var p = new Point(TimeToX(time, plot), ValueToY(channel, channel.Evaluate(time), plot, channelIndex, channelCount));
-            if (previous != null) context.DrawLine(pen, previous.Value, p);
-            previous = p;
+            context.DrawLine(pen,
+                new Point(TimeToX(fromTime, plot), ValueToY(channel, fromValue, plot, channelIndex, channelCount)),
+                new Point(TimeToX(toTime, plot), ValueToY(channel, toValue, plot, channelIndex, channelCount)));
         }
+
+        var first = channel.Keys[0];
+        if (_timeMin < first.Time)
+            DrawCurveLine(_timeMin, first.Value, Math.Min(_timeMax, first.Time), first.Value);
+        for (var keyIndex = 0; keyIndex + 1 < channel.Keys.Count; keyIndex++)
+        {
+            var a = channel.Keys[keyIndex];
+            var b = channel.Keys[keyIndex + 1];
+            var start = Math.Max(_timeMin, a.Time);
+            var end = Math.Min(_timeMax, b.Time);
+            if (end < start) continue;
+
+            if (a.Interpolation == CurveInterpolationMode.Constant)
+            {
+                DrawCurveLine(start, a.Value, end, a.Value);
+                if (_timeMin <= b.Time && b.Time <= _timeMax)
+                    DrawCurveLine(b.Time, a.Value, b.Time, b.Value);
+                continue;
+            }
+
+            if (a.Interpolation == CurveInterpolationMode.Linear)
+            {
+                DrawCurveLine(start, channel.Evaluate(start), end, channel.Evaluate(end));
+                continue;
+            }
+
+            var segmentPixels = Math.Abs(TimeToX(end, plot) - TimeToX(start, plot));
+            var samples = Math.Clamp((int)(segmentPixels / 3), 2, 200);
+            var previous = new Point(TimeToX(start, plot),
+                ValueToY(channel, channel.Evaluate(start), plot, channelIndex, channelCount));
+            for (var sample = 1; sample <= samples; sample++)
+            {
+                var time = start + (end - start) * sample / samples;
+                var point = new Point(TimeToX(time, plot),
+                    ValueToY(channel, channel.Evaluate(time), plot, channelIndex, channelCount));
+                context.DrawLine(pen, previous, point);
+                previous = point;
+            }
+        }
+        var last = channel.Keys[^1];
+        if (_timeMax > last.Time)
+            DrawCurveLine(Math.Max(_timeMin, last.Time), last.Value, _timeMax, last.Value);
+
         foreach (var key in channel.Keys)
         {
             var p = KeyPoint(channel, key, plot, channelIndex, channelCount);
@@ -194,19 +236,40 @@ public sealed class CurveEditorControl : Control
 
     private void DrawTangents(DrawingContext context, Rect plot, CampathCurveChannel channel, CampathCurveKey key, int index, int count, Point keyPoint, Color color)
     {
+        var keyIndex = channel.Keys.IndexOf(key);
+        if (keyIndex < 0) return;
+        var showIn = keyIndex > 0 &&
+            channel.Keys[keyIndex - 1].Interpolation == CurveInterpolationMode.Bezier;
+        var showOut = keyIndex + 1 < channel.Keys.Count &&
+            key.Interpolation == CurveInterpolationMode.Bezier;
+        if (!showIn && !showOut) return;
+
         var fixedTimeLength = (_timeMax - _timeMin) * 50.0 / Math.Max(1, plot.Width);
         var inTime = key.Time - (key.WeightedTangents ? key.InWeight : fixedTimeLength);
         var outTime = key.Time + (key.WeightedTangents ? key.OutWeight : fixedTimeLength);
         var inPoint = new Point(TimeToX(inTime, plot), ValueToY(channel, key.Value - key.InTangent * (key.Time - inTime), plot, index, count));
         var outPoint = new Point(TimeToX(outTime, plot), ValueToY(channel, key.Value + key.OutTangent * (outTime - key.Time), plot, index, count));
         var tangentPen = new Pen(new SolidColorBrush(Color.FromArgb(190, color.R, color.G, color.B)), 1);
-        context.DrawLine(tangentPen, inPoint, keyPoint); context.DrawLine(tangentPen, keyPoint, outPoint);
-        AddHandle(context, inPoint, channel, key, TangentSide.In); AddHandle(context, outPoint, channel, key, TangentSide.Out);
+        if (showIn)
+        {
+            context.DrawLine(tangentPen, inPoint, keyPoint);
+            AddHandle(context, inPoint, channel, key, TangentSide.In,
+                interactive: key.Interpolation == CurveInterpolationMode.Bezier);
+        }
+        if (showOut)
+        {
+            context.DrawLine(tangentPen, keyPoint, outPoint);
+            AddHandle(context, outPoint, channel, key, TangentSide.Out, interactive: true);
+        }
     }
 
-    private void AddHandle(DrawingContext context, Point p, CampathCurveChannel channel, CampathCurveKey key, TangentSide side)
+    private void AddHandle(DrawingContext context, Point p, CampathCurveChannel channel,
+        CampathCurveKey key, TangentSide side, bool interactive)
     {
-        var rect = new Rect(p.X - 4, p.Y - 4, 8, 8); context.DrawEllipse(Brushes.White, null, p, 4, 4); _tangentHits.Add((rect.Inflate(4), channel, key, side));
+        var rect = new Rect(p.X - 4, p.Y - 4, 8, 8);
+        context.DrawEllipse(interactive ? Brushes.White : Brushes.Gray, null, p, 4, 4);
+        if (interactive)
+            _tangentHits.Add((rect.Inflate(4), channel, key, side));
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -420,7 +483,8 @@ public sealed class CurveEditorControl : Control
 
     public CurveWeightSelectionState GetWeightSelectionState()
     {
-        var selected = VisibleKeys().Where(key => key.Selected).ToList();
+        var selected = VisibleKeys().Where(key => key.Selected &&
+            key.Interpolation == CurveInterpolationMode.Bezier).ToList();
         if (selected.Count == 0) return CurveWeightSelectionState.None;
         var weighted = selected.Count(key => key.WeightedTangents);
         return weighted == 0 ? CurveWeightSelectionState.Unweighted
@@ -437,7 +501,8 @@ public sealed class CurveEditorControl : Control
 
     public void ToggleSelectedWeightedTangents()
     {
-        var selected = VisibleKeys().Where(key => key.Selected).ToList();
+        var selected = VisibleKeys().Where(key => key.Selected &&
+            key.Interpolation == CurveInterpolationMode.Bezier).ToList();
         if (selected.Count == 0) return;
         BeginHistoryEdit();
         var makeWeighted = selected.Any(key => !key.WeightedTangents);
@@ -453,6 +518,7 @@ public sealed class CurveEditorControl : Control
         BeginHistoryEdit();
         foreach (var key in selected)
         {
+            key.Interpolation = CurveInterpolationMode.Bezier;
             key.InTangent = 0; key.OutTangent = 0; key.TangentMode = CurveTangentMode.Smooth;
         }
         EndHistoryEdit();
@@ -472,6 +538,7 @@ public sealed class CurveEditorControl : Control
                 var previous = ordered[Math.Max(0, i - 1)]; var next = ordered[Math.Min(ordered.Count - 1, i + 1)];
                 var dt = next.Time - previous.Time;
                 var slope = Math.Abs(dt) < 1e-9 ? 0 : (next.Value - previous.Value) / dt;
+                key.Interpolation = CurveInterpolationMode.Bezier;
                 key.InTangent = slope; key.OutTangent = slope; key.TangentMode = CurveTangentMode.Smooth;
             }
         }
@@ -483,14 +550,15 @@ public sealed class CurveEditorControl : Control
     {
         _keyContextMenu?.Close();
 
-        var reset = new MenuItem
+        var items = new[]
         {
-            Header = "Reset Tangents to Auto",
-            IsEnabled = SelectedKeys().Any(key => key.TangentMode != CurveTangentMode.Auto)
+            CreateKeyModeMenuItem("Auto", KeyCurveMode.Auto),
+            CreateKeyModeMenuItem("Manual", KeyCurveMode.Manual),
+            CreateKeyModeMenuItem("Linear", KeyCurveMode.Linear),
+            CreateKeyModeMenuItem("Constant", KeyCurveMode.Constant)
         };
-        reset.Click += (_, _) => ResetSelectedTangentsToAuto();
 
-        var menu = new ContextMenu { ItemsSource = new Control[] { reset } };
+        var menu = new ContextMenu { ItemsSource = items };
         menu.Closed += (_, _) =>
         {
             if (ReferenceEquals(_keyContextMenu, menu))
@@ -500,25 +568,87 @@ public sealed class CurveEditorControl : Control
         menu.Open(this);
     }
 
-    private void ResetSelectedTangentsToAuto()
+    private MenuItem CreateKeyModeMenuItem(string header, KeyCurveMode mode)
+    {
+        var selected = SelectedKeys().ToList();
+        var item = new MenuItem
+        {
+            Header = header,
+            IsChecked = selected.Count > 0 && selected.All(key => GetKeyCurveMode(key) == mode)
+        };
+        item.Click += (_, _) => SetSelectedKeyCurveMode(mode);
+        return item;
+    }
+
+    private void SetSelectedKeyCurveMode(KeyCurveMode mode)
     {
         var affected = (Channels ?? [])
             .Select(channel => (channel, keys: channel.Keys.Where(key => key.Selected).ToList()))
-            .Where(item => item.keys.Any(key => key.TangentMode != CurveTangentMode.Auto))
+            .Where(item => item.keys.Count > 0)
             .ToList();
-        if (affected.Count == 0) return;
+        if (affected.Count == 0 ||
+            affected.SelectMany(item => item.keys).All(key => GetKeyCurveMode(key) == mode))
+            return;
 
         BeginHistoryEdit();
+        var makeManual = new List<CampathCurveKey>();
         foreach (var (channel, keys) in affected)
         {
             foreach (var key in keys)
-                key.TangentMode = CurveTangentMode.Auto;
+            {
+                switch (mode)
+                {
+                    case KeyCurveMode.Auto:
+                        key.Interpolation = CurveInterpolationMode.Bezier;
+                        key.TangentMode = CurveTangentMode.Auto;
+                        break;
+                    case KeyCurveMode.Manual:
+                        var currentMode = GetKeyCurveMode(key);
+                        if (currentMode is KeyCurveMode.Linear or KeyCurveMode.Constant)
+                        {
+                            // Non-Bezier keys already carry calculated, independent
+                            // arrival/departure slopes. Preserve both when exposing
+                            // them as editable tangents.
+                            key.Interpolation = CurveInterpolationMode.Bezier;
+                            key.TangentMode = CurveTangentMode.Broken;
+                        }
+                        else if (currentMode != KeyCurveMode.Manual)
+                        {
+                            key.Interpolation = CurveInterpolationMode.Bezier;
+                            key.TangentMode = CurveTangentMode.Auto;
+                            makeManual.Add(key);
+                        }
+                        break;
+                    case KeyCurveMode.Linear:
+                        key.Interpolation = CurveInterpolationMode.Linear;
+                        key.TangentMode = CurveTangentMode.Linear;
+                        key.WeightedTangents = false;
+                        break;
+                    case KeyCurveMode.Constant:
+                        key.Interpolation = CurveInterpolationMode.Constant;
+                        key.TangentMode = CurveTangentMode.Linear;
+                        key.WeightedTangents = false;
+                        break;
+                }
+            }
             CampathPathConversion.AutoTangents(channel);
         }
+        foreach (var key in makeManual)
+            key.TangentMode = CurveTangentMode.Smooth;
         EndHistoryEdit();
         SelectionChanged?.Invoke();
         InvalidateVisual();
     }
+
+    private static KeyCurveMode GetKeyCurveMode(CampathCurveKey key) =>
+        key.Interpolation switch
+        {
+            CurveInterpolationMode.Linear => KeyCurveMode.Linear,
+            CurveInterpolationMode.Constant => KeyCurveMode.Constant,
+            _ => key.TangentMode == CurveTangentMode.Auto
+                ? KeyCurveMode.Auto
+                : KeyCurveMode.Manual
+        };
 
     private void BeginHistoryEdit()
     {
@@ -646,7 +776,13 @@ public sealed class CurveEditorControl : Control
     private static void DrawTangentModeLabel(DrawingContext context, CampathCurveKey key, Point center, bool selected)
     {
         var text = new FormattedText(
-            key.TangentMode == CurveTangentMode.Auto ? "A" : "M",
+            GetKeyCurveMode(key) switch
+            {
+                KeyCurveMode.Auto => "A",
+                KeyCurveMode.Manual => "M",
+                KeyCurveMode.Linear => "L",
+                _ => "C"
+            },
             CultureInfo.InvariantCulture,
             FlowDirection.LeftToRight,
             new Typeface("Segoe UI", FontStyle.Normal, FontWeight.Bold),

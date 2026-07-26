@@ -140,11 +140,29 @@ public static class CampathPathConversion
         for (var i = 0; i < channel.Keys.Count; i++)
         {
             var key = channel.Keys[i];
+            var previous = channel.Keys[Math.Max(0, i - 1)];
+            var next = channel.Keys[Math.Min(channel.Keys.Count - 1, i + 1)];
+
+            if (key.Interpolation != CurveInterpolationMode.Bezier)
+            {
+                var inDt = key.Time - previous.Time;
+                var outDt = next.Time - key.Time;
+                key.InTangent = i > 0 && Math.Abs(inDt) >= 1e-9
+                    ? (key.Value - previous.Value) / inDt
+                    : 0;
+                key.OutTangent = i + 1 < channel.Keys.Count && Math.Abs(outDt) >= 1e-9
+                    ? (next.Value - key.Value) / outDt
+                    : 0;
+                key.InWeight = i > 0 ? Math.Max(0.001, inDt / 3.0) : 0.25;
+                key.OutWeight = i + 1 < channel.Keys.Count
+                    ? Math.Max(0.001, outDt / 3.0)
+                    : 0.25;
+                continue;
+            }
+
             if (key.TangentMode != CurveTangentMode.Auto)
                 continue;
 
-            var previous = channel.Keys[Math.Max(0, i - 1)];
-            var next = channel.Keys[Math.Min(channel.Keys.Count - 1, i + 1)];
             var slope = Math.Abs(next.Time - previous.Time) < 1e-9
                 ? 0
                 : (next.Value - previous.Value) / (next.Time - previous.Time);
