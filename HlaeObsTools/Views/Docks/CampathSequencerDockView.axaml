@@ -39,27 +39,40 @@
                             Command="{Binding RedoCommand}" ToolTip.Tip="Redo (Ctrl+Y)"/>
                 </StackPanel>
 
-                <Button Grid.Column="1"
-                        Width="28"
-                        Height="22"
-                        Padding="0"
-                        Command="{Binding TogglePlaybackCommand}"
-                        ToolTip.Tip="{Binding PlaybackLabel}">
-                    <Grid Width="16" Height="16">
-                        <svg:Svg Path="/Assets/icons/play.svg"
-                                 Stretch="Uniform"
-                                 Width="16"
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                    <ToggleButton Width="28"
+                                  Height="22"
+                                  Padding="0"
+                                  Focusable="False"
+                                  IsChecked="{Binding Sequence.LimitPlaybackToContent, Mode=TwoWay}"
+                                  ToolTip.Tip="Limit playback to the sequence range">
+                        <svg:Svg Path="/Assets/icons/playback-range.svg"
+                                 Stretch="Fill"
+                                 Width="24"
                                  Height="16"
-                                 IsHitTestVisible="False"
-                                 IsVisible="{Binding ShowPlayIcon}"/>
-                        <svg:Svg Path="/Assets/icons/pause.svg"
-                                 Stretch="Uniform"
-                                 Width="16"
-                                 Height="16"
-                                 IsHitTestVisible="False"
-                                 IsVisible="{Binding ShowPauseIcon}"/>
-                    </Grid>
-                </Button>
+                                 IsHitTestVisible="False"/>
+                    </ToggleButton>
+                    <Button Width="28"
+                            Height="22"
+                            Padding="0"
+                            Command="{Binding TogglePlaybackCommand}"
+                            ToolTip.Tip="{Binding PlaybackLabel}">
+                        <Grid Width="16" Height="16">
+                            <svg:Svg Path="/Assets/icons/play.svg"
+                                     Stretch="Uniform"
+                                     Width="16"
+                                     Height="16"
+                                     IsHitTestVisible="False"
+                                     IsVisible="{Binding ShowPlayIcon}"/>
+                            <svg:Svg Path="/Assets/icons/pause.svg"
+                                     Stretch="Uniform"
+                                     Width="16"
+                                     Height="16"
+                                     IsHitTestVisible="False"
+                                     IsVisible="{Binding ShowPauseIcon}"/>
+                        </Grid>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

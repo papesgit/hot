@@ -139,6 +139,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     private DateTime _lastPlayTick;
     private double _playheadTime;
     private bool _isPlaying;
+    private bool _limitPlaybackToContent;
     private bool _isPiloting;
     private bool _useExternalPlaybackTicks;
     private bool _historyReady;
@@ -198,6 +199,11 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     public SequencerPossession Possession => _possession;
     public SequencerPossessionKind PossessionKind => Possession.Kind;
     public bool IsPlaying { get => _isPlaying; private set => SetProperty(ref _isPlaying, value); }
+    public bool LimitPlaybackToContent
+    {
+        get => _limitPlaybackToContent;
+        set => SetProperty(ref _limitPlaybackToContent, value);
+    }
     public bool IsPiloting { get => _isPiloting; private set => SetProperty(ref _isPiloting, value); }
     public bool CanUndo => _undoHistory.Count > 0;
     public bool CanRedo => _redoHistory.Count > 0;
@@ -650,7 +656,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
             StopPlayback();
             return;
         }
-        if (PlayheadTime >= PlaybackEnd)
+        if (LimitPlaybackToContent && PlayheadTime >= PlaybackEnd)
             PlayheadTime = ContentStart;
         IsPiloting = false;
         _lastPlayTick = DateTime.UtcNow;
@@ -750,7 +756,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
         if (delta <= 0.0)
             return;
         PlayheadTime += delta;
-        if (PlayheadTime >= PlaybackEnd)
+        if (LimitPlaybackToContent && PlayheadTime >= PlaybackEnd)
         {
             PlayheadTime = PlaybackEnd;
             StopPlayback();
