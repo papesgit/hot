@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:controls="using:HlaeObsTools.Controls"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              x:Class="HlaeObsTools.Views.Docks.CampathSequencerDockView"
              x:DataType="vm:CampathSequencerDockViewModel">
     <Grid Background="#111318">
@@ -22,26 +23,44 @@
                 Background="#20232A"
                 BorderBrush="#343842"
                 BorderThickness="0,0,1,1"
-                Padding="4,3">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-                <Button Width="28"
+                Padding="4,3,0,3">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
+                    <Button Height="22" Padding="9,0" Content="Add">
+                        <Button.Flyout>
+                            <MenuFlyout>
+                                <MenuItem Header="Camera Track" Command="{Binding AddCameraCommand}"/>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                    <Button Height="22" Padding="7,0" Content="Undo"
+                            Command="{Binding UndoCommand}" ToolTip.Tip="Undo (Ctrl+Z)"/>
+                    <Button Height="22" Padding="7,0" Content="Redo"
+                            Command="{Binding RedoCommand}" ToolTip.Tip="Redo (Ctrl+Y)"/>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Width="28"
                         Height="22"
                         Padding="0"
-                        Content=">"
                         Command="{Binding TogglePlaybackCommand}"
-                        ToolTip.Tip="Play / Pause"/>
-                <Button Height="22" Padding="9,0" Content="Add">
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <MenuItem Header="Camera Track" Command="{Binding AddCameraCommand}"/>
-                        </MenuFlyout>
-                    </Button.Flyout>
+                        ToolTip.Tip="{Binding PlaybackLabel}">
+                    <Grid Width="16" Height="16">
+                        <svg:Svg Path="/Assets/icons/play.svg"
+                                 Stretch="Uniform"
+                                 Width="16"
+                                 Height="16"
+                                 IsHitTestVisible="False"
+                                 IsVisible="{Binding ShowPlayIcon}"/>
+                        <svg:Svg Path="/Assets/icons/pause.svg"
+                                 Stretch="Uniform"
+                                 Width="16"
+                                 Height="16"
+                                 IsHitTestVisible="False"
+                                 IsVisible="{Binding ShowPauseIcon}"/>
+                    </Grid>
                 </Button>
-                <Button Height="22" Padding="7,0" Content="Undo"
-                        Command="{Binding UndoCommand}" ToolTip.Tip="Undo (Ctrl+Z)"/>
-                <Button Height="22" Padding="7,0" Content="Redo"
-                        Command="{Binding RedoCommand}" ToolTip.Tip="Redo (Ctrl+Y)"/>
-            </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

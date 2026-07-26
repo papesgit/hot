@@ -438,19 +438,21 @@ public partial class VideoDisplayDockView : UserControl
 
     private async void PlayPauseButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not VideoDisplayDockViewModel vm || IconPath == null)
+        if (DataContext is not VideoDisplayDockViewModel vm || PlayIcon == null || PauseIcon == null)
             return;
 
         if (_isDemoPaused)
         {
             await vm.ResumeDemoAsync();
-            IconPath.Data = Geometry.Parse("M6 5 H10 V19 H6 Z M14 5 H18 V19 H14 Z");
+            PlayIcon.IsVisible = false;
+            PauseIcon.IsVisible = true;
             _isDemoPaused = false;
         }
         else
         {
             await vm.PauseDemoAsync();
-            IconPath.Data = Geometry.Parse("M8 5 L8 19 L19 12 Z");
+            PlayIcon.IsVisible = true;
+            PauseIcon.IsVisible = false;
             _isDemoPaused = true;
         }
     }

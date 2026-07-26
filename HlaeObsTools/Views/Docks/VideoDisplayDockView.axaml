@@ -5,6 +5,7 @@
              xmlns:views="using:HlaeObsTools.Views"
              xmlns:conv="using:HlaeObsTools.Converters"
              xmlns:ac="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              x:Class="HlaeObsTools.Views.Docks.VideoDisplayDockView"
              x:Name="Root"
              x:DataType="vm:VideoDisplayDockViewModel">
@@ -125,12 +126,21 @@
                         HorizontalAlignment="Center"
                         Click="PlayPauseButton_Click">
 
-                    <Path x:Name="IconPath"
-                        Fill="White"
-                        Stretch="Uniform"
-                        Width="24"
-                        Height="24"
-                        Data="M6 5 H10 V19 H6 Z M14 5 H18 V19 H14 Z"/>
+                    <Grid Width="24" Height="24">
+                        <svg:Svg x:Name="PlayIcon"
+                                 Path="/Assets/icons/play.svg"
+                                 Stretch="Uniform"
+                                 Width="24"
+                                 Height="24"
+                                 IsHitTestVisible="False"
+                                 IsVisible="False"/>
+                        <svg:Svg x:Name="PauseIcon"
+                                 Path="/Assets/icons/pause.svg"
+                                 Stretch="Uniform"
+                                 Width="24"
+                                 Height="24"
+                                 IsHitTestVisible="False"/>
+                    </Grid>
                 </Button>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">

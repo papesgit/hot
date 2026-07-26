@@ -81,7 +81,8 @@ public sealed class CampathSequencerDockViewModel : Tool, IDisposable
     }
 
     public string PlaybackLabel => Sequence.IsPlaying ? "Pause" : "Play";
-    public string RangeLabel => $"0.000 – {Sequence.ContentEnd:0.000} s";
+    public bool ShowPlayIcon => !Sequence.IsPlaying;
+    public bool ShowPauseIcon => Sequence.IsPlaying;
 
     public void PossessCamera(CampathCameraTrackViewModel camera)
     {
@@ -93,10 +94,11 @@ public sealed class CampathSequencerDockViewModel : Tool, IDisposable
     private void OnSequenceChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(CampathSequenceViewModel.IsPlaying))
+        {
             OnPropertyChanged(nameof(PlaybackLabel));
-        if (e.PropertyName is nameof(CampathSequenceViewModel.ContentEnd)
-            or nameof(CampathSequenceViewModel.PlaybackEnd))
-            OnPropertyChanged(nameof(RangeLabel));
+            OnPropertyChanged(nameof(ShowPlayIcon));
+            OnPropertyChanged(nameof(ShowPauseIcon));
+        }
         if (e.PropertyName is nameof(CampathSequenceViewModel.Possession)
             or nameof(CampathSequenceViewModel.PlayheadTime))
             OnPropertyChanged(nameof(Sequence));
