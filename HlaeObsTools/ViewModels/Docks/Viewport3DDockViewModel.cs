@@ -16,6 +16,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using HlaeObsTools.Controls;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -43,6 +44,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private readonly Dictionary<int, ViewportPlayerStatus> _retainedDeadPlayerStatusesBySlot = new();
     private string? _lastPlayerStatusMapName;
     private int _lastPlayerStatusRoundNumber = -1;
+    internal VRFViewport? PersistentViewport { get; set; }
 
     private static readonly string[] AltBindLabels = { "Q", "E", "R", "T", "Z" };
 
@@ -231,6 +233,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     public void Dispose()
     {
+        PersistentViewport?.Shutdown();
+        PersistentViewport = null;
         _campathSyncTimer.Stop();
         _campathSyncTimer.Tick -= OnCampathSyncTimerTick;
         if (_gsiServer != null)

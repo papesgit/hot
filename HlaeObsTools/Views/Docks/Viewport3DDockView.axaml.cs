@@ -99,9 +99,29 @@ public partial class Viewport3DDockView : UserControl
 
         ClearViewport();
 
-        _viewportControl = CreateVrfViewport();
+        var viewport = _viewModel.PersistentViewport;
+        if (viewport == null)
+        {
+            viewport = CreateVrfViewport();
+            _viewModel.PersistentViewport = viewport;
+        }
+        else if (viewport.Parent is ContentControl previousHost)
+        {
+            previousHost.Content = null;
+        }
+
+        _viewportControl = viewport;
         _viewport = (IViewport3DControl)_viewportControl;
+        viewport.MapLoadStateChanged -= OnMapLoadStateChanged;
+        viewport.MapLoadStateChanged += OnMapLoadStateChanged;
+        viewport.NativeHostInitialized -= OnNativeHostInitialized;
+        viewport.NativeHostInitialized += OnNativeHostInitialized;
         ViewportHost.Content = _viewportControl;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ReferenceEquals(_viewportControl, viewport))
+                ApplyMapLoadState(viewport.MapLoadState);
+        }, DispatcherPriority.Loaded);
         SubscribeFrameTick();
         SubscribeGizmo();
 
@@ -122,11 +142,70 @@ public partial class Viewport3DDockView : UserControl
 
     private void ClearViewport()
     {
+        if (_viewportControl is VRFViewport vrfViewport)
+        {
+            vrfViewport.MapLoadStateChanged -= OnMapLoadStateChanged;
+            vrfViewport.NativeHostInitialized -= OnNativeHostInitialized;
+        }
         ViewportHost.Content = null;
         UnsubscribeFrameTick();
         UnsubscribeGizmo();
         _viewport = null;
         _viewportControl = null;
+    }
+
+    private void OnMapLoadStateChanged(ViewportMapLoadState state)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_viewportControl is VRFViewport)
+                ApplyMapLoadState(state);
+        });
+    }
+
+    private void OnNativeHostInitialized()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_viewportControl is VRFViewport viewport)
+                ApplyMapLoadState(viewport.MapLoadState);
+        });
+    }
+
+    private void ApplyMapLoadState(ViewportMapLoadState state)
+    {
+        var viewport = _viewportControl as VRFViewport;
+        var canHideNativeHost = viewport?.HasInitializedNativeHost ?? true;
+        ViewportHost.IsVisible = state.Status == ViewportMapLoadStatus.Ready || !canHideNativeHost;
+        MapStatusOverlay.IsVisible = state.Status != ViewportMapLoadStatus.Ready;
+        if (state.Status == ViewportMapLoadStatus.Ready && viewport != null)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (ReferenceEquals(_viewportControl, viewport) &&
+                    viewport.MapLoadState.Status == ViewportMapLoadStatus.Ready &&
+                    ViewportHost.IsVisible)
+                {
+                    viewport.RequestPresentationFrame();
+                }
+            }, DispatcherPriority.Render);
+        }
+        MapLoadingProgress.IsVisible = state.Status == ViewportMapLoadStatus.Loading;
+        MapStatusTitle.Text = state.Status switch
+        {
+            ViewportMapLoadStatus.Loading => string.IsNullOrWhiteSpace(state.MapName)
+                ? "Loading map..."
+                : $"Loading {state.MapName}...",
+            ViewportMapLoadStatus.Error => "Map loading failed",
+            _ => "No map loaded"
+        };
+        MapStatusDetails.Text = state.Status switch
+        {
+            ViewportMapLoadStatus.Error => state.Error ?? "An unknown error occurred.",
+            ViewportMapLoadStatus.Empty => "Select a map in the 3D settings to load the viewport.",
+            _ => string.Empty
+        };
+        MapStatusDetails.IsVisible = !string.IsNullOrWhiteSpace(MapStatusDetails.Text);
     }
 
     private void OnViewportPointerPressed(object? sender, PointerPressedEventArgs e)

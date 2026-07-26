@@ -102,7 +102,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private static readonly HashSet<string> ActiveDutyMapNames = new(StringComparer.OrdinalIgnoreCase)
         {
             "de_anubis",
-            "de_overpass",
+            "de_cache",
             "de_inferno",
             "de_mirage",
             "de_dust2",
@@ -773,9 +773,8 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             _viewport3DSettings.Cs2GameFolder = string.Empty;
             _viewport3DSettings.SelectedMapName = string.Empty;
-            _viewport3DSettings.SelectedMap = null;
             _viewport3DSettings.MapObjPath = string.Empty;
-            _viewport3DSettings.AvailableMaps.Clear();
+            RefreshViewportMapOptions();
         }
 
         private void RefreshViewportMapOptions()
@@ -785,19 +784,23 @@ namespace HlaeObsTools.ViewModels.Docks
                 : Path.GetFileNameWithoutExtension(_viewport3DSettings.MapObjPath);
 
             _viewport3DSettings.AvailableMaps.Clear();
+            var noMap = new ViewportMapOption
+            {
+                Name = string.Empty,
+                Path = string.Empty
+            };
+            _viewport3DSettings.AvailableMaps.Add(noMap);
             foreach (var option in DiscoverViewportMaps())
             {
                 _viewport3DSettings.AvailableMaps.Add(option);
             }
 
             var selected = _viewport3DSettings.AvailableMaps
-                .FirstOrDefault(map => string.Equals(map.Name, selectedName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(map => string.Equals(map.Name, selectedName, StringComparison.OrdinalIgnoreCase))
+                ?? noMap;
             _viewport3DSettings.SelectedMap = selected;
-            if (selected != null)
-            {
-                _viewport3DSettings.SelectedMapName = selected.Name;
-                _viewport3DSettings.MapObjPath = selected.Path;
-            }
+            _viewport3DSettings.SelectedMapName = selected.Name;
+            _viewport3DSettings.MapObjPath = selected.Path;
         }
 
         private IEnumerable<ViewportMapOption> DiscoverViewportMaps()

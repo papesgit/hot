@@ -43,6 +43,13 @@ using ValveResourceFormat.ResourceTypes;
 
 namespace HlaeObsTools.Controls;
 
+public enum ViewportMapLoadStatus { Empty, Loading, Ready, Error }
+
+public readonly record struct ViewportMapLoadState(
+    ViewportMapLoadStatus Status,
+    string? MapName = null,
+    string? Error = null);
+
 public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 {
     public event Action<Vector3, Quaternion>? CampathGizmoPoseChanged;
@@ -127,9 +134,11 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         AvaloniaProperty.Register<VRFViewport, int>(nameof(TargetOrbitResetRequest));
 
     private IntPtr _hwnd;
+    private IntPtr _parkingHwnd;
     private NativeWindow? _nativeWindow;
     private readonly object _nativeWindowLock = new();
-    private bool _nativeInitDone;
+    private bool _shutdown;
+    private bool _hasInitializedNativeHost;
     private int _renderWidth;
     private int _renderHeight;
 
@@ -142,8 +151,12 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private GameFileLoader? _fileLoader;
     private Package? _mapPackage;
     private bool _rendererReady;
+    private readonly object _mapRequestLock = new();
     private bool _mapLoadPending;
     private string? _pendingMapPath;
+    private long _mapRequestGeneration;
+    private long _loadedMapGeneration;
+    private ViewportMapLoadState _mapLoadState = new(ViewportMapLoadStatus.Empty);
     private bool _showEntityModels = false;
     private bool _renderLogged;
     private bool _mapHasExternalReferences;
@@ -548,6 +561,18 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     public bool IsFreecamInputEnabled => _freecamInputEnabled;
 
     public event Action<double>? FrameTick;
+    public event Action<ViewportMapLoadState>? MapLoadStateChanged;
+    public event Action? NativeHostInitialized;
+    public bool HasInitializedNativeHost => _hasInitializedNativeHost;
+    public void RequestPresentationFrame() => _renderSignal.Set();
+    public ViewportMapLoadState MapLoadState
+    {
+        get
+        {
+            lock (_mapRequestLock)
+                return _mapLoadState;
+        }
+    }
 
     protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
     {
@@ -565,18 +590,38 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         RegisterHostWindow(_hwnd, this);
         UpdateChildWindowSize();
         InitializeAfterNativeCreated();
+        // A frame rendered while the GLFW window is parked is not guaranteed to
+        // survive Win32 reparenting. Bypass the normal limiter so the newly
+        // attached presentation surface is populated immediately.
+        _renderSignal.Set();
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_hwnd != IntPtr.Zero && MapLoadState.Status == ViewportMapLoadStatus.Ready)
+            {
+                UpdateChildWindowSize();
+                _renderSignal.Set();
+            }
+        }, DispatcherPriority.Render);
+        if (!_hasInitializedNativeHost)
+        {
+            _hasInitializedNativeHost = true;
+            NativeHostInitialized?.Invoke();
+        }
         return new PlatformHandle(_hwnd, "HWND");
     }
 
     protected override void DestroyNativeControlCore(IPlatformHandle control)
     {
-        StopRenderLoop();
-        DisposeRenderer();
-        if (_hwnd != IntPtr.Zero)
+        var destroyedHwnd = control.Handle;
+        if (destroyedHwnd == _hwnd)
         {
-            UnregisterHostWindow(_hwnd);
-            DestroyWindow(_hwnd);
+            ParkNativeWindow();
             _hwnd = IntPtr.Zero;
+        }
+        if (destroyedHwnd != IntPtr.Zero)
+        {
+            UnregisterHostWindow(destroyedHwnd);
+            DestroyWindow(destroyedHwnd);
         }
         base.DestroyNativeControlCore(control);
     }
@@ -629,8 +674,6 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         DisableFreecam();
         _frameLimiterTimer?.Stop();
         _frameLimiterPending = false;
-        StopRenderLoop();
-        DisposeRenderer();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -3092,12 +3135,11 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private void InitializeAfterNativeCreated()
     {
-        if (_nativeInitDone || !OperatingSystem.IsWindows())
+        if (_shutdown || !OperatingSystem.IsWindows() || _hwnd == IntPtr.Zero)
         {
             return;
         }
 
-        _nativeInitDone = true;
         InitializeNativeWindow();
         StartRenderLoop();
         RequestNextFrame();
@@ -3113,40 +3155,69 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         lock (_nativeWindowLock)
         {
-        if (_nativeWindow != null)
+            if (_nativeWindow == null)
+            {
+                GLFWProvider.CheckForMainThread = false;
+                GLFWProvider.EnsureInitialized();
+
+                var settings = new NativeWindowSettings
+                {
+                    APIVersion = GLEnvironment.RequiredVersion,
+                    Flags = ContextFlags.ForwardCompatible,
+                    StartFocused = false,
+                    StartVisible = false,
+                    WindowBorder = WindowBorder.Hidden,
+                    WindowState = GLWindowState.Normal,
+                    Title = "HOT VRF Viewport",
+                    ClientSize = new Vector2i(32, 32),
+                };
+
+                _nativeWindow = new NativeWindow(settings);
+                _nativeWindow.Context.MakeNoneCurrent();
+                LogMessage($"NativeWindow created hwnd=0x{GetNativeWindowHandle(_nativeWindow).ToInt64():X}");
+            }
+
+            var parentHwnd = _hwnd;
+            if (parentHwnd == IntPtr.Zero)
+            {
+                if (_parkingHwnd == IntPtr.Zero)
+                    _parkingHwnd = CreateParkingWindow();
+                parentHwnd = _parkingHwnd;
+            }
+            SetWindowAsChild(GetNativeWindowHandle(_nativeWindow), parentHwnd, visible: true);
+            _nativeWindow.IsVisible = true;
+            _renderWidth = Math.Max(1, (int)Bounds.Width);
+            _renderHeight = Math.Max(1, (int)Bounds.Height);
+            _nativeWindow.ClientRectangle = new Box2i(0, 0, _renderWidth, _renderHeight);
+        }
+    }
+
+    private void ParkNativeWindow()
+    {
+        lock (_nativeWindowLock)
         {
+            if (_nativeWindow == null)
+                return;
+
+            if (_parkingHwnd == IntPtr.Zero)
+                _parkingHwnd = CreateParkingWindow();
+            if (_parkingHwnd != IntPtr.Zero)
+                SetWindowAsChild(GetNativeWindowHandle(_nativeWindow), _parkingHwnd, visible: false);
+        }
+    }
+
+    public void Shutdown()
+    {
+        if (_shutdown)
             return;
-        }
 
-        GLFWProvider.CheckForMainThread = false;
-        GLFWProvider.EnsureInitialized();
-
-        var settings = new NativeWindowSettings
+        _shutdown = true;
+        StopRenderLoop();
+        DisposeRenderer();
+        if (_parkingHwnd != IntPtr.Zero)
         {
-            APIVersion = GLEnvironment.RequiredVersion,
-            Flags = ContextFlags.ForwardCompatible,
-            StartFocused = false,
-            StartVisible = false,
-            WindowBorder = WindowBorder.Hidden,
-            WindowState = GLWindowState.Normal,
-            Title = "HOT VRF Viewport",
-            ClientSize = new Vector2i(32, 32),
-        };
-
-        _nativeWindow = new NativeWindow(settings);
-        IntPtr hwnd;
-        unsafe
-        {
-            hwnd = GLFW.GetWin32Window(_nativeWindow.WindowPtr);
-        }
-        SetWindowAsChild(hwnd, _hwnd);
-        _nativeWindow.IsVisible = true;
-        _nativeWindow.Context.MakeNoneCurrent();
-        LogMessage($"NativeWindow created hwnd=0x{hwnd.ToInt64():X}");
-
-        _renderWidth = Math.Max(1, (int)Bounds.Width);
-        _renderHeight = Math.Max(1, (int)Bounds.Height);
-        _nativeWindow.ClientRectangle = new Box2i(0, 0, _renderWidth, _renderHeight);
+            DestroyWindow(_parkingHwnd);
+            _parkingHwnd = IntPtr.Zero;
         }
     }
 
@@ -3747,9 +3818,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     {
         var path = e.NewValue as string;
         LogMessage($"OnMapPathChanged: {path ?? "<null>"}");
-        _pendingMapPath = string.IsNullOrWhiteSpace(path) ? null : path;
-        _mapLoadPending = true;
-        RequestNextFrame();
+        QueueMapLoad(path);
     }
 
     private void ApplyRendererOptions()
@@ -3815,9 +3884,70 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
         }
 
-        _pendingMapPath = mapPath;
-        _mapLoadPending = true;
+        QueueMapLoad(mapPath);
+    }
+
+    private void QueueMapLoad(string? mapPath)
+    {
+        long generation;
+        string? normalizedPath;
+        lock (_mapRequestLock)
+        {
+            normalizedPath = string.IsNullOrWhiteSpace(mapPath) ? null : mapPath;
+            _pendingMapPath = normalizedPath;
+            _mapLoadPending = true;
+            generation = ++_mapRequestGeneration;
+        }
+        PublishMapLoadState(generation, normalizedPath == null
+            ? new ViewportMapLoadState(ViewportMapLoadStatus.Empty)
+            : new ViewportMapLoadState(
+                ViewportMapLoadStatus.Loading,
+                Path.GetFileNameWithoutExtension(normalizedPath)));
         RequestNextFrame();
+    }
+
+    private bool TryTakeMapLoadRequest(out string? mapPath, out long generation)
+    {
+        lock (_mapRequestLock)
+        {
+            if (!_mapLoadPending)
+            {
+                mapPath = null;
+                generation = 0;
+                return false;
+            }
+
+            _mapLoadPending = false;
+            mapPath = _pendingMapPath;
+            generation = _mapRequestGeneration;
+            return true;
+        }
+    }
+
+    private bool IsLatestMapLoadRequest(long generation)
+    {
+        lock (_mapRequestLock)
+            return generation == _mapRequestGeneration;
+    }
+
+    private void PublishMapLoadState(long generation, ViewportMapLoadState state)
+    {
+        lock (_mapRequestLock)
+        {
+            if (generation != _mapRequestGeneration)
+                return;
+            _mapLoadState = state;
+        }
+
+        MapLoadStateChanged?.Invoke(state);
+    }
+
+    private void FailMapLoad(long generation, string mapPath, string message)
+    {
+        PublishMapLoadState(generation, new ViewportMapLoadState(
+            ViewportMapLoadStatus.Error,
+            Path.GetFileNameWithoutExtension(mapPath),
+            message));
     }
 
     private void StartRenderLoop()
@@ -3838,9 +3968,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private void StopRenderLoop()
     {
         _renderCts?.Cancel();
+        _renderSignal.Set();
         try
         {
-            _renderLoop?.Wait(500);
+            _renderLoop?.GetAwaiter().GetResult();
         }
         catch
         {
@@ -3917,12 +4048,19 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         try
         {
-            if (_mapLoadPending)
+            if (TryTakeMapLoadRequest(out var pendingMapPath, out var mapGeneration))
             {
-                _mapLoadPending = false;
-                if (!string.IsNullOrWhiteSpace(_pendingMapPath))
+                if (!string.IsNullOrWhiteSpace(pendingMapPath))
                 {
-                    LoadMap(_pendingMapPath);
+                    try
+                    {
+                        LoadMap(pendingMapPath, mapGeneration);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage($"LoadMap failed: {ex}");
+                        FailMapLoad(mapGeneration, pendingMapPath, ex.Message);
+                    }
                     return;
                 }
                 else
@@ -4015,6 +4153,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             try
             {
                 nativeWindow.Context.SwapBuffers();
+                var loadedGeneration = Volatile.Read(ref _loadedMapGeneration);
+                if (loadedGeneration != 0 &&
+                    Interlocked.CompareExchange(ref _loadedMapGeneration, 0, loadedGeneration) == loadedGeneration)
+                {
+                    var loadingState = MapLoadState;
+                    PublishMapLoadState(loadedGeneration, new ViewportMapLoadState(
+                        ViewportMapLoadStatus.Ready,
+                        loadingState.MapName));
+                }
             }
             catch (Exception ex)
             {
@@ -4038,14 +4185,16 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         FrameTick(delta);
     }
 
-    private void LoadMap(string mapPath)
+    private void LoadMap(string mapPath, long generation)
     {
         LogMessage($"LoadMap request: {mapPath}");
+        Volatile.Write(ref _loadedMapGeneration, 0);
         DisposeRenderer();
         InitializeNativeWindow();
         if (_nativeWindow == null)
         {
             LogMessage("LoadMap aborted: NativeWindow not available.");
+            FailMapLoad(generation, mapPath, "The viewport window is not available.");
             return;
         }
 
@@ -4054,6 +4203,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         {
             if (!EnsureOpenGLBindings())
             {
+                FailMapLoad(generation, mapPath, "OpenGL initialization failed.");
                 return;
             }
 
@@ -4061,7 +4211,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             if (string.IsNullOrWhiteSpace(resolvedMapPath))
             {
                 LogMessage("LoadMap aborted: could not resolve map path.");
-        DisposeRenderer();
+                DisposeRenderer();
+                FailMapLoad(generation, mapPath, "The map package could not be resolved.");
                 return;
             }
 
@@ -4098,6 +4249,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             {
                 LogMessage($"Renderer init failed: {ex}");
                 DisposeRenderer();
+                FailMapLoad(generation, mapPath, "Renderer initialization failed.");
                 return;
             }
 
@@ -4125,6 +4277,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             {
                 LogMessage("LoadMap failed: world resource not found or invalid.");
                 DisposeRenderer();
+                FailMapLoad(generation, mapPath, "The map world resource could not be loaded.");
                 return;
             }
 
@@ -4142,10 +4295,19 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             _renderer.Skybox2D = worldLoader.Skybox2D;
 
             PostSceneLoad(worldLoader.DefaultEnabledLayers);
+            if (!IsLatestMapLoadRequest(generation))
+            {
+                _rendererReady = false;
+                LogMessage($"Discarding stale map load generation {generation}.");
+                _renderSignal.Set();
+                return;
+            }
             _rendererReady = true;
+            Volatile.Write(ref _loadedMapGeneration, generation);
             ApplyRendererOptions();
             _renderLogged = false;
             LogMessage("LoadMap completed.");
+            _renderSignal.Set();
         }
         finally
         {
@@ -6941,6 +7103,30 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
             IntPtr.Zero);
     }
 
+    private static IntPtr CreateParkingWindow()
+    {
+        const int WsPopup = unchecked((int)0x80000000);
+        EnsureClass();
+        return CreateWindowEx(
+            0,
+            WndClassName,
+            string.Empty,
+            WsPopup,
+            0, 0, 1, 1,
+            IntPtr.Zero,
+            IntPtr.Zero,
+            IntPtr.Zero,
+            IntPtr.Zero);
+    }
+
+    private static IntPtr GetNativeWindowHandle(NativeWindow nativeWindow)
+    {
+        unsafe
+        {
+            return GLFW.GetWin32Window(nativeWindow.WindowPtr);
+        }
+    }
+
     private static void RegisterHostWindow(IntPtr hwnd, VRFViewport host)
     {
         lock (ClassLock)
@@ -7004,18 +7190,26 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
         return DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
-    private static void SetWindowAsChild(IntPtr childHwnd, IntPtr parentHwnd)
+    private static void SetWindowAsChild(IntPtr childHwnd, IntPtr parentHwnd, bool visible)
     {
         if (childHwnd == IntPtr.Zero || parentHwnd == IntPtr.Zero)
         {
             return;
         }
 
-        var style = (IntPtr)(WINDOW_STYLE.WS_CHILD | WINDOW_STYLE.WS_DISABLED);
+        if (!visible)
+            ShowWindow(childHwnd, 0);
+
+        var windowStyle = WINDOW_STYLE.WS_CHILD | WINDOW_STYLE.WS_DISABLED;
+        if (visible)
+            windowStyle |= WINDOW_STYLE.WS_VISIBLE;
+        var style = (IntPtr)windowStyle;
         SetWindowLongPtr(childHwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, style);
         style = (IntPtr)WINDOW_EX_STYLE.WS_EX_NOACTIVATE;
         SetWindowLongPtr(childHwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, style);
         SetParent(childHwnd, parentHwnd);
+        if (visible)
+            ShowWindow(childHwnd, 8);
     }
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
@@ -7038,6 +7232,9 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
@@ -7083,6 +7280,7 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
     private enum WINDOW_STYLE : uint
     {
         WS_CHILD = 0x40000000,
+        WS_VISIBLE = 0x10000000,
         WS_DISABLED = 0x08000000
     }
 

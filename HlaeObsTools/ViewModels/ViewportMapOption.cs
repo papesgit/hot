@@ -5,5 +5,5 @@ public sealed class ViewportMapOption
     public required string Name { get; init; }
     public required string Path { get; init; }
 
-    public string DisplayName => Name;
+    public string DisplayName => string.IsNullOrEmpty(Name) ? "None" : Name;
 }

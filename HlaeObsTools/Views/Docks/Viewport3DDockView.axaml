@@ -4,6 +4,31 @@
              x:Class="HlaeObsTools.Views.Docks.Viewport3DDockView"
              x:DataType="vm:Viewport3DDockViewModel">
     <Border Background="#151515" Padding="4">
-        <ContentControl x:Name="ViewportHost" />
+        <Grid>
+            <ContentControl x:Name="ViewportHost" />
+            <Border x:Name="MapStatusOverlay" Background="#111318">
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="10"
+                            MaxWidth="360">
+                    <ProgressBar x:Name="MapLoadingProgress"
+                                 Width="180"
+                                 Height="4"
+                                 IsIndeterminate="True"/>
+                    <TextBlock x:Name="MapStatusTitle"
+                               Text="No map loaded"
+                               HorizontalAlignment="Center"
+                               Foreground="#E6E6E6"
+                               FontSize="14"
+                               FontWeight="SemiBold"/>
+                    <TextBlock x:Name="MapStatusDetails"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               Foreground="#999999"
+                               FontSize="12"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Border>
 </UserControl>
