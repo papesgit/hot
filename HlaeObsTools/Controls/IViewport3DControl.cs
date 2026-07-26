@@ -30,6 +30,7 @@ public interface IViewport3DControl
     void SetPins(IReadOnlyList<ViewportPin> pins);
     void SetPlayerStatuses(IReadOnlyList<ViewportPlayerStatus> statuses);
     void SetCampathOverlay(CampathOverlayData? data);
+    void SetCampathPlayheadFrustum(CampathOverlayData? data);
     void SetCampathGizmo(CampathGizmoState? state);
 
     event Action<Vector3, Quaternion>? CampathGizmoPoseChanged;

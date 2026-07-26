@@ -212,6 +212,12 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private bool _campathOverlayDirty;
     private CampathOverlayData? _campathOverlayData;
     private readonly object _campathOverlayLock = new();
+    private int _campathPlayheadVao;
+    private int _campathPlayheadVbo;
+    private int _campathPlayheadVertexCount;
+    private bool _campathPlayheadDirty;
+    private CampathOverlayData? _campathPlayheadData;
+    private readonly object _campathPlayheadLock = new();
     private const float CampathOverlayLineThicknessPx = 4.0f;
     private Vector3 _campathOverlayCameraPos;
     private Vector3 _campathOverlayCameraForward;
@@ -3926,6 +3932,16 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         RequestNextFrame();
     }
 
+    public void SetCampathPlayheadFrustum(CampathOverlayData? data)
+    {
+        lock (_campathPlayheadLock)
+        {
+            _campathPlayheadData = data;
+            _campathPlayheadDirty = true;
+        }
+        RequestNextFrame();
+    }
+
     private bool TryTakeMapLoadRequest(out string? mapPath, out long generation)
     {
         lock (_mapRequestLock)
@@ -4160,6 +4176,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             if (_campathOverlayDirty)
             {
                 RebuildCampathOverlay();
+            }
+            if (_campathPlayheadDirty)
+            {
+                RebuildCampathPlayheadFrustum();
             }
             DrawCampathOverlay(width, height);
             if (_mainFramebuffer != _defaultFramebuffer)
@@ -4837,7 +4857,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private void DrawCampathOverlay(int width, int height)
     {
-        if (_campathOverlayVertexCount <= 0 || _campathOverlayShaderProgram == 0 || _renderer == null || _mainFramebuffer == null)
+        if ((_campathOverlayVertexCount <= 0 && _campathPlayheadVertexCount <= 0)
+            || _campathOverlayShaderProgram == 0 || _renderer == null || _mainFramebuffer == null)
         {
             if (!_gizmoVisible)
                 return;
@@ -4863,13 +4884,21 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             GL.UniformMatrix4(_campathOverlayMvpLocation, false, ref mvp);
         }
 
-        if (_campathOverlayVertexCount > 0)
+        if (_campathOverlayVertexCount > 0 || _campathPlayheadVertexCount > 0)
         {
             var cullEnabled = GL.IsEnabled(EnableCap.CullFace);
             if (cullEnabled)
                 GL.Disable(EnableCap.CullFace);
-            GL.BindVertexArray(_campathOverlayVao);
-            GL.DrawArrays(PrimitiveType.Triangles, 0, _campathOverlayVertexCount);
+            if (_campathOverlayVertexCount > 0)
+            {
+                GL.BindVertexArray(_campathOverlayVao);
+                GL.DrawArrays(PrimitiveType.Triangles, 0, _campathOverlayVertexCount);
+            }
+            if (_campathPlayheadVertexCount > 0)
+            {
+                GL.BindVertexArray(_campathPlayheadVao);
+                GL.DrawArrays(PrimitiveType.Triangles, 0, _campathPlayheadVertexCount);
+            }
             GL.BindVertexArray(0);
             if (cullEnabled)
                 GL.Enable(EnableCap.CullFace);
@@ -5576,12 +5605,23 @@ void main()
             GL.DeleteBuffer(_campathOverlayVbo);
             _campathOverlayVbo = 0;
         }
+        if (_campathPlayheadVao != 0)
+        {
+            GL.DeleteVertexArray(_campathPlayheadVao);
+            _campathPlayheadVao = 0;
+        }
+        if (_campathPlayheadVbo != 0)
+        {
+            GL.DeleteBuffer(_campathPlayheadVbo);
+            _campathPlayheadVbo = 0;
+        }
         if (_campathOverlayShaderProgram != 0)
         {
             GL.DeleteProgram(_campathOverlayShaderProgram);
             _campathOverlayShaderProgram = 0;
         }
         _campathOverlayVertexCount = 0;
+        _campathPlayheadVertexCount = 0;
     }
 
     private bool EnsureGizmoResources()
@@ -5874,38 +5914,51 @@ void main()
     private void RebuildCampathOverlay()
     {
         _campathOverlayDirty = false;
-
         CampathOverlayData? data;
         lock (_campathOverlayLock)
-        {
             data = _campathOverlayData;
-        }
+        RebuildCampathOverlayBuffer(data, ref _campathOverlayVao,
+            ref _campathOverlayVbo, ref _campathOverlayVertexCount);
+    }
 
+    private void RebuildCampathPlayheadFrustum()
+    {
+        _campathPlayheadDirty = false;
+        CampathOverlayData? data;
+        lock (_campathPlayheadLock)
+            data = _campathPlayheadData;
+        RebuildCampathOverlayBuffer(data, ref _campathPlayheadVao,
+            ref _campathPlayheadVbo, ref _campathPlayheadVertexCount);
+    }
+
+    private void RebuildCampathOverlayBuffer(CampathOverlayData? data,
+        ref int vao, ref int vbo, ref int vertexCount)
+    {
         if (data == null || data.Vertices.Count == 0)
         {
-            _campathOverlayVertexCount = 0;
-            if (_campathOverlayVao != 0)
+            vertexCount = 0;
+            if (vao != 0)
             {
-                GL.DeleteVertexArray(_campathOverlayVao);
-                _campathOverlayVao = 0;
+                GL.DeleteVertexArray(vao);
+                vao = 0;
             }
-            if (_campathOverlayVbo != 0)
+            if (vbo != 0)
             {
-                GL.DeleteBuffer(_campathOverlayVbo);
-                _campathOverlayVbo = 0;
+                GL.DeleteBuffer(vbo);
+                vbo = 0;
             }
             return;
         }
-
         if (!EnsureCampathOverlayResources())
         {
+            vertexCount = 0;
             return;
         }
 
         var vertices = BuildCampathOverlayTriangles(data.Vertices);
         if (vertices.Count == 0)
         {
-            _campathOverlayVertexCount = 0;
+            vertexCount = 0;
             return;
         }
 
@@ -5921,20 +5974,12 @@ void main()
             vertexData[idx++] = vertex.Color.Z;
         }
 
-        if (_campathOverlayVao != 0)
-        {
-            GL.DeleteVertexArray(_campathOverlayVao);
-        }
-        if (_campathOverlayVbo != 0)
-        {
-            GL.DeleteBuffer(_campathOverlayVbo);
-        }
-
-        _campathOverlayVao = GL.GenVertexArray();
-        _campathOverlayVbo = GL.GenBuffer();
-        GL.BindVertexArray(_campathOverlayVao);
-
-        GL.BindBuffer(BufferTarget.ArrayBuffer, _campathOverlayVbo);
+        if (vao == 0)
+            vao = GL.GenVertexArray();
+        if (vbo == 0)
+            vbo = GL.GenBuffer();
+        GL.BindVertexArray(vao);
+        GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
         GL.BufferData(BufferTarget.ArrayBuffer, vertexData.Length * sizeof(float), vertexData, BufferUsageHint.DynamicDraw);
 
         GL.EnableVertexAttribArray(0);
@@ -5944,7 +5989,7 @@ void main()
 
         GL.BindVertexArray(0);
 
-        _campathOverlayVertexCount = vertices.Count;
+        vertexCount = vertices.Count;
     }
 
     private void UpdateCampathOverlayCameraState()
@@ -5952,13 +5997,13 @@ void main()
         if (_renderer == null || _rendererContext == null)
             return;
 
-        CampathOverlayData? data;
+        bool hasOverlay;
         lock (_campathOverlayLock)
-        {
-            data = _campathOverlayData;
-        }
-
-        if (data == null || data.Vertices.Count == 0)
+            hasOverlay = _campathOverlayData?.Vertices.Count > 0;
+        bool hasPlayhead;
+        lock (_campathPlayheadLock)
+            hasPlayhead = _campathPlayheadData?.Vertices.Count > 0;
+        if (!hasOverlay && !hasPlayhead)
             return;
 
         var camera = _renderer.Camera;
@@ -5979,7 +6024,10 @@ void main()
             _campathOverlayCameraUp = up;
             _campathOverlayCameraFov = fov;
             _campathOverlayCameraHeight = height;
-            _campathOverlayDirty = true;
+            if (hasOverlay)
+                _campathOverlayDirty = true;
+            if (hasPlayhead)
+                _campathPlayheadDirty = true;
         }
     }
 

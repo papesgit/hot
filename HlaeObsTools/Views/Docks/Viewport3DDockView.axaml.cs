@@ -410,13 +410,31 @@ public partial class Viewport3DDockView : UserControl
             _campathEditor == null)
         {
             _viewport.SetCampathOverlay(null);
+            _viewport.SetCampathPlayheadFrustum(null);
             return;
         }
 
-        var hidePlayheadFrustum = _viewModel.HasSequencerPossession
-            && !_viewModel.IsSequencerPiloting;
-        var overlay = BuildCampathOverlay(_campathEditor, _campathEditor.PlayheadTime, hidePlayheadFrustum);
+        var overlay = BuildCampathOverlay(_campathEditor, _campathEditor.PlayheadTime);
         _viewport.SetCampathOverlay(overlay);
+        UpdateCampathPlayheadFrustum();
+    }
+
+    private void UpdateCampathPlayheadFrustum()
+    {
+        if (_viewport == null || _viewModel == null ||
+            !_viewModel.Viewport3DSettings.ViewportCampathOverlayEnabled ||
+            _viewModel.HasSequencerPossession ||
+            _campathEditor?.CanEvaluate() != true)
+        {
+            _viewport?.SetCampathPlayheadFrustum(null);
+            return;
+        }
+
+        var sample = _campathEditor.Evaluate(_campathEditor.PlayheadTime);
+        var vertices = new List<CampathOverlayVertex>();
+        AddCameraFrustum(vertices, sample.Position, sample.Rotation, (float)sample.Fov,
+            new Vector3(0.9f, 0.95f, 1.0f));
+        _viewport.SetCampathPlayheadFrustum(new CampathOverlayData(vertices));
     }
 
     private void UpdateCampathGizmo()
@@ -475,7 +493,7 @@ public partial class Viewport3DDockView : UserControl
         _viewModel?.NotifyGizmoDragEnded();
     }
 
-    private static CampathOverlayData? BuildCampathOverlay(CampathEditorViewModel editor, double playheadTime, bool hidePlayheadFrustum)
+    private static CampathOverlayData? BuildCampathOverlay(CampathEditorViewModel editor, double playheadTime)
     {
         if (!editor.CanEvaluate())
             return null;
@@ -498,13 +516,6 @@ public partial class Viewport3DDockView : UserControl
                 AddLine(vertices, prevPos, sample.Position, color);
                 prevPos = sample.Position;
             }
-        }
-
-        if (!hidePlayheadFrustum && editor.CanEvaluate())
-        {
-            var sample = editor.Evaluate(playheadTime);
-            var color = new Vector3(0.9f, 0.95f, 1.0f);
-            AddCameraFrustum(vertices, sample.Position, sample.Rotation, (float)sample.Fov, color);
         }
 
         if (editor.IsCurveMode)
@@ -601,6 +612,7 @@ public partial class Viewport3DDockView : UserControl
     {
         if (_viewport == null)
             return;
+        UpdateCampathPlayheadFrustum();
         if (!sample.HasValue || _viewModel?.IsSequencerPiloting == true)
         {
             _viewport.ClearExternalCamera();
