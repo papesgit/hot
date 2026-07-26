@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Numerics;
 using Avalonia.Threading;
 using HlaeObsTools.Services.Campaths;
 
@@ -21,6 +22,18 @@ public readonly record struct SequencerPossession(SequencerPossessionKind Kind, 
     public static SequencerPossession None => new(SequencerPossessionKind.None, Guid.Empty);
     public static SequencerPossession Camera(Guid cameraId) => new(SequencerPossessionKind.Camera, cameraId);
     public static SequencerPossession CameraCuts => new(SequencerPossessionKind.CameraCuts, Guid.Empty);
+}
+
+public sealed record SequencerGizmoSelection(
+    CampathEditorViewModel Editor,
+    double Time,
+    CampathKeyframeViewModel? ClassicKey,
+    IReadOnlyDictionary<string, CampathCurveKey> CurveKeys,
+    CampathGizmoAxes TranslationAxes,
+    CampathGizmoAxes RotationAxes)
+{
+    public bool HasHandles =>
+        TranslationAxes != CampathGizmoAxes.None || RotationAxes != CampathGizmoAxes.None;
 }
 
 public sealed class CampathCameraTrackViewModel : ViewModelBase, IDisposable
@@ -131,6 +144,9 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     private readonly HashSet<CampathCameraTrackViewModel> _knownCameras = new();
     private CampathCameraTrackViewModel? _selectedCamera;
     private SequencerPossession _possession = SequencerPossession.None;
+    private SequencerGizmoSelection? _gizmoSelection;
+    private bool _gizmoEditActive;
+    private CampathEditorViewModel? _gizmoEditEditor;
 
     public CampathSequenceViewModel(
         CampathEditorViewModel initialCamera,
@@ -151,6 +167,11 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     public ObservableCollection<CampathCameraTrackViewModel> Cameras { get; } = new();
     public ObservableCollection<CameraCutSectionViewModel> CameraCuts { get; } = new();
     public CampathEditorMode DefaultCameraMode { get; set; }
+    public SequencerGizmoSelection? GizmoSelection
+    {
+        get => _gizmoSelection;
+        private set => SetProperty(ref _gizmoSelection, value);
+    }
     public CampathCameraTrackViewModel? SelectedCamera
     {
         get => _selectedCamera;
@@ -183,6 +204,142 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
                 _playTimer.Start();
             }
         }
+    }
+
+    public void SetGizmoSelection(SequencerGizmoSelection? selection)
+    {
+        if (selection != null &&
+            Cameras.All(camera => !ReferenceEquals(camera.Editor, selection.Editor)))
+            selection = null;
+        GizmoSelection = selection?.HasHandles == true ? selection : null;
+    }
+
+    public CampathGizmoState? GetGizmoState(bool useLocalSpace)
+    {
+        var selection = GizmoSelection;
+        if (selection == null)
+            return null;
+
+        var sample = selection.ClassicKey is { } classic
+            ? new CampathSample(classic.Position, classic.Rotation, classic.Fov, true, classic.Dof)
+            : selection.Editor.Evaluate(selection.Time);
+        // A partial position-channel selection represents world-space scalar values.
+        // Keeping it in world space prevents a local axis drag from changing hidden channels.
+        var effectiveLocalSpace = useLocalSpace &&
+            (selection.TranslationAxes is CampathGizmoAxes.None or CampathGizmoAxes.All);
+        return new CampathGizmoState(true, sample.Position, sample.Rotation, effectiveLocalSpace,
+            selection.TranslationAxes, selection.RotationAxes);
+    }
+
+    public void BeginGizmoEdit()
+    {
+        if (_gizmoEditActive || GizmoSelection == null)
+            return;
+        _gizmoEditActive = true;
+        _gizmoEditEditor = GizmoSelection.Editor;
+        BeginHistoryTransaction();
+        _gizmoEditEditor.BeginHistoryTransaction();
+    }
+
+    public void ApplyGizmoPose(Vector3 position, Quaternion rotation)
+    {
+        var selection = GizmoSelection;
+        if (selection == null)
+            return;
+        BeginGizmoEdit();
+
+        if (selection.ClassicKey is { } classic)
+        {
+            classic.Position = ApplyPositionAxes(classic.Position, position, selection.TranslationAxes);
+            classic.Rotation = ApplyRotationAxes(classic.Rotation, rotation, selection.RotationAxes);
+            return;
+        }
+
+        var changedChannels = new HashSet<CampathCurveChannel>();
+        var euler = QuaternionToEuler(rotation);
+        foreach (var (channelId, key) in selection.CurveKeys)
+        {
+            var value = channelId switch
+            {
+                "position.x" => position.X,
+                "position.y" => position.Y,
+                "position.z" => position.Z,
+                "rotation.pitch" => ClosestEquivalentAngle(euler.Pitch, key.Value),
+                "rotation.yaw" => ClosestEquivalentAngle(euler.Yaw, key.Value),
+                "rotation.roll" => ClosestEquivalentAngle(euler.Roll, key.Value),
+                _ => key.Value
+            };
+            if (Math.Abs(key.Value - value) < 1e-9)
+                continue;
+            key.Value = value;
+            var channel = selection.Editor.CurveDocument.Find(channelId);
+            if (channel != null)
+                changedChannels.Add(channel);
+        }
+        foreach (var channel in changedChannels)
+            CampathPathConversion.AutoTangents(channel);
+        if (changedChannels.Count > 0)
+            selection.Editor.NotifyCurveDocumentChanged();
+    }
+
+    public void EndGizmoEdit()
+    {
+        if (!_gizmoEditActive)
+            return;
+        _gizmoEditActive = false;
+        _gizmoEditEditor?.CommitHistoryTransaction();
+        _gizmoEditEditor = null;
+        CommitHistoryTransaction();
+    }
+
+    private static Vector3 ApplyPositionAxes(
+        Vector3 current, Vector3 updated, CampathGizmoAxes axes) => new(
+        axes.HasFlag(CampathGizmoAxes.X) ? updated.X : current.X,
+        axes.HasFlag(CampathGizmoAxes.Y) ? updated.Y : current.Y,
+        axes.HasFlag(CampathGizmoAxes.Z) ? updated.Z : current.Z);
+
+    private static Quaternion ApplyRotationAxes(
+        Quaternion current, Quaternion updated, CampathGizmoAxes axes)
+    {
+        if (axes == CampathGizmoAxes.None)
+            return current;
+        if (axes == CampathGizmoAxes.All)
+            return Quaternion.Normalize(updated);
+        var oldEuler = QuaternionToEuler(current);
+        var newEuler = QuaternionToEuler(updated);
+        return EulerToQuaternion(
+            axes.HasFlag(CampathGizmoAxes.Y) ? newEuler.Pitch : oldEuler.Pitch,
+            axes.HasFlag(CampathGizmoAxes.Z) ? newEuler.Yaw : oldEuler.Yaw,
+            axes.HasFlag(CampathGizmoAxes.X) ? newEuler.Roll : oldEuler.Roll);
+    }
+
+    private static (double Pitch, double Yaw, double Roll) QuaternionToEuler(Quaternion rotation)
+    {
+        var forward = Vector3.Normalize(Vector3.Transform(Vector3.UnitX, rotation));
+        var yaw = Math.Atan2(forward.Y, forward.X);
+        var pitch = -Math.Asin(Math.Clamp(forward.Z, -1f, 1f));
+        var right = new Vector3((float)Math.Sin(yaw), (float)-Math.Cos(yaw), 0);
+        var baseUp = Vector3.Normalize(Vector3.Cross(right, forward));
+        var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitZ, rotation));
+        var roll = Math.Atan2(Vector3.Dot(Vector3.Cross(baseUp, up), forward), Vector3.Dot(baseUp, up));
+        const double toDegrees = 180.0 / Math.PI;
+        return (pitch * toDegrees, yaw * toDegrees, roll * toDegrees);
+    }
+
+    private static Quaternion EulerToQuaternion(double pitch, double yaw, double roll)
+    {
+        const double toRadians = Math.PI / 180.0;
+        var qx = Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)(roll * toRadians));
+        var qy = Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)(pitch * toRadians));
+        var qz = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)(yaw * toRadians));
+        return Quaternion.Normalize(qz * qy * qx);
+    }
+
+    private static double ClosestEquivalentAngle(double angle, double reference)
+    {
+        while (angle - reference > 180.0) angle -= 360.0;
+        while (angle - reference < -180.0) angle += 360.0;
+        return angle;
     }
 
     public double PlayheadTime
@@ -530,6 +687,9 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
             }
         if (SelectedCamera == null || !Cameras.Contains(SelectedCamera))
             SelectedCamera = Cameras.FirstOrDefault();
+        if (GizmoSelection != null &&
+            Cameras.All(camera => !ReferenceEquals(camera.Editor, GizmoSelection.Editor)))
+            SetGizmoSelection(null);
         NotifyRangeChanged();
         RecordExternalMutation();
     }
@@ -549,6 +709,14 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
 
     private void OnTrackContentChanged()
     {
+        if (_gizmoEditActive)
+        {
+            // Gizmo edits only change the selected transform values. They do not
+            // change the sequence range and must not take preview ownership away
+            // from a camera the user is actively piloting.
+            OnPropertyChanged(nameof(GizmoSelection));
+            return;
+        }
         NotifyRangeChanged();
         EvaluatePossessedCamera();
         if (!Cameras.Any(camera => camera.Editor.IsHistoryTransactionActive))

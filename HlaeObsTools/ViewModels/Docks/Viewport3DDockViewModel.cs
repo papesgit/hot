@@ -52,6 +52,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     public event Action<IReadOnlyList<ViewportPlayerStatus>>? PlayerStatusesUpdated;
     public event Action<CampathSample?>? SequencerPreviewChanged;
     public event Action<CampathEditorViewModel?>? SelectedCampathEditorChanged;
+    public event Action? SequencerGizmoChanged;
     public bool IsSequencerPiloting => _sequence?.IsPiloting == true;
     public bool IsSequencerPlaying => _sequence?.IsPlaying == true;
 
@@ -393,6 +394,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     {
         if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))
             SelectedCampathEditorChanged?.Invoke(SelectedCampathEditor);
+        if (e.PropertyName == nameof(CampathSequenceViewModel.GizmoSelection))
+            SequencerGizmoChanged?.Invoke();
 
         if (e.PropertyName == nameof(CampathSequenceViewModel.IsPlaying) && IsHlaeSyncActive())
         {
@@ -459,6 +462,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
         if (!IsHlaeSyncActive())
             return;
+        if (_gizmoDragActive)
+            return;
 
         if (e.PropertyName == nameof(CampathEditorViewModel.IsTimeDragActive))
         {
@@ -522,10 +527,12 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     public void NotifyGizmoDragActive()
     {
         _gizmoDragActive = true;
+        _sequence?.BeginGizmoEdit();
     }
 
     public void NotifyGizmoDragEnded()
     {
+        _sequence?.EndGizmoEdit();
         if (_gizmoDragActive)
             _gizmoDragActive = false;
 
@@ -534,6 +541,12 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
         RequestCampathSync();
     }
+
+    public CampathGizmoState? GetSequencerGizmoState() =>
+        _sequence?.GetGizmoState(_settings.CampathGizmoLocalSpace);
+
+    public void ApplySequencerGizmoPose(Vector3 position, Quaternion rotation) =>
+        _sequence?.ApplyGizmoPose(position, rotation);
 
     private bool IsHlaeSyncActive()
     {

@@ -459,6 +459,7 @@ public sealed class CampathSequenceTimelineControl : Panel
         if (Sequence != null)
             Sequence.SelectedCamera = entry.Camera;
         editor.SetEditorMode(mode);
+        ClearKeySelection();
         UpdateModeEditors();
         EnsureValueEditorLayout();
         InvalidateMeasure();
@@ -577,6 +578,7 @@ public sealed class CampathSequenceTimelineControl : Panel
             if (implicitEdit)
                 EndValueEditorEdit(entry);
         }
+        PublishGizmoSelection();
         UpdateValueEditors();
         InvalidateVisual();
     }
@@ -1129,7 +1131,7 @@ public sealed class CampathSequenceTimelineControl : Panel
         if (_scrubbing || _dragCut != null || _draggingKeys || _marqueeSelecting)
         {
             var completedScrub = _scrubbing;
-            var commitsEdit = _dragCut != null || _draggingKeys;
+            var commitsEdit = _dragCut != null || (_draggingKeys && _keyDragActivated);
             EndKeyDrag();
             if (commitsEdit)
                 Sequence?.CommitHistoryTransaction();
@@ -1179,6 +1181,7 @@ public sealed class CampathSequenceTimelineControl : Panel
         {
             foreach (var key in bundle.Keys)
                 SetKeySelected(key, false);
+            PublishGizmoSelection();
             UpdateValueEditors();
             InvalidateVisual();
             return;
@@ -1186,17 +1189,17 @@ public sealed class CampathSequenceTimelineControl : Panel
 
         foreach (var key in bundle.Keys)
             SetKeySelected(key, true);
+        if (Sequence != null)
+            Sequence.SelectedCamera = Sequence.Cameras.FirstOrDefault(camera =>
+                bundle.Keys.Any(key => ReferenceEquals(key.Editor, camera.Editor)));
+        PublishGizmoSelection();
 
-        Sequence?.BeginHistoryTransaction();
         _keyDragOrigins.Clear();
         foreach (var key in SelectedTimelineKeys())
             _keyDragOrigins[key] = key.Time;
         _historyEditors.Clear();
         foreach (var editor in _keyDragOrigins.Keys.Select(key => key.Editor).Distinct())
-        {
-            editor.BeginHistoryTransaction();
             _historyEditors.Add(editor);
-        }
         _keyDragStart = point;
         _draggingKeys = true;
         _keyDragActivated = false;
@@ -1215,6 +1218,9 @@ public sealed class CampathSequenceTimelineControl : Panel
             if (Math.Abs(point.X - _keyDragStart.X) < 3.0)
                 return;
             _keyDragActivated = true;
+            Sequence?.BeginHistoryTransaction();
+            foreach (var editor in _historyEditors)
+                editor.BeginHistoryTransaction();
             foreach (var key in _keyDragOrigins.Keys)
                 if (key.ClassicKey != null)
                     _linkedClassicDragKeys.Add(key.ClassicKey);
@@ -1232,6 +1238,7 @@ public sealed class CampathSequenceTimelineControl : Panel
             key.Time = origin + delta;
         foreach (var editor in _historyEditors.Where(editor => editor.IsCurveMode))
             editor.NotifyCurveDocumentChanged();
+        PublishGizmoSelection();
         InvalidateVisual();
     }
 
@@ -1239,23 +1246,26 @@ public sealed class CampathSequenceTimelineControl : Panel
     {
         if (!_draggingKeys)
             return;
-        foreach (var editor in _historyEditors)
+        if (_keyDragActivated)
         {
-            if (editor.IsCurveMode)
+            foreach (var editor in _historyEditors)
             {
-                foreach (var channel in editor.CurveDocument.Channels)
+                if (editor.IsCurveMode)
                 {
-                    var ordered = channel.Keys.OrderBy(key => key.Time).ToList();
-                    for (var index = 0; index < ordered.Count; index++)
+                    foreach (var channel in editor.CurveDocument.Channels)
                     {
-                        var current = channel.Keys.IndexOf(ordered[index]);
-                        if (current != index)
-                            channel.Keys.Move(current, index);
+                        var ordered = channel.Keys.OrderBy(key => key.Time).ToList();
+                        for (var index = 0; index < ordered.Count; index++)
+                        {
+                            var current = channel.Keys.IndexOf(ordered[index]);
+                            if (current != index)
+                                channel.Keys.Move(current, index);
+                        }
                     }
+                    editor.NotifyCurveDocumentChanged();
                 }
-                editor.NotifyCurveDocumentChanged();
+                editor.CommitHistoryTransaction();
             }
-            editor.CommitHistoryTransaction();
         }
         _historyEditors.Clear();
         _keyDragOrigins.Clear();
@@ -1288,6 +1298,7 @@ public sealed class CampathSequenceTimelineControl : Panel
         foreach (var hit in _keyHits.Where(hit => _marqueeRect.Intersects(hit.Bounds)))
             foreach (var key in hit.Bundle.Keys)
                 SetKeySelected(key, true);
+        PublishGizmoSelection();
         UpdateValueEditors();
         InvalidateVisual();
     }
@@ -1470,6 +1481,7 @@ public sealed class CampathSequenceTimelineControl : Panel
         }
         Sequence.CommitHistoryTransaction();
         e.Handled = true;
+        PublishGizmoSelection();
         UpdateValueEditors(force: true);
         InvalidateVisual();
     }
@@ -1577,7 +1589,94 @@ public sealed class CampathSequenceTimelineControl : Panel
             foreach (var key in camera.Editor.CurveDocument.Channels.SelectMany(channel => channel.Keys))
                 key.Selected = false;
         }
+        PublishGizmoSelection();
         UpdateValueEditors();
+    }
+
+    private void PublishGizmoSelection()
+    {
+        if (Sequence == null)
+            return;
+
+        var selected = SelectedTimelineKeys().ToList();
+        if (selected.Count == 0)
+        {
+            Sequence.SetGizmoSelection(null);
+            return;
+        }
+
+        var editor = selected[0].Editor;
+        var time = selected[0].Time;
+        if (selected.Any(key => !ReferenceEquals(key.Editor, editor)
+            || Math.Abs(key.Time - time) > 0.000001))
+        {
+            Sequence.SetGizmoSelection(null);
+            return;
+        }
+
+        var translationAxes = CampathGizmoAxes.None;
+        var rotationAxes = CampathGizmoAxes.None;
+        var curveKeys = new Dictionary<string, CampathCurveKey>();
+        CampathKeyframeViewModel? classicKey = null;
+        foreach (var key in selected)
+        {
+            if (key.ClassicKey != null)
+            {
+                if (classicKey != null && !ReferenceEquals(classicKey, key.ClassicKey))
+                {
+                    Sequence.SetGizmoSelection(null);
+                    return;
+                }
+                classicKey = key.ClassicKey;
+                AddScopeAxes(key.ClassicScope, ref translationAxes, ref rotationAxes);
+            }
+            else if (key.CurveKey != null && key.CurveChannel != null)
+            {
+                curveKeys[key.CurveChannel.Id] = key.CurveKey;
+                AddChannelAxes(key.CurveChannel.Id, ref translationAxes, ref rotationAxes);
+            }
+        }
+
+        Sequence.SetGizmoSelection(new SequencerGizmoSelection(
+            editor, time, classicKey, curveKeys, translationAxes, rotationAxes));
+    }
+
+    private static void AddScopeAxes(string? scope,
+        ref CampathGizmoAxes translationAxes, ref CampathGizmoAxes rotationAxes)
+    {
+        if (scope == "camera")
+        {
+            translationAxes = CampathGizmoAxes.All;
+            rotationAxes = CampathGizmoAxes.All;
+            return;
+        }
+        if (scope == "group:Position")
+        {
+            translationAxes = CampathGizmoAxes.All;
+            return;
+        }
+        if (scope == "group:Rotation")
+        {
+            rotationAxes = CampathGizmoAxes.All;
+            return;
+        }
+        const string channelPrefix = "channel:";
+        if (scope?.StartsWith(channelPrefix, StringComparison.Ordinal) == true)
+            AddChannelAxes(scope[channelPrefix.Length..], ref translationAxes, ref rotationAxes);
+    }
+
+    private static void AddChannelAxes(string channelId,
+        ref CampathGizmoAxes translationAxes, ref CampathGizmoAxes rotationAxes)
+    {
+        switch (channelId)
+        {
+            case "position.x": translationAxes |= CampathGizmoAxes.X; break;
+            case "position.y": translationAxes |= CampathGizmoAxes.Y; break;
+            case "position.z": translationAxes |= CampathGizmoAxes.Z; break;
+            case "rotation.roll": rotationAxes |= CampathGizmoAxes.X; break;
+            case "rotation.pitch": rotationAxes |= CampathGizmoAxes.Y; break;
+            case "rotation.yaw": rotationAxes |= CampathGizmoAxes.Z; break;
+        }
     }
 
     private double SnapThresholdTime => SecondsPerPixel * 10.0;
@@ -1643,9 +1742,13 @@ public sealed class CampathSequenceTimelineControl : Panel
     private void OnSequenceChanged(AvaloniaPropertyChangedEventArgs e)
     {
         if (e.OldValue is CampathSequenceViewModel oldSequence)
+        {
             oldSequence.PropertyChanged -= OnSequencePropertyChanged;
+            oldSequence.SetGizmoSelection(null);
+        }
         if (e.NewValue is CampathSequenceViewModel newSequence)
             newSequence.PropertyChanged += OnSequencePropertyChanged;
+        PublishGizmoSelection();
         EnsureValueEditorLayout();
         InvalidateMeasure();
         InvalidateVisual();
@@ -1653,6 +1756,8 @@ public sealed class CampathSequenceTimelineControl : Panel
 
     private void OnSequencePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))
+            PublishGizmoSelection();
         EnsureValueEditorLayout();
         UpdateValueEditors();
         if (e.PropertyName != nameof(CampathSequenceViewModel.PlayheadTime)

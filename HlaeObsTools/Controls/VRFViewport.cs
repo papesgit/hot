@@ -227,10 +227,14 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private Vector3 _gizmoPosition;
     private Quaternion _gizmoRotation = Quaternion.Identity;
     private bool _gizmoUseLocalSpace;
+    private CampathGizmoAxes _gizmoTranslationAxes = CampathGizmoAxes.All;
+    private CampathGizmoAxes _gizmoRotationAxes = CampathGizmoAxes.All;
     private float _gizmoLastScale;
     private Vector3 _gizmoLastPosition;
     private Quaternion _gizmoLastRotation = Quaternion.Identity;
     private bool _gizmoLastLocal;
+    private CampathGizmoAxes _gizmoLastTranslationAxes = CampathGizmoAxes.All;
+    private CampathGizmoAxes _gizmoLastRotationAxes = CampathGizmoAxes.All;
 
     private bool _gizmoDragging;
     private GizmoMode _gizmoMode = GizmoMode.None;
@@ -2270,17 +2274,20 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         var bestDistance = float.MaxValue;
         var debug = string.Empty;
 
-        if (TryPickTranslationScreen(screenPos, axisX, axisLength, 10f, out var dx) && dx < bestDistance)
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.X)
+            && TryPickTranslationScreen(screenPos, axisX, axisLength, 10f, out var dx) && dx < bestDistance)
         {
             bestDistance = dx;
             bestMode = GizmoMode.TranslateX;
         }
-        if (TryPickTranslationScreen(screenPos, axisY, axisLength, 10f, out var dy) && dy < bestDistance)
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.Y)
+            && TryPickTranslationScreen(screenPos, axisY, axisLength, 10f, out var dy) && dy < bestDistance)
         {
             bestDistance = dy;
             bestMode = GizmoMode.TranslateY;
         }
-        if (TryPickTranslationScreen(screenPos, axisZ, axisLength, 10f, out var dz) && dz < bestDistance)
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.Z)
+            && TryPickTranslationScreen(screenPos, axisZ, axisLength, 10f, out var dz) && dz < bestDistance)
         {
             bestDistance = dz;
             bestMode = GizmoMode.TranslateZ;
@@ -2288,17 +2295,20 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         if (bestMode == GizmoMode.None)
         {
-            if (TryPickRotationScreen(screenPos, axisX, ringRadius, 10f, out var rx) && rx < bestDistance)
+            if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.X)
+                && TryPickRotationScreen(screenPos, axisX, ringRadius, 10f, out var rx) && rx < bestDistance)
             {
                 bestDistance = rx;
                 bestMode = GizmoMode.RotateX;
             }
-            if (TryPickRotationScreen(screenPos, axisY, ringRadius, 10f, out var ry) && ry < bestDistance)
+            if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.Y)
+                && TryPickRotationScreen(screenPos, axisY, ringRadius, 10f, out var ry) && ry < bestDistance)
             {
                 bestDistance = ry;
                 bestMode = GizmoMode.RotateY;
             }
-            if (TryPickRotationScreen(screenPos, axisZ, ringRadius, 10f, out var rz) && rz < bestDistance)
+            if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.Z)
+                && TryPickRotationScreen(screenPos, axisZ, ringRadius, 10f, out var rz) && rz < bestDistance)
             {
                 bestDistance = rz;
                 bestMode = GizmoMode.RotateZ;
@@ -2424,17 +2434,20 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         GizmoMode bestMode = GizmoMode.None;
         var bestDistance = float.MaxValue;
 
-        if (TryPickTranslationScreen(screenPos, axisX, axisLength, 10f, out var dx) && dx < bestDistance)
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.X)
+            && TryPickTranslationScreen(screenPos, axisX, axisLength, 10f, out var dx) && dx < bestDistance)
         {
             bestDistance = dx;
             bestMode = GizmoMode.TranslateX;
         }
-        if (TryPickTranslationScreen(screenPos, axisY, axisLength, 10f, out var dy) && dy < bestDistance)
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.Y)
+            && TryPickTranslationScreen(screenPos, axisY, axisLength, 10f, out var dy) && dy < bestDistance)
         {
             bestDistance = dy;
             bestMode = GizmoMode.TranslateY;
         }
-        if (TryPickTranslationScreen(screenPos, axisZ, axisLength, 10f, out var dz) && dz < bestDistance)
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.Z)
+            && TryPickTranslationScreen(screenPos, axisZ, axisLength, 10f, out var dz) && dz < bestDistance)
         {
             bestDistance = dz;
             bestMode = GizmoMode.TranslateZ;
@@ -2442,17 +2455,20 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         if (bestMode == GizmoMode.None)
         {
-            if (TryPickRotationScreen(screenPos, axisX, ringRadius, 10f, out var rx) && rx < bestDistance)
+            if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.X)
+                && TryPickRotationScreen(screenPos, axisX, ringRadius, 10f, out var rx) && rx < bestDistance)
             {
                 bestDistance = rx;
                 bestMode = GizmoMode.RotateX;
             }
-            if (TryPickRotationScreen(screenPos, axisY, ringRadius, 10f, out var ry) && ry < bestDistance)
+            if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.Y)
+                && TryPickRotationScreen(screenPos, axisY, ringRadius, 10f, out var ry) && ry < bestDistance)
             {
                 bestDistance = ry;
                 bestMode = GizmoMode.RotateY;
             }
-            if (TryPickRotationScreen(screenPos, axisZ, ringRadius, 10f, out var rz) && rz < bestDistance)
+            if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.Z)
+                && TryPickRotationScreen(screenPos, axisZ, ringRadius, 10f, out var rz) && rz < bestDistance)
             {
                 bestDistance = rz;
                 bestMode = GizmoMode.RotateZ;
@@ -3517,6 +3533,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _gizmoPosition = state.Value.Position;
         _gizmoRotation = Quaternion.Normalize(state.Value.Rotation);
         _gizmoUseLocalSpace = state.Value.UseLocalSpace;
+        _gizmoTranslationAxes = state.Value.TranslationAxes;
+        _gizmoRotationAxes = state.Value.RotationAxes;
+        if (!IsGizmoModeEnabled(_gizmoHover))
+            _gizmoHover = GizmoMode.None;
         _gizmoDirty = true;
         RequestNextFrame();
     }
@@ -5603,13 +5623,17 @@ void main()
             MathF.Abs(scale - _gizmoLastScale) > 0.01f ||
             Vector3.DistanceSquared(_gizmoPosition, _gizmoLastPosition) > 0.01f ||
             Quaternion.Dot(_gizmoRotation, _gizmoLastRotation) < 0.999f ||
-            _gizmoUseLocalSpace != _gizmoLastLocal)
+            _gizmoUseLocalSpace != _gizmoLastLocal ||
+            _gizmoTranslationAxes != _gizmoLastTranslationAxes ||
+            _gizmoRotationAxes != _gizmoLastRotationAxes)
         {
             _gizmoDirty = false;
             _gizmoLastScale = scale;
             _gizmoLastPosition = _gizmoPosition;
             _gizmoLastRotation = _gizmoRotation;
             _gizmoLastLocal = _gizmoUseLocalSpace;
+            _gizmoLastTranslationAxes = _gizmoTranslationAxes;
+            _gizmoLastRotationAxes = _gizmoRotationAxes;
 
             var verts = BuildGizmoVertices(scale);
             UploadGizmoVertices(verts);
@@ -5628,22 +5652,39 @@ void main()
         var ringThickness = scale * 0.03f;
 
         var (axisX, axisY, axisZ) = GetGizmoAxes();
-        AppendAxis(vertices, axisX, new Vector3(0.95f, 0.2f, 0.2f), shaftLength, coneLength, shaftRadius, coneRadius,
-            _gizmoHover is GizmoMode.TranslateX);
-        AppendAxis(vertices, axisY, new Vector3(0.2f, 0.95f, 0.2f), shaftLength, coneLength, shaftRadius, coneRadius,
-            _gizmoHover is GizmoMode.TranslateY);
-        AppendAxis(vertices, axisZ, new Vector3(0.2f, 0.5f, 0.95f), shaftLength, coneLength, shaftRadius, coneRadius,
-            _gizmoHover is GizmoMode.TranslateZ);
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.X))
+            AppendAxis(vertices, axisX, new Vector3(0.95f, 0.2f, 0.2f), shaftLength, coneLength, shaftRadius, coneRadius,
+                _gizmoHover is GizmoMode.TranslateX);
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.Y))
+            AppendAxis(vertices, axisY, new Vector3(0.2f, 0.95f, 0.2f), shaftLength, coneLength, shaftRadius, coneRadius,
+                _gizmoHover is GizmoMode.TranslateY);
+        if (_gizmoTranslationAxes.HasFlag(CampathGizmoAxes.Z))
+            AppendAxis(vertices, axisZ, new Vector3(0.2f, 0.5f, 0.95f), shaftLength, coneLength, shaftRadius, coneRadius,
+                _gizmoHover is GizmoMode.TranslateZ);
 
-        AppendRing(vertices, axisX, new Vector3(0.9f, 0.4f, 0.4f), ringRadius, ringThickness,
-            _gizmoHover is GizmoMode.RotateX);
-        AppendRing(vertices, axisY, new Vector3(0.4f, 0.9f, 0.4f), ringRadius, ringThickness,
-            _gizmoHover is GizmoMode.RotateY);
-        AppendRing(vertices, axisZ, new Vector3(0.4f, 0.6f, 0.95f), ringRadius, ringThickness,
-            _gizmoHover is GizmoMode.RotateZ);
+        if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.X))
+            AppendRing(vertices, axisX, new Vector3(0.9f, 0.4f, 0.4f), ringRadius, ringThickness,
+                _gizmoHover is GizmoMode.RotateX);
+        if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.Y))
+            AppendRing(vertices, axisY, new Vector3(0.4f, 0.9f, 0.4f), ringRadius, ringThickness,
+                _gizmoHover is GizmoMode.RotateY);
+        if (_gizmoRotationAxes.HasFlag(CampathGizmoAxes.Z))
+            AppendRing(vertices, axisZ, new Vector3(0.4f, 0.6f, 0.95f), ringRadius, ringThickness,
+                _gizmoHover is GizmoMode.RotateZ);
 
         return vertices;
     }
+
+    private bool IsGizmoModeEnabled(GizmoMode mode) => mode switch
+    {
+        GizmoMode.TranslateX => _gizmoTranslationAxes.HasFlag(CampathGizmoAxes.X),
+        GizmoMode.TranslateY => _gizmoTranslationAxes.HasFlag(CampathGizmoAxes.Y),
+        GizmoMode.TranslateZ => _gizmoTranslationAxes.HasFlag(CampathGizmoAxes.Z),
+        GizmoMode.RotateX => _gizmoRotationAxes.HasFlag(CampathGizmoAxes.X),
+        GizmoMode.RotateY => _gizmoRotationAxes.HasFlag(CampathGizmoAxes.Y),
+        GizmoMode.RotateZ => _gizmoRotationAxes.HasFlag(CampathGizmoAxes.Z),
+        _ => false
+    };
 
     private void UploadGizmoVertices(List<CampathOverlayVertex> vertices)
     {

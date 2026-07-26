@@ -47,6 +47,7 @@ public partial class Viewport3DDockView : UserControl
             _viewModel.PlayerStatusesUpdated -= OnPlayerStatusesUpdated;
             _viewModel.Viewport3DSettings.PropertyChanged -= OnViewportSettingsChanged;
             _viewModel.SelectedCampathEditorChanged -= OnSelectedCampathEditorChanged;
+            _viewModel.SequencerGizmoChanged -= OnSequencerGizmoChanged;
             if (_campathEditor != null)
             {
                 DetachCampathEditor(_campathEditor);
@@ -65,6 +66,7 @@ public partial class Viewport3DDockView : UserControl
             _viewModel.PlayerStatusesUpdated += OnPlayerStatusesUpdated;
             _viewModel.Viewport3DSettings.PropertyChanged += OnViewportSettingsChanged;
             _viewModel.SelectedCampathEditorChanged += OnSelectedCampathEditorChanged;
+            _viewModel.SequencerGizmoChanged += OnSequencerGizmoChanged;
             SetCampathEditor(_viewModel.SelectedCampathEditor);
             _viewModel.CampathStateProvider = CaptureFreecamState;
             _viewModel.SequencerPreviewChanged += OnSequencerPreviewChanged;
@@ -80,6 +82,8 @@ public partial class Viewport3DDockView : UserControl
         UpdateCampathOverlay();
         UpdateCampathGizmo();
     }
+
+    private void OnSequencerGizmoChanged() => UpdateCampathGizmo();
 
     private void SetCampathEditor(CampathEditorViewModel? editor)
     {
@@ -436,18 +440,13 @@ public partial class Viewport3DDockView : UserControl
             return;
         }
 
-        var selected = _campathEditor.SelectedKeyframe;
-        if (selected == null)
+        var state = _viewModel.GetSequencerGizmoState();
+        if (state == null)
         {
             _viewport.SetCampathGizmo(null);
             return;
         }
 
-        var state = new CampathGizmoState(
-            visible: true,
-            position: selected.Position,
-            rotation: selected.Rotation,
-            useLocalSpace: _viewModel.Viewport3DSettings.CampathGizmoLocalSpace);
         _viewport.SetCampathGizmo(state);
     }
 
@@ -473,12 +472,11 @@ public partial class Viewport3DDockView : UserControl
 
     private void OnCampathGizmoPoseChanged(Vector3 position, Quaternion rotation)
     {
-        if (_campathEditor?.SelectedKeyframe == null)
+        if (_viewModel == null)
             return;
 
-        _viewModel?.NotifyGizmoDragActive();
-        _campathEditor.SelectedKeyframe.Position = position;
-        _campathEditor.SelectedKeyframe.Rotation = rotation;
+        _viewModel.NotifyGizmoDragActive();
+        _viewModel.ApplySequencerGizmoPose(position, rotation);
     }
 
     private void OnCampathGizmoDragEnded()
