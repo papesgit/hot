@@ -40,14 +40,6 @@ public static class CampathPathConversion
 
     public static void EnsureStandardChannels(CampathCurveDocument document)
     {
-        var legacyDofEnabled = document.Find("dof.enabled");
-        if (legacyDofEnabled != null)
-        {
-            if (legacyDofEnabled.Keys.Count > 0)
-                document.DofEnabled = legacyDofEnabled.Keys[0].Value >= 0.5;
-            document.Channels.Remove(legacyDofEnabled);
-        }
-
         foreach (var definition in StandardChannels)
         {
             var existing = document.Find(definition.Id);

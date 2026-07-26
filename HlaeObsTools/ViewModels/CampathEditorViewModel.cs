@@ -23,7 +23,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
     private bool _suppressCollectionEvents;
     private bool _hold = true;
     private double _timeOffset;
-    private bool _timeDragActive;
     private CampathDofSettings _currentDofSettings = CampathDofSettings.Default;
     private int _curveDocumentRevision;
     private bool _isDofEditorOpen;
@@ -136,7 +135,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
         set => SetProperty(ref _hold, value);
     }
 
-    public bool IsTimeDragActive => _timeDragActive;
     public bool IsHistoryTransactionActive => _historyTransactionDepth > 0;
 
     public double TimeOffset
@@ -403,14 +401,14 @@ public sealed class CampathEditorViewModel : ViewModelBase
 
     internal EditorHistorySnapshot CaptureHistorySnapshot()
     {
-        var legacyKeys = Keyframes.Select(key => new LegacyKeySnapshot(
+        var classicKeys = Keyframes.Select(key => new ClassicKeySnapshot(
             key.Time, key.Position, key.Rotation, key.Fov, key.Selected, key.Dof)).ToList();
         var channels = CurveDocument.Channels.Select(channel => new CurveChannelSnapshot(
             channel.Id, channel.Name, channel.Group, channel.Color,
             channel.Keys.Select(key => new CurveKeySnapshot(
                 key.Time, key.Value, key.InTangent, key.OutTangent, key.InWeight, key.OutWeight,
                 key.Selected, key.Interpolation, key.TangentMode, key.WeightedTangents)).ToList())).ToList();
-        return new EditorHistorySnapshot(PathModel, ClassicInterpolation, legacyKeys, channels,
+        return new EditorHistorySnapshot(PathModel, ClassicInterpolation, classicKeys, channels,
             CurveDocument.DofEnabled);
     }
 
@@ -426,7 +424,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
                 key.PropertyChanged -= OnKeyframePropertyChanged;
             _suppressCollectionEvents = true;
             Keyframes.Clear();
-            foreach (var key in snapshot.LegacyKeys)
+            foreach (var key in snapshot.ClassicKeys)
                 Keyframes.Add(new CampathKeyframeViewModel
                 {
                     Time = key.Time, Position = key.Position, Rotation = key.Rotation,
@@ -475,7 +473,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
     {
         if (left.PathModel != right.PathModel || left.ClassicInterpolation != right.ClassicInterpolation
             || left.CurveDofEnabled != right.CurveDofEnabled
-            || !left.LegacyKeys.SequenceEqual(right.LegacyKeys)
+            || !left.ClassicKeys.SequenceEqual(right.ClassicKeys)
             || left.Channels.Count != right.Channels.Count) return false;
         for (var i = 0; i < left.Channels.Count; i++)
         {
@@ -492,9 +490,9 @@ public sealed class CampathEditorViewModel : ViewModelBase
 
     internal sealed record EditorHistorySnapshot(
         CameraPathModel PathModel, ClassicCampathInterpolation ClassicInterpolation,
-        List<LegacyKeySnapshot> LegacyKeys, List<CurveChannelSnapshot> Channels,
+        List<ClassicKeySnapshot> ClassicKeys, List<CurveChannelSnapshot> Channels,
         bool CurveDofEnabled);
-    internal sealed record LegacyKeySnapshot(double Time, Vector3 Position, Quaternion Rotation,
+    internal sealed record ClassicKeySnapshot(double Time, Vector3 Position, Quaternion Rotation,
         double Fov, bool Selected, CampathDofSettings Dof);
     internal sealed record CurveChannelSnapshot(string Id, string Name, string Group, string Color,
         List<CurveKeySnapshot> Keys);
@@ -628,15 +626,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
             return;
 
         if (e.PropertyName == nameof(CampathKeyframeViewModel.Time))
-        {
-            if (_timeDragActive)
-            {
-                RebuildCurve();
-                return;
-            }
-
             Dispatcher.UIThread.Post(SortByTimeDeferred);
-        }
 
         RebuildCurve();
     }
@@ -697,26 +687,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
     {
         _curve.SetKeyframes(Keyframes.Select(k => k.ToModel()));
         OnPropertyChanged(nameof(PlayheadSample));
-    }
-
-    public void BeginTimeDrag()
-    {
-        if (_timeDragActive)
-            return;
-
-        _timeDragActive = true;
-        OnPropertyChanged(nameof(IsTimeDragActive));
-    }
-
-    public void EndTimeDrag()
-    {
-        if (!_timeDragActive)
-            return;
-
-        _timeDragActive = false;
-        OnPropertyChanged(nameof(IsTimeDragActive));
-        SortByTimeDeferred();
-        RebuildCurve();
     }
 
     private bool ClampPlayhead()

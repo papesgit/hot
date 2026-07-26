@@ -101,8 +101,7 @@ public partial class Viewport3DDockView : UserControl
 
     private void OnViewportSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathMode) ||
-                 e.PropertyName == nameof(Viewport3DSettings.ViewportCampathOverlayEnabled))
+        if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathOverlayEnabled))
         {
             UpdateDepthOfField();
             UpdateCampathOverlay();
@@ -399,12 +398,6 @@ public partial class Viewport3DDockView : UserControl
         if (_viewport == null || _viewModel == null)
             return;
 
-        if (!_viewModel.Viewport3DSettings.ViewportCampathMode)
-        {
-            _viewport.SetDepthOfField(CampathDofSettings.Default);
-            return;
-        }
-
         _viewport.SetDepthOfField(_viewModel.GetSequencerDepthOfField());
     }
 
@@ -413,8 +406,7 @@ public partial class Viewport3DDockView : UserControl
         if (_viewport == null || _viewModel == null)
             return;
 
-        if (!_viewModel.Viewport3DSettings.ViewportCampathMode ||
-            !_viewModel.Viewport3DSettings.ViewportCampathOverlayEnabled ||
+        if (!_viewModel.Viewport3DSettings.ViewportCampathOverlayEnabled ||
             _campathEditor == null)
         {
             _viewport.SetCampathOverlay(null);
@@ -432,8 +424,7 @@ public partial class Viewport3DDockView : UserControl
         if (_viewport == null || _viewModel == null)
             return;
 
-        if (!_viewModel.Viewport3DSettings.ViewportCampathMode ||
-            !_viewModel.Viewport3DSettings.ViewportCampathGizmoEnabled ||
+        if (!_viewModel.Viewport3DSettings.ViewportCampathGizmoEnabled ||
             _campathEditor == null)
         {
             _viewport.SetCampathGizmo(null);

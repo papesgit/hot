@@ -244,56 +244,8 @@
                     <ScrollViewer>
                     <StackPanel Margin="10" Spacing="8">
 
-                        <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathMode, Mode=TwoWay}"
-                                      Content="Viewport-Mode"
-                                      Foreground="#E6E6E6"
-                            hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathMode"
-                                      Margin="0,4,0,0"/>
-
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
-                                    Margin="0,4,0,0"
-                                    VerticalAlignment="Center">
-                            <ToggleSwitch IsChecked="{Binding IsCameraPathPreviewEnabled, Mode=TwoWay}"
-                                        Content="Draw Path"
-                                        Foreground="#E6E6E6"
-                                        HorizontalAlignment="Left"
-                                hotkeys:HotkeyTarget.Path="IsCameraPathPreviewEnabled"
-                                        Margin="0,0,10,0"/>
-                            <ToggleSwitch IsChecked="{Binding IsCampathEnabled, Mode=TwoWay}"
-                                            Content="Campath enabled"
-                                hotkeys:HotkeyTarget.Path="IsCampathEnabled"
-                                            Foreground="#E6E6E6"/>
-                        </StackPanel>
-
-                        <StackPanel IsVisible="{Binding !Viewport3DSettings.ViewportCampathMode}">
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
-                                    Margin="0,4,0,0"
-                                    VerticalAlignment="Center">
-                            <Button Content="Add point"
-                                    Command="{Binding AddPointCommand}"/>
-                            <Button Content="Clear"
-                                    Command="{Binding ClearCampathCommand}"/>
-                            <Button Content="Goto Start"
-                                    Command="{Binding GotoStartCommand}"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
-                                    Margin="0,4,0,0"
-                                    VerticalAlignment="Center">
-                            <Button Content="{Binding InterpLabel}"
-                                    Command="{Binding ToggleInterpModeCommand}"/>
-                            <Button Content="Load Campath"
-                                    Command="{Binding LoadCampathCommand}"/>
-                            <Button Content="Save Campath"
-                                    Command="{Binding SaveCampathCommand}"/>
-                        </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel IsVisible="{Binding Viewport3DSettings.ViewportCampathMode}" Spacing="6" Margin="0,4,0,0">
-                            <TextBlock Text="Viewport campath editor"
+                        <StackPanel Spacing="6" Margin="0,4,0,0">
+                            <TextBlock Text="Campath editor"
                                        Foreground="#CCCCCC"
                                        FontWeight="SemiBold"/>
                             <TextBlock Text="Default campath interp"
@@ -353,6 +305,58 @@
                                         Command="{Binding CampathEditor.ClearCommand}"/>
                             </StackPanel>
                         </StackPanel>
+
+                        <ToggleSwitch IsChecked="{Binding ShowHlaeCampathControls, Mode=TwoWay}"
+                                      Content="Show HLAE controls"
+                                      Foreground="#E6E6E6"
+                                      Margin="0,8,0,0"/>
+
+                        <Border IsVisible="{Binding ShowHlaeCampathControls}"
+                                Background="#191C22"
+                                BorderBrush="#343842"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                Padding="10"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="CS2 / HLAE campath controls"
+                                           Foreground="#CCCCCC"
+                                           FontWeight="SemiBold"/>
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6"
+                                            VerticalAlignment="Center">
+                                    <ToggleSwitch IsChecked="{Binding IsCameraPathPreviewEnabled, Mode=TwoWay}"
+                                                  Content="Draw path"
+                                                  Foreground="#E6E6E6"
+                                                  HorizontalAlignment="Left"
+                                                  hotkeys:HotkeyTarget.Path="IsCameraPathPreviewEnabled"
+                                                  Margin="0,0,10,0"/>
+                                    <ToggleSwitch IsChecked="{Binding IsCampathEnabled, Mode=TwoWay}"
+                                                  Content="Enable campath"
+                                                  hotkeys:HotkeyTarget.Path="IsCampathEnabled"
+                                                  Foreground="#E6E6E6"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6"
+                                            VerticalAlignment="Center">
+                                    <Button Content="Add point"
+                                            Command="{Binding AddPointCommand}"/>
+                                    <Button Content="Clear campath"
+                                            Command="{Binding ClearCampathCommand}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6"
+                                            VerticalAlignment="Center">
+                                    <Button Content="{Binding InterpLabel}"
+                                            Command="{Binding ToggleInterpModeCommand}"/>
+                                    <Button Content="Load campath"
+                                            Command="{Binding LoadCampathCommand}"/>
+                                    <Button Content="Save campath"
+                                            Command="{Binding SaveCampathCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
 
                     </StackPanel>
                 </ScrollViewer>

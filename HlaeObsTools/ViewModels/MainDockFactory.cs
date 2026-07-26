@@ -297,7 +297,6 @@ public class MainDockFactory : Factory, IDisposable
             SkipWaterEnabled = _storedSettings.ViewportSkipWaterEnabled,
             SkipTranslucentEnabled = _storedSettings.ViewportSkipTranslucentEnabled,
             ShowFps = _storedSettings.ViewportShowFps,
-            ViewportCampathMode = _storedSettings.ViewportCampathMode,
             ViewportCampathOverlayEnabled = _storedSettings.ViewportCampathOverlayEnabled,
             ViewportCampathGizmoEnabled = _storedSettings.ViewportCampathGizmoEnabled,
             ViewportCampathSyncEnabled = _storedSettings.ViewportCampathSyncEnabled,

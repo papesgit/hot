@@ -9,8 +9,6 @@ using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.Services.Input;
 using HlaeObsTools.Services.LiveLink;
 using System.Numerics;
-using System.Windows.Input;
-using System.Threading.Tasks;
 using HlaeObsTools.Services.Campaths;
 using System.ComponentModel;
 using System.Globalization;
@@ -31,8 +29,6 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private readonly Cs2LiveLinkReceiver? _liveLinkReceiver;
     private long _lastHeartbeat;
     private bool _awaitFreecamRelease;
-    private readonly DelegateCommand _addKeyframeFromViewportCommand;
-    private readonly DelegateCommand _removeSelectedKeyframeCommand;
     private bool _gizmoDragActive;
     private CurveEditorDockViewModel? _curveEditor;
     private CampathSequenceViewModel? _sequence;
@@ -89,16 +85,6 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         {
             keyframe.PropertyChanged += OnCampathKeyframePropertyChanged;
         }
-        _addKeyframeFromViewportCommand = new DelegateCommand(_ =>
-        {
-            AddKeyframeFromViewport();
-            return Task.CompletedTask;
-        });
-        _removeSelectedKeyframeCommand = new DelegateCommand(_ =>
-        {
-            CampathEditor.RemoveSelectedKeyframe();
-            return Task.CompletedTask;
-        }, _ => CampathEditor.SelectedKeyframe != null);
     }
 
     public Viewport3DSettings Viewport3DSettings => _settings;
@@ -110,10 +96,6 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         _sequence == null ? CampathEditor : _sequence.SelectedCamera?.Editor;
     public Func<ViewportFreecamState?>? CampathStateProvider { get; set; }
     public bool HasSequencerPossession => _sequence?.Possession.Kind != SequencerPossessionKind.None;
-
-    public ICommand AddKeyframeFromViewportCommand => _addKeyframeFromViewportCommand;
-
-    public ICommand RemoveSelectedKeyframeCommand => _removeSelectedKeyframeCommand;
 
     public void SetInputSender(HlaeInputSender sender)
     {
@@ -438,11 +420,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     private void OnViewportSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathMode) && !_settings.ViewportCampathMode)
-        {
-            _sequence?.StopPlayback();
-        }
-        else if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathSyncEnabled))
+        if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathSyncEnabled))
         {
             if (_settings.ViewportCampathSyncEnabled)
                 RequestCampathSync();
@@ -457,20 +435,12 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     private void OnCampathEditorChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(CampathEditorViewModel.SelectedKeyframe))
-            _removeSelectedKeyframeCommand.RaiseCanExecuteChanged();
-
         if (!IsHlaeSyncActive())
             return;
         if (_gizmoDragActive)
             return;
 
-        if (e.PropertyName == nameof(CampathEditorViewModel.IsTimeDragActive))
-        {
-            if (!CampathEditor.IsTimeDragActive)
-                RequestCampathSync();
-        }
-        else if (e.PropertyName == nameof(CampathEditorViewModel.TimeOffset))
+        if (e.PropertyName == nameof(CampathEditorViewModel.TimeOffset))
         {
             RequestCampathSync();
         }
@@ -501,7 +471,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         if (!IsHlaeSyncActive())
             return;
 
-        if (_gizmoDragActive || CampathEditor.IsTimeDragActive)
+        if (_gizmoDragActive)
             return;
 
         RequestCampathSync();
@@ -550,8 +520,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     private bool IsHlaeSyncActive()
     {
-        return _settings.ViewportCampathMode
-               && _settings.ViewportCampathSyncEnabled
+        return _settings.ViewportCampathSyncEnabled
                && _webSocketClient != null
                && _webSocketClient.IsConnected;
     }

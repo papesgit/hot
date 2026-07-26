@@ -79,6 +79,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly CampathEditorViewModel _campathEditor;
         private CampathSequenceViewModel? _campathSequence;
         private CampathEditorMode _defaultCampathInterp = CampathEditorMode.Curves;
+        private bool _showHlaeCampathControls;
         private readonly SettingsStorage _settingsStorage;
         private readonly AppSettingsData _storedSettings;
         private readonly HlaeWebSocketClient? _ws;
@@ -123,7 +124,6 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _toggleInterpModeCommand;
         private readonly ICommand _addPointCommand;
         private readonly ICommand _clearCampathCommand;
-        private readonly ICommand _gotoStartCommand;
         private readonly ICommand _loadCampathCommand;
         private readonly ICommand _saveCampathCommand;
         private readonly ICommand _loadViewportCampathCommand;
@@ -181,6 +181,7 @@ namespace HlaeObsTools.ViewModels.Docks
             // Initialize network fields
             var settings = storedSettings ?? new AppSettingsData();
             _storedSettings = settings;
+            _showHlaeCampathControls = settings.ShowHlaeCampathControls;
             if (Enum.TryParse<CampathEditorMode>(
                     settings.DefaultCampathInterp, ignoreCase: true, out var defaultCampathInterp))
                 _defaultCampathInterp = defaultCampathInterp;
@@ -222,7 +223,6 @@ namespace HlaeObsTools.ViewModels.Docks
             });
             _addPointCommand = new AsyncRelay(() => _ws.SendExecCommandAsync("mirv_campath add"));
             _clearCampathCommand = new AsyncRelay(() => _ws.SendExecCommandAsync("mirv_campath clear"));
-            _gotoStartCommand = new AsyncRelay(() => _ws.SendExecCommandAsync("echo \"Implement this\""));
             _loadCampathCommand = new AsyncRelay(async () =>
             {
                 var path = await PickCampathFileToLoadAsync();
@@ -397,6 +397,16 @@ namespace HlaeObsTools.ViewModels.Docks
                 if (_campathSequence != null)
                     _campathSequence.DefaultCameraMode = value.Mode;
                 OnPropertyChanged();
+                SaveSettings();
+            }
+        }
+        public bool ShowHlaeCampathControls
+        {
+            get => _showHlaeCampathControls;
+            set
+            {
+                if (!SetProperty(ref _showHlaeCampathControls, value))
+                    return;
                 SaveSettings();
             }
         }
@@ -1814,7 +1824,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 ViewportSkipWaterEnabled = _viewport3DSettings.SkipWaterEnabled,
                 ViewportSkipTranslucentEnabled = _viewport3DSettings.SkipTranslucentEnabled,
                 ViewportShowFps = _viewport3DSettings.ShowFps,
-                ViewportCampathMode = _viewport3DSettings.ViewportCampathMode,
+                ShowHlaeCampathControls = ShowHlaeCampathControls,
                 DefaultCampathInterp = _defaultCampathInterp.ToString(),
                 ViewportCampathOverlayEnabled = _viewport3DSettings.ViewportCampathOverlayEnabled,
                 ViewportCampathGizmoEnabled = _viewport3DSettings.ViewportCampathGizmoEnabled,
@@ -2194,17 +2204,15 @@ namespace HlaeObsTools.ViewModels.Docks
             public event EventHandler? CanExecuteChanged { add { } remove { } }
         }
 
-        // Dummy interpolation state
+        // Direct HLAE interpolation state for the connected CS2 campath.
         private bool _useCubic = true;
         public string InterpLabel => _useCubic ? "Interp: Cubic" : "Interp: Linear";
 
         public ICommand ToggleInterpModeCommand => _toggleInterpModeCommand;
 
-        // Dummy camera path actions
+        // Commands that operate directly on mirv_campath in the connected CS2 instance.
         public ICommand AddPointCommand => _addPointCommand;
         public ICommand ClearCampathCommand => _clearCampathCommand;
-        public ICommand GotoStartCommand => _gotoStartCommand;
-        
         public ICommand LoadCampathCommand => _loadCampathCommand;
         public ICommand SaveCampathCommand => _saveCampathCommand;
         public ICommand LoadViewportCampathCommand => _loadViewportCampathCommand;

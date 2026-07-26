@@ -28,7 +28,6 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _skipWaterEnabled;
     private bool _skipTranslucentEnabled;
     private bool _showFps;
-    private bool _viewportCampathMode;
     private bool _viewportCampathOverlayEnabled = true;
     private bool _viewportCampathGizmoEnabled = true;
     private bool _campathGizmoLocalSpace = true;
@@ -213,15 +212,6 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _showFps;
         set => SetProperty(ref _showFps, value);
-    }
-
-    /// <summary>
-    /// Enable viewport campath editor mode (sequencer under viewport).
-    /// </summary>
-    public bool ViewportCampathMode
-    {
-        get => _viewportCampathMode;
-        set => SetProperty(ref _viewportCampathMode, value);
     }
 
     /// <summary>
