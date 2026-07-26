@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using System.Numerics;
 using Avalonia.Controls;
 using Avalonia.Data;
@@ -50,9 +51,7 @@ public partial class Viewport3DDockView : UserControl
                 DetachCampathEditor(_campathEditor);
             }
             _viewModel.CampathStateProvider = null;
-            _viewModel.PreviewFreecamPose -= OnPreviewFreecamPose;
-            _viewModel.PreviewFreecamEnded -= OnPreviewFreecamEnded;
-            _viewModel.CampathPreviewOverrideChanged -= OnCampathPreviewOverrideChanged;
+            _viewModel.SequencerPreviewChanged -= OnSequencerPreviewChanged;
             UnsubscribeFrameTick();
             UnsubscribeGizmo();
         }
@@ -66,9 +65,7 @@ public partial class Viewport3DDockView : UserControl
             _campathEditor = _viewModel.CampathEditor;
             AttachCampathEditor(_campathEditor);
             _viewModel.CampathStateProvider = CaptureFreecamState;
-            _viewModel.PreviewFreecamPose += OnPreviewFreecamPose;
-            _viewModel.PreviewFreecamEnded += OnPreviewFreecamEnded;
-            _viewModel.CampathPreviewOverrideChanged += OnCampathPreviewOverrideChanged;
+            _viewModel.SequencerPreviewChanged += OnSequencerPreviewChanged;
         }
 
         EnsureViewport();
@@ -77,10 +74,9 @@ public partial class Viewport3DDockView : UserControl
     private void OnViewportSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathMode) ||
-                 e.PropertyName == nameof(Viewport3DSettings.ViewportCampathOverlayEnabled) ||
-                 e.PropertyName == nameof(Viewport3DSettings.ViewportCampathDofEnabled))
+                 e.PropertyName == nameof(Viewport3DSettings.ViewportCampathOverlayEnabled))
         {
-            UpdateCampathPreview();
+            UpdateDepthOfField();
             UpdateCampathOverlay();
             UpdateCampathGizmo();
         }
@@ -119,7 +115,7 @@ public partial class Viewport3DDockView : UserControl
             _viewport.SetPlayerStatuses(_lastPlayerStatuses);
         }
 
-        UpdateCampathPreview();
+        UpdateDepthOfField();
         UpdateCampathOverlay();
         UpdateCampathGizmo();
     }
@@ -135,8 +131,22 @@ public partial class Viewport3DDockView : UserControl
 
     private void OnViewportPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (ShouldForwardPointer(e))
+        var shouldForward = ShouldForwardPointer(e);
+        var point = e.GetCurrentPoint(this);
+        var beginsFreecam = shouldForward && (point.Properties.IsRightButtonPressed
+            || point.Properties.PointerUpdateKind == PointerUpdateKind.RightButtonPressed);
+
+        if (shouldForward)
             _viewport?.ForwardPointerPressed(e);
+
+        // Begin piloting after the viewport has entered freecam input so clearing
+        // the evaluated camera is the final preview ownership change.
+        if (beginsFreecam)
+        {
+            _viewModel?.BeginSequencerPiloting();
+            if (_viewModel?.IsSequencerPiloting == true)
+                _viewport?.ClearExternalCamera();
+        }
     }
 
     private void OnViewportPointerReleased(object? sender, PointerReleasedEventArgs e)
@@ -199,25 +209,19 @@ public partial class Viewport3DDockView : UserControl
     {
         if (e.PropertyName == nameof(CampathEditorViewModel.PlayheadSample) ||
             e.PropertyName == nameof(CampathEditorViewModel.PlayheadTime) ||
-            e.PropertyName == nameof(CampathEditorViewModel.IsPlaying) ||
-            e.PropertyName == nameof(CampathEditorViewModel.PreviewDuringPlayback) ||
-            e.PropertyName == nameof(CampathEditorViewModel.LockPreview) ||
             e.PropertyName == nameof(CampathEditorViewModel.DofOverride) ||
             e.PropertyName == nameof(CampathEditorViewModel.CurrentDofSettings) ||
             e.PropertyName == nameof(CampathEditorViewModel.IsDofEditorOpen))
         {
-            UpdateCampathPreview();
+            UpdateDepthOfField();
         }
 
         if (e.PropertyName == nameof(CampathEditorViewModel.EditorMode) ||
-            e.PropertyName == nameof(CampathEditorViewModel.Duration) ||
             e.PropertyName == nameof(CampathEditorViewModel.CurveDocumentRevision) ||
-            e.PropertyName == nameof(CampathEditorViewModel.PlayheadTime) ||
-            e.PropertyName == nameof(CampathEditorViewModel.IsPlaying) ||
-            e.PropertyName == nameof(CampathEditorViewModel.PreviewDuringPlayback) ||
-            e.PropertyName == nameof(CampathEditorViewModel.LockPreview))
+            e.PropertyName == nameof(CampathEditorViewModel.PlayheadTime))
         {
-            UpdateCampathOverlay();
+            if (_viewModel?.IsSequencerPlaying != true)
+                UpdateCampathOverlay();
         }
 
         if (e.PropertyName == nameof(CampathEditorViewModel.SelectedKeyframe))
@@ -283,69 +287,18 @@ public partial class Viewport3DDockView : UserControl
         return _viewport.TryGetFreecamState(out var state) ? state : null;
     }
 
-    private void UpdateCampathPreview()
+    private void UpdateDepthOfField()
     {
         if (_viewport == null || _viewModel == null)
             return;
 
         if (!_viewModel.Viewport3DSettings.ViewportCampathMode)
         {
-            _viewport.ClearExternalCamera();
-            UpdateDepthOfField();
-            return;
-        }
-
-        var editor = _viewModel.CampathEditor;
-        var allowPlaybackPreview = editor.IsPlaying && editor.PreviewDuringPlayback;
-        var allowPreview = editor.LockPreview || allowPlaybackPreview || _viewModel.IsCampathPreviewOverrideActive;
-        if (!allowPreview)
-        {
-            _viewport.ClearExternalCamera();
-            UpdateDepthOfField();
-            return;
-        }
-
-        var sample = editor.PlayheadSample;
-        if (sample == null)
-        {
-            _viewport.ClearExternalCamera();
-            UpdateDepthOfField();
-            return;
-        }
-
-        _viewport.SetExternalCamera(sample.Value.Position, sample.Value.Rotation, (float)sample.Value.Fov);
-        UpdateDepthOfField();
-    }
-
-    /// <summary>
-    /// Applies the selected keyframe while editing, and the interpolated sample while previewing a campath.
-    /// This keeps the DOF controls useful even when camera preview is not currently active.
-    /// </summary>
-    private void UpdateDepthOfField()
-    {
-        if (_viewport == null || _viewModel == null || _campathEditor == null)
-            return;
-
-        if (!_viewModel.Viewport3DSettings.ViewportCampathMode || !_viewModel.Viewport3DSettings.ViewportCampathDofEnabled)
-        {
             _viewport.SetDepthOfField(CampathDofSettings.Default);
             return;
         }
 
-        var editor = _campathEditor;
-        if (!editor.IsDofEditorOpen && editor.PlayheadSample is { } sample)
-        {
-            _viewport.SetDepthOfField(sample.Dof with { Enabled = true });
-            return;
-        }
-
-        _viewport.SetDepthOfField(editor.CurrentDofSettings with { Enabled = true });
-    }
-
-    private void OnCampathPreviewOverrideChanged()
-    {
-        UpdateCampathPreview();
-        UpdateCampathOverlay();
+        _viewport.SetDepthOfField(_viewModel.GetSequencerDepthOfField());
     }
 
     private void UpdateCampathOverlay()
@@ -360,10 +313,8 @@ public partial class Viewport3DDockView : UserControl
             return;
         }
 
-        var hidePlayheadFrustum = _campathEditor.LockPreview
-            || (_campathEditor.IsPlaying && _campathEditor.PreviewDuringPlayback)
-            || _viewModel.IsCampathPreviewOverrideActive
-            || _viewModel.IsFreecamPreviewActive;
+        var hidePlayheadFrustum = _viewModel.HasSequencerPossession
+            && !_viewModel.IsSequencerPiloting;
         var overlay = BuildCampathOverlay(_campathEditor, _campathEditor.PlayheadTime, hidePlayheadFrustum);
         _viewport.SetCampathOverlay(overlay);
     }
@@ -435,7 +386,7 @@ public partial class Viewport3DDockView : UserControl
             return null;
 
         var vertices = new List<CampathOverlayVertex>();
-        var duration = Math.Max(editor.Duration, 0.001);
+        var duration = Math.Max(GetEditorContentEnd(editor), 0.001);
         var playheadNorm = (float)Math.Clamp(playheadTime / duration, 0.0, 1.0);
 
         if (editor.CanEvaluate())
@@ -551,17 +502,32 @@ public partial class Viewport3DDockView : UserControl
         return a + (b - a) * t;
     }
 
-    private void OnPreviewFreecamPose(Vector3 position, Quaternion rotation, float fov)
+    private void OnSequencerPreviewChanged(CampathSample? sample)
     {
-        _viewport?.SetFreecamPose(position, rotation, fov);
-        UpdateCampathOverlay();
+        if (_viewport == null)
+            return;
+        if (!sample.HasValue || _viewModel?.IsSequencerPiloting == true)
+        {
+            _viewport.ClearExternalCamera();
+            _viewport.ClearFreecamPreview();
+            UpdateDepthOfField();
+            return;
+        }
+
+        var value = sample.Value;
+        // Sequencer evaluation drives the freecam itself. Using the viewport's
+        // external-camera override here would leave freecam input moving a hidden
+        // camera behind the evaluated view while the user is piloting.
+        _viewport.ClearExternalCamera();
+        _viewport.SetFreecamPose(value.Position, value.Rotation, (float)value.Fov);
+        _viewport.SetDepthOfField(value.Dof);
     }
 
-    private void OnPreviewFreecamEnded()
-    {
-        _viewport?.ClearFreecamPreview();
-        UpdateCampathOverlay();
-    }
+    private static double GetEditorContentEnd(CampathEditorViewModel editor) =>
+        editor.IsCurveMode
+            ? editor.CurveDocument.Channels.SelectMany(channel => channel.Keys)
+                .Select(key => key.Time).DefaultIfEmpty(0.0).Max()
+            : editor.Keyframes.Select(key => key.Time).DefaultIfEmpty(0.0).Max();
 
     private void SubscribeFrameTick()
     {
@@ -570,7 +536,7 @@ public partial class Viewport3DDockView : UserControl
 
         _viewport.FrameTick += OnViewportFrameTick;
         _frameTickSubscribed = true;
-        _viewModel.CampathEditor.UseExternalPlaybackTicks = true;
+        _viewModel.SetSequencerExternalPlaybackTicks(true);
     }
 
     private void UnsubscribeFrameTick()
@@ -580,7 +546,7 @@ public partial class Viewport3DDockView : UserControl
 
         _viewport.FrameTick -= OnViewportFrameTick;
         _frameTickSubscribed = false;
-        _viewModel.CampathEditor.UseExternalPlaybackTicks = false;
+        _viewModel.SetSequencerExternalPlaybackTicks(false);
     }
 
     private void OnViewportFrameTick(double delta)
@@ -588,10 +554,8 @@ public partial class Viewport3DDockView : UserControl
         if (_viewModel == null)
             return;
 
-        if (!_viewModel.CampathEditor.IsPlaying)
-            return;
-
-        Dispatcher.UIThread.Post(() => _viewModel.CampathEditor.AdvancePlayback(delta));
+        if (_viewModel.IsSequencerPlaying)
+            Dispatcher.UIThread.Post(() => _viewModel.AdvanceSequencerPlayback(delta));
     }
 
     private void OnViewportKeyDown(object? sender, KeyEventArgs e)

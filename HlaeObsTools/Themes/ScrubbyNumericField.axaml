@@ -40,5 +40,15 @@
     <Setter Property="BorderBrush" Value="Gray" />
     </Style>
 
+    <Style Selector="local|ScrubbyNumericField:key-selected TextBox#PART_Display">
+    <Setter Property="Background" Value="#594624" />
+    <Setter Property="BorderBrush" Value="#D6A94A" />
+    </Style>
+
+    <Style Selector="local|ScrubbyNumericField:mixed TextBox#PART_Display">
+    <Setter Property="Background" Value="#252830" />
+    <Setter Property="Foreground" Value="#9A9EA7" />
+    </Style>
+
 
 </Styles>

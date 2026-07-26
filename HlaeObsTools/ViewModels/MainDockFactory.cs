@@ -299,7 +299,6 @@ public class MainDockFactory : Factory, IDisposable
             ShowFps = _storedSettings.ViewportShowFps,
             ViewportCampathMode = _storedSettings.ViewportCampathMode,
             ViewportCampathOverlayEnabled = _storedSettings.ViewportCampathOverlayEnabled,
-            ViewportCampathDofEnabled = _storedSettings.ViewportCampathDofEnabled,
             ViewportCampathGizmoEnabled = _storedSettings.ViewportCampathGizmoEnabled,
             ViewportCampathSyncEnabled = _storedSettings.ViewportCampathSyncEnabled,
             CampathGizmoLocalSpace = _storedSettings.CampathGizmoLocalSpace,
@@ -390,8 +389,13 @@ public class MainDockFactory : Factory, IDisposable
         }
 
         var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer, _liveLinkReceiver) { Id = "BottomCenter", Title = "3D Viewport" };
+        var sequence = new CampathSequenceViewModel(campathEditor);
+        var sequencer = new CampathSequencerDockViewModel(sequence);
+        bottomLeft.SetCampathSequence(sequence);
         var curveEditor = new CurveEditorDockViewModel(campathEditor, bottomCenter);
+        curveEditor.SetSequence(sequence);
         bottomCenter.SetCurveEditor(curveEditor);
+        bottomCenter.SetSequence(sequence);
         bottomCenter.SetInputSender(_inputSender);
 
         if (reportProgressAsync != null)
@@ -410,6 +414,7 @@ public class MainDockFactory : Factory, IDisposable
         _hotkeyService.RegisterCommandContext(bottomLeft);
         _hotkeyService.RegisterCommandContext(bottomRight);
         _hotkeyService.RegisterCommandContext(bottomCenter);
+        _hotkeyService.RegisterCommandContext(sequencer);
         _hotkeyService.RegisterCommandContext(_videoDisplayVm);
         _hotkeyService.RegisterCommandContext(campathEditor);
         _hotkeyService.RegisterCommandContext(hudOverlayVm);
@@ -472,7 +477,7 @@ public class MainDockFactory : Factory, IDisposable
             Id = "BottomCenterDock",
             Proportion = 0.4,
             ActiveDockable = bottomCenter,
-            VisibleDockables = CreateList<IDockable>(bottomCenter, curveEditor)
+            VisibleDockables = CreateList<IDockable>(bottomCenter, sequencer, curveEditor)
         };
 
         var bottomRightDock = new ToolDock

@@ -308,17 +308,6 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                             <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
-                                <ToggleSwitch IsChecked="{Binding CampathEditor.PreviewDuringPlayback, Mode=TwoWay}"
-                                              Content="Play-Preview"
-                                              Foreground="#E6E6E6"
-                                    hotkeys:HotkeyTarget.Path="CampathEditor.PreviewDuringPlayback"
-                                              Margin="0,0,10,0"/>
-                                <ToggleSwitch IsChecked="{Binding CampathEditor.LockPreview, Mode=TwoWay}"
-                                              Content="Lock-Preview"
-                                              Foreground="#E6E6E6"
-                                    hotkeys:HotkeyTarget.Path="CampathEditor.LockPreview"
-                                              Margin="0,0,10,0"
-                                              ToolTip.Tip="Keep the viewport camera locked to the campath evaluation at the current playhead."/>
                                 <ToggleSwitch IsChecked="{Binding CampathEditor.Hold, Mode=TwoWay}"
                                               Content="Hold"
                                     hotkeys:HotkeyTarget.Path="CampathEditor.Hold"
@@ -329,11 +318,6 @@
                                               Content="Draw Path"
                                               Foreground="#E6E6E6"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathOverlayEnabled"
-                                              Margin="0,0,10,0"/>
-                                <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathDofEnabled, Mode=TwoWay}"
-                                              Content="DOF"
-                                              Foreground="#E6E6E6"
-                                    hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathDofEnabled"
                                               Margin="0,0,10,0"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathGizmoEnabled, Mode=TwoWay}"
                                               Content="Show Gizmo"
@@ -352,10 +336,7 @@
                                               Margin="0,0,10,0"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,4,0,0">
-                                <TextBlock Text="Duration" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                                <TextBox Width="90"
-                                         Text="{Binding CampathEditor.Duration, Mode=TwoWay, StringFormat={}{0:F2}}"/>
-                                <TextBlock Text="Time Offset" Foreground="#AAAAAA" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Time Offset" Foreground="#AAAAAA" VerticalAlignment="Center"/>
                                 <TextBox Width="90"
                                          Text="{Binding CampathEditor.TimeOffset, Mode=TwoWay, StringFormat={}{0:F2}}"/>
                                 <Button Content="Get Current"

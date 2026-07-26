@@ -1,0 +1,674 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Linq;
+using Avalonia.Threading;
+using HlaeObsTools.Services.Campaths;
+
+namespace HlaeObsTools.ViewModels;
+
+public enum SequencerPossessionKind
+{
+    None,
+    Camera,
+    CameraCuts
+}
+
+public readonly record struct SequencerPossession(SequencerPossessionKind Kind, Guid CameraId)
+{
+    public static SequencerPossession None => new(SequencerPossessionKind.None, Guid.Empty);
+    public static SequencerPossession Camera(Guid cameraId) => new(SequencerPossessionKind.Camera, cameraId);
+    public static SequencerPossession CameraCuts => new(SequencerPossessionKind.CameraCuts, Guid.Empty);
+}
+
+public sealed class CampathCameraTrackViewModel : ViewModelBase, IDisposable
+{
+    private string _name;
+    private bool _isExpanded;
+
+    public CampathCameraTrackViewModel(string name, CampathEditorViewModel editor)
+    {
+        Id = Guid.NewGuid();
+        _name = name;
+        Editor = editor;
+        Editor.PropertyChanged += OnEditorChanged;
+        Editor.Keyframes.CollectionChanged += OnClassicKeysChanged;
+        foreach (var key in Editor.Keyframes)
+            key.PropertyChanged += OnClassicKeyChanged;
+    }
+
+    public Guid Id { get; }
+    public CampathEditorViewModel Editor { get; }
+    public string Name { get => _name; set => SetProperty(ref _name, value); }
+    public bool IsExpanded { get => _isExpanded; set => SetProperty(ref _isExpanded, value); }
+    public bool CanExpand => true;
+
+    public event Action? ContentChanged;
+
+    public IReadOnlyList<double> GetSummaryKeyTimes() => Editor.IsCurveMode
+        ? Editor.CurveDocument.Channels.SelectMany(channel => channel.Keys)
+            .Select(key => key.Time).Distinct().OrderBy(time => time).ToList()
+        : Editor.Keyframes.Select(key => key.Time).OrderBy(time => time).ToList();
+
+    public IReadOnlyList<double> GetGroupKeyTimes(string group) => Editor.CurveDocument.Channels
+        .Where(channel => string.Equals(channel.Group, group, StringComparison.Ordinal))
+        .SelectMany(channel => channel.Keys).Select(key => key.Time)
+        .Distinct().OrderBy(time => time).ToList();
+
+    private void OnEditorChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(CampathEditorViewModel.EditorMode)
+            or nameof(CampathEditorViewModel.CurveDocumentRevision))
+        {
+            OnPropertyChanged(nameof(CanExpand));
+            ContentChanged?.Invoke();
+        }
+    }
+
+    private void OnClassicKeysChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+            foreach (CampathKeyframeViewModel key in e.OldItems)
+                key.PropertyChanged -= OnClassicKeyChanged;
+        if (e.NewItems != null)
+            foreach (CampathKeyframeViewModel key in e.NewItems)
+                key.PropertyChanged += OnClassicKeyChanged;
+        ContentChanged?.Invoke();
+    }
+
+    private void OnClassicKeyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CampathKeyframeViewModel.Selected))
+            ContentChanged?.Invoke();
+    }
+
+    public void Dispose()
+    {
+        Editor.PropertyChanged -= OnEditorChanged;
+        Editor.Keyframes.CollectionChanged -= OnClassicKeysChanged;
+        foreach (var key in Editor.Keyframes)
+            key.PropertyChanged -= OnClassicKeyChanged;
+    }
+}
+
+public sealed class CameraCutSectionViewModel : ViewModelBase
+{
+    private double _startTime;
+    private double _endTime;
+    private Guid _cameraId;
+
+    public CameraCutSectionViewModel(Guid cameraId, double startTime, double endTime)
+    {
+        Id = Guid.NewGuid();
+        _cameraId = cameraId;
+        _startTime = startTime;
+        _endTime = Math.Max(startTime, endTime);
+    }
+
+    public Guid Id { get; }
+    public Guid CameraId { get => _cameraId; set => SetProperty(ref _cameraId, value); }
+    public double StartTime { get => _startTime; set { if (SetProperty(ref _startTime, value) && EndTime < value) EndTime = value; } }
+    public double EndTime { get => _endTime; set => SetProperty(ref _endTime, Math.Max(StartTime, value)); }
+}
+
+public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
+{
+    private readonly DispatcherTimer _playTimer;
+    private DateTime _lastPlayTick;
+    private double _playheadTime;
+    private bool _isPlaying;
+    private bool _isPiloting;
+    private bool _useExternalPlaybackTicks;
+    private bool _historyReady;
+    private bool _restoringHistory;
+    private int _historyTransactionDepth;
+    private SequenceSnapshot? _pendingHistorySnapshot;
+    private SequenceSnapshot? _currentHistorySnapshot;
+    private readonly List<SequenceSnapshot> _undoHistory = new();
+    private readonly List<SequenceSnapshot> _redoHistory = new();
+    private readonly HashSet<CampathCameraTrackViewModel> _knownCameras = new();
+    private CampathCameraTrackViewModel? _selectedCamera;
+    private SequencerPossession _possession = SequencerPossession.None;
+
+    public CampathSequenceViewModel(CampathEditorViewModel initialCamera)
+    {
+        Cameras.CollectionChanged += OnCamerasChanged;
+        CameraCuts.CollectionChanged += OnCutsChanged;
+        AddCamera("Camera 1", initialCamera);
+        _playTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _playTimer.Tick += OnPlayTick;
+        _historyReady = true;
+        _currentHistorySnapshot = CaptureHistorySnapshot();
+    }
+
+    public ObservableCollection<CampathCameraTrackViewModel> Cameras { get; } = new();
+    public ObservableCollection<CameraCutSectionViewModel> CameraCuts { get; } = new();
+    public CampathCameraTrackViewModel? SelectedCamera
+    {
+        get => _selectedCamera;
+        set
+        {
+            if (value != null && !Cameras.Contains(value))
+                return;
+            if (SetProperty(ref _selectedCamera, value) && value != null)
+                SyncEditorPlayhead(value.Editor, PlayheadTime);
+        }
+    }
+    public SequencerPossession Possession => _possession;
+    public SequencerPossessionKind PossessionKind => Possession.Kind;
+    public bool IsPlaying { get => _isPlaying; private set => SetProperty(ref _isPlaying, value); }
+    public bool IsPiloting { get => _isPiloting; private set => SetProperty(ref _isPiloting, value); }
+    public bool CanUndo => _undoHistory.Count > 0;
+    public bool CanRedo => _redoHistory.Count > 0;
+    public bool UseExternalPlaybackTicks
+    {
+        get => _useExternalPlaybackTicks;
+        set
+        {
+            if (!SetProperty(ref _useExternalPlaybackTicks, value) || !IsPlaying)
+                return;
+            if (value)
+                _playTimer.Stop();
+            else
+            {
+                _lastPlayTick = DateTime.UtcNow;
+                _playTimer.Start();
+            }
+        }
+    }
+
+    public double PlayheadTime
+    {
+        get => _playheadTime;
+        set
+        {
+            var clamped = Math.Max(0.0, value);
+            if (_playheadTime.Equals(clamped))
+                return;
+            _playheadTime = clamped;
+            IsPiloting = false;
+            if (SelectedCamera != null)
+                SyncEditorPlayhead(SelectedCamera.Editor, clamped);
+            EvaluatePossessedCamera();
+            OnPropertyChanged();
+        }
+    }
+
+    public double ContentStart => 0.0;
+    public double ContentEnd
+    {
+        get
+        {
+            var cameraEnd = Cameras.SelectMany(camera => camera.GetSummaryKeyTimes())
+                .DefaultIfEmpty(0.0).Max();
+            var cutEnd = CameraCuts.Select(cut => cut.EndTime).DefaultIfEmpty(0.0).Max();
+            return Math.Max(cameraEnd, cutEnd);
+        }
+    }
+    public double PlaybackEnd => Math.Max(0.01, ContentEnd);
+
+    public bool CanEvaluateForExport()
+    {
+        if (Cameras.Count == 1)
+            return Cameras[0].Editor.CanEvaluate();
+        if (CameraCuts.Count == 0)
+            return false;
+        return CameraCuts.All(cut => cut.CameraId != Guid.Empty
+            && Cameras.FirstOrDefault(camera => camera.Id == cut.CameraId)?.Editor.CanEvaluate() == true);
+    }
+
+    public event Action<CampathSample?>? PreviewChanged;
+    public event Action<Guid, IReadOnlyList<string>?>? CameraKeyRequested;
+    public event Action? PlayheadScrubCompleted;
+
+    public CampathCameraTrackViewModel AddCamera(string? name = null, CampathEditorViewModel? editor = null)
+    {
+        BeginHistoryTransaction();
+        var camera = new CampathCameraTrackViewModel(
+            name ?? $"Camera {Cameras.Count + 1}", editor ?? new CampathEditorViewModel());
+        _knownCameras.Add(camera);
+        Cameras.Add(camera);
+        SelectedCamera ??= camera;
+        CommitHistoryTransaction();
+        return camera;
+    }
+
+    public void LoadFromData(CampathFileIo.CampathSequenceFileData data)
+    {
+        if (data.Cameras.Count == 0)
+            return;
+
+        BeginHistoryTransaction();
+        try
+        {
+            StopPlayback();
+            ClearPossession();
+            var reusableCamera = Cameras.FirstOrDefault();
+            CameraCuts.Clear();
+            Cameras.Clear();
+
+            var cameraIds = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+            for (var index = 0; index < data.Cameras.Count; index++)
+            {
+                var source = data.Cameras[index];
+                var camera = index == 0 && reusableCamera != null
+                    ? reusableCamera
+                    : new CampathCameraTrackViewModel(source.Name, new CampathEditorViewModel());
+                camera.Name = source.Name;
+                source.Campath.TimeOffset = data.TimeOffset;
+                camera.Editor.LoadFromData(source.Campath);
+                _knownCameras.Add(camera);
+                Cameras.Add(camera);
+                cameraIds[source.Id] = camera.Id;
+            }
+
+            foreach (var cut in data.CameraCuts)
+            {
+                CameraCuts.Add(new CameraCutSectionViewModel(
+                    cameraIds.TryGetValue(cut.CameraId, out var cameraId) ? cameraId : Guid.Empty,
+                    cut.StartTime, cut.EndTime));
+            }
+            SelectedCamera = Cameras.FirstOrDefault();
+            PlayheadTime = ContentStart;
+        }
+        finally
+        {
+            CommitHistoryTransaction();
+        }
+    }
+
+    public CameraCutSectionViewModel AddCut(Guid cameraId, double startTime, double endTime)
+    {
+        BeginHistoryTransaction();
+        var cut = new CameraCutSectionViewModel(cameraId, startTime, endTime);
+        CameraCuts.Add(cut);
+        CommitHistoryTransaction();
+        return cut;
+    }
+
+    public void RemoveCamera(CampathCameraTrackViewModel camera)
+    {
+        if (!Cameras.Contains(camera))
+            return;
+        BeginHistoryTransaction();
+        if (Possession == SequencerPossession.Camera(camera.Id))
+            ClearPossession();
+        foreach (var cut in CameraCuts.Where(cut => cut.CameraId == camera.Id))
+            cut.CameraId = Guid.Empty;
+        Cameras.Remove(camera);
+        CommitHistoryTransaction();
+    }
+
+    public void BeginHistoryTransaction()
+    {
+        if (!_historyReady || _restoringHistory)
+            return;
+        if (_historyTransactionDepth++ == 0)
+            _pendingHistorySnapshot = CaptureHistorySnapshot();
+    }
+
+    public void CommitHistoryTransaction()
+    {
+        if (!_historyReady || _restoringHistory || _historyTransactionDepth == 0)
+            return;
+        if (--_historyTransactionDepth != 0)
+            return;
+        var before = _pendingHistorySnapshot;
+        _pendingHistorySnapshot = null;
+        var after = CaptureHistorySnapshot();
+        if (before == null || HistoryEquals(before, after))
+        {
+            _currentHistorySnapshot = after;
+            return;
+        }
+        PushUndo(before);
+        _redoHistory.Clear();
+        _currentHistorySnapshot = after;
+        RaiseHistoryProperties();
+    }
+
+    public void Undo()
+    {
+        if (_historyTransactionDepth != 0 || _undoHistory.Count == 0)
+            return;
+        var snapshot = _undoHistory[^1];
+        _undoHistory.RemoveAt(_undoHistory.Count - 1);
+        _redoHistory.Add(CaptureHistorySnapshot());
+        RestoreHistorySnapshot(snapshot);
+        RaiseHistoryProperties();
+    }
+
+    public void Redo()
+    {
+        if (_historyTransactionDepth != 0 || _redoHistory.Count == 0)
+            return;
+        var snapshot = _redoHistory[^1];
+        _redoHistory.RemoveAt(_redoHistory.Count - 1);
+        _undoHistory.Add(CaptureHistorySnapshot());
+        RestoreHistorySnapshot(snapshot);
+        RaiseHistoryProperties();
+    }
+
+    public void RequestCameraKey(Guid cameraId, IReadOnlyList<string>? channelIds = null)
+    {
+        var camera = Cameras.FirstOrDefault(candidate => candidate.Id == cameraId);
+        if (camera == null)
+            return;
+        camera.Editor.PlayheadTime = PlayheadTime;
+        BeginHistoryTransaction();
+        try
+        {
+            CameraKeyRequested?.Invoke(cameraId, channelIds);
+        }
+        finally
+        {
+            CommitHistoryTransaction();
+        }
+    }
+
+    public void RequestCameraCut()
+    {
+        var start = CameraCuts.Select(cut => cut.EndTime).DefaultIfEmpty(0.0).Max();
+        AddCut(Guid.Empty, start, start + 5.0);
+    }
+
+    public void PossessCamera(Guid cameraId) =>
+        SetPossession(Possession == SequencerPossession.Camera(cameraId)
+            ? SequencerPossession.None
+            : SequencerPossession.Camera(cameraId));
+
+    public void PossessCameraCuts() =>
+        SetPossession(Possession.Kind == SequencerPossessionKind.CameraCuts
+            ? SequencerPossession.None
+            : SequencerPossession.CameraCuts);
+
+    public void ClearPossession() => SetPossession(SequencerPossession.None);
+
+    public void CommitPlayheadScrub() => PlayheadScrubCompleted?.Invoke();
+
+    public void TogglePlayback()
+    {
+        if (IsPlaying)
+        {
+            StopPlayback();
+            return;
+        }
+        if (PlayheadTime >= PlaybackEnd)
+            PlayheadTime = ContentStart;
+        IsPiloting = false;
+        _lastPlayTick = DateTime.UtcNow;
+        IsPlaying = true;
+        if (!UseExternalPlaybackTicks)
+            _playTimer.Start();
+    }
+
+    public void StopPlayback()
+    {
+        _playTimer.Stop();
+        IsPlaying = false;
+    }
+
+    public void BeginPiloting()
+    {
+        if (GetDirectlyPossessedCamera() == null)
+            return;
+        StopPlayback();
+        IsPiloting = true;
+        PreviewChanged?.Invoke(null);
+    }
+
+    public void EndPilotingAndEvaluate()
+    {
+        if (!IsPiloting)
+            return;
+        IsPiloting = false;
+        EvaluatePossessedCamera();
+    }
+
+    public CampathSample? EvaluatePossession(double time)
+    {
+        var camera = GetEvaluatedCamera(time);
+        if (camera != null)
+            SyncEditorPlayhead(camera.Editor, time);
+
+        return camera?.Editor.CanEvaluate() == true ? camera.Editor.Evaluate(time) : null;
+    }
+
+    private static void SyncEditorPlayhead(CampathEditorViewModel editor, double time)
+    {
+        editor.PlayheadTime = time;
+    }
+
+    public CampathCameraTrackViewModel? GetDirectlyPossessedCamera() =>
+        Possession.Kind == SequencerPossessionKind.Camera
+            ? Cameras.FirstOrDefault(candidate => candidate.Id == Possession.CameraId)
+            : null;
+
+    private CampathCameraTrackViewModel? GetEvaluatedCamera(double time)
+    {
+        if (Possession.Kind == SequencerPossessionKind.Camera)
+            return Cameras.FirstOrDefault(candidate => candidate.Id == Possession.CameraId);
+        if (Possession.Kind != SequencerPossessionKind.CameraCuts)
+            return null;
+
+        var cut = CameraCuts.Where(candidate => candidate.StartTime <= time && time < candidate.EndTime)
+            .OrderByDescending(candidate => candidate.StartTime).FirstOrDefault();
+        return cut == null ? null : Cameras.FirstOrDefault(candidate => candidate.Id == cut.CameraId);
+    }
+
+    private void SetPossession(SequencerPossession possession)
+    {
+        if (_possession == possession)
+            return;
+        _possession = possession;
+        IsPiloting = false;
+        OnPropertyChanged(nameof(Possession));
+        OnPropertyChanged(nameof(PossessionKind));
+        EvaluatePossessedCamera();
+    }
+
+    private void EvaluatePossessedCamera()
+    {
+        if (IsPiloting)
+        {
+            PreviewChanged?.Invoke(null);
+            return;
+        }
+
+        PreviewChanged?.Invoke(EvaluatePossession(PlayheadTime));
+    }
+
+    private void OnPlayTick(object? sender, EventArgs e)
+    {
+        var now = DateTime.UtcNow;
+        var delta = (now - _lastPlayTick).TotalSeconds;
+        _lastPlayTick = now;
+        AdvancePlayback(delta);
+    }
+
+    public void AdvancePlayback(double delta)
+    {
+        if (!IsPlaying)
+            return;
+        if (delta <= 0.0)
+            return;
+        PlayheadTime += delta;
+        if (PlayheadTime >= PlaybackEnd)
+        {
+            PlayheadTime = PlaybackEnd;
+            StopPlayback();
+        }
+    }
+
+    private void OnCamerasChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+            foreach (CampathCameraTrackViewModel camera in e.OldItems)
+            {
+                camera.ContentChanged -= OnTrackContentChanged;
+                camera.Editor.HistoryCommitted -= OnEditorHistoryCommitted;
+            }
+        if (e.NewItems != null)
+            foreach (CampathCameraTrackViewModel camera in e.NewItems)
+            {
+                _knownCameras.Add(camera);
+                camera.ContentChanged += OnTrackContentChanged;
+                camera.Editor.HistoryCommitted += OnEditorHistoryCommitted;
+            }
+        if (SelectedCamera == null || !Cameras.Contains(SelectedCamera))
+            SelectedCamera = Cameras.FirstOrDefault();
+        NotifyRangeChanged();
+        RecordExternalMutation();
+    }
+
+    private void OnCutsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+            foreach (CameraCutSectionViewModel cut in e.OldItems)
+                cut.PropertyChanged -= OnCutChanged;
+        if (e.NewItems != null)
+            foreach (CameraCutSectionViewModel cut in e.NewItems)
+                cut.PropertyChanged += OnCutChanged;
+        NotifyRangeChanged();
+        EvaluatePossessedCamera();
+        RecordExternalMutation();
+    }
+
+    private void OnTrackContentChanged()
+    {
+        NotifyRangeChanged();
+        EvaluatePossessedCamera();
+        if (!Cameras.Any(camera => camera.Editor.IsHistoryTransactionActive))
+            RecordExternalMutation();
+    }
+
+    private void OnEditorHistoryCommitted() => RecordExternalMutation();
+
+    private void OnCutChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        NotifyRangeChanged();
+        EvaluatePossessedCamera();
+        RecordExternalMutation();
+    }
+
+    private void NotifyRangeChanged()
+    {
+        OnPropertyChanged(nameof(ContentEnd));
+        OnPropertyChanged(nameof(PlaybackEnd));
+        IsPiloting = false;
+        EvaluatePossessedCamera();
+    }
+
+    private void RecordExternalMutation()
+    {
+        if (!_historyReady || _restoringHistory || _historyTransactionDepth != 0)
+            return;
+        var after = CaptureHistorySnapshot();
+        if (_currentHistorySnapshot == null)
+        {
+            _currentHistorySnapshot = after;
+            return;
+        }
+        if (HistoryEquals(_currentHistorySnapshot, after))
+            return;
+        PushUndo(_currentHistorySnapshot);
+        _redoHistory.Clear();
+        _currentHistorySnapshot = after;
+        RaiseHistoryProperties();
+    }
+
+    private void PushUndo(SequenceSnapshot snapshot)
+    {
+        _undoHistory.Add(snapshot);
+        if (_undoHistory.Count > 100)
+            _undoHistory.RemoveAt(0);
+    }
+
+    private void RaiseHistoryProperties()
+    {
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+    }
+
+    private SequenceSnapshot CaptureHistorySnapshot() => new(
+        Cameras.Select(camera => new CameraTrackSnapshot(
+            camera,
+            camera.Name,
+            camera.Editor.CaptureHistorySnapshot())).ToList(),
+        CameraCuts.Select(cut => new CutSnapshot(cut.CameraId, cut.StartTime, cut.EndTime)).ToList());
+
+    private void RestoreHistorySnapshot(SequenceSnapshot snapshot)
+    {
+        StopPlayback();
+        _restoringHistory = true;
+        var selectedBeforeRestore = SelectedCamera;
+        try
+        {
+            Cameras.Clear();
+            foreach (var state in snapshot.Cameras)
+            {
+                state.Camera.Name = state.Name;
+                state.Camera.Editor.RestoreHistorySnapshot(state.Editor);
+                Cameras.Add(state.Camera);
+            }
+
+            CameraCuts.Clear();
+            foreach (var cut in snapshot.Cuts)
+                CameraCuts.Add(new CameraCutSectionViewModel(cut.CameraId, cut.StartTime, cut.EndTime));
+
+            SelectedCamera = selectedBeforeRestore != null && Cameras.Contains(selectedBeforeRestore)
+                ? selectedBeforeRestore
+                : Cameras.FirstOrDefault();
+            if (_possession.Kind == SequencerPossessionKind.Camera
+                && Cameras.All(camera => camera.Id != _possession.CameraId))
+                _possession = SequencerPossession.None;
+            IsPiloting = false;
+            OnPropertyChanged(nameof(Possession));
+            OnPropertyChanged(nameof(PossessionKind));
+        }
+        finally
+        {
+            _restoringHistory = false;
+        }
+        NotifyRangeChanged();
+        _currentHistorySnapshot = CaptureHistorySnapshot();
+    }
+
+    private static bool HistoryEquals(SequenceSnapshot left, SequenceSnapshot right)
+    {
+        if (left.Cameras.Count != right.Cameras.Count || !left.Cuts.SequenceEqual(right.Cuts))
+            return false;
+        for (var index = 0; index < left.Cameras.Count; index++)
+        {
+            var a = left.Cameras[index];
+            var b = right.Cameras[index];
+            if (!ReferenceEquals(a.Camera, b.Camera) || a.Name != b.Name
+                || !CampathEditorViewModel.HistorySnapshotsEqual(a.Editor, b.Editor))
+                return false;
+        }
+        return true;
+    }
+
+    public void Dispose()
+    {
+        _playTimer.Stop();
+        _playTimer.Tick -= OnPlayTick;
+        foreach (var camera in Cameras)
+            camera.Editor.HistoryCommitted -= OnEditorHistoryCommitted;
+        foreach (var camera in _knownCameras)
+            camera.Dispose();
+        Cameras.CollectionChanged -= OnCamerasChanged;
+        CameraCuts.CollectionChanged -= OnCutsChanged;
+    }
+
+    private sealed record SequenceSnapshot(
+        List<CameraTrackSnapshot> Cameras,
+        List<CutSnapshot> Cuts);
+    private sealed record CameraTrackSnapshot(
+        CampathCameraTrackViewModel Camera,
+        string Name,
+        CampathEditorViewModel.EditorHistorySnapshot Editor);
+    private sealed record CutSnapshot(Guid CameraId, double StartTime, double EndTime);
+}

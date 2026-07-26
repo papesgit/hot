@@ -131,7 +131,8 @@ public sealed class CampathCurve
         var selected = _selectedSpline.Eval(time);
         var dof = new CampathDofSettings(_dofEnabledSpline.Eval(time), _nearBlurrySpline.Eval(time),
             _nearCrispSpline.Eval(time), _farCrispSpline.Eval(time), _farBlurrySpline.Eval(time),
-            _maxBlurSizeSpline.Eval(time), _radiusScaleSpline.Eval(time));
+            Math.Clamp(_maxBlurSizeSpline.Eval(time), 0.0, 11.0),
+            Math.Clamp(_radiusScaleSpline.Eval(time), 0.25, 5.0));
         return new CampathSample(new Vector3((float)x, (float)y, (float)z), rotation, fov, selected, dof);
     }
 

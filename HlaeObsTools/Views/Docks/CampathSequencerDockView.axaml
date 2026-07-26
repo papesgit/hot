@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
+             xmlns:controls="using:HlaeObsTools.Controls"
+             x:Class="HlaeObsTools.Views.Docks.CampathSequencerDockView"
+             x:DataType="vm:CampathSequencerDockViewModel">
+    <Grid Background="#111318">
+        <ScrollViewer
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <controls:CampathSequenceTimelineControl Sequence="{Binding Sequence}"
+                                                     ViewStart="{Binding ViewStart, Mode=TwoWay}"
+                                                     SecondsPerPixel="{Binding SecondsPerPixel, Mode=TwoWay}"
+                                                     MinHeight="180"/>
+        </ScrollViewer>
+
+        <!-- Compact controls occupy the label side of the timeline ruler. -->
+        <Border Width="280"
+                Height="28"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Background="#20232A"
+                BorderBrush="#343842"
+                BorderThickness="0,0,1,1"
+                Padding="4,3">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button Width="28"
+                        Height="22"
+                        Padding="0"
+                        Content=">"
+                        Command="{Binding TogglePlaybackCommand}"
+                        ToolTip.Tip="Play / Pause"/>
+                <Button Height="22" Padding="9,0" Content="Add">
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="Camera Track" Command="{Binding AddCameraCommand}"/>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+                <Button Height="22" Padding="7,0" Content="Undo"
+                        Command="{Binding UndoCommand}" ToolTip.Tip="Undo (Ctrl+Z)"/>
+                <Button Height="22" Padding="7,0" Content="Redo"
+                        Command="{Binding RedoCommand}" ToolTip.Tip="Redo (Ctrl+Y)"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

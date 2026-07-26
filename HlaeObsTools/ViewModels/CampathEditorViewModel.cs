@@ -17,18 +17,10 @@ public sealed class CampathEditorViewModel : ViewModelBase
 {
     private readonly CampathCurve _curve = new();
     private double _playheadTime;
-    private double _duration = 20.0;
-    private CameraPathModel _pathModel = CameraPathModel.Classic;
+    private CameraPathModel _pathModel = CameraPathModel.Curves;
     private ClassicCampathInterpolation _classicInterpolation = ClassicCampathInterpolation.CatmullRom;
     private CampathKeyframeViewModel? _selectedKeyframe;
     private bool _suppressCollectionEvents;
-    private bool _isPlaying;
-    private bool _lockPreview;
-    private bool _previewDuringPlayback = true;
-    private double _playbackRate = 1.0;
-    private readonly DispatcherTimer _playTimer;
-    private DateTime _lastPlayTick;
-    private bool _useExternalPlaybackTicks;
     private bool _hold = true;
     private double _timeOffset;
     private bool _timeDragActive;
@@ -46,12 +38,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
     public CampathEditorViewModel()
     {
         Keyframes.CollectionChanged += OnKeyframesChanged;
-        _playTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(16)
-        };
-        _playTimer.Tick += OnPlayTick;
-        TogglePlayCommand = new RelayCommand(_ => TogglePlay());
         ClearCommand = new RelayCommand(_ => Clear());
         ApplyClassicInterpolation();
         CampathPathConversion.EnsureStandardChannels(CurveDocument);
@@ -74,21 +60,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
                     OnPropertyChanged();
                 OnPropertyChanged(nameof(PlayheadSample));
                 RaiseDofPropertiesChanged();
-            }
-        }
-    }
-
-    public double Duration
-    {
-        get => _duration;
-        set
-        {
-            if (value <= 0)
-                value = 0.01;
-            if (SetProperty(ref _duration, value))
-            {
-                if (ClampPlayhead())
-                    OnPropertyChanged(nameof(PlayheadTime));
             }
         }
     }
@@ -125,8 +96,10 @@ public sealed class CampathEditorViewModel : ViewModelBase
         {
             if (mode == CampathEditorMode.Curves)
             {
+                var dofEnabled = CurveDocument.DofEnabled;
                 CampathPathConversion.ClassicToCurves(
                     Keyframes.Select(key => key.ToModel()), ClassicInterpolation, CurveDocument);
+                CurveDocument.DofEnabled = dofEnabled;
                 ClearClassicKeyframes();
                 _pathModel = CameraPathModel.Curves;
                 NotifyModeChanged();
@@ -155,41 +128,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
         {
             CommitHistoryTransaction();
         }
-    }
-
-    public bool IsPlaying
-    {
-        get => _isPlaying;
-        private set => SetProperty(ref _isPlaying, value);
-    }
-
-    public bool LockPreview
-    {
-        get => _lockPreview;
-        set => SetProperty(ref _lockPreview, value);
-    }
-
-    public bool PreviewDuringPlayback
-    {
-        get => _previewDuringPlayback;
-        set => SetProperty(ref _previewDuringPlayback, value);
-    }
-
-    public double PlaybackRate
-    {
-        get => _playbackRate;
-        set
-        {
-            if (value <= 0.0)
-                value = 0.01;
-            SetProperty(ref _playbackRate, value);
-        }
-    }
-
-    public bool UseExternalPlaybackTicks
-    {
-        get => _useExternalPlaybackTicks;
-        set => SetProperty(ref _useExternalPlaybackTicks, value);
     }
 
     public bool Hold
@@ -263,7 +201,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
     public double DofFarCrisp { get => CurrentDofSettings.FarCrisp; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { FarCrisp = value }); } }
     public double DofFarBlurry { get => CurrentDofSettings.FarBlurry; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { FarBlurry = value }); } }
     public double DofMaxBlurSize { get => CurrentDofSettings.MaxBlurSize; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { MaxBlurSize = Math.Clamp(value, 0.0, 11.0) }); } }
-    public double DofRadiusScale { get => CurrentDofSettings.RadiusScale; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { RadiusScale = Math.Clamp(value, 0.25, 10.0) }); } }
+    public double DofRadiusScale { get => CurrentDofSettings.RadiusScale; set { if (DofOverride) SetCurrentDof(_currentDofSettings with { RadiusScale = Math.Clamp(value, 0.25, 5.0) }); } }
 
     private void SetCurrentDof(CampathDofSettings value)
     {
@@ -284,9 +222,14 @@ public sealed class CampathEditorViewModel : ViewModelBase
         ? CurveDocument.CanEvaluateCamera
         : _curve.CanEvaluate();
 
-    public CampathSample Evaluate(double time) => PathModel == CameraPathModel.Curves
-        ? CurveDocument.Evaluate(time)
-        : _curve.Evaluate(time);
+    public CampathSample Evaluate(double time)
+    {
+        if (PathModel == CameraPathModel.Curves)
+            return CurveDocument.Evaluate(time);
+        var sample = _curve.Evaluate(time);
+        return new CampathSample(sample.Position, sample.Rotation, sample.Fov, sample.Selected,
+            sample.Dof with { Enabled = CurveDocument.DofEnabled });
+    }
 
     public void NotifyCurveDocumentChanged()
     {
@@ -314,7 +257,10 @@ public sealed class CampathEditorViewModel : ViewModelBase
         _undoHistory.Add(before);
         if (_undoHistory.Count > 100) _undoHistory.RemoveAt(0);
         _redoHistory.Clear();
+        HistoryCommitted?.Invoke();
     }
+
+    public event Action? HistoryCommitted;
 
     public void Undo()
     {
@@ -336,7 +282,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
         RestoreHistorySnapshot(snapshot);
     }
 
-    public ICommand TogglePlayCommand { get; }
     public ICommand ClearCommand { get; }
 
     public void AddKeyframe(double time, Vector3 position, Quaternion rotation, double fov)
@@ -420,19 +365,20 @@ public sealed class CampathEditorViewModel : ViewModelBase
 
         _pathModel = data.PathModel;
         _classicInterpolation = data.ClassicInterpolation;
+        CurveDocument.DofEnabled = data.DofEnabled;
         ApplyClassicInterpolation();
         NotifyModeChanged();
         Hold = data.Hold;
         TimeOffset = data.TimeOffset;
 
         SelectedKeyframe = Keyframes.FirstOrDefault(k => k.Selected) ?? Keyframes.FirstOrDefault();
-        Duration = GetKeyframeDuration();
         PlayheadTime = SelectedKeyframe?.Time ?? 0.0;
         RebuildCurve();
         foreach (var channel in CurveDocument.Channels)
             channel.Keys.Clear();
         if (data.CurveDocument != null)
         {
+            CurveDocument.DofEnabled = data.CurveDocument.DofEnabled;
             foreach (var source in data.CurveDocument.Channels)
             {
                 var target = CurveDocument.Find(source.Id);
@@ -450,12 +396,12 @@ public sealed class CampathEditorViewModel : ViewModelBase
                         Interpolation = key.Interpolation, TangentMode = key.TangentMode
                     });
             }
-            Duration = Math.Max(Duration, CurveDocument.Channels.SelectMany(channel => channel.Keys).Select(key => key.Time).DefaultIfEmpty(0).Max());
+            CampathPathConversion.EnsureStandardChannels(CurveDocument);
         }
         NotifyCurveDocumentChanged();
     }
 
-    private EditorHistorySnapshot CaptureHistorySnapshot()
+    internal EditorHistorySnapshot CaptureHistorySnapshot()
     {
         var legacyKeys = Keyframes.Select(key => new LegacyKeySnapshot(
             key.Time, key.Position, key.Rotation, key.Fov, key.Selected, key.Dof)).ToList();
@@ -464,10 +410,11 @@ public sealed class CampathEditorViewModel : ViewModelBase
             channel.Keys.Select(key => new CurveKeySnapshot(
                 key.Time, key.Value, key.InTangent, key.OutTangent, key.InWeight, key.OutWeight,
                 key.Selected, key.Interpolation, key.TangentMode, key.WeightedTangents)).ToList())).ToList();
-        return new EditorHistorySnapshot(PathModel, ClassicInterpolation, legacyKeys, channels, Duration);
+        return new EditorHistorySnapshot(PathModel, ClassicInterpolation, legacyKeys, channels,
+            CurveDocument.DofEnabled);
     }
 
-    private void RestoreHistorySnapshot(EditorHistorySnapshot snapshot)
+    internal void RestoreHistorySnapshot(EditorHistorySnapshot snapshot)
     {
         _restoringHistory = true;
         try
@@ -493,6 +440,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
 
             foreach (var channel in CurveDocument.Channels)
                 channel.Keys.Clear();
+            CurveDocument.DofEnabled = snapshot.CurveDofEnabled;
             foreach (var source in snapshot.Channels)
             {
                 var target = CurveDocument.Find(source.Id);
@@ -513,7 +461,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
                         TangentMode = key.TangentMode, WeightedTangents = key.WeightedTangents
                     });
             }
-            Duration = snapshot.Duration;
             NotifyModeChanged();
             NotifyCurveDocumentChanged();
         }
@@ -527,7 +474,8 @@ public sealed class CampathEditorViewModel : ViewModelBase
     private static bool HistoryEquals(EditorHistorySnapshot left, EditorHistorySnapshot right)
     {
         if (left.PathModel != right.PathModel || left.ClassicInterpolation != right.ClassicInterpolation
-            || left.Duration != right.Duration || !left.LegacyKeys.SequenceEqual(right.LegacyKeys)
+            || left.CurveDofEnabled != right.CurveDofEnabled
+            || !left.LegacyKeys.SequenceEqual(right.LegacyKeys)
             || left.Channels.Count != right.Channels.Count) return false;
         for (var i = 0; i < left.Channels.Count; i++)
         {
@@ -539,14 +487,18 @@ public sealed class CampathEditorViewModel : ViewModelBase
         return true;
     }
 
-    private sealed record EditorHistorySnapshot(
+    internal static bool HistorySnapshotsEqual(EditorHistorySnapshot left, EditorHistorySnapshot right) =>
+        HistoryEquals(left, right);
+
+    internal sealed record EditorHistorySnapshot(
         CameraPathModel PathModel, ClassicCampathInterpolation ClassicInterpolation,
-        List<LegacyKeySnapshot> LegacyKeys, List<CurveChannelSnapshot> Channels, double Duration);
-    private sealed record LegacyKeySnapshot(double Time, Vector3 Position, Quaternion Rotation,
+        List<LegacyKeySnapshot> LegacyKeys, List<CurveChannelSnapshot> Channels,
+        bool CurveDofEnabled);
+    internal sealed record LegacyKeySnapshot(double Time, Vector3 Position, Quaternion Rotation,
         double Fov, bool Selected, CampathDofSettings Dof);
-    private sealed record CurveChannelSnapshot(string Id, string Name, string Group, string Color,
+    internal sealed record CurveChannelSnapshot(string Id, string Name, string Group, string Color,
         List<CurveKeySnapshot> Keys);
-    private sealed record CurveKeySnapshot(double Time, double Value, double InTangent,
+    internal sealed record CurveKeySnapshot(double Time, double Value, double InTangent,
         double OutTangent, double InWeight, double OutWeight, bool Selected,
         CurveInterpolationMode Interpolation, CurveTangentMode TangentMode, bool WeightedTangents);
 
@@ -570,6 +522,16 @@ public sealed class CampathEditorViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasAuthoredKeys));
         OnPropertyChanged(nameof(PlayheadSample));
         RaiseDofPropertiesChanged();
+    }
+
+    public void SetDofEnabled(bool enabled)
+    {
+        if (CurveDocument.DofEnabled == enabled)
+            return;
+        BeginHistoryTransaction();
+        CurveDocument.DofEnabled = enabled;
+        NotifyCurveDocumentChanged();
+        CommitHistoryTransaction();
     }
 
     private void ClearClassicKeyframes()
@@ -632,118 +594,11 @@ public sealed class CampathEditorViewModel : ViewModelBase
         RebuildCurve();
     }
 
-    public void SetDuration(double newDuration)
-    {
-        if (newDuration <= 0)
-            newDuration = 0.01;
-
-        var currentDuration = GetKeyframeDuration();
-        if (currentDuration <= 0.0)
-        {
-            Duration = newDuration;
-            return;
-        }
-
-        var scale = newDuration / currentDuration;
-        if (PathModel == CameraPathModel.Curves)
-        {
-            foreach (var key in CurveDocument.Channels.SelectMany(channel => channel.Keys))
-                key.Time *= scale;
-            Duration = newDuration;
-            NotifyCurveDocumentChanged();
-            return;
-        }
-
-        _suppressCollectionEvents = true;
-        foreach (var key in Keyframes)
-            key.Time *= scale;
-        _suppressCollectionEvents = false;
-
-        Duration = newDuration;
-        SortByTimeDeferred();
-        RebuildCurve();
-    }
-
     public void SnapPlayheadToKeyframe()
     {
         if (SelectedKeyframe == null)
             return;
         PlayheadTime = SelectedKeyframe.Time;
-    }
-
-    public double GetKeyframeDuration()
-    {
-        if (PathModel == CameraPathModel.Curves)
-        {
-            var times = CurveDocument.Channels.SelectMany(channel => channel.Keys)
-                .Select(key => key.Time).ToList();
-            return times.Count == 0 ? 0.0 : Math.Max(0.0, times.Max() - times.Min());
-        }
-
-        if (Keyframes.Count == 0)
-            return 0.0;
-        var min = Keyframes.Min(k => k.Time);
-        var max = Keyframes.Max(k => k.Time);
-        return Math.Max(0.0, max - min);
-    }
-
-    public void StopPlayback()
-    {
-        if (!IsPlaying)
-            return;
-
-        _playTimer.Stop();
-        IsPlaying = false;
-    }
-
-    private void TogglePlay()
-    {
-        if (IsPlaying)
-        {
-            StopPlayback();
-            return;
-        }
-
-        if (Duration <= 0.0)
-            return;
-
-        if (PlayheadTime >= Duration)
-            PlayheadTime = 0.0;
-
-        _lastPlayTick = DateTime.UtcNow;
-        IsPlaying = true;
-        if (!UseExternalPlaybackTicks)
-            _playTimer.Start();
-    }
-
-    private void OnPlayTick(object? sender, EventArgs e)
-    {
-        AdvancePlaybackInternal((DateTime.UtcNow - _lastPlayTick).TotalSeconds, updateTimestamp: true);
-    }
-
-    public void AdvancePlayback(double deltaSeconds)
-    {
-        AdvancePlaybackInternal(deltaSeconds, updateTimestamp: false);
-    }
-
-    private void AdvancePlaybackInternal(double deltaSeconds, bool updateTimestamp)
-    {
-        if (!IsPlaying)
-            return;
-
-        if (deltaSeconds <= 0.0)
-            return;
-
-        if (updateTimestamp)
-            _lastPlayTick = DateTime.UtcNow;
-
-        PlayheadTime += deltaSeconds * PlaybackRate;
-
-        if (PlayheadTime >= Duration)
-        {
-            PlayheadTime = Duration;
-            StopPlayback();
-        }
     }
 
     private void OnKeyframesChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -872,11 +727,6 @@ public sealed class CampathEditorViewModel : ViewModelBase
             _playheadTime = 0;
             changed = true;
         }
-        if (_playheadTime > Duration)
-        {
-            _playheadTime = Duration;
-            changed = true;
-        }
         return changed;
     }
 
@@ -983,13 +833,13 @@ public sealed class CampathKeyframeViewModel : ViewModelBase
     public double DofMaxBlurSize
     {
         get => Dof.MaxBlurSize;
-        set => SetDof(Dof with { MaxBlurSize = value });
+        set => SetDof(Dof with { MaxBlurSize = Math.Clamp(value, 0.0, 11.0) });
     }
 
     public double DofRadiusScale
     {
         get => Dof.RadiusScale;
-        set => SetDof(Dof with { RadiusScale = value });
+        set => SetDof(Dof with { RadiusScale = Math.Clamp(value, 0.25, 5.0) });
     }
 
     private void SetDof(CampathDofSettings value)

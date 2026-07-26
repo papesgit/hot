@@ -47,7 +47,7 @@ public sealed class CampathCurveChannel : ViewModelBase
 
     public required string Id { get; init; }
     public required string Name { get; init; }
-    public required string Group { get; init; }
+    public required string Group { get; set; }
     public ObservableCollection<CampathCurveKey> Keys { get; } = new();
     public bool IsVisible { get => _isVisible; set => SetProperty(ref _isVisible, value); }
     public bool IsLocked { get => _isLocked; set => SetProperty(ref _isLocked, value); }
@@ -116,6 +116,7 @@ public sealed class CampathCurveChannel : ViewModelBase
 public sealed class CampathCurveDocument
 {
     public ObservableCollection<CampathCurveChannel> Channels { get; } = new();
+    public bool DofEnabled { get; set; }
 
     public CampathCurveChannel? Find(string id)
     {
@@ -133,10 +134,11 @@ public sealed class CampathCurveDocument
         var position = new Vector3((float)Value("position.x", time), (float)Value("position.y", time), (float)Value("position.z", time));
         var rotation = EulerToQuaternion(Value("rotation.pitch", time), Value("rotation.yaw", time), Value("rotation.roll", time));
         var dof = new CampathDofSettings(
-            Value("dof.enabled", time, 0) >= .5,
+            DofEnabled,
             Value("dof.nearBlurry", time, -100), Value("dof.nearCrisp", time, 0),
             Value("dof.farCrisp", time, 180), Value("dof.farBlurry", time, 2000),
-            Value("dof.maxBlur", time, 5), Value("dof.radiusScale", time, .25));
+            Math.Clamp(Value("dof.maxBlur", time, 5), 0.0, 11.0),
+            Math.Clamp(Value("dof.radiusScale", time, .25), 0.25, 5.0));
         return new CampathSample(position, rotation, Value("fov", time, 90), false, dof);
     }
 

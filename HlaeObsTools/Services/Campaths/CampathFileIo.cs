@@ -15,139 +15,37 @@ public static class CampathFileIo
         public bool Hold { get; set; }
         public CameraPathModel PathModel { get; set; } = CameraPathModel.Classic;
         public ClassicCampathInterpolation ClassicInterpolation { get; set; } = ClassicCampathInterpolation.CatmullRom;
+        public bool DofEnabled { get; set; }
         public double TimeOffset { get; set; }
         public List<CampathKeyframe> Keyframes { get; } = new();
         public CampathCurveDocument? CurveDocument { get; set; }
     }
+
+    public sealed class CampathSequenceFileData
+    {
+        public double TimeOffset { get; set; }
+        public List<CameraTrackFileData> Cameras { get; } = new();
+        public List<CameraCutFileData> CameraCuts { get; } = new();
+    }
+
+    public sealed record CameraTrackFileData(string Id, string Name, CampathFileData Campath);
+    public sealed record CameraCutFileData(string CameraId, double StartTime, double EndTime);
 
     public static CampathFileData? Load(string path)
     {
         try
         {
             var doc = XDocument.Load(path);
-            var root = doc.Element("campath");
-            if (root == null)
+            if (doc.Element("campath") is { } root)
+                return ReadCampath(root, normalizeTimes: true);
+            var sequenceRoot = doc.Element("campathSequence");
+            var first = sequenceRoot?.Element("cameras")?.Elements("camera")
+                .Select(camera => camera.Element("campath"))
+                .FirstOrDefault(element => element != null);
+            if (first == null)
                 return null;
-
-            var data = new CampathFileData();
-            data.PathModel = string.Equals(root.Attribute("model")?.Value, "curves", StringComparison.OrdinalIgnoreCase)
-                ? CameraPathModel.Curves
-                : CameraPathModel.Classic;
-
-            var positionInterp = root.Attribute("positionInterp")?.Value;
-            var rotationInterp = root.Attribute("rotationInterp")?.Value;
-            var fovInterp = root.Attribute("fovInterp")?.Value;
-
-            var anyLinear = string.Equals(positionInterp, "linear", StringComparison.OrdinalIgnoreCase)
-                            || string.Equals(rotationInterp, "sLinear", StringComparison.OrdinalIgnoreCase)
-                            || string.Equals(fovInterp, "linear", StringComparison.OrdinalIgnoreCase);
-            data.ClassicInterpolation = anyLinear
-                ? ClassicCampathInterpolation.Linear
-                : ClassicCampathInterpolation.CatmullRom;
-
-            data.Hold = root.Attribute("hold") != null;
-
-            var points = root.Element("points");
-            if (data.PathModel == CameraPathModel.Classic && points != null)
-            {
-                foreach (var p in points.Elements("p"))
-                {
-                    var time = ParseDouble(p.Attribute("t")?.Value);
-                    var x = ParseDouble(p.Attribute("x")?.Value);
-                    var y = ParseDouble(p.Attribute("y")?.Value);
-                    var z = ParseDouble(p.Attribute("z")?.Value);
-                    var fov = ParseDouble(p.Attribute("fov")?.Value, 90.0);
-
-                    Quaternion rotation;
-                    if (HasQuaternion(p))
-                    {
-                        var qw = ParseDouble(p.Attribute("qw")?.Value, 1.0);
-                        var qx = ParseDouble(p.Attribute("qx")?.Value);
-                        var qy = ParseDouble(p.Attribute("qy")?.Value);
-                        var qz = ParseDouble(p.Attribute("qz")?.Value);
-                        rotation = Quaternion.Normalize(new Quaternion((float)qx, (float)qy, (float)qz, (float)qw));
-                    }
-                    else
-                    {
-                        var roll = ParseDouble(p.Attribute("rx")?.Value);
-                        var pitch = ParseDouble(p.Attribute("ry")?.Value);
-                        var yaw = ParseDouble(p.Attribute("rz")?.Value);
-                        rotation = EulerToQuaternion(pitch, yaw, roll);
-                    }
-
-                    var selected = p.Attribute("selected") != null;
-                    var dof = new CampathDofSettings(
-                        p.Attribute("dofEnabled") != null,
-                        ParseDouble(p.Attribute("dofNearBlurry")?.Value, -100.0),
-                        ParseDouble(p.Attribute("dofNearCrisp")?.Value, 0.0),
-                        ParseDouble(p.Attribute("dofFarCrisp")?.Value, 180.0),
-                        ParseDouble(p.Attribute("dofFarBlurry")?.Value, 2000.0),
-                        ParseDouble(p.Attribute("dofMaxBlurSize")?.Value, 5.0),
-                        ParseDouble(p.Attribute("dofRadiusScale")?.Value, 0.25));
-                    data.Keyframes.Add(new CampathKeyframe
-                    {
-                        Time = time,
-                        Position = new Vector3((float)x, (float)y, (float)z),
-                        Rotation = rotation,
-                        Fov = fov,
-                        Selected = selected,
-                        Dof = dof
-                    });
-                }
-            }
-
-            var curveEditor = root.Element("curveEditor");
-            if (data.PathModel == CameraPathModel.Curves && curveEditor != null)
-            {
-                var curveDocument = new CampathCurveDocument();
-                foreach (var channelElement in curveEditor.Elements("channel"))
-                {
-                    var id = channelElement.Attribute("id")?.Value;
-                    if (string.IsNullOrWhiteSpace(id)) continue;
-                    var channel = new CampathCurveChannel
-                    {
-                        Id = id,
-                        Name = channelElement.Attribute("name")?.Value ?? id,
-                        Group = channelElement.Attribute("group")?.Value ?? "Other",
-                        Color = channelElement.Attribute("color")?.Value ?? "#FFFFFF"
-                    };
-                    foreach (var keyElement in channelElement.Elements("key"))
-                    {
-                        var key = new CampathCurveKey
-                        {
-                            Time = ParseDouble(keyElement.Attribute("t")?.Value),
-                            Value = ParseDouble(keyElement.Attribute("v")?.Value),
-                            InTangent = ParseDouble(keyElement.Attribute("in")?.Value),
-                            OutTangent = ParseDouble(keyElement.Attribute("out")?.Value),
-                            InWeight = ParseDouble(keyElement.Attribute("inWeight")?.Value, .25),
-                            OutWeight = ParseDouble(keyElement.Attribute("outWeight")?.Value, .25),
-                            WeightedTangents = ParseBool(keyElement.Attribute("weighted")?.Value),
-                            Interpolation = ParseEnum(keyElement.Attribute("interpolation")?.Value, CurveInterpolationMode.Bezier),
-                            TangentMode = ParseEnum(keyElement.Attribute("tangentMode")?.Value, CurveTangentMode.Auto)
-                        };
-                        channel.Keys.Add(key);
-                    }
-                    curveDocument.Channels.Add(channel);
-                }
-                if (curveDocument.Channels.Any(channel => channel.Keys.Count > 0))
-                    data.CurveDocument = curveDocument;
-            }
-
-            if (data.PathModel == CameraPathModel.Curves && data.CurveDocument?.CanEvaluateCamera == true)
-            {
-                var minTime = data.CurveDocument.GetCameraKeyTimes().DefaultIfEmpty(0.0).Min();
-                data.TimeOffset = minTime;
-                foreach (var key in data.CurveDocument.Channels.SelectMany(channel => channel.Keys))
-                    key.Time -= minTime;
-            }
-            else if (data.Keyframes.Count > 0)
-            {
-                var minTime = data.Keyframes.Min(k => k.Time);
-                data.TimeOffset = minTime;
-                foreach (var key in data.Keyframes)
-                    key.Time -= minTime;
-            }
-
+            var data = ReadCampath(first, normalizeTimes: false);
+            data.TimeOffset = ParseDouble(sequenceRoot?.Attribute("offset")?.Value);
             return data;
         }
         catch
@@ -156,9 +54,229 @@ public static class CampathFileIo
         }
     }
 
+    public static CampathSequenceFileData? LoadSequence(string path)
+    {
+        try
+        {
+            var doc = XDocument.Load(path);
+            if (doc.Element("campath") is { } legacyRoot)
+            {
+                var legacy = ReadCampath(legacyRoot, normalizeTimes: true);
+                var result = new CampathSequenceFileData { TimeOffset = legacy.TimeOffset };
+                result.Cameras.Add(new CameraTrackFileData("camera-1", "Camera 1", legacy));
+                return result;
+            }
+
+            var root = doc.Element("campathSequence");
+            var camerasElement = root?.Element("cameras");
+            if (root == null || camerasElement == null)
+                return null;
+
+            var sequence = new CampathSequenceFileData
+            {
+                TimeOffset = ParseDouble(root.Attribute("offset")?.Value)
+            };
+            foreach (var cameraElement in camerasElement.Elements("camera"))
+            {
+                var campathElement = cameraElement.Element("campath");
+                if (campathElement == null)
+                    continue;
+                var id = cameraElement.Attribute("id")?.Value;
+                if (string.IsNullOrWhiteSpace(id))
+                    continue;
+                var camera = ReadCampath(campathElement, normalizeTimes: false);
+                camera.TimeOffset = sequence.TimeOffset;
+                sequence.Cameras.Add(new CameraTrackFileData(
+                    id, cameraElement.Attribute("name")?.Value ?? id, camera));
+            }
+            foreach (var cutElement in root.Element("cameraCuts")?.Elements("cut") ?? [])
+            {
+                var cameraId = cutElement.Attribute("camera")?.Value ?? string.Empty;
+                var start = ParseDouble(cutElement.Attribute("start")?.Value);
+                var end = ParseDouble(cutElement.Attribute("end")?.Value, start);
+                if (end > start)
+                    sequence.CameraCuts.Add(new CameraCutFileData(cameraId, start, end));
+            }
+            return sequence.Cameras.Count > 0 ? sequence : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static CampathFileData ReadCampath(XElement root, bool normalizeTimes)
+    {
+        var data = new CampathFileData
+        {
+            PathModel = string.Equals(root.Attribute("model")?.Value, "curves",
+                StringComparison.OrdinalIgnoreCase)
+                ? CameraPathModel.Curves
+                : CameraPathModel.Classic,
+            DofEnabled = ParseBool(root.Attribute("dofEnabled")?.Value),
+            Hold = root.Attribute("hold") != null
+        };
+
+        var anyLinear = string.Equals(root.Attribute("positionInterp")?.Value, "linear",
+                            StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(root.Attribute("rotationInterp")?.Value, "sLinear",
+                            StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(root.Attribute("fovInterp")?.Value, "linear",
+                            StringComparison.OrdinalIgnoreCase);
+        data.ClassicInterpolation = anyLinear
+            ? ClassicCampathInterpolation.Linear
+            : ClassicCampathInterpolation.CatmullRom;
+
+        if (data.PathModel == CameraPathModel.Classic && root.Element("points") is { } points)
+        {
+            foreach (var p in points.Elements("p"))
+            {
+                Quaternion rotation;
+                if (HasQuaternion(p))
+                {
+                    rotation = Quaternion.Normalize(new Quaternion(
+                        (float)ParseDouble(p.Attribute("qx")?.Value),
+                        (float)ParseDouble(p.Attribute("qy")?.Value),
+                        (float)ParseDouble(p.Attribute("qz")?.Value),
+                        (float)ParseDouble(p.Attribute("qw")?.Value, 1.0)));
+                }
+                else
+                {
+                    rotation = EulerToQuaternion(
+                        ParseDouble(p.Attribute("ry")?.Value),
+                        ParseDouble(p.Attribute("rz")?.Value),
+                        ParseDouble(p.Attribute("rx")?.Value));
+                }
+
+                data.Keyframes.Add(new CampathKeyframe
+                {
+                    Time = ParseDouble(p.Attribute("t")?.Value),
+                    Position = new Vector3(
+                        (float)ParseDouble(p.Attribute("x")?.Value),
+                        (float)ParseDouble(p.Attribute("y")?.Value),
+                        (float)ParseDouble(p.Attribute("z")?.Value)),
+                    Rotation = rotation,
+                    Fov = ParseDouble(p.Attribute("fov")?.Value, 90.0),
+                    Selected = p.Attribute("selected") != null,
+                    Dof = new CampathDofSettings(
+                        data.DofEnabled,
+                        ParseDouble(p.Attribute("dofNearBlurry")?.Value, -100.0),
+                        ParseDouble(p.Attribute("dofNearCrisp")?.Value),
+                        ParseDouble(p.Attribute("dofFarCrisp")?.Value, 180.0),
+                        ParseDouble(p.Attribute("dofFarBlurry")?.Value, 2000.0),
+                        Math.Clamp(ParseDouble(p.Attribute("dofMaxBlurSize")?.Value, 5.0), 0.0, 11.0),
+                        Math.Clamp(ParseDouble(p.Attribute("dofRadiusScale")?.Value, 0.25), 0.25, 5.0))
+                });
+            }
+        }
+
+        if (data.PathModel == CameraPathModel.Curves && root.Element("curveEditor") is { } curveEditor)
+        {
+            var curveDocument = new CampathCurveDocument
+            {
+                DofEnabled = ParseBool(curveEditor.Attribute("dofEnabled")?.Value)
+            };
+            data.DofEnabled = curveDocument.DofEnabled;
+            foreach (var channelElement in curveEditor.Elements("channel"))
+            {
+                var id = channelElement.Attribute("id")?.Value;
+                if (string.IsNullOrWhiteSpace(id))
+                    continue;
+                var channel = new CampathCurveChannel
+                {
+                    Id = id,
+                    Name = channelElement.Attribute("name")?.Value ?? id,
+                    Group = channelElement.Attribute("group")?.Value ?? "Other",
+                    Color = channelElement.Attribute("color")?.Value ?? "#FFFFFF"
+                };
+                foreach (var keyElement in channelElement.Elements("key"))
+                {
+                    channel.Keys.Add(new CampathCurveKey
+                    {
+                        Time = ParseDouble(keyElement.Attribute("t")?.Value),
+                        Value = ParseDouble(keyElement.Attribute("v")?.Value),
+                        InTangent = ParseDouble(keyElement.Attribute("in")?.Value),
+                        OutTangent = ParseDouble(keyElement.Attribute("out")?.Value),
+                        InWeight = ParseDouble(keyElement.Attribute("inWeight")?.Value, .25),
+                        OutWeight = ParseDouble(keyElement.Attribute("outWeight")?.Value, .25),
+                        WeightedTangents = ParseBool(keyElement.Attribute("weighted")?.Value),
+                        Interpolation = ParseEnum(keyElement.Attribute("interpolation")?.Value,
+                            CurveInterpolationMode.Bezier),
+                        TangentMode = ParseEnum(keyElement.Attribute("tangentMode")?.Value,
+                            CurveTangentMode.Auto)
+                    });
+                }
+                curveDocument.Channels.Add(channel);
+            }
+            if (curveDocument.Channels.Any(channel => channel.Keys.Count > 0))
+                data.CurveDocument = curveDocument;
+        }
+
+        if (!normalizeTimes)
+            return data;
+
+        if (data.PathModel == CameraPathModel.Curves && data.CurveDocument?.CanEvaluateCamera == true)
+        {
+            var minTime = data.CurveDocument.GetCameraKeyTimes().DefaultIfEmpty(0.0).Min();
+            data.TimeOffset = minTime;
+            foreach (var key in data.CurveDocument.Channels.SelectMany(channel => channel.Keys))
+                key.Time -= minTime;
+        }
+        else if (data.Keyframes.Count > 0)
+        {
+            var minTime = data.Keyframes.Min(key => key.Time);
+            data.TimeOffset = minTime;
+            foreach (var key in data.Keyframes)
+                key.Time -= minTime;
+        }
+        return data;
+    }
+
     public static void Save(string path, CampathEditorViewModel editor)
     {
-        var doc = new XDocument();
+        new XDocument(WriteCampath(editor, applyTimeOffset: true)).Save(path);
+    }
+
+    public static void Save(string path, CampathSequenceViewModel sequence)
+    {
+        if (sequence.Cameras.Count == 1)
+        {
+            Save(path, sequence.Cameras[0].Editor);
+            return;
+        }
+
+        var offset = sequence.Cameras.FirstOrDefault()?.Editor.TimeOffset ?? 0.0;
+        var root = new XElement("campathSequence",
+            new XAttribute("version", "1"));
+        if (offset != 0.0)
+            root.SetAttributeValue("offset", ToXml(offset));
+
+        var cameras = new XElement("cameras");
+        foreach (var camera in sequence.Cameras)
+        {
+            cameras.Add(new XElement("camera",
+                new XAttribute("id", camera.Id.ToString("D")),
+                new XAttribute("name", camera.Name),
+                WriteCampath(camera.Editor, applyTimeOffset: false)));
+        }
+        root.Add(cameras);
+
+        var cuts = new XElement("cameraCuts");
+        foreach (var cut in sequence.CameraCuts.OrderBy(cut => cut.StartTime))
+        {
+            cuts.Add(new XElement("cut",
+                new XAttribute("start", ToXml(cut.StartTime)),
+                new XAttribute("end", ToXml(cut.EndTime)),
+                new XAttribute("camera", cut.CameraId == Guid.Empty
+                    ? string.Empty
+                    : cut.CameraId.ToString("D"))));
+        }
+        root.Add(cuts);
+        new XDocument(root).Save(path);
+    }
+
+    private static XElement WriteCampath(CampathEditorViewModel editor, bool applyTimeOffset)
+    {
         var root = new XElement("campath",
             new XAttribute("model", editor.PathModel == CameraPathModel.Curves ? "curves" : "classic"));
 
@@ -169,6 +287,8 @@ public static class CampathFileIo
             root.SetAttributeValue("rotationInterp", "sLinear");
             root.SetAttributeValue("fovInterp", "linear");
         }
+        if (editor.PathModel == CameraPathModel.Classic)
+            root.SetAttributeValue("dofEnabled", editor.CurveDocument.DofEnabled);
 
         if (editor.Hold)
             root.SetAttributeValue("hold", string.Empty);
@@ -190,7 +310,7 @@ public static class CampathFileIo
                 var (pitch, yaw, roll) = QuaternionToEuler(q);
 
                 var p = new XElement("p");
-                p.SetAttributeValue("t", ToXml(key.Time + editor.TimeOffset));
+                p.SetAttributeValue("t", ToXml(key.Time + (applyTimeOffset ? editor.TimeOffset : 0.0)));
                 p.SetAttributeValue("x", ToXml(key.Position.X));
                 p.SetAttributeValue("y", ToXml(key.Position.Y));
                 p.SetAttributeValue("z", ToXml(key.Position.Z));
@@ -202,8 +322,6 @@ public static class CampathFileIo
                 p.SetAttributeValue("qx", ToXml(q.X));
                 p.SetAttributeValue("qy", ToXml(q.Y));
                 p.SetAttributeValue("qz", ToXml(q.Z));
-                if (key.Dof.Enabled)
-                    p.SetAttributeValue("dofEnabled", string.Empty);
                 p.SetAttributeValue("dofNearBlurry", ToXml(key.Dof.NearBlurry));
                 p.SetAttributeValue("dofNearCrisp", ToXml(key.Dof.NearCrisp));
                 p.SetAttributeValue("dofFarCrisp", ToXml(key.Dof.FarCrisp));
@@ -216,15 +334,16 @@ public static class CampathFileIo
         }
         else
         {
-            root.Add(WriteCurveEditor(editor));
+            root.Add(WriteCurveEditor(editor, applyTimeOffset));
         }
-        doc.Add(root);
-        doc.Save(path);
+        return root;
     }
 
-    private static XElement WriteCurveEditor(CampathEditorViewModel editor)
+    private static XElement WriteCurveEditor(CampathEditorViewModel editor, bool applyTimeOffset)
     {
-        var curveEditor = new XElement("curveEditor", new XAttribute("version", "1"));
+        var curveEditor = new XElement("curveEditor",
+            new XAttribute("version", "1"),
+            new XAttribute("dofEnabled", editor.CurveDocument.DofEnabled));
         foreach (var channel in editor.CurveDocument.Channels.Where(channel => channel.Keys.Count > 0))
         {
             var channelElement = new XElement("channel",
@@ -233,7 +352,7 @@ public static class CampathFileIo
             foreach (var key in channel.Keys.OrderBy(key => key.Time))
             {
                 channelElement.Add(new XElement("key",
-                    new XAttribute("t", ToXml(key.Time + editor.TimeOffset)),
+                    new XAttribute("t", ToXml(key.Time + (applyTimeOffset ? editor.TimeOffset : 0.0))),
                     new XAttribute("v", ToXml(key.Value)),
                     new XAttribute("in", ToXml(key.InTangent)),
                     new XAttribute("out", ToXml(key.OutTangent)),

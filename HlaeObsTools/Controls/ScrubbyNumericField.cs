@@ -54,12 +54,21 @@ namespace HlaeObsTools.Controls
         public static readonly StyledProperty<bool> IsEditingProperty =
             AvaloniaProperty.Register<ScrubbyNumericField, bool>(nameof(IsEditing), false);
 
+        public static readonly StyledProperty<bool> IsReadOnlyProperty =
+            AvaloniaProperty.Register<ScrubbyNumericField, bool>(nameof(IsReadOnly), false);
+
+        public static readonly StyledProperty<bool> IsMixedValueProperty =
+            AvaloniaProperty.Register<ScrubbyNumericField, bool>(nameof(IsMixedValue), false);
+
+        public static readonly StyledProperty<bool> IsHighlightedProperty =
+            AvaloniaProperty.Register<ScrubbyNumericField, bool>(nameof(IsHighlighted), false);
+
         public static readonly DirectProperty<ScrubbyNumericField, string> DisplayTextProperty =
             AvaloniaProperty.RegisterDirect<ScrubbyNumericField, string>(
                 nameof(DisplayText),
                 o => o.DisplayText);
 
-        public string DisplayText => Value.ToString(FormatString, CultureInfo.CurrentCulture);
+        public string DisplayText => IsMixedValue ? "-" : Value.ToString(FormatString, CultureInfo.CurrentCulture);
 
         public static readonly DirectProperty<ScrubbyNumericField, bool> IsDisplayVisibleProperty =
             AvaloniaProperty.RegisterDirect<ScrubbyNumericField, bool>(
@@ -110,6 +119,27 @@ namespace HlaeObsTools.Controls
             private set => SetValue(IsEditingProperty, value);
         }
 
+        public bool IsReadOnly
+        {
+            get => GetValue(IsReadOnlyProperty);
+            set => SetValue(IsReadOnlyProperty, value);
+        }
+
+        public bool IsMixedValue
+        {
+            get => GetValue(IsMixedValueProperty);
+            set => SetValue(IsMixedValueProperty, value);
+        }
+
+        public bool IsHighlighted
+        {
+            get => GetValue(IsHighlightedProperty);
+            set => SetValue(IsHighlightedProperty, value);
+        }
+
+        public event Action? EditStarted;
+        public event Action? EditCompleted;
+
         // ---- Template parts ----
         private TextBox? _editor;
 
@@ -146,11 +176,19 @@ namespace HlaeObsTools.Controls
         {
             base.OnPropertyChanged(change);
 
-            if (change.Property == ValueProperty || change.Property == FormatStringProperty)
+            if (change.Property == ValueProperty || change.Property == FormatStringProperty
+                || change.Property == IsMixedValueProperty)
                 RaisePropertyChanged(DisplayTextProperty, default!, DisplayText);
 
             if (change.Property == IsEditingProperty)
                 RaisePropertyChanged(IsDisplayVisibleProperty, default!, IsDisplayVisible);
+
+            if (change.Property == IsMixedValueProperty)
+                PseudoClasses.Set(":mixed", IsMixedValue);
+            if (change.Property == IsHighlightedProperty)
+                PseudoClasses.Set(":key-selected", IsHighlighted);
+            if (change.Property == IsReadOnlyProperty || change.Property == IsMixedValueProperty)
+                UpdateCursor();
         }
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -175,7 +213,7 @@ namespace HlaeObsTools.Controls
         {
             base.OnPointerPressed(e);
 
-            if (IsEditing)
+            if (IsEditing || IsReadOnly || IsMixedValue)
                 return;
 
             if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
@@ -212,6 +250,7 @@ namespace HlaeObsTools.Controls
                     return;
 
                 _dragging = true;
+                EditStarted?.Invoke();
 
                 // Capture only once we know it's a drag
                 _activePointer?.Capture(this);
@@ -271,11 +310,14 @@ namespace HlaeObsTools.Controls
             if (_activePointer?.Captured == this)
                 _activePointer.Capture(null);
 
+            var completedDrag = _dragging;
             _pressed = false;
             _dragging = false;
             _activePointer = null;
 
             UpdateCursor();
+            if (completedDrag)
+                EditCompleted?.Invoke();
             // Don’t need to handle release.
         }
 
@@ -313,7 +355,7 @@ namespace HlaeObsTools.Controls
         {
             base.OnKeyDown(e);
 
-            if (IsEditing)
+            if (IsEditing || IsReadOnly || IsMixedValue)
                 return;
 
             // Enter edit mode with keyboard too
@@ -327,19 +369,23 @@ namespace HlaeObsTools.Controls
             // Optional: arrow keys adjust
             if (e.Key == Key.Up || e.Key == Key.Right)
             {
+                EditStarted?.Invoke();
                 SetValueClamped(Value + Step * GetSensitivityMultiplier(e.KeyModifiers));
+                EditCompleted?.Invoke();
                 e.Handled = true;
             }
             else if (e.Key == Key.Down || e.Key == Key.Left)
             {
+                EditStarted?.Invoke();
                 SetValueClamped(Value - Step * GetSensitivityMultiplier(e.KeyModifiers));
+                EditCompleted?.Invoke();
                 e.Handled = true;
             }
         }
 
         private void OnDoubleTapped(object? sender, TappedEventArgs e)
         {
-            if (IsEditing)
+            if (IsEditing || IsReadOnly || IsMixedValue)
                 return;
 
             BeginEdit();
@@ -348,6 +394,9 @@ namespace HlaeObsTools.Controls
 
         private void BeginEdit()
         {
+            if (IsReadOnly || IsMixedValue)
+                return;
+            EditStarted?.Invoke();
             IsEditing = true;
 
             if (_editor == null)
@@ -376,6 +425,7 @@ namespace HlaeObsTools.Controls
 
             // return focus to control itself
             Focus();
+            EditCompleted?.Invoke();
         }
 
         private void EditorOnLostFocus(object? sender, RoutedEventArgs e) => EndEdit(commit: true);
@@ -434,7 +484,9 @@ namespace HlaeObsTools.Controls
             // Hide cursor during drag (since it's locked in place), show resize cursor otherwise
             Cursor = isDragging
                 ? new Cursor(StandardCursorType.None)
-                : new Cursor(StandardCursorType.SizeWestEast);
+                : new Cursor(IsReadOnly || IsMixedValue
+                    ? StandardCursorType.Arrow
+                    : StandardCursorType.SizeWestEast);
         }
     }
 }

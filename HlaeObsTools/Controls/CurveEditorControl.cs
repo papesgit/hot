@@ -45,8 +45,6 @@ public sealed class CurveEditorControl : Control
     private Point _lastPointer;
     private bool _panning;
     private bool _draggingPlayhead;
-    private bool _freecamPreviewActive;
-    private bool _campathPreviewActive;
     private Rect _playheadHandleRect;
     private bool _boxSelecting;
     private bool _boxAdditive;
@@ -62,6 +60,7 @@ public sealed class CurveEditorControl : Control
     private readonly HashSet<CampathCurveKey> _selectionBeforeBox = new();
     private readonly List<(Rect rect, CampathCurveChannel channel, CampathCurveKey key)> _keyHits = new();
     private readonly List<(Rect rect, CampathCurveChannel channel, CampathCurveKey key, TangentSide side)> _tangentHits = new();
+    private ContextMenu? _keyContextMenu;
 
     private enum TangentSide { None, In, Out }
     private enum DragAxis { Free, Horizontal, Vertical }
@@ -85,13 +84,9 @@ public sealed class CurveEditorControl : Control
     public int FitSelectionRequest { get => GetValue(FitSelectionRequestProperty); set => SetValue(FitSelectionRequestProperty, value); }
     public double StackedChannelHeight { get => GetValue(StackedChannelHeightProperty); set => SetValue(StackedChannelHeightProperty, value); }
     public event Action? SelectionChanged;
-    public event Action<double>? FreecamPreviewRequested;
-    public event Action? FreecamPreviewEnded;
-    public event Action? CampathPreviewRequested;
-    public event Action? CampathPreviewEnded;
-    public event Action? PlayheadDragEnded;
     public event Action? HistoryEditStarted;
     public event Action? HistoryEditCompleted;
+    public event Action? PlayheadDragCompleted;
 
     public override void Render(DrawingContext context)
     {
@@ -191,6 +186,7 @@ public sealed class CurveEditorControl : Control
             var rect = new Rect(p.X - size / 2, p.Y - size / 2, size, size);
             context.FillRectangle(key.Selected ? Brushes.White : new SolidColorBrush(color), rect);
             context.DrawRectangle(null, pen, rect);
+            DrawTangentModeLabel(context, key, p, key.Selected);
             _keyHits.Add((rect.Inflate(4), channel, key));
             if (key.Selected) DrawTangents(context, plot, channel, key, channelIndex, channelCount, p, color);
         }
@@ -216,7 +212,25 @@ public sealed class CurveEditorControl : Control
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e); Focus(); var point = e.GetPosition(this); var props = e.GetCurrentPoint(this).Properties;
-        if (props.IsMiddleButtonPressed || props.IsRightButtonPressed) { _panning = true; _lastPointer = point; e.Pointer.Capture(this); e.Handled = true; return; }
+        if (props.IsRightButtonPressed)
+        {
+            var contextHit = _keyHits.LastOrDefault(hit => hit.rect.Contains(point));
+            if (contextHit.key != null)
+            {
+                if (!contextHit.key.Selected)
+                {
+                    ClearSelection();
+                    contextHit.key.Selected = true;
+                    SelectionChanged?.Invoke();
+                    InvalidateVisual();
+                }
+                OpenKeyContextMenu();
+                e.Handled = true;
+                return;
+            }
+            _panning = true; _lastPointer = point; e.Pointer.Capture(this); e.Handled = true; return;
+        }
+        if (props.IsMiddleButtonPressed) { _panning = true; _lastPointer = point; e.Pointer.Capture(this); e.Handled = true; return; }
         if (!props.IsLeftButtonPressed) return;
         if (_playheadHandleRect.Contains(point))
         {
@@ -271,15 +285,6 @@ public sealed class CurveEditorControl : Control
                 if (nearest.HasValue) time = nearest.Value;
             }
             PlayheadTime = time;
-
-            var ctrlDown = e.KeyModifiers.HasFlag(KeyModifiers.Control);
-            if (ctrlDown && !_freecamPreviewActive) _freecamPreviewActive = true;
-            else if (!ctrlDown && _freecamPreviewActive) { _freecamPreviewActive = false; FreecamPreviewEnded?.Invoke(); }
-            if (_freecamPreviewActive) FreecamPreviewRequested?.Invoke(time);
-
-            var altDown = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
-            if (altDown && !ctrlDown && !_campathPreviewActive) { _campathPreviewActive = true; CampathPreviewRequested?.Invoke(); }
-            else if ((!altDown || ctrlDown) && _campathPreviewActive) { _campathPreviewActive = false; CampathPreviewEnded?.Invoke(); }
             e.Handled = true; return;
         }
         if (_boxSelecting)
@@ -336,8 +341,17 @@ public sealed class CurveEditorControl : Control
                 if (_dragAxis != DragAxis.Horizontal)
                 {
                     var originalY = ValueToScreenY(origin.channel, origin.value, plot);
-                    key.Value = YToValue(origin.channel, originalY + delta.Y, plot);
+                    key.Value = ClampChannelValue(origin.channel.Id,
+                        YToValue(origin.channel, originalY + delta.Y, plot));
                 }
+            }
+
+            foreach (var channel in _dragOrigins.Values.Select(origin => origin.channel).Distinct())
+            {
+                // Auto tangent slopes and weights depend on both neighboring values
+                // and their timing, so either drag axis can invalidate them.
+                SortKeys(channel);
+                CampathPathConversion.AutoTangents(channel);
             }
         }
         InvalidateVisual(); e.Handled = true;
@@ -346,16 +360,13 @@ public sealed class CurveEditorControl : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+        var completedPlayheadDrag = _draggingPlayhead;
         if (_dragKey != null && _dragTangent == TangentSide.None)
             foreach (var channel in _dragOrigins.Values.Select(value => value.channel).Distinct()) SortKeys(channel);
         EndHistoryEdit();
-        if (_draggingPlayhead)
-        {
-            PlayheadDragEnded?.Invoke();
-            if (_freecamPreviewActive) { _freecamPreviewActive = false; FreecamPreviewEnded?.Invoke(); }
-            if (_campathPreviewActive) { _campathPreviewActive = false; CampathPreviewEnded?.Invoke(); }
-        }
         _panning = false; _draggingPlayhead = false; _boxSelecting = false; _dragKey = null; _dragChannel = null; _dragTangent = TangentSide.None; _dragOrigins.Clear(); e.Pointer.Capture(null); InvalidateVisual();
+        if (completedPlayheadDrag)
+            PlayheadDragCompleted?.Invoke();
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
@@ -390,7 +401,18 @@ public sealed class CurveEditorControl : Control
             var selected = VisibleKeys().Where(key => key.Selected).ToHashSet();
             if (selected.Count == 0) return;
             BeginHistoryEdit();
-            foreach (var c in Channels ?? []) foreach (var k in c.Keys.Where(selected.Contains).ToList()) c.Keys.Remove(k);
+            var affectedChannels = new List<CampathCurveChannel>();
+            foreach (var channel in Channels ?? [])
+            {
+                var removedKeys = channel.Keys.Where(selected.Contains).ToList();
+                if (removedKeys.Count == 0)
+                    continue;
+                foreach (var key in removedKeys)
+                    channel.Keys.Remove(key);
+                affectedChannels.Add(channel);
+            }
+            foreach (var channel in affectedChannels)
+                CampathPathConversion.AutoTangents(channel);
             EndHistoryEdit();
             InvalidateVisual(); SelectionChanged?.Invoke(); e.Handled = true;
         }
@@ -457,6 +479,47 @@ public sealed class CurveEditorControl : Control
         InvalidateVisual();
     }
 
+    private void OpenKeyContextMenu()
+    {
+        _keyContextMenu?.Close();
+
+        var reset = new MenuItem
+        {
+            Header = "Reset Tangents to Auto",
+            IsEnabled = SelectedKeys().Any(key => key.TangentMode != CurveTangentMode.Auto)
+        };
+        reset.Click += (_, _) => ResetSelectedTangentsToAuto();
+
+        var menu = new ContextMenu { ItemsSource = new Control[] { reset } };
+        menu.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_keyContextMenu, menu))
+                _keyContextMenu = null;
+        };
+        _keyContextMenu = menu;
+        menu.Open(this);
+    }
+
+    private void ResetSelectedTangentsToAuto()
+    {
+        var affected = (Channels ?? [])
+            .Select(channel => (channel, keys: channel.Keys.Where(key => key.Selected).ToList()))
+            .Where(item => item.keys.Any(key => key.TangentMode != CurveTangentMode.Auto))
+            .ToList();
+        if (affected.Count == 0) return;
+
+        BeginHistoryEdit();
+        foreach (var (channel, keys) in affected)
+        {
+            foreach (var key in keys)
+                key.TangentMode = CurveTangentMode.Auto;
+            CampathPathConversion.AutoTangents(channel);
+        }
+        EndHistoryEdit();
+        SelectionChanged?.Invoke();
+        InvalidateVisual();
+    }
+
     private void BeginHistoryEdit()
     {
         if (_historyEditActive) return;
@@ -496,8 +559,24 @@ public sealed class CurveEditorControl : Control
     private static void SetTangentWeight(CampathCurveKey key, TangentSide side, double weight, bool linked)
     {
         if (side == TangentSide.In) key.InWeight = weight; else key.OutWeight = weight;
-        if (linked) { key.InWeight = weight; key.OutWeight = weight; }
+        if (linked)
+        {
+            key.InWeight = weight;
+            key.OutWeight = weight;
+            key.TangentMode = CurveTangentMode.Smooth;
+        }
+        else
+        {
+            key.TangentMode = CurveTangentMode.Broken;
+        }
     }
+
+    private static double ClampChannelValue(string channelId, double value) => channelId switch
+    {
+        "dof.maxBlur" => Math.Clamp(value, 0.0, 11.0),
+        "dof.radiusScale" => Math.Clamp(value, 0.25, 5.0),
+        _ => value
+    };
 
     private static Rect RectFromPoints(Point a, Point b) => new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
 
@@ -564,6 +643,20 @@ public sealed class CurveEditorControl : Control
     private static void ZoomRange(ref double min, ref double max, double anchor, double factor) { min = anchor + (min - anchor) * factor; max = anchor + (max - anchor) * factor; if (max - min < 1e-6) max = min + 1e-6; }
     private static double NiceStep(double raw) { var p = Math.Pow(10, Math.Floor(Math.Log10(Math.Max(raw, 1e-9)))); var f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
     private static void DrawText(DrawingContext c, string s, Point p, IBrush b, double size) => c.DrawText(new FormattedText(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), size, b), p);
+    private static void DrawTangentModeLabel(DrawingContext context, CampathCurveKey key, Point center, bool selected)
+    {
+        var text = new FormattedText(
+            key.TangentMode == CurveTangentMode.Auto ? "A" : "M",
+            CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,
+            new Typeface("Segoe UI", FontStyle.Normal, FontWeight.Bold),
+            9,
+            new SolidColorBrush(Color.Parse(selected ? "#1A1D22" : "#111318")));
+        context.DrawText(text, new Point(center.X - text.Width / 2, center.Y - text.Height / 2));
+    }
+
+    private IEnumerable<CampathCurveKey> SelectedKeys() =>
+        (Channels ?? []).SelectMany(channel => channel.Keys).Where(key => key.Selected);
 
     private void OnChannelsChanged(AvaloniaPropertyChangedEventArgs e)
     {

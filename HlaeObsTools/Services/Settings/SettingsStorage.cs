@@ -98,7 +98,6 @@ public class AppSettingsData
     public bool ViewportShowFps { get; set; }
     public bool ViewportCampathMode { get; set; }
     public bool ViewportCampathOverlayEnabled { get; set; } = true;
-    public bool ViewportCampathDofEnabled { get; set; } = true;
     public bool ViewportCampathGizmoEnabled { get; set; } = true;
     public bool ViewportCampathSyncEnabled { get; set; }
     public bool CampathGizmoLocalSpace { get; set; } = true;

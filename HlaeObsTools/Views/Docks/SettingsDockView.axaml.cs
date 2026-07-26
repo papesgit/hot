@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using System.Linq;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.ViewModels.Docks;
@@ -38,6 +39,13 @@ public partial class SettingsDockView : UserControl
             return;
 
         var editor = vm.CampathEditor;
+        // Switching the selected camera replaces both ItemsSource and SelectedItem.
+        // Those programmatic SelectionChanged events must not be interpreted as a
+        // request to convert the newly selected camera.
+        if (vm.IsSynchronizingCampathEditor
+            || !editor.EditorModeOptions.Any(candidate => ReferenceEquals(candidate, option)))
+            return;
+
         if (option.Mode == editor.EditorMode)
             return;
 

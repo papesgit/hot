@@ -16,13 +16,9 @@ public partial class CurveEditorDockView : UserControl
         InitializeComponent();
         AddHandler(KeyDownEvent, OnUndoRedoKeyDown, RoutingStrategies.Tunnel, true);
         CurveCanvas.SelectionChanged += UpdateWeightedButton;
-        CurveCanvas.FreecamPreviewRequested += OnFreecamPreviewRequested;
-        CurveCanvas.FreecamPreviewEnded += OnFreecamPreviewEnded;
-        CurveCanvas.CampathPreviewRequested += OnCampathPreviewRequested;
-        CurveCanvas.CampathPreviewEnded += OnCampathPreviewEnded;
-        CurveCanvas.PlayheadDragEnded += OnPlayheadDragEnded;
         CurveCanvas.HistoryEditStarted += OnHistoryEditStarted;
         CurveCanvas.HistoryEditCompleted += OnHistoryEditCompleted;
+        CurveCanvas.PlayheadDragCompleted += OnPlayheadDragCompleted;
         UpdateWeightedButton();
     }
 
@@ -32,13 +28,13 @@ public partial class CurveEditorDockView : UserControl
             return;
         if (e.Key == Key.Z)
         {
-            if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) vm.CampathEditor.Redo();
-            else vm.CampathEditor.Undo();
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) vm.Redo();
+            else vm.Undo();
             e.Handled = true;
         }
         else if (e.Key == Key.Y)
         {
-            vm.CampathEditor.Redo();
+            vm.Redo();
             e.Handled = true;
         }
     }
@@ -133,31 +129,6 @@ public partial class CurveEditorDockView : UserControl
         }
     }
 
-    private void OnFreecamPreviewRequested(double time)
-    {
-        if (DataContext is CurveEditorDockViewModel vm) vm.ApplyFreecamPreviewAtTime(time);
-    }
-
-    private void OnFreecamPreviewEnded()
-    {
-        if (DataContext is CurveEditorDockViewModel vm) vm.EndFreecamPreview();
-    }
-
-    private void OnCampathPreviewRequested()
-    {
-        if (DataContext is CurveEditorDockViewModel vm) vm.BeginCampathPreviewOverride();
-    }
-
-    private void OnCampathPreviewEnded()
-    {
-        if (DataContext is CurveEditorDockViewModel vm) vm.EndCampathPreviewOverride();
-    }
-
-    private void OnPlayheadDragEnded()
-    {
-        if (DataContext is CurveEditorDockViewModel vm) vm.NotifyPlayheadDragEnded();
-    }
-
     private void OnHistoryEditStarted()
     {
         if (DataContext is CurveEditorDockViewModel vm) vm.CampathEditor.BeginHistoryTransaction();
@@ -166,6 +137,12 @@ public partial class CurveEditorDockView : UserControl
     private void OnHistoryEditCompleted()
     {
         if (DataContext is CurveEditorDockViewModel vm) vm.CampathEditor.CommitHistoryTransaction();
+    }
+
+    private void OnPlayheadDragCompleted()
+    {
+        if (DataContext is CurveEditorDockViewModel vm)
+            vm.CommitPlayheadScrub();
     }
 
 }

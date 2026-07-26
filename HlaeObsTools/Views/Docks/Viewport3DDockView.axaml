@@ -1,15 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
-             xmlns:views="using:HlaeObsTools.Views.Viewport"
              x:Class="HlaeObsTools.Views.Docks.Viewport3DDockView"
              x:DataType="vm:Viewport3DDockViewModel">
     <Border Background="#151515" Padding="4">
-        <Grid RowDefinitions="*,Auto">
-            <ContentControl x:Name="ViewportHost" Grid.Row="0" />
-            <views:CampathSequencerView Grid.Row="1"
-                                        DataContext="{Binding}"
-                                        IsVisible="{Binding Viewport3DSettings.ViewportCampathMode}"/>
-        </Grid>
+        <ContentControl x:Name="ViewportHost" />
     </Border>
 </UserControl>

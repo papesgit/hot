@@ -30,7 +30,6 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _showFps;
     private bool _viewportCampathMode;
     private bool _viewportCampathOverlayEnabled = true;
-    private bool _viewportCampathDofEnabled = true;
     private bool _viewportCampathGizmoEnabled = true;
     private bool _campathGizmoLocalSpace = true;
     private bool _viewportCampathSyncEnabled;
@@ -232,15 +231,6 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _viewportCampathOverlayEnabled;
         set => SetProperty(ref _viewportCampathOverlayEnabled, value);
-    }
-
-    /// <summary>
-    /// Apply campath depth-of-field settings in the viewport independently of camera preview.
-    /// </summary>
-    public bool ViewportCampathDofEnabled
-    {
-        get => _viewportCampathDofEnabled;
-        set => SetProperty(ref _viewportCampathDofEnabled, value);
     }
 
     /// <summary>

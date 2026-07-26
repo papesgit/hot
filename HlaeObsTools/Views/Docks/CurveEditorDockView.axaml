@@ -46,6 +46,28 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding UngroupedChannels}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="campath:CampathCurveChannel">
+                                <Grid ColumnDefinitions="Auto,12,*,Auto" Margin="17,5,5,1">
+                                    <Border Background="Transparent" Cursor="Hand"
+                                            PointerPressed="OnChannelVisibilityPressed">
+                                        <CheckBox IsChecked="{Binding IsVisible}"
+                                                  IsHitTestVisible="False"/>
+                                    </Border>
+                                    <Border Grid.Column="1" Width="8" Height="8" CornerRadius="4"
+                                            Background="{Binding Color}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Name}" Foreground="#D8D9DC"
+                                               VerticalAlignment="Center" FontWeight="SemiBold"
+                                               Cursor="Hand" PointerPressed="OnChannelPressed"/>
+                                    <Border Grid.Column="3" Width="9" Height="9" CornerRadius="5"
+                                            Background="#D94B4B" Cursor="Hand"
+                                            PointerPressed="OnAddChannelKeyPressed"
+                                            ToolTip.Tip="Add key at playhead: left-click captures the live value; right-click samples the curve."/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                     <ItemsControl ItemsSource="{Binding ChannelGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:CurveChannelGroupViewModel">
@@ -87,7 +109,7 @@
             <controls:CurveEditorControl x:Name="CurveCanvas"
                                          Grid.Column="1"
                                          Channels="{Binding Channels}"
-                                         PlayheadTime="{Binding CampathEditor.PlayheadTime, Mode=TwoWay}"
+                                         PlayheadTime="{Binding SequencePlayheadTime, Mode=TwoWay}"
                                          ViewMode="{Binding ViewMode}"
                                          SnapEnabled="{Binding SnapEnabled}"
                                          SnapInterval="{Binding SnapInterval}"

@@ -77,6 +77,8 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly FreecamSettings _freecamSettings;
         private readonly Viewport3DSettings _viewport3DSettings;
         private readonly CampathEditorViewModel _campathEditor;
+        private CampathSequenceViewModel? _campathSequence;
+        private bool _isSynchronizingCampathEditor;
         private readonly SettingsStorage _settingsStorage;
         private readonly AppSettingsData _storedSettings;
         private readonly HlaeWebSocketClient? _ws;
@@ -242,11 +244,17 @@ namespace HlaeObsTools.ViewModels.Docks
                 if (string.IsNullOrWhiteSpace(path))
                     return;
 
-                var data = CampathFileIo.Load(path);
-                if (data == null)
+                if (_campathSequence != null)
+                {
+                    var sequenceData = CampathFileIo.LoadSequence(path);
+                    if (sequenceData != null)
+                        _campathSequence.LoadFromData(sequenceData);
                     return;
+                }
 
-                _campathEditor.LoadFromData(data);
+                var data = CampathFileIo.Load(path);
+                if (data != null)
+                    _campathEditor.LoadFromData(data);
             });
             _saveViewportCampathCommand = new AsyncRelay(async () =>
             {
@@ -254,7 +262,10 @@ namespace HlaeObsTools.ViewModels.Docks
                 if (string.IsNullOrWhiteSpace(path))
                     return;
 
-                CampathFileIo.Save(path, _campathEditor);
+                if (_campathSequence != null)
+                    CampathFileIo.Save(path, _campathSequence);
+                else
+                    CampathFileIo.Save(path, _campathEditor);
             });
             _getCurrentTimeOffsetCommand = new AsyncRelay(GetCurrentTimeOffsetAsync);
             _resetFreecamSettingsCommand = new Relay(ResetFreecamSettings);
@@ -367,7 +378,31 @@ namespace HlaeObsTools.ViewModels.Docks
         public VmixReplaySettings VmixReplaySettings => _vmixReplaySettings;
         public ReplayDirectorSettings ReplayDirectorSettings => _replayDirectorSettings;
         public ObservableCollection<string> ReplayDirectorRoleOptions => HlaeObsTools.ViewModels.ReplayDirectorSettings.RoleOptions;
-        public CampathEditorViewModel CampathEditor => _campathEditor;
+        public CampathEditorViewModel CampathEditor =>
+            _campathSequence?.SelectedCamera?.Editor ?? _campathEditor;
+        public bool IsSynchronizingCampathEditor => _isSynchronizingCampathEditor;
+
+        public void SetCampathSequence(CampathSequenceViewModel sequence)
+        {
+            if (_campathSequence == sequence)
+                return;
+            if (_campathSequence != null)
+                _campathSequence.PropertyChanged -= OnCampathSequenceChanged;
+            _campathSequence = sequence;
+            _campathSequence.PropertyChanged += OnCampathSequenceChanged;
+            OnPropertyChanged(nameof(CampathEditor));
+        }
+
+        private void OnCampathSequenceChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))
+            {
+                _isSynchronizingCampathEditor = true;
+                OnPropertyChanged(nameof(CampathEditor));
+                Dispatcher.UIThread.Post(() => _isSynchronizingCampathEditor = false,
+                    DispatcherPriority.Background);
+            }
+        }
         public AttachPresetAnimationDockViewModel AttachPresetAnimationEditor { get; }
         public ObservableCollection<HotkeyBindingViewModel> HotkeyBindings { get; } = new();
         public ObservableCollection<HotkeyBindingViewModel> CommandHotkeyBindings { get; } = new();
@@ -1764,7 +1799,6 @@ namespace HlaeObsTools.ViewModels.Docks
                 ViewportShowFps = _viewport3DSettings.ShowFps,
                 ViewportCampathMode = _viewport3DSettings.ViewportCampathMode,
                 ViewportCampathOverlayEnabled = _viewport3DSettings.ViewportCampathOverlayEnabled,
-                ViewportCampathDofEnabled = _viewport3DSettings.ViewportCampathDofEnabled,
                 ViewportCampathGizmoEnabled = _viewport3DSettings.ViewportCampathGizmoEnabled,
                 ViewportCampathSyncEnabled = _viewport3DSettings.ViewportCampathSyncEnabled,
                 CampathGizmoLocalSpace = _viewport3DSettings.CampathGizmoLocalSpace,

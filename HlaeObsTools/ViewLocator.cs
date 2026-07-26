@@ -22,6 +22,7 @@ public sealed class ViewLocator : IDataTemplate
         [typeof(ReplayDockViewModel)] = () => new ReplayDockView(),
         [typeof(Viewport3DDockViewModel)] = () => new Viewport3DDockView(),
         [typeof(CurveEditorDockViewModel)] = () => new CurveEditorDockView(),
+        [typeof(CampathSequencerDockViewModel)] = () => new CampathSequencerDockView(),
         [typeof(AttachPresetAnimationDockViewModel)] = () => new AttachPresetAnimationDockView()
     };
 

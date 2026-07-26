@@ -32,10 +32,9 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private bool _awaitFreecamRelease;
     private readonly DelegateCommand _addKeyframeFromViewportCommand;
     private readonly DelegateCommand _removeSelectedKeyframeCommand;
-    private bool _freecamPreviewActive;
-    private bool _campathPreviewOverrideActive;
     private bool _gizmoDragActive;
     private CurveEditorDockViewModel? _curveEditor;
+    private CampathSequenceViewModel? _sequence;
     private readonly string _campathSyncDirectory;
     private readonly DispatcherTimer _campathSyncTimer;
     private bool _campathSyncPending;
@@ -49,6 +48,9 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     public event Action<IReadOnlyList<ViewportPin>>? PinsUpdated;
     public event Action<IReadOnlyList<ViewportPlayerStatus>>? PlayerStatusesUpdated;
+    public event Action<CampathSample?>? SequencerPreviewChanged;
+    public bool IsSequencerPiloting => _sequence?.IsPiloting == true;
+    public bool IsSequencerPlaying => _sequence?.IsPlaying == true;
 
     public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, CampathEditorViewModel? campathEditor = null, HlaeWebSocketClient? webSocketClient = null, VideoDisplayDockViewModel? videoDisplay = null, GsiServer? gsiServer = null, Cs2LiveLinkReceiver? liveLinkReceiver = null)
     {
@@ -101,6 +103,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     public Cs2LiveLinkReceiver? LiveLinkReceiver => _liveLinkReceiver;
     public CampathEditorViewModel CampathEditor { get; }
     public Func<ViewportFreecamState?>? CampathStateProvider { get; set; }
+    public bool HasSequencerPossession => _sequence?.Possession.Kind != SequencerPossessionKind.None;
 
     public ICommand AddKeyframeFromViewportCommand => _addKeyframeFromViewportCommand;
 
@@ -235,6 +238,13 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         _settings.PropertyChanged -= OnViewportSettingsChanged;
         CampathEditor.PropertyChanged -= OnCampathEditorChanged;
         CampathEditor.Keyframes.CollectionChanged -= OnCampathKeyframesChanged;
+        if (_sequence != null)
+        {
+            _sequence.PreviewChanged -= OnSequencePreviewChanged;
+            _sequence.CameraKeyRequested -= OnSequenceCameraKeyRequested;
+            _sequence.PropertyChanged -= OnSequencePropertyChanged;
+            _sequence.PlayheadScrubCompleted -= OnPlayheadScrubCompleted;
+        }
         foreach (var keyframe in CampathEditor.Keyframes)
         {
             keyframe.PropertyChanged -= OnCampathKeyframePropertyChanged;
@@ -315,23 +325,31 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         });
     }
 
-    private void AddKeyframeFromViewport()
+    private void AddKeyframeFromViewport(CampathEditorViewModel? requestedEditor = null,
+        IReadOnlyList<string>? requestedChannelIds = null)
     {
         var state = CampathStateProvider?.Invoke();
         if (state == null)
             return;
 
-        CampathEditor.BeginHistoryTransaction();
+        var targetEditor = requestedEditor ?? _sequence?.GetDirectlyPossessedCamera()?.Editor ?? CampathEditor;
+        targetEditor.BeginHistoryTransaction();
         try
         {
-            if (CampathEditor.IsCurveMode && _curveEditor != null)
+            if (targetEditor.IsCurveMode && _curveEditor != null
+                && ReferenceEquals(targetEditor, _curveEditor.CampathEditor))
             {
-                _curveEditor.AddKeys(_curveEditor.Document.Channels, useEvaluatedValue: false);
+                IEnumerable<CampathCurveChannel> channels = requestedChannelIds == null
+                    ? _curveEditor.Document.Channels
+                    : _curveEditor.Document.Channels
+                        .Where(channel => requestedChannelIds.Contains(channel.Id))
+                        .ToList();
+                _curveEditor.AddKeys(channels, useEvaluatedValue: false);
             }
             else
             {
-                CampathEditor.AddKeyframe(
-                    CampathEditor.PlayheadTime,
+                targetEditor.AddKeyframe(
+                    targetEditor.PlayheadTime,
                     state.Value.RawPosition,
                     state.Value.RawOrientation,
                     state.Value.RawFov);
@@ -339,67 +357,76 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         }
         finally
         {
-            CampathEditor.CommitHistoryTransaction();
+            targetEditor.CommitHistoryTransaction();
+            _sequence?.EndPilotingAndEvaluate();
         }
     }
 
     public void SetCurveEditor(CurveEditorDockViewModel curveEditor) => _curveEditor = curveEditor;
 
-    public void ApplyFreecamPreviewAtTime(double time)
+    public void SetSequence(CampathSequenceViewModel sequence)
     {
-        if (CampathStateProvider == null)
-            return;
-
-        var sample = CampathEditor.CanEvaluate()
-            ? CampathEditor.Evaluate(time)
-            : (CampathSample?)null;
-        if (sample == null)
-            return;
-
-        _freecamPreviewActive = true;
-        PreviewFreecamPose?.Invoke(sample.Value.Position, sample.Value.Rotation, (float)sample.Value.Fov);
+        if (_sequence != null)
+        {
+            _sequence.PreviewChanged -= OnSequencePreviewChanged;
+            _sequence.CameraKeyRequested -= OnSequenceCameraKeyRequested;
+            _sequence.PropertyChanged -= OnSequencePropertyChanged;
+            _sequence.PlayheadScrubCompleted -= OnPlayheadScrubCompleted;
+        }
+        _sequence = sequence;
+        _sequence.UseExternalPlaybackTicks = true;
+        _sequence.PreviewChanged += OnSequencePreviewChanged;
+        _sequence.CameraKeyRequested += OnSequenceCameraKeyRequested;
+        _sequence.PropertyChanged += OnSequencePropertyChanged;
+        _sequence.PlayheadScrubCompleted += OnPlayheadScrubCompleted;
     }
 
-    public void EndFreecamPreview()
+    private void OnSequencePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (!_freecamPreviewActive)
-            return;
-
-        _freecamPreviewActive = false;
-        PreviewFreecamEnded?.Invoke();
+        if (e.PropertyName == nameof(CampathSequenceViewModel.IsPlaying) && IsHlaeSyncActive())
+        {
+            _ = _webSocketClient?.SendExecCommandAsync(
+                _sequence?.IsPlaying == true ? "demo_resume" : "demo_pause");
+        }
+        if (e.PropertyName is nameof(CampathSequenceViewModel.ContentEnd)
+            or nameof(CampathSequenceViewModel.PlaybackEnd))
+            RequestCampathSync();
     }
 
-    public bool IsFreecamPreviewActive => _freecamPreviewActive;
-
-    public event Action<Vector3, Quaternion, float>? PreviewFreecamPose;
-    public event Action? PreviewFreecamEnded;
-    public event Action? CampathPreviewOverrideChanged;
-
-    public bool IsCampathPreviewOverrideActive => _campathPreviewOverrideActive;
-
-    public void BeginCampathPreviewOverride()
+    private void OnPlayheadScrubCompleted()
     {
-        if (_campathPreviewOverrideActive)
+        if (!IsHlaeSyncActive() || _sequence == null)
             return;
-
-        _campathPreviewOverrideActive = true;
-        CampathPreviewOverrideChanged?.Invoke();
+        var offset = _sequence.Cameras.FirstOrDefault()?.Editor.TimeOffset ?? 0.0;
+        var seconds = _sequence.PlayheadTime + offset;
+        var command = $"mirv_skip time toGame {seconds.ToString("G", CultureInfo.InvariantCulture)}";
+        _ = _webSocketClient?.SendExecCommandAsync(command);
     }
 
-    public void EndCampathPreviewOverride()
-    {
-        if (!_campathPreviewOverrideActive)
-            return;
+    private void OnSequencePreviewChanged(CampathSample? sample) => SequencerPreviewChanged?.Invoke(sample);
 
-        _campathPreviewOverrideActive = false;
-        CampathPreviewOverrideChanged?.Invoke();
+    private void OnSequenceCameraKeyRequested(Guid cameraId, IReadOnlyList<string>? channelIds)
+    {
+        var editor = _sequence?.Cameras.FirstOrDefault(camera => camera.Id == cameraId)?.Editor;
+        if (editor != null)
+            AddKeyframeFromViewport(editor, channelIds);
+    }
+
+    public void BeginSequencerPiloting() => _sequence?.BeginPiloting();
+    public CampathDofSettings GetSequencerDepthOfField() =>
+        _sequence?.EvaluatePossession(_sequence.PlayheadTime)?.Dof ?? CampathDofSettings.Default;
+    public void AdvanceSequencerPlayback(double delta) => _sequence?.AdvancePlayback(delta);
+    public void SetSequencerExternalPlaybackTicks(bool value)
+    {
+        if (_sequence != null)
+            _sequence.UseExternalPlaybackTicks = value;
     }
 
     private void OnViewportSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathMode) && !_settings.ViewportCampathMode)
         {
-            CampathEditor.StopPlayback();
+            _sequence?.StopPlayback();
         }
         else if (e.PropertyName == nameof(Viewport3DSettings.ViewportCampathSyncEnabled))
         {
@@ -422,12 +449,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         if (!IsHlaeSyncActive())
             return;
 
-        if (e.PropertyName == nameof(CampathEditorViewModel.IsPlaying))
-        {
-            var cmd = CampathEditor.IsPlaying ? "demo_resume" : "demo_pause";
-            _ = _webSocketClient?.SendExecCommandAsync(cmd);
-        }
-        else if (e.PropertyName == nameof(CampathEditorViewModel.IsTimeDragActive))
+        if (e.PropertyName == nameof(CampathEditorViewModel.IsTimeDragActive))
         {
             if (!CampathEditor.IsTimeDragActive)
                 RequestCampathSync();
@@ -486,16 +508,6 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         }
     }
 
-    public void NotifyPlayheadDragEnded()
-    {
-        if (!IsHlaeSyncActive())
-            return;
-
-        var seconds = CampathEditor.PlayheadTime + CampathEditor.TimeOffset;
-        var cmd = $"mirv_skip time toGame {seconds.ToString("G", CultureInfo.InvariantCulture)}";
-        _ = _webSocketClient?.SendExecCommandAsync(cmd);
-    }
-
     public void NotifyGizmoDragActive()
     {
         _gizmoDragActive = true;
@@ -531,7 +543,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         }
 
         _campathSyncPending = true;
-        if (CampathEditor.IsHistoryTransactionActive)
+        if (CampathEditor.IsHistoryTransactionActive
+            || _sequence?.Cameras.Any(camera => camera.Editor.IsHistoryTransactionActive) == true)
         {
             // During a drag, keep feedback live but cap publication at twenty loads per
             // second. Repeated key notifications do not postpone the scheduled update.
@@ -569,7 +582,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
         _campathSyncPending = false;
         _lastCampathSyncUtc = DateTime.UtcNow;
-        if (!CampathEditor.CanEvaluate())
+        if (_sequence?.CanEvaluateForExport() == false
+            || _sequence == null && !CampathEditor.CanEvaluate())
         {
             _ = _webSocketClient?.SendExecCommandAsync("mirv_campath clear");
             return;
@@ -577,7 +591,10 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
         Directory.CreateDirectory(_campathSyncDirectory);
         var syncPath = GetSyncPath();
-        CampathFileIo.Save(syncPath, CampathEditor);
+        if (_sequence != null)
+            CampathFileIo.Save(syncPath, _sequence);
+        else
+            CampathFileIo.Save(syncPath, CampathEditor);
         CleanupSyncFiles();
         var cmd = $"mirv_campath load \"{syncPath}\"";
         _ = _webSocketClient?.SendExecCommandAsync(cmd);

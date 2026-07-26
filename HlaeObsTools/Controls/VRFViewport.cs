@@ -1349,6 +1349,11 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
     private void BeginFreecam(Point start)
     {
+        // Entering manual freecam control ends any evaluated-pose roll lock.
+        // SetFreecamPose reapplies the override after calling this method, while a
+        // real user-initiated BeginFreecam call leaves Q/E free to control roll.
+        _freecamPreviewRollOverrideActive = false;
+
         if (!_freecamActive)
         {
             _orbitTargetBeforeFreecam = _target;

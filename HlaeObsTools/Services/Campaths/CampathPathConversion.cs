@@ -31,7 +31,7 @@ public static class CampathPathConversion
         ("position.x", "X", "Position", "#F05A5A"), ("position.y", "Y", "Position", "#62C96B"),
         ("position.z", "Z", "Position", "#5C8FF0"), ("rotation.pitch", "Pitch", "Rotation", "#E68A45"),
         ("rotation.yaw", "Yaw", "Rotation", "#AF6BE8"), ("rotation.roll", "Roll", "Rotation", "#47C6CE"),
-        ("fov", "FOV", "Camera", "#F1D65C"), ("dof.enabled", "Enabled", "DOF", "#F18AB8"),
+        ("fov", "FOV", "", "#F1D65C"),
         ("dof.nearBlurry", "Near blurry", "DOF", "#EF6AA8"),
         ("dof.nearCrisp", "Near crisp", "DOF", "#D981B5"), ("dof.farCrisp", "Far crisp", "DOF", "#67B7E8"),
         ("dof.farBlurry", "Far blurry", "DOF", "#438BC7"), ("dof.maxBlur", "Max blur", "DOF", "#C9A65C"),
@@ -40,18 +40,31 @@ public static class CampathPathConversion
 
     public static void EnsureStandardChannels(CampathCurveDocument document)
     {
+        var legacyDofEnabled = document.Find("dof.enabled");
+        if (legacyDofEnabled != null)
+        {
+            if (legacyDofEnabled.Keys.Count > 0)
+                document.DofEnabled = legacyDofEnabled.Keys[0].Value >= 0.5;
+            document.Channels.Remove(legacyDofEnabled);
+        }
+
         foreach (var definition in StandardChannels)
         {
-            if (document.Find(definition.Id) == null)
+            var existing = document.Find(definition.Id);
+            if (existing != null)
             {
-                document.Channels.Add(new CampathCurveChannel
-                {
-                    Id = definition.Id,
-                    Name = definition.Name,
-                    Group = definition.Group,
-                    Color = definition.Color
-                });
+                if (definition.Id == "fov")
+                    existing.Group = definition.Group;
+                continue;
             }
+
+            document.Channels.Add(new CampathCurveChannel
+            {
+                Id = definition.Id,
+                Name = definition.Name,
+                Group = definition.Group,
+                Color = definition.Color
+            });
         }
     }
 
@@ -61,6 +74,8 @@ public static class CampathPathConversion
         EnsureStandardChannels(document);
         foreach (var channel in document.Channels)
             channel.Keys.Clear();
+        document.DofEnabled = keyframes.OrderBy(key => key.Time)
+            .FirstOrDefault()?.Dof.Enabled ?? false;
 
         var curveInterpolation = interpolation == ClassicCampathInterpolation.Linear
             ? CurveInterpolationMode.Linear
@@ -76,7 +91,6 @@ public static class CampathPathConversion
             Add(document, "rotation.yaw", key.Time, yaw, curveInterpolation);
             Add(document, "rotation.roll", key.Time, roll, curveInterpolation);
             Add(document, "fov", key.Time, key.Fov, curveInterpolation);
-            Add(document, "dof.enabled", key.Time, key.Dof.Enabled ? 1 : 0, CurveInterpolationMode.Constant);
             Add(document, "dof.nearBlurry", key.Time, key.Dof.NearBlurry, curveInterpolation);
             Add(document, "dof.nearCrisp", key.Time, key.Dof.NearCrisp, curveInterpolation);
             Add(document, "dof.farCrisp", key.Time, key.Dof.FarCrisp, curveInterpolation);
@@ -118,24 +132,27 @@ public static class CampathPathConversion
     public static void AutoTangents(CampathCurveDocument document)
     {
         foreach (var channel in document.Channels)
-        {
-            for (var i = 0; i < channel.Keys.Count; i++)
-            {
-                var key = channel.Keys[i];
-                if (key.TangentMode != CurveTangentMode.Auto)
-                    continue;
+            AutoTangents(channel);
+    }
 
-                var previous = channel.Keys[Math.Max(0, i - 1)];
-                var next = channel.Keys[Math.Min(channel.Keys.Count - 1, i + 1)];
-                var slope = Math.Abs(next.Time - previous.Time) < 1e-9
-                    ? 0
-                    : (next.Value - previous.Value) / (next.Time - previous.Time);
-                key.InTangent = key.OutTangent = slope;
-                key.InWeight = i > 0 ? Math.Max(0.001, (key.Time - channel.Keys[i - 1].Time) / 3.0) : 0.25;
-                key.OutWeight = i + 1 < channel.Keys.Count
-                    ? Math.Max(0.001, (channel.Keys[i + 1].Time - key.Time) / 3.0)
-                    : 0.25;
-            }
+    public static void AutoTangents(CampathCurveChannel channel)
+    {
+        for (var i = 0; i < channel.Keys.Count; i++)
+        {
+            var key = channel.Keys[i];
+            if (key.TangentMode != CurveTangentMode.Auto)
+                continue;
+
+            var previous = channel.Keys[Math.Max(0, i - 1)];
+            var next = channel.Keys[Math.Min(channel.Keys.Count - 1, i + 1)];
+            var slope = Math.Abs(next.Time - previous.Time) < 1e-9
+                ? 0
+                : (next.Value - previous.Value) / (next.Time - previous.Time);
+            key.InTangent = key.OutTangent = slope;
+            key.InWeight = i > 0 ? Math.Max(0.001, (key.Time - channel.Keys[i - 1].Time) / 3.0) : 0.25;
+            key.OutWeight = i + 1 < channel.Keys.Count
+                ? Math.Max(0.001, (channel.Keys[i + 1].Time - key.Time) / 3.0)
+                : 0.25;
         }
     }
 
