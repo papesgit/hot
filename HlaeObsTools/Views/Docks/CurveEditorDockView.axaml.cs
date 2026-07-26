@@ -1,8 +1,11 @@
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Interactivity;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using HlaeObsTools.Controls;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.ViewModels.Docks;
@@ -11,15 +14,47 @@ namespace HlaeObsTools.Views.Docks;
 
 public partial class CurveEditorDockView : UserControl
 {
+    private TopLevel? _playbackKeyHost;
+
     public CurveEditorDockView()
     {
         InitializeComponent();
         AddHandler(KeyDownEvent, OnUndoRedoKeyDown, RoutingStrategies.Tunnel, true);
+        AttachedToVisualTree += OnAttachedToVisualTree;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
         CurveCanvas.SelectionChanged += UpdateWeightedButton;
         CurveCanvas.HistoryEditStarted += OnHistoryEditStarted;
         CurveCanvas.HistoryEditCompleted += OnHistoryEditCompleted;
         CurveCanvas.PlayheadDragCompleted += OnPlayheadDragCompleted;
         UpdateWeightedButton();
+    }
+
+    private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        DetachPlaybackKeyHost();
+        _playbackKeyHost = TopLevel.GetTopLevel(this);
+        _playbackKeyHost?.AddHandler(
+            KeyUpEvent, OnPlaybackKeyUp, RoutingStrategies.Tunnel, true);
+    }
+
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e) =>
+        DetachPlaybackKeyHost();
+
+    private void DetachPlaybackKeyHost()
+    {
+        _playbackKeyHost?.RemoveHandler(KeyUpEvent, OnPlaybackKeyUp);
+        _playbackKeyHost = null;
+    }
+
+    private void OnPlaybackKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Space || !IsPointerOver
+            || e.Source is TextBox or TextPresenter
+            || DataContext is not CurveEditorDockViewModel vm)
+            return;
+
+        vm.TogglePlayback();
+        e.Handled = true;
     }
 
     private void OnUndoRedoKeyDown(object? sender, KeyEventArgs e)

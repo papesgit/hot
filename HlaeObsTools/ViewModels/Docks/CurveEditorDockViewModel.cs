@@ -89,6 +89,7 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
     }
 
     public void CommitPlayheadScrub() => _sequence?.CommitPlayheadScrub();
+    public void TogglePlayback() => _sequence?.TogglePlayback();
 
     private void OnSequencePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
