@@ -8,6 +8,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using HlaeObsTools.Services.Campaths;
 
 namespace HlaeObsTools.Controls;
@@ -64,6 +65,7 @@ public sealed class CurveEditorControl : Control
     private readonly List<(Rect rect, CampathCurveChannel channel, CampathCurveKey key)> _keyHits = new();
     private readonly List<(Rect rect, CampathCurveChannel channel, CampathCurveKey key, TangentSide side)> _tangentHits = new();
     private ContextMenu? _keyContextMenu;
+    private bool _subscriptionsAttached;
 
     private enum TangentSide { None, In, Out }
     private enum DragAxis { Free, Horizontal, Vertical }
@@ -79,6 +81,24 @@ public sealed class CurveEditorControl : Control
     }
 
     public CurveEditorControl() { Focusable = true; ClipToBounds = true; }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (_subscriptionsAttached)
+            return;
+        _subscriptionsAttached = true;
+        if (Channels != null)
+            Hook(Channels, true);
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (_subscriptionsAttached && Channels != null)
+            Hook(Channels, false);
+        _subscriptionsAttached = false;
+        base.OnDetachedFromVisualTree(e);
+    }
     public IReadOnlyList<CampathCurveChannel>? Channels { get => GetValue(ChannelsProperty); set => SetValue(ChannelsProperty, value); }
     public double PlayheadTime { get => GetValue(PlayheadTimeProperty); set => SetValue(PlayheadTimeProperty, value); }
     public CurveEditorViewMode ViewMode { get => GetValue(ViewModeProperty); set => SetValue(ViewModeProperty, value); }
@@ -875,8 +895,8 @@ public sealed class CurveEditorControl : Control
 
     private void OnChannelsChanged(AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.OldValue is IEnumerable<CampathCurveChannel> old) Hook(old, false);
-        if (e.NewValue is IEnumerable<CampathCurveChannel> current) Hook(current, true);
+        if (_subscriptionsAttached && e.OldValue is IEnumerable<CampathCurveChannel> old) Hook(old, false);
+        if (_subscriptionsAttached && e.NewValue is IEnumerable<CampathCurveChannel> current) Hook(current, true);
         FitAll();
     }
     private void Hook(IEnumerable<CampathCurveChannel> channels, bool add)

@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using HlaeObsTools.Services.Input;
 using HlaeObsTools.ViewModels.Docks;
 using HlaeObsTools.Views;
@@ -17,11 +18,16 @@ namespace HlaeObsTools.Views.Docks;
 
 public partial class CampathsDockView : UserControl
 {
+    private CampathsDockViewModel? _viewModel;
+    private bool _viewModelAttached;
+
     public CampathsDockView()
     {
         InitializeComponent();
         InitializePopulateFlyout();
         DataContextChanged += OnDataContextChanged;
+        AttachedToVisualTree += (_, _) => AttachViewModel();
+        DetachedFromVisualTree += (_, _) => DetachViewModel();
     }
 
     private static readonly DataFormat<string> CampathDragFormat =
@@ -45,17 +51,56 @@ public partial class CampathsDockView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        if (DataContext is CampathsDockViewModel vm)
-        {
-            vm.PromptAsync = PromptAsync;
-            vm.ConfirmAsync = ConfirmAsync;
-            vm.SelectPopulateSourceAsync = SelectPopulateSourceAsync;
-            vm.BrowseFileAsync = BrowseFileAsync;
-            vm.BrowseFilesAsync = BrowseFilesAsync;
-            vm.BrowseFolderAsync = BrowseFolderAsync;
-            vm.ViewGroupRequested += OnViewGroupRequested;
-        }
+        DetachViewModel();
+        _viewModel = DataContext as CampathsDockViewModel;
+        if (this.IsAttachedToVisualTree())
+            AttachViewModel();
     }
+
+    private void AttachViewModel()
+    {
+        if (_viewModel == null || _viewModelAttached)
+            return;
+
+        _viewModel.PromptAsync = PromptAsync;
+        _viewModel.ConfirmAsync = ConfirmAsync;
+        _viewModel.SelectPopulateSourceAsync = SelectPopulateSourceAsync;
+        _viewModel.BrowseFileAsync = BrowseFileAsync;
+        _viewModel.BrowseFilesAsync = BrowseFilesAsync;
+        _viewModel.BrowseFolderAsync = BrowseFolderAsync;
+        _viewModel.ViewGroupRequested += OnViewGroupRequested;
+        _viewModelAttached = true;
+    }
+
+    private void DetachViewModel()
+    {
+        if (_viewModel == null || !_viewModelAttached)
+            return;
+
+        _viewModel.ViewGroupRequested -= OnViewGroupRequested;
+        if (_viewModel.PromptAsync == PromptAsync)
+            _viewModel.PromptAsync = NoPromptAsync;
+        if (_viewModel.ConfirmAsync == ConfirmAsync)
+            _viewModel.ConfirmAsync = NoConfirmAsync;
+        if (_viewModel.SelectPopulateSourceAsync == SelectPopulateSourceAsync)
+            _viewModel.SelectPopulateSourceAsync = NoPopulateSourceAsync;
+        if (_viewModel.BrowseFileAsync == BrowseFileAsync)
+            _viewModel.BrowseFileAsync = NoBrowseFileAsync;
+        if (_viewModel.BrowseFilesAsync == BrowseFilesAsync)
+            _viewModel.BrowseFilesAsync = NoBrowseFilesAsync;
+        if (_viewModel.BrowseFolderAsync == BrowseFolderAsync)
+            _viewModel.BrowseFolderAsync = NoBrowseFileAsync;
+        _viewModelAttached = false;
+    }
+
+    private static Task<string?> NoPromptAsync(string _, string __, int ___, int ____) =>
+        Task.FromResult<string?>(null);
+    private static Task<bool> NoConfirmAsync(string _, string __) => Task.FromResult(false);
+    private static Task<CampathPopulateSource?> NoPopulateSourceAsync() =>
+        Task.FromResult<CampathPopulateSource?>(null);
+    private static Task<string?> NoBrowseFileAsync(string _) => Task.FromResult<string?>(null);
+    private static Task<IEnumerable<string>?> NoBrowseFilesAsync(string _) =>
+        Task.FromResult<IEnumerable<string>?>(null);
 
     private Task<string?> PromptAsync(string title, string message, int width, int height)
     {

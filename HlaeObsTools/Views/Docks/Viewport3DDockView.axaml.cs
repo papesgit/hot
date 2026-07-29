@@ -9,6 +9,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using HlaeObsTools.Controls;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.Services.Viewport3D;
@@ -26,6 +27,7 @@ public partial class Viewport3DDockView : UserControl
     private CampathEditorViewModel? _campathEditor;
     private bool _frameTickSubscribed;
     private bool _gizmoSubscribed;
+    private bool _viewModelEventsAttached;
 
     public Viewport3DDockView()
     {
@@ -35,44 +37,67 @@ public partial class Viewport3DDockView : UserControl
         AddHandler(PointerMovedEvent, OnViewportPointerMoved, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         AddHandler(PointerWheelChangedEvent, OnViewportPointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         AddHandler(KeyDownEvent, OnViewportKeyDown, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
+        AttachedToVisualTree += (_, _) =>
+        {
+            AttachViewModelEvents();
+            EnsureViewport();
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            ClearViewport();
+            DetachViewModelEvents();
+        };
     }
 
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
 
-        if (_viewModel != null)
-        {
-            _viewModel.PinsUpdated -= OnPinsUpdated;
-            _viewModel.PlayerStatusesUpdated -= OnPlayerStatusesUpdated;
-            _viewModel.Viewport3DSettings.PropertyChanged -= OnViewportSettingsChanged;
-            _viewModel.SelectedCampathEditorChanged -= OnSelectedCampathEditorChanged;
-            _viewModel.SequencerGizmoChanged -= OnSequencerGizmoChanged;
-            if (_campathEditor != null)
-            {
-                DetachCampathEditor(_campathEditor);
-            }
-            _campathEditor = null;
-            _viewModel.CampathStateProvider = null;
-            _viewModel.SequencerPreviewChanged -= OnSequencerPreviewChanged;
-            UnsubscribeFrameTick();
-            UnsubscribeGizmo();
-        }
+        ClearViewport();
+        DetachViewModelEvents();
 
         _viewModel = DataContext as Viewport3DDockViewModel;
-        if (_viewModel != null)
-        {
-            _viewModel.PinsUpdated += OnPinsUpdated;
-            _viewModel.PlayerStatusesUpdated += OnPlayerStatusesUpdated;
-            _viewModel.Viewport3DSettings.PropertyChanged += OnViewportSettingsChanged;
-            _viewModel.SelectedCampathEditorChanged += OnSelectedCampathEditorChanged;
-            _viewModel.SequencerGizmoChanged += OnSequencerGizmoChanged;
-            SetCampathEditor(_viewModel.SelectedCampathEditor);
-            _viewModel.CampathStateProvider = CaptureFreecamState;
-            _viewModel.SequencerPreviewChanged += OnSequencerPreviewChanged;
-        }
 
-        EnsureViewport();
+        if (this.IsAttachedToVisualTree())
+        {
+            AttachViewModelEvents();
+            EnsureViewport();
+        }
+    }
+
+    private void AttachViewModelEvents()
+    {
+        if (_viewModel == null || _viewModelEventsAttached)
+            return;
+
+        _viewModel.PinsUpdated += OnPinsUpdated;
+        _viewModel.PlayerStatusesUpdated += OnPlayerStatusesUpdated;
+        _viewModel.Viewport3DSettings.PropertyChanged += OnViewportSettingsChanged;
+        _viewModel.SelectedCampathEditorChanged += OnSelectedCampathEditorChanged;
+        _viewModel.SequencerGizmoChanged += OnSequencerGizmoChanged;
+        SetCampathEditor(_viewModel.SelectedCampathEditor);
+        _viewModel.CampathStateProvider = CaptureFreecamState;
+        _viewModel.SequencerPreviewChanged += OnSequencerPreviewChanged;
+        _viewModelEventsAttached = true;
+    }
+
+    private void DetachViewModelEvents()
+    {
+        if (_viewModel == null || !_viewModelEventsAttached)
+            return;
+
+        _viewModel.PinsUpdated -= OnPinsUpdated;
+        _viewModel.PlayerStatusesUpdated -= OnPlayerStatusesUpdated;
+        _viewModel.Viewport3DSettings.PropertyChanged -= OnViewportSettingsChanged;
+        _viewModel.SelectedCampathEditorChanged -= OnSelectedCampathEditorChanged;
+        _viewModel.SequencerGizmoChanged -= OnSequencerGizmoChanged;
+        if (_campathEditor != null)
+            DetachCampathEditor(_campathEditor);
+        _campathEditor = null;
+        if (_viewModel.CampathStateProvider == CaptureFreecamState)
+            _viewModel.CampathStateProvider = null;
+        _viewModel.SequencerPreviewChanged -= OnSequencerPreviewChanged;
+        _viewModelEventsAttached = false;
     }
 
     private void OnSelectedCampathEditorChanged(CampathEditorViewModel? editor)
@@ -137,6 +162,10 @@ public partial class Viewport3DDockView : UserControl
             previousHost.Content = null;
         }
 
+        // Keep bindings stable while the persistent native viewport is moved
+        // between layout presenters. Inherited DataContext briefly disappears
+        // during reparenting, which otherwise clears MapPath and reloads the map.
+        viewport.DataContext = _viewModel;
         _viewportControl = viewport;
         _viewport = (IViewport3DControl)_viewportControl;
         viewport.MapLoadStateChanged -= OnMapLoadStateChanged;
@@ -643,17 +672,20 @@ public partial class Viewport3DDockView : UserControl
 
         _viewport.FrameTick += OnViewportFrameTick;
         _frameTickSubscribed = true;
-        _viewModel.SetSequencerExternalPlaybackTicks(true);
+        _viewModel.AcquireSequencerPlaybackTicks(this, ReleaseFrameTickSubscription);
     }
 
     private void UnsubscribeFrameTick()
     {
-        if (_viewport == null || !_frameTickSubscribed || _viewModel == null)
-            return;
+        ReleaseFrameTickSubscription();
+        _viewModel?.ReleaseSequencerPlaybackTicks(this);
+    }
 
-        _viewport.FrameTick -= OnViewportFrameTick;
+    private void ReleaseFrameTickSubscription()
+    {
+        if (_viewport != null && _frameTickSubscribed)
+            _viewport.FrameTick -= OnViewportFrameTick;
         _frameTickSubscribed = false;
-        _viewModel.SetSequencerExternalPlaybackTicks(false);
     }
 
     private void OnViewportFrameTick(double delta)
@@ -662,7 +694,7 @@ public partial class Viewport3DDockView : UserControl
             return;
 
         if (_viewModel.IsSequencerPlaying)
-            Dispatcher.UIThread.Post(() => _viewModel.AdvanceSequencerPlayback(delta));
+            Dispatcher.UIThread.Post(() => _viewModel.AdvanceSequencerPlayback(this, delta));
     }
 
     private void OnViewportKeyDown(object? sender, KeyEventArgs e)

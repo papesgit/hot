@@ -32,6 +32,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private bool _gizmoDragActive;
     private CurveEditorDockViewModel? _curveEditor;
     private CampathSequenceViewModel? _sequence;
+    private object? _sequencerPlaybackTickOwner;
+    private Action? _releaseSequencerPlaybackTickSubscription;
     private readonly string _campathSyncDirectory;
     private readonly DispatcherTimer _campathSyncTimer;
     private bool _campathSyncPending;
@@ -219,6 +221,9 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     public void Dispose()
     {
+        _releaseSequencerPlaybackTickSubscription?.Invoke();
+        _releaseSequencerPlaybackTickSubscription = null;
+        _sequencerPlaybackTickOwner = null;
         PersistentViewport?.Shutdown();
         PersistentViewport = null;
         _campathSyncTimer.Stop();
@@ -364,7 +369,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             _sequence.PlayheadScrubCompleted -= OnPlayheadScrubCompleted;
         }
         _sequence = sequence;
-        _sequence.UseExternalPlaybackTicks = true;
+        _sequence.UseExternalPlaybackTicks = _sequencerPlaybackTickOwner != null;
         _sequence.PreviewChanged += OnSequencePreviewChanged;
         _sequence.CameraKeyRequested += OnSequenceCameraKeyRequested;
         _sequence.PropertyChanged += OnSequencePropertyChanged;
@@ -411,11 +416,33 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     public void BeginSequencerPiloting() => _sequence?.BeginPiloting();
     public CampathDofSettings GetSequencerDepthOfField() =>
         _sequence?.EvaluatePossession(_sequence.PlayheadTime)?.Dof ?? CampathDofSettings.Default;
-    public void AdvanceSequencerPlayback(double delta) => _sequence?.AdvancePlayback(delta);
-    public void SetSequencerExternalPlaybackTicks(bool value)
+    public void AcquireSequencerPlaybackTicks(object owner, Action releasePreviousSubscription)
     {
+        if (ReferenceEquals(_sequencerPlaybackTickOwner, owner))
+            return;
+
+        _releaseSequencerPlaybackTickSubscription?.Invoke();
+        _sequencerPlaybackTickOwner = owner;
+        _releaseSequencerPlaybackTickSubscription = releasePreviousSubscription;
         if (_sequence != null)
-            _sequence.UseExternalPlaybackTicks = value;
+            _sequence.UseExternalPlaybackTicks = true;
+    }
+
+    public void ReleaseSequencerPlaybackTicks(object owner)
+    {
+        if (!ReferenceEquals(_sequencerPlaybackTickOwner, owner))
+            return;
+
+        _sequencerPlaybackTickOwner = null;
+        _releaseSequencerPlaybackTickSubscription = null;
+        if (_sequence != null)
+            _sequence.UseExternalPlaybackTicks = false;
+    }
+
+    public void AdvanceSequencerPlayback(object owner, double delta)
+    {
+        if (ReferenceEquals(_sequencerPlaybackTickOwner, owner))
+            _sequence?.AdvancePlayback(delta);
     }
 
     private void OnViewportSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

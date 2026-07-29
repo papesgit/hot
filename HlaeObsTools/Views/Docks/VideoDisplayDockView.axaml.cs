@@ -42,6 +42,7 @@ public partial class VideoDisplayDockView : UserControl
     private Window? _parentWindow;
     private DispatcherTimer? _analogSprintTimer;
     private VideoDisplayDockViewModel? _overlayEventsViewModel;
+    private bool _viewModelEventsAttached;
 
     public VideoDisplayDockView()
     {
@@ -66,8 +67,8 @@ public partial class VideoDisplayDockView : UserControl
         }
         this.AttachedToVisualTree += (_, _) =>
         {
-            if (_currentViewModel != null)
-                SubscribeToOverlayEvents(_currentViewModel);
+            AttachViewModelEvents();
+            _analogSprintTimer?.Start();
             UpdateSharedTextureAspectSize();
             UpdateRtpSwapchainAspectSize();
             UpdateSpeedScaleRegionSize();
@@ -78,8 +79,9 @@ public partial class VideoDisplayDockView : UserControl
         };
         this.DetachedFromVisualTree += (_, _) =>
         {
-            if (_currentViewModel != null)
-                UnsubscribeFromOverlayEvents(_currentViewModel);
+            DetachViewModelEvents();
+            _analogSprintTimer?.Stop();
+            _animationCts?.Cancel();
             if (_isRightButtonDown || _lockedCursorCenter.HasValue)
                 EndFreecam();
             if (_currentViewModel != null)
@@ -134,7 +136,6 @@ public partial class VideoDisplayDockView : UserControl
                 UpdateSpeedScale();
             }
         };
-        _analogSprintTimer.Start();
     }
 
     public static void ResetStartupReadySignal()
@@ -870,44 +871,18 @@ public partial class VideoDisplayDockView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        // Unsubscribe from previous ViewModel
-        if (_currentVmNotifier != null)
-        {
-            _currentVmNotifier.PropertyChanged -= OnViewModelPropertyChanged;
-            _currentVmNotifier = null;
-        }
-
-        if (_currentHudOverlayNotifier != null)
-        {
-            _currentHudOverlayNotifier.PropertyChanged -= OnHudOverlayPropertyChanged;
-            _currentHudOverlayNotifier = null;
-            _currentHudOverlay = null;
-        }
+        DetachViewModelEvents();
 
         if (_currentViewModel != null)
         {
             RtpSwapchainHost?.StopGStreamer();
-            UnsubscribeFromOverlayEvents(_currentViewModel);
-            _currentViewModel.RtpStreamRequested -= OnRtpStreamRequested;
-            _currentViewModel.RtpStreamStopRequested -= OnRtpStreamStopRequested;
-            _currentViewModel = null;
         }
 
-        // Subscribe to new ViewModel
-        if (DataContext is INotifyPropertyChanged notifier)
+        _currentViewModel = DataContext as VideoDisplayDockViewModel;
+        if (_currentViewModel is { } vm)
         {
-            _currentVmNotifier = notifier;
-            notifier.PropertyChanged += OnViewModelPropertyChanged;
-        }
-
-        if (DataContext is VideoDisplayDockViewModel vm)
-        {
-            _currentViewModel = vm;
             if (this.IsAttachedToVisualTree())
-                SubscribeToOverlayEvents(vm);
-            vm.RtpStreamRequested += OnRtpStreamRequested;
-            vm.RtpStreamStopRequested += OnRtpStreamStopRequested;
-            SubscribeToHudOverlay(vm.HudOverlay);
+                AttachViewModelEvents();
             UpdateRtpSwapchainBounds();
 
             if (vm.UseD3DHost)
@@ -925,6 +900,44 @@ public partial class VideoDisplayDockView : UserControl
         }
 
         UpdateSpeedScale();
+    }
+
+    private void AttachViewModelEvents()
+    {
+        if (_currentViewModel == null || _viewModelEventsAttached)
+            return;
+
+        _currentVmNotifier = _currentViewModel;
+        _currentVmNotifier.PropertyChanged += OnViewModelPropertyChanged;
+        _currentViewModel.RtpStreamRequested += OnRtpStreamRequested;
+        _currentViewModel.RtpStreamStopRequested += OnRtpStreamStopRequested;
+        SubscribeToOverlayEvents(_currentViewModel);
+        SubscribeToHudOverlay(_currentViewModel.HudOverlay);
+        _viewModelEventsAttached = true;
+    }
+
+    private void DetachViewModelEvents()
+    {
+        if (!_viewModelEventsAttached)
+            return;
+
+        if (_currentVmNotifier != null)
+            _currentVmNotifier.PropertyChanged -= OnViewModelPropertyChanged;
+        _currentVmNotifier = null;
+
+        if (_currentHudOverlayNotifier != null)
+            _currentHudOverlayNotifier.PropertyChanged -= OnHudOverlayPropertyChanged;
+        _currentHudOverlayNotifier = null;
+        _currentHudOverlay = null;
+
+        if (_currentViewModel != null)
+        {
+            UnsubscribeFromOverlayEvents(_currentViewModel);
+            _currentViewModel.RtpStreamRequested -= OnRtpStreamRequested;
+            _currentViewModel.RtpStreamStopRequested -= OnRtpStreamStopRequested;
+        }
+
+        _viewModelEventsAttached = false;
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

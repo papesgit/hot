@@ -11,6 +11,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.Views;
@@ -67,13 +68,10 @@ public sealed class CampathSequenceTimelineControl : Panel
     private Point _keyDragStart;
     private Point _lastPointer;
     private TrackSelectionAnchor? _trackSelectionAnchor;
+    private bool _subscriptionsAttached;
 
-    public CampathSequenceTimelineControl()
+    static CampathSequenceTimelineControl()
     {
-        ClipToBounds = true;
-        Focusable = true;
-        _drawingSurface = new TimelineDrawingSurface(this) { IsHitTestVisible = true };
-        Children.Add(_drawingSurface);
         AffectsRender<CampathSequenceTimelineControl>(SequenceProperty, ViewStartProperty, SecondsPerPixelProperty);
         SequenceProperty.Changed.AddClassHandler<CampathSequenceTimelineControl>((control, args) =>
             control.OnSequenceChanged(args));
@@ -81,11 +79,42 @@ public sealed class CampathSequenceTimelineControl : Panel
             control._drawingSurface.InvalidateVisual());
         SecondsPerPixelProperty.Changed.AddClassHandler<CampathSequenceTimelineControl>((control, _) =>
             control._drawingSurface.InvalidateVisual());
+    }
+
+    public CampathSequenceTimelineControl()
+    {
+        ClipToBounds = true;
+        Focusable = true;
+        _drawingSurface = new TimelineDrawingSurface(this) { IsHitTestVisible = true };
+        Children.Add(_drawingSurface);
         PointerPressed += OnPointerPressed;
         PointerMoved += OnPointerMoved;
         PointerReleased += OnPointerReleased;
         PointerWheelChanged += OnPointerWheelChanged;
         KeyDown += OnKeyDown;
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (_subscriptionsAttached)
+            return;
+        _subscriptionsAttached = true;
+        if (Sequence != null)
+        {
+            Sequence.PropertyChanged -= OnSequencePropertyChanged;
+            Sequence.PropertyChanged += OnSequencePropertyChanged;
+        }
+        RefreshCurveSelectionSubscriptions();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        if (_subscriptionsAttached && Sequence != null)
+            Sequence.PropertyChanged -= OnSequencePropertyChanged;
+        _subscriptionsAttached = false;
+        RefreshCurveSelectionSubscriptions();
+        base.OnDetachedFromVisualTree(e);
     }
 
     public CampathSequenceViewModel? Sequence
@@ -1954,10 +1983,11 @@ public sealed class CampathSequenceTimelineControl : Panel
     {
         if (e.OldValue is CampathSequenceViewModel oldSequence)
         {
-            oldSequence.PropertyChanged -= OnSequencePropertyChanged;
+            if (_subscriptionsAttached)
+                oldSequence.PropertyChanged -= OnSequencePropertyChanged;
             oldSequence.SetGizmoSelection(null);
         }
-        if (e.NewValue is CampathSequenceViewModel newSequence)
+        if (_subscriptionsAttached && e.NewValue is CampathSequenceViewModel newSequence)
         {
             newSequence.PropertyChanged += OnSequencePropertyChanged;
             foreach (var camera in newSequence.Cameras)
@@ -1997,7 +2027,7 @@ public sealed class CampathSequenceTimelineControl : Panel
 
     private void RefreshCurveSelectionSubscriptions()
     {
-        var desiredCollections = Sequence?.Cameras
+        var desiredCollections = (_subscriptionsAttached ? Sequence : null)?.Cameras
             .SelectMany(camera => camera.Editor.CurveDocument.Channels)
             .Select(channel => channel.Keys)
             .ToHashSet() ?? [];

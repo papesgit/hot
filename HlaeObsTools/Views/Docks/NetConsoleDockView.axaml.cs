@@ -15,26 +15,42 @@ public partial class NetConsoleDockView : UserControl
 {
     private INotifyCollectionChanged? _logLinesChanged;
     private bool _scrollPending;
+    private bool _logLinesAttached;
 
     public NetConsoleDockView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        AttachedToVisualTree += (_, _) => AttachLogLines();
+        DetachedFromVisualTree += (_, _) => DetachLogLines();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        if (_logLinesChanged != null)
-        {
-            _logLinesChanged.CollectionChanged -= OnLogLinesChanged;
-            _logLinesChanged = null;
-        }
+        DetachLogLines();
+        _logLinesChanged = null;
 
         if (DataContext is NetConsoleDockViewModel vm)
-        {
             _logLinesChanged = vm.LogLines;
-            _logLinesChanged.CollectionChanged += OnLogLinesChanged;
-        }
+
+        if (this.IsAttachedToVisualTree())
+            AttachLogLines();
+    }
+
+    private void AttachLogLines()
+    {
+        if (_logLinesChanged == null || _logLinesAttached)
+            return;
+        _logLinesChanged.CollectionChanged += OnLogLinesChanged;
+        _logLinesAttached = true;
+    }
+
+    private void DetachLogLines()
+    {
+        if (_logLinesChanged == null || !_logLinesAttached)
+            return;
+        _logLinesChanged.CollectionChanged -= OnLogLinesChanged;
+        _logLinesAttached = false;
     }
 
     private void OnInputKeyDown(object? sender, KeyEventArgs e)

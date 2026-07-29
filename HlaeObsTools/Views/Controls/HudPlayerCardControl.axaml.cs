@@ -26,12 +26,15 @@ public partial class HudPlayerCardControl : UserControl
     private Point _radialCenterRoot;
     private bool _pointerCaptured;
     private HudPlayerCardViewModel? _currentViewModel;
+    private bool _viewModelAttached;
     private Popup? RadialPopupControl => this.FindControl<Popup>("RadialPopup");
 
     public HudPlayerCardControl()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        AttachedToVisualTree += (_, _) => AttachViewModel();
+        DetachedFromVisualTree += (_, _) => DetachViewModel();
         SetupRadialPresenter();
         PointerPressed += OnCardPointerPressed;
         PointerMoved += OnCardPointerMoved;
@@ -41,19 +44,30 @@ public partial class HudPlayerCardControl : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        if (_currentViewModel != null)
-        {
-            _currentViewModel.RadialActions.CollectionChanged -= OnRadialActionsChanged;
-            _currentViewModel.PropertyChanged -= OnViewModelPropertyChanged;
-        }
+        DetachViewModel();
 
         _currentViewModel = DataContext as HudPlayerCardViewModel;
-        if (_currentViewModel != null)
-        {
-            _currentViewModel.RadialActions.CollectionChanged += OnRadialActionsChanged;
-            _currentViewModel.PropertyChanged += OnViewModelPropertyChanged;
-            BuildRadialLayout(_currentViewModel);
-        }
+        if (this.IsAttachedToVisualTree())
+            AttachViewModel();
+    }
+
+    private void AttachViewModel()
+    {
+        if (_currentViewModel == null || _viewModelAttached)
+            return;
+        _currentViewModel.RadialActions.CollectionChanged += OnRadialActionsChanged;
+        _currentViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        _viewModelAttached = true;
+        BuildRadialLayout(_currentViewModel);
+    }
+
+    private void DetachViewModel()
+    {
+        if (_currentViewModel == null || !_viewModelAttached)
+            return;
+        _currentViewModel.RadialActions.CollectionChanged -= OnRadialActionsChanged;
+        _currentViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        _viewModelAttached = false;
     }
 
     private void OnRadialActionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
