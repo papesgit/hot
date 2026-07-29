@@ -70,7 +70,7 @@ public class CampathsDockViewModel : Tool
     public CampathsDockViewModel()
     {
         Title = "Campaths";
-        CanClose = false;
+        CanClose = true;
         CanFloat = true;
         CanPin = true;
 

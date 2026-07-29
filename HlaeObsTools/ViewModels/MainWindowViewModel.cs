@@ -1,6 +1,8 @@
 using Dock.Model.Core;
 using Avalonia.Input;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using HlaeObsTools.Services.Hotkeys;
@@ -11,8 +13,25 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private MainDockFactory? _factory;
     private IDock? _layout;
+
+    public IReadOnlyList<DockMenuItemViewModel> DockMenuItems { get; } =
+    [
+        new("BottomRight", "Campaths"),
+        new("CampathSequencer", "Campath Sequencer"),
+        new("TopRight", "Console"),
+        new("CurveEditor", "Curve Editor"),
+        new("Graphics", "Graphics"),
+        new("TopLeft", "Radar"),
+        new("Replay", "Replay"),
+        new("BottomLeft", "Settings"),
+        new("BottomCenter", "3D Viewport"),
+        new("TopCenter", "Video Stream")
+    ];
+
+    public string Version => GetVersion();
+
     public string Title =>
-        $"HLAE Observer Tools v{GetVersion()}";
+        $"HLAE Observer Tools v{Version}";
 
     private static string GetVersion()
     {
@@ -63,6 +82,19 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
 
     public HotkeyService? HotkeyService => _factory?.HotkeyService;
 
+    public void ToggleDock(string id)
+    {
+        _factory?.ToggleDock(id);
+    }
+
+    internal void SetDockVisibility(string? id, bool isOpen)
+    {
+        var menuItem = DockMenuItems.FirstOrDefault(item =>
+            string.Equals(item.Id, id, StringComparison.Ordinal));
+        if (menuItem != null)
+            menuItem.IsOpen = isOpen;
+    }
+
     public void SetKeyboardSuppression(bool suppress)
     {
         _factory?.SetKeyboardSuppression(suppress);
@@ -81,5 +113,25 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         _factory?.Dispose();
+    }
+}
+
+public sealed class DockMenuItemViewModel : ViewModelBase
+{
+    private bool _isOpen = true;
+
+    public DockMenuItemViewModel(string id, string title)
+    {
+        Id = id;
+        Title = title;
+    }
+
+    public string Id { get; }
+    public string Title { get; }
+
+    public bool IsOpen
+    {
+        get => _isOpen;
+        internal set => SetProperty(ref _isOpen, value);
     }
 }

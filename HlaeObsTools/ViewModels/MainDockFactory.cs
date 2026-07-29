@@ -59,6 +59,7 @@ public class MainDockFactory : Factory, IDisposable
     private readonly GraphicsService _graphicsService;
     private readonly GraphicsProducerClient _producerClient;
     private readonly Cs2LiveLinkReceiver _liveLinkReceiver;
+    private readonly Dictionary<string, IDockable> _viewDockables = new(StringComparer.Ordinal);
     private VideoDisplayDockViewModel? _videoDisplayVm;
     private GraphicsDockViewModel? _graphicsDockVm;
     private ReplayDockViewModel? _replayDockVm;
@@ -68,6 +69,17 @@ public class MainDockFactory : Factory, IDisposable
     public MainDockFactory(object context)
     {
         _context = context;
+        HideToolsOnClose = true;
+        DockableHidden += (_, e) =>
+        {
+            if (e.Dockable != null)
+                NotifyDockVisibility(e.Dockable, false);
+        };
+        DockableRestored += (_, e) =>
+        {
+            if (e.Dockable != null)
+                NotifyDockVisibility(e.Dockable, true);
+        };
 
         _settingsStorage = new SettingsStorage();
         _storedSettings = _settingsStorage.Load();
@@ -488,6 +500,17 @@ public class MainDockFactory : Factory, IDisposable
             VisibleDockables = CreateList<IDockable>(bottomRight)
         };
 
+        RegisterViewDockable(topLeft);
+        RegisterViewDockable(_videoDisplayVm);
+        RegisterViewDockable(topRight);
+        RegisterViewDockable(_graphicsDockVm);
+        RegisterViewDockable(_replayDockVm);
+        RegisterViewDockable(bottomLeft);
+        RegisterViewDockable(bottomCenter);
+        RegisterViewDockable(sequencer);
+        RegisterViewDockable(curveEditor);
+        RegisterViewDockable(bottomRight);
+
         // Create top row (3 docks with splitters between them)
         var topRow = new ProportionalDock
         {
@@ -550,6 +573,42 @@ public class MainDockFactory : Factory, IDisposable
         rootDock.VisibleDockables = CreateList<IDockable>(mainLayout);
 
         return rootDock;
+    }
+
+    private void RegisterViewDockable(IDockable dockable)
+    {
+        if (string.IsNullOrWhiteSpace(dockable.Id))
+            return;
+
+        dockable.CanClose = true;
+        _viewDockables[dockable.Id] = dockable;
+        NotifyDockVisibility(dockable, true);
+    }
+
+    public void ToggleDock(string id)
+    {
+        if (!_viewDockables.TryGetValue(id, out var dockable))
+            return;
+
+        var isHidden = dockable.Owner is not IDock owner
+            || owner.VisibleDockables?.Contains(dockable) != true;
+
+        if (isHidden)
+        {
+            var restored = RestoreDockable(id);
+            if (restored != null)
+                SetActiveDockable(restored);
+        }
+        else
+        {
+            HideDockable(dockable);
+        }
+    }
+
+    private void NotifyDockVisibility(IDockable dockable, bool isOpen)
+    {
+        if (_context is MainWindowViewModel viewModel)
+            viewModel.SetDockVisibility(dockable.Id, isOpen);
     }
 
     public override void InitLayout(IDockable layout)

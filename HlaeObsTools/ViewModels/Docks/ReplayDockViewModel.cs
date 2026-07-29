@@ -22,7 +22,7 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
     public ReplayDockViewModel(VmixReplayCoordinator coordinator)
     {
         _coordinator = coordinator;
-        CanClose = false;
+        CanClose = true;
         CanFloat = true;
         CanPin = true;
 

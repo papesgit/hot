@@ -156,7 +156,7 @@ public class VideoDisplayDockViewModel : Tool, IDisposable
 
     public VideoDisplayDockViewModel()
     {
-        CanClose = false;
+        CanClose = true;
         CanFloat = true;
         CanPin = true;
         _speedTicks = BuildTicks();

@@ -29,7 +29,7 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
         Title = "Curve Editor";
         CanFloat = true;
         CanPin = true;
-        CanClose = false;
+        CanClose = true;
         BindEditor(_editor);
     }
 

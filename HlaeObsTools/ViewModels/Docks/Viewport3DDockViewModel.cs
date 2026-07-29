@@ -78,7 +78,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         Title = "3D Viewport";
         CanFloat = true;
         CanPin = true;
-        CanClose = false;
+        CanClose = true;
         CampathEditor.PropertyChanged += OnCampathEditorChanged;
         CampathEditor.Keyframes.CollectionChanged += OnCampathKeyframesChanged;
         foreach (var keyframe in CampathEditor.Keyframes)

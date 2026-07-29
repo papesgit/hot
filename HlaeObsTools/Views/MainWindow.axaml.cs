@@ -1,8 +1,11 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 #if DEBUG
 using Dock.Avalonia.Diagnostics;
 using Dock.Avalonia.Diagnostics.Controls;
@@ -15,6 +18,7 @@ namespace HlaeObsTools.Views;
 
 public partial class MainWindow : Window
 {
+    private const string DocumentationUrl = "https://github.com/papesgit/hot/wiki";
     private bool _suppressHotkeys;
     private HotkeyService? _hotkeyService;
     private Control? _hotkeyHoveredControl;
@@ -33,6 +37,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel;
+        InitializeDockMenu(viewModel);
         if (DataContext is MainWindowViewModel vm && vm.HotkeyService != null)
         {
             SetHotkeyOverlaySource(vm.HotkeyService);
@@ -50,12 +55,57 @@ public partial class MainWindow : Window
 #endif
     }
 
+    private void InitializeDockMenu(MainWindowViewModel viewModel)
+    {
+        var menuItems = new MenuItem[viewModel.DockMenuItems.Count];
+        for (var index = 0; index < viewModel.DockMenuItems.Count; index++)
+        {
+            var dockItem = viewModel.DockMenuItems[index];
+            var menuItem = new MenuItem
+            {
+                Header = dockItem.Title,
+                ToggleType = MenuItemToggleType.CheckBox,
+                DataContext = dockItem
+            };
+            menuItem.Bind(
+                MenuItem.IsCheckedProperty,
+                new Binding(nameof(DockMenuItemViewModel.IsOpen))
+                {
+                    Mode = BindingMode.OneWay
+                });
+            menuItem.Click += (_, _) => viewModel.ToggleDock(dockItem.Id);
+            menuItems[index] = menuItem;
+        }
+
+        ViewMenuItem.ItemsSource = menuItems;
+    }
+
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (IsInteractiveTitleBarElement(e.Source))
+            return;
+
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             BeginMoveDrag(e);
         }
+    }
+
+    private static bool IsInteractiveTitleBarElement(object? source)
+    {
+        if (source is Menu or MenuItem or Button)
+            return true;
+
+        if (source is not Visual visual)
+            return false;
+
+        foreach (var ancestor in visual.GetVisualAncestors())
+        {
+            if (ancestor is Menu or MenuItem or Button)
+                return true;
+        }
+
+        return false;
     }
 
     private void OnTitleBarDoubleTapped(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -82,6 +132,29 @@ public partial class MainWindow : Window
     private void CloseWindow(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void ExitApplication(object? sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private async void OpenDocumentation(object? sender, RoutedEventArgs e)
+    {
+        if (!ExternalLinkLauncher.TryOpen(DocumentationUrl))
+        {
+            await DialogHelpers.MessageAsync(
+                this,
+                "Unable to open documentation",
+                $"Open this address in your browser:\n{DocumentationUrl}");
+        }
+    }
+
+    private async void ShowAbout(object? sender, RoutedEventArgs e)
+    {
+        var version = (DataContext as MainWindowViewModel)?.Version ?? "unknown";
+        var dialog = new AboutWindow(version);
+        await dialog.ShowDialog(this);
     }
 
     private void OnInputElementGotFocus(object? sender, FocusChangedEventArgs e)

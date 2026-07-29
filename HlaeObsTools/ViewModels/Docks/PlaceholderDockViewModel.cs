@@ -9,7 +9,7 @@ public class PlaceholderDockViewModel : Tool
 {
     public PlaceholderDockViewModel()
     {
-        CanClose = false;
+        CanClose = true;
         CanFloat = true;
         CanPin = true;
     }

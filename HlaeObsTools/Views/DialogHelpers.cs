@@ -7,6 +7,43 @@ namespace HlaeObsTools.Views;
 
 public static class DialogHelpers
 {
+    public static async Task MessageAsync(Control ownerControl, string title, string message)
+    {
+        if (TopLevel.GetTopLevel(ownerControl) is not Window owner)
+            return;
+
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 420,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+
+        var closeButton = new Button
+        {
+            Content = "Close",
+            IsDefault = true,
+            IsCancel = true,
+            Width = 80,
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+        closeButton.Click += (_, _) => dialog.Close();
+
+        var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
+        panel.Children.Add(new TextBlock
+        {
+            Text = message,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap
+        });
+        panel.Children.Add(closeButton);
+        dialog.Content = panel;
+
+        await dialog.ShowDialog(owner);
+    }
+
     public static Task<string?> PromptAsync(Control ownerControl, string title, string label, string placeholder)
     {
         return PromptAsync(ownerControl, title, label, placeholder, 320, 150);

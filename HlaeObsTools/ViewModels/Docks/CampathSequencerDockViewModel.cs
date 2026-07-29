@@ -19,7 +19,7 @@ public sealed class CampathSequencerDockViewModel : Tool, IDisposable
         Title = "Sequencer";
         CanFloat = true;
         CanPin = true;
-        CanClose = false;
+        CanClose = true;
         SelectedCamera = Sequence.Cameras.FirstOrDefault();
         Sequence.PropertyChanged += OnSequenceChanged;
         AddCameraCommand = new DelegateCommand(_ =>

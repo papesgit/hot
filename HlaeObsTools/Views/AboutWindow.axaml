@@ -1,0 +1,76 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:svg="using:Avalonia.Svg.Skia"
+        x:Class="HlaeObsTools.Views.AboutWindow"
+        Title="About HLAE Observer Tools"
+        Icon="/Assets/icons/app.ico"
+        Width="520"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <Border Padding="28"
+            Background="{DynamicResource DockSurfaceWorkbenchBrush}">
+        <StackPanel Spacing="18">
+            <Viewbox Width="210"
+                     Height="90"
+                     Stretch="Uniform"
+                     HorizontalAlignment="Center">
+                <svg:Svg Path="avares://HlaeObsTools/Assets/icons/hot.svg"
+                         Css="path { fill: #ECECEC; }" />
+            </Viewbox>
+
+            <StackPanel Spacing="4"
+                        HorizontalAlignment="Center">
+                <TextBlock Text="HLAE Observer Tools"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource HotForegroundBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock x:Name="VersionText"
+                           Foreground="{DynamicResource HotForegroundMutedBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Copyright &#169; 2026 papesgit"
+                           Foreground="{DynamicResource HotForegroundMutedBrush}"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock Text="A control and monitoring workspace for Counter-Strike 2 observers using an HLAE-injected game instance."
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       Foreground="{DynamicResource HotForegroundBrush}" />
+
+            <Border Padding="14"
+                    Background="{DynamicResource DockSurfacePanelBrush}"
+                    BorderBrush="{DynamicResource DockBorderSubtleBrush}"
+                    BorderThickness="1"
+                    CornerRadius="5">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="License and attribution"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource HotForegroundBrush}" />
+                    <TextBlock Text="This version is source-available software. See the included LICENSE and third-party notices for the applicable terms and attributions."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource HotForegroundMutedBrush}" />
+                    <TextBlock Text="This is an independent project and is not affiliated with Valve Corporation, advancedfx, or the HLAE project."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource HotForegroundMutedBrush}" />
+                </StackPanel>
+            </Border>
+
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  ColumnSpacing="8">
+                <Button Grid.Column="0"
+                        Content="Project on GitHub"
+                        Click="OpenProject" />
+                <Button Grid.Column="2"
+                        Content="Close"
+                        Width="88"
+                        IsDefault="True"
+                        IsCancel="True"
+                        Click="CloseDialog" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

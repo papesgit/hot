@@ -75,7 +75,7 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         _settingsStorage = settingsStorage;
         _settings = settings;
         Title = "Console";
-        CanClose = false;
+        CanClose = true;
         CanFloat = true;
         CanPin = true;
 

@@ -174,7 +174,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _networkHealthTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
 
             Title = "Settings";
-            CanClose = false;
+            CanClose = true;
             CanFloat = true;
             CanPin = true;
 

@@ -894,7 +894,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         _projector = new RadarProjector(configProvider);
 
         Title = "Radar";
-        CanClose = false;
+        CanClose = true;
         CanFloat = true;
         CanPin = true;
 

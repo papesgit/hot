@@ -47,7 +47,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         _graphicsService = graphicsService;
 
         Title = "Graphics";
-        CanClose = false;
+        CanClose = true;
         CanFloat = true;
         CanPin = true;
 
