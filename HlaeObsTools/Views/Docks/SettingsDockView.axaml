@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:rootvm="using:HlaeObsTools.ViewModels"
@@ -18,227 +18,164 @@
             <TabControl>
 
             <TabItem Header="General">
-                <ScrollViewer>
-                    <StackPanel Margin="10" Spacing="8">
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
-                                    Margin="0,8,0,0"
-                                    VerticalAlignment="Center">
-                            <ToggleSwitch IsChecked="{Binding IsDrawHudEnabled, Mode=TwoWay}"
-                                        Content="Hide HUD"
-                                        Foreground="#E6E6E6"
-                                hotkeys:HotkeyTarget.Path="IsDrawHudEnabled"
-                                        Margin="0,0,10,0"/>
-                            <ToggleSwitch IsChecked="{Binding IsOnlyDeathnotesEnabled, Mode=TwoWay}"
-                                        Content="Only Deathnotices"
-                                hotkeys:HotkeyTarget.Path="IsOnlyDeathnotesEnabled"
-                                        Foreground="#E6E6E6"/>
-                            <StackPanel Orientation="Vertical" Spacing="2" Margin="6,0,0,0">
-                                <TextBlock Text="Force Deathnotices"
-                                           Foreground="#E6E6E6"/>
-                                <Button Command="{Binding CycleForceDeathnoticesCommand}"
-                                        Content="{Binding ForceDeathnoticesLabel}"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
-                                    Margin="0,8,0,0"
-                                    VerticalAlignment="Center">
-                            <ToggleSwitch IsChecked="{Binding IsXrayEnabled, Mode=TwoWay}"
-                                        Content="Show Xray"
-                                        Foreground="#E6E6E6"
-                                hotkeys:HotkeyTarget.Path="IsXrayEnabled"
-                                        Margin="0,0,10,0"/>
-                            <ToggleSwitch IsChecked="{Binding UseAltPlayerBinds, Mode=TwoWay}"
-                                        Content="Use alt player binds"
-                                hotkeys:HotkeyTarget.Path="UseAltPlayerBinds"
-                                        Foreground="#E6E6E6"/>
-                        </StackPanel>
-
-                        <ToggleSwitch IsChecked="{Binding DisableFocusInputGate, Mode=TwoWay}"
-                                      Content="Disable Focus Input-Gate"
-                            hotkeys:HotkeyTarget.Path="DisableFocusInputGate"
-                                      Foreground="#E6E6E6"/>
-                        <Button Content="DemoUI"
-                                Command="{Binding ToggleDemouiCommand}"/>
-
-                        <Separator Margin="0,10,0,6"/>
-                        <TextBlock Text="Network Endpoints"
-                                Foreground="#CCCCCC"
-                                FontWeight="SemiBold"/>
-
-                        <Grid ColumnDefinitions="Auto,*,Auto,*"
-                            RowDefinitions="Auto,Auto,Auto,Auto"
-                            ColumnSpacing="8"
-                            RowSpacing="6">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="HLAE/GFXP Host" Foreground="#AAAAAA"/>
-                            <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding WebSocketHost, Mode=TwoWay}" />
-
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="WS Port" Foreground="#AAAAAA"/>
-                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBox Width="90" Text="{Binding WebSocketPort, Mode=TwoWay}" />
-                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding WebSocketHealthBrush}"
-                                        ToolTip.Tip="{Binding WebSocketHealthTooltip}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Grid.Row="1" Grid.Column="2" Text="UDP Port" Foreground="#AAAAAA"/>
-                            <StackPanel Grid.Row="1" Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBox Width="90" Text="{Binding UdpPort, Mode=TwoWay}" />
-                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding UdpHealthBrush}"
-                                        ToolTip.Tip="{Binding UdpHealthTooltip}" VerticalAlignment="Center"/>
-                            </StackPanel>
-
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="RTP Port" Foreground="#AAAAAA"/>
-                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBox Width="90" Text="{Binding RtpPort, Mode=TwoWay}" />
-                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding RtpHealthBrush}"
-                                        ToolTip.Tip="{Binding RtpHealthTooltip}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Grid.Row="2" Grid.Column="2" Text="GSI Port" Foreground="#AAAAAA"/>
-                            <StackPanel Grid.Row="2" Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBox Width="90" Text="{Binding GsiPort, Mode=TwoWay}" />
-                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding GsiHealthBrush}"
-                                        ToolTip.Tip="{Binding GsiHealthTooltip}" VerticalAlignment="Center"/>
-                            </StackPanel>
-
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Gfx Producer Port" Foreground="#AAAAAA"/>
-                            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBox Width="90" Text="{Binding GraphicsProducerPort, Mode=TwoWay}" />
-                                <Border Width="12" Height="12" CornerRadius="6" Background="{Binding GraphicsProducerHealthBrush}"
-                                        ToolTip.Tip="{Binding GraphicsProducerHealthTooltip}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <TextBlock Text="GSI Relay Endpoints"
-                                   Foreground="#AAAAAA"
-                                   Margin="0,8,0,0"/>
-                        <ListBox ItemsSource="{Binding GsiRelayEndpoints}"
-                                 MaxHeight="180">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:GsiRelayEndpointViewModel">
-                                    <Grid ColumnDefinitions="Auto,*,Auto"
-                                          ColumnSpacing="6">
-                                        <Border Grid.Column="0"
-                                                Width="12"
-                                                Height="12"
-                                                CornerRadius="6"
-                                                Background="{Binding HealthBrush}"
-                                                ToolTip.Tip="{Binding HealthTooltip}"
-                                                VerticalAlignment="Center"/>
-                                        <TextBox Grid.Column="1"
-                                                 Text="{Binding Uri, Mode=TwoWay}"
-                                                 PlaceholderText="http://127.0.0.1:1349/api/gsi"/>
-                                        <Button Grid.Column="2"
-                                                Content="Remove"
-                                                Command="{Binding DataContext.RemoveGsiRelayEndpointCommand, ElementName=Root}"
-                                                CommandParameter="{Binding}"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <Button Content="Add relay endpoint"
-                                HorizontalAlignment="Left"
-                                Command="{Binding AddGsiRelayEndpointCommand}"/>
-
-                        <Button Content="Apply / Reconnect"
-                                Command="{Binding ApplyNetworkSettingsCommand}"
-                                Margin="0,6,0,0"/>
-
-                        <Separator Margin="0,10,0,6"/>
-                        <TextBlock Text="vMix"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"/>
-                        <StackPanel Spacing="6" Margin="0,0,0,12">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <TextBlock VerticalAlignment="Center" Text="Host" Foreground="#AAAAAA"/>
-                                <TextBox MaxWidth="120" MinWidth="100" Text="{Binding VmixSettings.Host, Mode=TwoWay}" />
-                                <TextBlock VerticalAlignment="Center" Text="Port" Foreground="#AAAAAA"/>
-                                <TextBox MaxWidth="80" Text="{Binding VmixSettings.Port, Mode=TwoWay}" />
-                            </StackPanel>
-                            <ToggleSwitch IsChecked="{Binding VmixReplaySettings.Enabled, Mode=TwoWay}"
-                                          Content="Enable vMix replay markers"
-                                hotkeys:HotkeyTarget.Path="VmixReplaySettings.Enabled"
-                                          Foreground="#E6E6E6"/>
-                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto"
-                                  RowDefinitions="Auto,Auto,Auto"
-                                  ColumnSpacing="8"
-                                  RowSpacing="6">
-
-                                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Pre-roll (s)" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.PreSeconds, Mode=TwoWay}" />
-                                <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Left" Text="Post-roll (s)" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="1" Grid.Column="3" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.PostSeconds, Mode=TwoWay}" />
-
-                                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Merge window (s)" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding VmixReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" />
-                                <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" Text="Channel / camera" Foreground="#AAAAAA"/>
-                                <StackPanel Grid.Row="2" Grid.Column="3" Orientation="Horizontal" Spacing="6">
-                                    <TextBox MaxWidth="55" Text="{Binding VmixReplaySettings.Channel, Mode=TwoWay}" />
-                                    <TextBox MaxWidth="55" Text="{Binding VmixReplaySettings.Camera, Mode=TwoWay}" />
+                    <ScrollViewer>
+                        <StackPanel Margin="10" Spacing="8">
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" Margin="0,8,0,0" VerticalAlignment="Center">
+                                <ToggleSwitch IsChecked="{Binding IsDrawHudEnabled, Mode=TwoWay}" Content="Hide HUD" Foreground="#E6E6E6" hotkeys:HotkeyTarget.Path="IsDrawHudEnabled" Margin="0,0,10,0" />
+                                <ToggleSwitch IsChecked="{Binding IsOnlyDeathnotesEnabled, Mode=TwoWay}" Content="Only Deathnotices" hotkeys:HotkeyTarget.Path="IsOnlyDeathnotesEnabled" Foreground="#E6E6E6" />
+                                <StackPanel Orientation="Vertical" Spacing="2" Margin="6,0,0,0">
+                                    <TextBlock Text="Force Deathnotices" Foreground="#E6E6E6" />
+                                    <Button Command="{Binding CycleForceDeathnoticesCommand}" Content="{Binding ForceDeathnoticesLabel}" />
                                 </StackPanel>
-                            </Grid>
-                        </StackPanel>
-
-                        <Separator Margin="0,10,0,6"/>
-                        <TextBlock Text="Replay Director"
-                                   Foreground="#CCCCCC"
-                                   FontWeight="SemiBold"/>
-                        <StackPanel Spacing="6" Margin="0,0,0,12">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock VerticalAlignment="Center" Text="Role" Foreground="#AAAAAA"/>
-                                <ComboBox MinWidth="150"
-                                          ItemsSource="{Binding ReplayDirectorRoleOptions}"
-                                          SelectedItem="{Binding ReplayDirectorSettings.Role, Mode=TwoWay}"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock VerticalAlignment="Center" Text="Publisher port" Foreground="#AAAAAA"/>
-                                <TextBox MaxWidth="80" Text="{Binding ReplayDirectorSettings.PublisherPort, Mode=TwoWay}" />
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock VerticalAlignment="Center" Text="Publisher IP" Foreground="#AAAAAA"/>
-                                <TextBox MinWidth="80" Text="{Binding ReplayDirectorSettings.PublisherIp, Mode=TwoWay}" />
-                            </StackPanel>
-                            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto"
-                                  RowDefinitions="Auto,Auto"
-                                  ColumnSpacing="8"
-                                  RowSpacing="6">
-                                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Pre-switch (s)" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding ReplayDirectorSettings.PreSwitchSeconds, Mode=TwoWay}" />
-                                <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Text="Merge window (s)" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding ReplayDirectorSettings.MergeWindowSeconds, Mode=TwoWay}" />
-
-                                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Switch lock (s)" Foreground="#AAAAAA"/>
-                                <TextBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" MaxWidth="80" Text="{Binding ReplayDirectorSettings.SwitchLockSeconds, Mode=TwoWay}" />
-                            </Grid>
-                            <StackPanel Spacing="6">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock VerticalAlignment="Center" Text="Delayed channel / camera" Foreground="#AAAAAA"/>
-                                    <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixChannel, Mode=TwoWay}" />
-                                    <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixCamera, Mode=TwoWay}" />
+                            </WrapPanel>
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" Margin="0,8,0,0" VerticalAlignment="Center">
+                                <ToggleSwitch IsChecked="{Binding IsXrayEnabled, Mode=TwoWay}" Content="Show Xray" Foreground="#E6E6E6" hotkeys:HotkeyTarget.Path="IsXrayEnabled" Margin="0,0,10,0" />
+                                <ToggleSwitch IsChecked="{Binding UseAltPlayerBinds, Mode=TwoWay}" Content="Use alt player binds" hotkeys:HotkeyTarget.Path="UseAltPlayerBinds" Foreground="#E6E6E6" />
+                            </WrapPanel>
+                            <ToggleSwitch IsChecked="{Binding DisableFocusInputGate, Mode=TwoWay}" Content="Disable Focus Input-Gate" hotkeys:HotkeyTarget.Path="DisableFocusInputGate" Foreground="#E6E6E6" />
+                            <Button Content="DemoUI" Command="{Binding ToggleDemouiCommand}" />
+                            <Separator Margin="0,10,0,6" />
+                            <TextBlock Text="Network Endpoints" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                            <TextBlock Text="HLAE/GFXP Host" Foreground="#AAAAAA" />
+                            <TextBox MinWidth="80" MaxWidth="320" HorizontalAlignment="Left" Text="{Binding WebSocketHost, Mode=TwoWay}" />
+                            <TextBlock Text="Ports" Foreground="#AAAAAA" Margin="0,4,0,0" />
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="8">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="WS" Foreground="#AAAAAA" />
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center">
+                                        <TextBox MinWidth="60" MaxWidth="90" Text="{Binding WebSocketPort, Mode=TwoWay}" />
+                                        <Border Width="12" Height="12" CornerRadius="6" Background="{Binding WebSocketHealthBrush}" ToolTip.Tip="{Binding WebSocketHealthTooltip}" VerticalAlignment="Center" />
+                                    </WrapPanel>
                                 </StackPanel>
-                                <CheckBox IsChecked="{Binding ReplayDirectorSettings.OnlyFollowMissedKills, Mode=TwoWay}"
-                                          Content="Only follow missed kills"
-                                          Foreground="#E6E6E6"/>
-                                <ToggleSwitch IsChecked="{Binding ReplayDirectorSettings.DelayedVmixEnabled, Mode=TwoWay}"
-                                              Content="Enable delayed vMix replay marking"
-                                              Foreground="#E6E6E6"/>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="UDP" Foreground="#AAAAAA" />
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center">
+                                        <TextBox MinWidth="60" MaxWidth="90" Text="{Binding UdpPort, Mode=TwoWay}" />
+                                        <Border Width="12" Height="12" CornerRadius="6" Background="{Binding UdpHealthBrush}" ToolTip.Tip="{Binding UdpHealthTooltip}" VerticalAlignment="Center" />
+                                    </WrapPanel>
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="RTP" Foreground="#AAAAAA" />
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center">
+                                        <TextBox MinWidth="60" MaxWidth="90" Text="{Binding RtpPort, Mode=TwoWay}" />
+                                        <Border Width="12" Height="12" CornerRadius="6" Background="{Binding RtpHealthBrush}" ToolTip.Tip="{Binding RtpHealthTooltip}" VerticalAlignment="Center" />
+                                    </WrapPanel>
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="GSI" Foreground="#AAAAAA" />
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center">
+                                        <TextBox MinWidth="60" MaxWidth="90" Text="{Binding GsiPort, Mode=TwoWay}" />
+                                        <Border Width="12" Height="12" CornerRadius="6" Background="{Binding GsiHealthBrush}" ToolTip.Tip="{Binding GsiHealthTooltip}" VerticalAlignment="Center" />
+                                    </WrapPanel>
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="GFXP" Foreground="#AAAAAA" />
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center">
+                                        <TextBox MinWidth="60" MaxWidth="90" Text="{Binding GraphicsProducerPort, Mode=TwoWay}" />
+                                        <Border Width="12" Height="12" CornerRadius="6" Background="{Binding GraphicsProducerHealthBrush}" ToolTip.Tip="{Binding GraphicsProducerHealthTooltip}" VerticalAlignment="Center" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </WrapPanel>
+                            <TextBlock Text="GSI Relay Endpoints" Foreground="#AAAAAA" Margin="0,8,0,0" />
+                            <ListBox ItemsSource="{Binding GsiRelayEndpoints}" MaxHeight="180">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:GsiRelayEndpointViewModel">
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+                                            <Border Width="12" Height="12" CornerRadius="6" Background="{Binding HealthBrush}" ToolTip.Tip="{Binding HealthTooltip}" VerticalAlignment="Center" />
+                                            <TextBox MinWidth="80" MaxWidth="500" Text="{Binding Uri, Mode=TwoWay}" PlaceholderText="http://127.0.0.1:1349/api/gsi" />
+                                            <Button Content="Remove" Command="{Binding DataContext.RemoveGsiRelayEndpointCommand, ElementName=Root}" CommandParameter="{Binding}" />
+                                        </WrapPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button Content="Add relay endpoint" HorizontalAlignment="Left" Command="{Binding AddGsiRelayEndpointCommand}" />
+                            <Button Content="Apply / Reconnect" HorizontalAlignment="Left" Command="{Binding ApplyNetworkSettingsCommand}" Margin="0,6,0,0" />
+                            <Separator Margin="0,10,0,6" />
+                            <TextBlock Text="vMix" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                            <StackPanel Spacing="6" Margin="0,0,0,12">
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="12">
+                                    <TextBlock VerticalAlignment="Center" Text="Host" Foreground="#AAAAAA" />
+                                    <TextBox MaxWidth="120" MinWidth="100" Text="{Binding VmixSettings.Host, Mode=TwoWay}" />
+                                    <TextBlock VerticalAlignment="Center" Text="Port" Foreground="#AAAAAA" />
+                                    <TextBox MaxWidth="80" Text="{Binding VmixSettings.Port, Mode=TwoWay}" />
+                                </WrapPanel>
+                                <ToggleSwitch IsChecked="{Binding VmixReplaySettings.Enabled, Mode=TwoWay}" Content="Enable vMix replay markers" hotkeys:HotkeyTarget.Path="VmixReplaySettings.Enabled" Foreground="#E6E6E6" />
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Pre-roll (s)" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.PreSeconds, Mode=TwoWay}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Post-roll (s)" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.PostSeconds, Mode=TwoWay}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Merge window (s)" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Channel / camera" Foreground="#AAAAAA" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+                                            <TextBox MinWidth="40" MaxWidth="55" Text="{Binding VmixReplaySettings.Channel, Mode=TwoWay}" />
+                                            <TextBox MinWidth="40" MaxWidth="55" Text="{Binding VmixReplaySettings.Camera, Mode=TwoWay}" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </WrapPanel>
                             </StackPanel>
-                            <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsPublisher}" Spacing="6">
-                                <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+                            <Separator Margin="0,10,0,6" />
+                            <TextBlock Text="Replay Director" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                            <StackPanel Spacing="6" Margin="0,0,0,12">
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="Role" Foreground="#AAAAAA" />
+                                    <ComboBox MinWidth="150" ItemsSource="{Binding ReplayDirectorRoleOptions}" SelectedItem="{Binding ReplayDirectorSettings.Role, Mode=TwoWay}" />
+                                </WrapPanel>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="Publisher port" Foreground="#AAAAAA" />
+                                    <TextBox MaxWidth="80" Text="{Binding ReplayDirectorSettings.PublisherPort, Mode=TwoWay}" />
+                                </WrapPanel>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="Publisher IP" Foreground="#AAAAAA" />
+                                    <TextBox MinWidth="80" Text="{Binding ReplayDirectorSettings.PublisherIp, Mode=TwoWay}" />
+                                </WrapPanel>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Pre-switch (s)" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplayDirectorSettings.PreSwitchSeconds, Mode=TwoWay}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Merge window (s)" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplayDirectorSettings.MergeWindowSeconds, Mode=TwoWay}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Switch lock (s)" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplayDirectorSettings.SwitchLockSeconds, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </WrapPanel>
+                                <StackPanel Spacing="6">
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                        <TextBlock VerticalAlignment="Center" Text="Delayed channel / camera" Foreground="#AAAAAA" />
+                                        <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixChannel, Mode=TwoWay}" />
+                                        <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixCamera, Mode=TwoWay}" />
+                                    </WrapPanel>
+                                    <CheckBox IsChecked="{Binding ReplayDirectorSettings.OnlyFollowMissedKills, Mode=TwoWay}" Content="Only follow missed kills" Foreground="#E6E6E6" />
+                                    <ToggleSwitch IsChecked="{Binding ReplayDirectorSettings.DelayedVmixEnabled, Mode=TwoWay}" Content="Enable delayed vMix replay marking" Foreground="#E6E6E6" />
+                                </StackPanel>
+                                <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsPublisher}" Spacing="6">
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsFollower}" Spacing="6">
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.LocalGameTime}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.ScheduledTarget}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastSwitch}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <TextBlock IsVisible="{Binding ReplayDirectorSettings.IsActive}" Text="{Binding ReplayDirectorSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                             </StackPanel>
-                            <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsFollower}" Spacing="6">
-                                <TextBlock Text="{Binding ReplayDirectorSettings.LocalGameTime}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding ReplayDirectorSettings.ScheduledTarget}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding ReplayDirectorSettings.LastSwitch}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
-                            </StackPanel>
-                            <TextBlock IsVisible="{Binding ReplayDirectorSettings.IsActive}" Text="{Binding ReplayDirectorSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap"/>
                         </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
+                    </ScrollViewer>
+                </TabItem>
 
             <TabItem Header="Create">
                     <ScrollViewer>
@@ -260,7 +197,7 @@
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" Margin="0,4,0,0">
                                 <ToggleSwitch IsChecked="{Binding CampathEditor.Hold, Mode=TwoWay}"
                                               Content="Hold"
                                     hotkeys:HotkeyTarget.Path="CampathEditor.Hold"
@@ -270,8 +207,8 @@
                                               Foreground="#E6E6E6"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathOverlayEnabled"
                                               Margin="0,0,10,0"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
+                            </WrapPanel>
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathGizmoEnabled, Mode=TwoWay}"
                                               Content="Show Gizmo"
                                               Foreground="#E6E6E6"
@@ -287,23 +224,23 @@
                                               Foreground="#E6E6E6"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathSyncEnabled"
                                               Margin="0,0,10,0"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,4,0,0">
+                            </WrapPanel>
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center" Margin="0,4,0,0">
                                 <TextBlock Text="Time Offset" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                                <TextBox Width="90"
+                                <TextBox MinWidth="80" MaxWidth="90"
                                          Text="{Binding CampathEditor.TimeOffset, Mode=TwoWay, StringFormat={}{0:F2}}"/>
                                 <Button Content="Get Current"
                                         Command="{Binding GetCurrentTimeOffsetCommand}"
                                         Margin="6,0,0,0"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                            </WrapPanel>
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" Margin="0,4,0,0">
                                 <Button Content="Load"
                                         Command="{Binding LoadViewportCampathCommand}"/>
                                 <Button Content="Save"
                                         Command="{Binding SaveViewportCampathCommand}"/>
                                 <Button Content="Clear"
                                         Command="{Binding CampathEditor.ClearCommand}"/>
-                            </StackPanel>
+                            </WrapPanel>
                         </StackPanel>
 
                         <ToggleSwitch IsChecked="{Binding ShowHlaeCampathControls, Mode=TwoWay}"
@@ -323,8 +260,8 @@
                                 <TextBlock Text="CS2 / HLAE campath controls"
                                            Foreground="#CCCCCC"
                                            FontWeight="SemiBold"/>
-                                <StackPanel Orientation="Horizontal"
-                                            Spacing="6"
+                                <WrapPanel Orientation="Horizontal"
+                                            ItemSpacing="6" LineSpacing="6"
                                             VerticalAlignment="Center">
                                     <ToggleSwitch IsChecked="{Binding IsCameraPathPreviewEnabled, Mode=TwoWay}"
                                                   Content="Draw path"
@@ -336,17 +273,17 @@
                                                   Content="Enable campath"
                                                   hotkeys:HotkeyTarget.Path="IsCampathEnabled"
                                                   Foreground="#E6E6E6"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal"
-                                            Spacing="6"
+                                </WrapPanel>
+                                <WrapPanel Orientation="Horizontal"
+                                            ItemSpacing="6" LineSpacing="6"
                                             VerticalAlignment="Center">
                                     <Button Content="Add point"
                                             Command="{Binding AddPointCommand}"/>
                                     <Button Content="Clear campath"
                                             Command="{Binding ClearCampathCommand}"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal"
-                                            Spacing="6"
+                                </WrapPanel>
+                                <WrapPanel Orientation="Horizontal"
+                                            ItemSpacing="6" LineSpacing="6"
                                             VerticalAlignment="Center">
                                     <Button Content="{Binding InterpLabel}"
                                             Command="{Binding ToggleInterpModeCommand}"/>
@@ -354,7 +291,7 @@
                                             Command="{Binding LoadCampathCommand}"/>
                                     <Button Content="Save campath"
                                             Command="{Binding SaveCampathCommand}"/>
-                                </StackPanel>
+                                </WrapPanel>
                             </StackPanel>
                         </Border>
 
@@ -369,58 +306,74 @@
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>
                         <ComboBox ItemsSource="{Binding RadarSettings.RadarStyles}"
-                                  SelectedItem="{Binding RadarSettings.RadarStyle, Mode=TwoWay}"
-                                  Width="200"/>
+                                  SelectedItem="{Binding RadarSettings.RadarStyle, Mode=TwoWay}"/>
                         <TextBlock Text="Radar scale"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>
-                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="10"
+                              Width="{Binding $parent[StackPanel].Bounds.Width}"
+                              MaxWidth="360"
+                              HorizontalAlignment="Left">
                             <Slider Minimum="0.5"
                                     Maximum="2.0"
                                     SmallChange="0.05"
                                     LargeChange="0.25"
-                                    Width="200"
+                                    HorizontalAlignment="Stretch"
                                     Value="{Binding RadarSettings.RadarScale, Mode=TwoWay}"/>
-                            <TextBlock Text="{Binding RadarSettings.RadarScale, StringFormat={}{0:F2}}"
+                            <TextBlock Grid.Column="1"
+                                    Text="{Binding RadarSettings.RadarScale, StringFormat={}{0:F2}}"
                                     Width="50"
                                     Foreground="#E6E6E6"/>
-                        </StackPanel>
+                        </Grid>
                         <TextBlock Text="Marker size"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>
-                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="10"
+                              Width="{Binding $parent[StackPanel].Bounds.Width}"
+                              MaxWidth="360"
+                              HorizontalAlignment="Left">
                             <Slider Minimum="0.5"
                                     Maximum="2.5"
                                     SmallChange="0.05"
                                     LargeChange="0.25"
-                                    Width="200"
+                                    HorizontalAlignment="Stretch"
                                     Value="{Binding RadarSettings.MarkerScale, Mode=TwoWay}"/>
-                            <TextBlock Text="{Binding RadarSettings.MarkerScale, StringFormat={}{0:F2}}"
+                            <TextBlock Grid.Column="1"
+                                    Text="{Binding RadarSettings.MarkerScale, StringFormat={}{0:F2}}"
                                     Width="50"
                                     Foreground="#E6E6E6"/>
-                        </StackPanel>
+                        </Grid>
                         <TextBlock Text="Height scale strength"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>
-                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="10"
+                              Width="{Binding $parent[StackPanel].Bounds.Width}"
+                              MaxWidth="360"
+                              HorizontalAlignment="Left">
                             <Slider Minimum="0"
                                     Maximum="2"
                                     SmallChange="0.05"
                                     LargeChange="0.25"
-                                    Width="200"
+                                    HorizontalAlignment="Stretch"
                                     Value="{Binding RadarSettings.HeightScaleMultiplier, Mode=TwoWay}"/>
-                            <TextBlock Text="{Binding RadarSettings.HeightScaleMultiplier, StringFormat={}{0:F2}}"
+                            <TextBlock Grid.Column="1"
+                                    Text="{Binding RadarSettings.HeightScaleMultiplier, StringFormat={}{0:F2}}"
                                     Width="50"
                                     Foreground="#E6E6E6"/>
-                        </StackPanel>
-                        <ToggleSwitch IsChecked="{Binding RadarSettings.DisplayNumbersTopmost, Mode=TwoWay}"
-                                    Content="Observer-Slot on top"
-                            hotkeys:HotkeyTarget.Path="RadarSettings.DisplayNumbersTopmost"
-                                    Foreground="#E6E6E6"/>
-                        <ToggleSwitch IsChecked="{Binding RadarSettings.ShowPlayerNames, Mode=TwoWay}"
-                                    Content="Show player names"
-                            hotkeys:HotkeyTarget.Path="RadarSettings.ShowPlayerNames"
-                                    Foreground="#E6E6E6"/>
+                        </Grid>
+                        <WrapPanel ItemSpacing="6" LineSpacing="6">
+                            <ToggleSwitch IsChecked="{Binding RadarSettings.DisplayNumbersTopmost, Mode=TwoWay}"
+                                        Content="Observer-Slot on top"
+                                hotkeys:HotkeyTarget.Path="RadarSettings.DisplayNumbersTopmost"
+                                        Foreground="#E6E6E6"/>
+                            <ToggleSwitch IsChecked="{Binding RadarSettings.ShowPlayerNames, Mode=TwoWay}"
+                                        Content="Show player names"
+                                hotkeys:HotkeyTarget.Path="RadarSettings.ShowPlayerNames"
+                                        Foreground="#E6E6E6"/>
+                        </WrapPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -439,18 +392,23 @@
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"
                                 Margin="0,8,0,0"/>
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="10"
+                              Width="{Binding $parent[StackPanel].Bounds.Width}"
+                              MaxWidth="360"
+                              HorizontalAlignment="Left">
                             <Slider Minimum="0.25"
                                     Maximum="3.0"
                                     SmallChange="0.05"
                                     LargeChange="0.25"
-                                    Width="200"
+                                    HorizontalAlignment="Stretch"
                                     Value="{Binding HudSettings.HudSize, Mode=TwoWay}"/>
-                            <TextBlock Text="{Binding HudSettings.HudSize, StringFormat={}{0:F2}}"
+                            <TextBlock Grid.Column="1"
+                                    Text="{Binding HudSettings.HudSize, StringFormat={}{0:F2}}"
                                     Width="50"
                                     Foreground="#E6E6E6"
                                     VerticalAlignment="Center"/>
-                        </StackPanel>
+                        </Grid>
                         <ToggleSwitch IsChecked="{Binding HudSettings.ShowKillfeed, Mode=TwoWay}"
                                     Content="Show killfeed"
                             hotkeys:HotkeyTarget.Path="HudSettings.ShowKillfeed"
@@ -469,15 +427,15 @@
                         <TextBlock Text="Counter-Strike 2 folder"
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"/>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBox Width="320"
+                        <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+                            <TextBox MinWidth="80" MaxWidth="320"
                                     Text="{Binding Viewport3DSettings.Cs2GameFolder, Mode=TwoWay}"
                                     PlaceholderText="C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive"/>
                             <Button Content="Browse"
                                     Command="{Binding BrowseMapObjCommand}"/>
                             <Button Content="Clear"
                                     Command="{Binding ClearMapObjCommand}"/>
-                        </StackPanel>
+                        </WrapPanel>
                         <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
                             <ComboBox MinWidth="60"
                                       ItemsSource="{Binding Viewport3DSettings.AvailableMaps}"
@@ -502,7 +460,7 @@
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"
                                 Margin="0,10,0,0"/>
-                        <TextBox Width="120"
+                        <TextBox MinWidth="80" MaxWidth="120"
                                 Text="{Binding Viewport3DSettings.ViewportMouseScale, Mode=TwoWay}"
                                 PlaceholderText="1.0"
                                 HorizontalAlignment="Left" />
@@ -511,12 +469,12 @@
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"
                                 Margin="0,10,0,0"/>
-                        <TextBox Width="120"
+                        <TextBox MinWidth="80" MaxWidth="120"
                                 Text="{Binding Viewport3DSettings.ViewportFpsCap, Mode=TwoWay}"
                                 PlaceholderText="60"
                                 HorizontalAlignment="Left" />
 
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
                             <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ShowFps, Mode=TwoWay}"
                                         Content="Show FPS"
                                         Foreground="#E6E6E6"
@@ -532,7 +490,7 @@
                                         Foreground="#E6E6E6"
                                 hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkItemIconsEnabled"
                                         Margin="0,6,0,0"/>
-                        </StackPanel>
+                        </WrapPanel>
 
                         <WrapPanel Orientation="Horizontal"
                                     ItemSpacing="10" LineSpacing="10"
@@ -566,7 +524,7 @@
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"
                                 Margin="0,10,0,0"/>
-                        <TextBox Width="120"
+                        <TextBox MinWidth="80" MaxWidth="120"
                                 Text="{Binding Viewport3DSettings.PinScale, Mode=TwoWay}"
                                 PlaceholderText="1.0"
                                 HorizontalAlignment="Left" />
@@ -575,7 +533,7 @@
                                 Foreground="#CCCCCC"
                                 FontWeight="SemiBold"
                                 Margin="0,10,0,0"/>
-                        <TextBox Width="120"
+                        <TextBox MinWidth="80" MaxWidth="120"
                                 Text="{Binding Viewport3DSettings.PinOffsetZ, Mode=TwoWay}"
                                 PlaceholderText="Z"
                                 HorizontalAlignment="Left" />
@@ -594,7 +552,7 @@
                                     Foreground="#CCCCCC"
                                     FontWeight="SemiBold"
                                     Margin="0,10,0,0"/>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.PostprocessEnabled, Mode=TwoWay}"
                                             Content="Postprocess"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.PostprocessEnabled"
@@ -607,8 +565,8 @@
                                             Content="Dynamic shadows"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.DynamicShadowsEnabled"
                                             Foreground="#E6E6E6"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="10">
+                            </WrapPanel>
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.WireframeEnabled, Mode=TwoWay}"
                                             Content="Wireframe"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.WireframeEnabled"
@@ -621,9 +579,9 @@
                                             Content="Skip translucents"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.SkipTranslucentEnabled"
                                             Foreground="#E6E6E6"/>
-                            </StackPanel>
+                            </WrapPanel>
 
-                            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,6,0,0">
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="12" Margin="0,6,0,0">
                                 <StackPanel Orientation="Vertical" Spacing="4">
                                     <TextBlock Text="Render mode"
                                             Foreground="#CCCCCC"
@@ -648,13 +606,13 @@
                                             ItemsSource="{Binding Viewport3DSettings.MaxTextureSizeOptions}"
                                             SelectedItem="{Binding Viewport3DSettings.MaxTextureSize, Mode=TwoWay}"/>
                                 </StackPanel>
-                            </StackPanel>
+                            </WrapPanel>
 
                             <TextBlock Text="LiveLink"
                                     Foreground="#CCCCCC"
                                     FontWeight="SemiBold"
                                     Margin="0,10,0,0"/>
-                            <StackPanel Orientation="Horizontal" Spacing="12">
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="12">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.LiveLinkEnabled, Mode=TwoWay}"
                                             Content="Receive CS2 entities"
                                             Foreground="#E6E6E6"/>
@@ -662,11 +620,11 @@
                                     <TextBlock Text="UDP port"
                                             Foreground="#CCCCCC"
                                             FontWeight="SemiBold"/>
-                                    <TextBox Width="100"
+                                    <TextBox MinWidth="80" MaxWidth="100"
                                             Text="{Binding Viewport3DSettings.LiveLinkPort, Mode=TwoWay}"
                                             PlaceholderText="31237"/>
                                 </StackPanel>
-                            </StackPanel>
+                            </WrapPanel>
                         </StackPanel>
 
                     </StackPanel>
@@ -679,7 +637,7 @@
                         <TextBlock Text="Attach Presets"
                                    Foreground="#CCCCCC"
                                    FontWeight="SemiBold"/>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                        <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
                             <TextBlock Text="Page" Foreground="#AAAAAA" VerticalAlignment="Center"/>
                             <ComboBox Width="180"
                                       ItemsSource="{Binding AttachPresetPageOptions}"
@@ -691,10 +649,10 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                             <TextBlock Text="Name" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                            <TextBox Width="220"
+                            <TextBox MinWidth="80" MaxWidth="220"
                                      PlaceholderText="Page name"
                                      Text="{Binding CurrentAttachPresetPageName, Mode=TwoWay}"/>
-                        </StackPanel>
+                        </WrapPanel>
                         <TextBlock Text="The player-card radial now opens attach pages first, then the presets on the selected page."
                                    Foreground="#888888"
                                    FontSize="12"/>
@@ -716,7 +674,7 @@
                                             <TextBlock Text="Execute preset on slot"
                                                        Foreground="#AAAAAA"
                                                        FontSize="12"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <WrapPanel Orientation="Horizontal" ItemSpacing="4" LineSpacing="4">
                                                         <Button Content="1"
                                                                 Command="{Binding DataContext.ExecuteAttachPresetSlot1Command, ElementName=Root}"
                                                                 CommandParameter="{Binding}"
@@ -787,34 +745,33 @@
                                                                 hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
                                                                 hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
                                                                 hotkeys:HotkeyTarget.AttachSlot="9"/>
-                                            </StackPanel>
+                                            </WrapPanel>
                                             <TextBlock Text="Preset Name" Foreground="#AAAAAA" FontSize="12"/>
-                                            <TextBox Width="300"
+                                            <TextBox MinWidth="80" MaxWidth="300"
                                                      PlaceholderText="Preset name"
                                                      Text="{Binding Name, Mode=TwoWay}"
                                                      HorizontalAlignment="Left" />
                                             <TextBlock Text="Attachment" Foreground="#AAAAAA" FontSize="12"/>
                                             <ComboBox ItemsSource="{Binding AttachmentOptions}"
                                                       SelectedItem="{Binding AttachmentName, Mode=TwoWay}"
-                                                      Width="300"
                                                       HorizontalAlignment="Left"/>
 
                                             <TextBlock Text="Position Offset" Foreground="#AAAAAA" FontSize="12"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBox Width="80" PlaceholderText="X" Text="{Binding OffsetPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                <TextBox Width="80" PlaceholderText="Y" Text="{Binding OffsetPosY, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                <TextBox Width="80" PlaceholderText="Z" Text="{Binding OffsetPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                            </StackPanel>
+                                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+                                                <TextBox MinWidth="40" MaxWidth="80" PlaceholderText="X" Text="{Binding OffsetPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox MinWidth="40" MaxWidth="80" PlaceholderText="Y" Text="{Binding OffsetPosY, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox MinWidth="40" MaxWidth="80" PlaceholderText="Z" Text="{Binding OffsetPosZ, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                            </WrapPanel>
 
                                             <TextBlock Text="Rotation Offset (deg)" Foreground="#AAAAAA" FontSize="12"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBox Width="80" PlaceholderText="Pitch" Text="{Binding OffsetPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                <TextBox Width="80" PlaceholderText="Yaw" Text="{Binding OffsetYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                                <TextBox Width="80" PlaceholderText="Roll" Text="{Binding OffsetRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
-                                            </StackPanel>
+                                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+                                                <TextBox MinWidth="40" MaxWidth="80" PlaceholderText="Pitch" Text="{Binding OffsetPitch, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox MinWidth="40" MaxWidth="80" PlaceholderText="Yaw" Text="{Binding OffsetYaw, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                                <TextBox MinWidth="40" MaxWidth="80" PlaceholderText="Roll" Text="{Binding OffsetRoll, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                            </WrapPanel>
 
                                             <TextBlock Text="Rotation Basis" Foreground="#AAAAAA" FontSize="12"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                                                 <ComboBox Width="80"
                                                     ItemsSource="{Binding RotationBasisOptions}"
                                                     SelectedItem="{Binding RotationBasisPitch, Mode=TwoWay}"/>
@@ -824,7 +781,7 @@
                                                 <ComboBox Width="80"
                                                     ItemsSource="{Binding RotationBasisOptions}"
                                                     SelectedItem="{Binding RotationBasisRoll, Mode=TwoWay}"/>
-                                            </StackPanel>
+                                            </WrapPanel>
 
                                             <TextBlock Text="Rotation Reference" Foreground="#AAAAAA" FontSize="12"/>
                                             <ComboBox Width="200"
@@ -832,7 +789,7 @@
                                                       SelectedItem="{Binding RotationReference, Mode=TwoWay}"/>
 
                                             <TextBlock Text="Rotation Axis Lock (world)" Foreground="#AAAAAA" FontSize="12"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="12">
                                                 <ToggleSwitch Content="Pitch"
                                                               IsChecked="{Binding RotationLockPitch, Mode=TwoWay}"
                                                     hotkeys:HotkeyTarget.Path="RotationLockPitch"
@@ -845,10 +802,10 @@
                                                               IsChecked="{Binding RotationLockRoll, Mode=TwoWay}"
                                                     hotkeys:HotkeyTarget.Path="RotationLockRoll"
                                                               Foreground="#E6E6E6"/>
-                                            </StackPanel>
+                                            </WrapPanel>
 
                                             <TextBlock Text="FOV" Foreground="#AAAAAA" FontSize="12"/>
-                                            <TextBox Width="100" PlaceholderText="90" HorizontalAlignment="Left" Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
+                                            <TextBox MinWidth="80" MaxWidth="100" PlaceholderText="90" HorizontalAlignment="Left" Text="{Binding Fov, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -861,7 +818,7 @@
             <TabItem Header="Hotkeys">
                 <ScrollViewer>
                     <StackPanel Margin="10" Spacing="10">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                        <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="Category" VerticalAlignment="Center"
                                         Foreground="#CCCCCC"
@@ -881,7 +838,7 @@
                                         Foreground="#888888"
                                         FontSize="12"/>
                             </StackPanel>
-                        </StackPanel>
+                        </WrapPanel>
                         <Separator Margin="0,6,0,6"/>
                         <StackPanel IsVisible="{Binding IsGeneralHotkeyCategorySelected}" Spacing="6">
                             <TextBlock Text="Button/Toggle Bindings"
@@ -901,7 +858,7 @@
                                                            Text="{Binding DisplayLabel}"
                                                            Foreground="#CCCCCC"
                                                            VerticalAlignment="Center"/>
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                <WrapPanel Grid.Column="2" Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                                                     <ToggleSwitch IsChecked="{Binding Enabled}"/>
                                                     <Button Content="Rebind"
                                                             Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
@@ -909,7 +866,7 @@
                                                     <Button Content="Remove"
                                                             Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
                                                             CommandParameter="{Binding}"/>
-                                                </StackPanel>
+                                                </WrapPanel>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -938,7 +895,7 @@
                                                            Text="{Binding DisplayLabel}"
                                                            Foreground="#CCCCCC"
                                                            VerticalAlignment="Center"/>
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                <WrapPanel Grid.Column="2" Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                                                     <ToggleSwitch IsChecked="{Binding Enabled}" hotkeys:HotkeyTarget.Path="Enabled" />
                                                     <Button Content="Rebind"
                                                             Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
@@ -946,7 +903,7 @@
                                                     <Button Content="Remove"
                                                             Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
                                                             CommandParameter="{Binding}"/>
-                                                </StackPanel>
+                                                </WrapPanel>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -975,7 +932,7 @@
                                                            Text="{Binding DisplayLabel}"
                                                            Foreground="#CCCCCC"
                                                            VerticalAlignment="Center"/>
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                <WrapPanel Grid.Column="2" Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                                                     <ToggleSwitch IsChecked="{Binding Enabled}" />
                                                     <Button Content="Rebind"
                                                             Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
@@ -983,7 +940,7 @@
                                                     <Button Content="Remove"
                                                             Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
                                                             CommandParameter="{Binding}"/>
-                                                </StackPanel>
+                                                </WrapPanel>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -1012,7 +969,7 @@
                                                            Text="{Binding DisplayLabel}"
                                                            Foreground="#CCCCCC"
                                                            VerticalAlignment="Center"/>
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                                <WrapPanel Grid.Column="2" Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                                                     <ToggleSwitch IsChecked="{Binding Enabled}" />
                                                     <Button Content="Rebind"
                                                             Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
@@ -1020,7 +977,7 @@
                                                     <Button Content="Remove"
                                                             Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
                                                             CommandParameter="{Binding}"/>
-                                                </StackPanel>
+                                                </WrapPanel>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -1049,7 +1006,7 @@
                                                 <TextBox Grid.Column="1" VerticalAlignment="Center"
                                                          PlaceholderText="spec_show_xray 1"
                                                          Text="{Binding TargetExecCommand, Mode=TwoWay}" />
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <WrapPanel Grid.Column="2" Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center">
                                                     <ToggleSwitch IsChecked="{Binding Enabled}" />
                                                     <Button Content="Bind"
                                                             Command="{Binding DataContext.RebindHotkeyCommand, ElementName=Root}"
@@ -1057,7 +1014,7 @@
                                                     <Button Content="Remove"
                                                             Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
                                                             CommandParameter="{Binding}"/>
-                                                </StackPanel>
+                                                </WrapPanel>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -1068,12 +1025,12 @@
                             <TextBlock Text="vMix Bindings"
                                        Foreground="#CCCCCC"
                                        FontWeight="SemiBold"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
                                 <Button Content="Refresh vMix State"
                                         Command="{Binding RefreshVmixStateCommand}" />
                                 <Button Content="Add"
                                         Command="{Binding AddVmixHotkeyCommand}" />
-                            </StackPanel>
+                            </WrapPanel>
                             <TextBlock Text="{Binding VmixStateStatusMessage}"
                                        Foreground="#888888"
                                        FontSize="12"/>
@@ -1086,7 +1043,7 @@
                                                   ColumnDefinitions="Auto,Auto,*,Auto"
                                                   RowSpacing="6"
                                                   ColumnSpacing="8">
-                                                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="20">
+                                                <WrapPanel Grid.Row="0" Orientation="Horizontal" ItemSpacing="20" LineSpacing="20">
                                                     <TextBlock Grid.Row="0" Grid.Column="0"
                                                             Text="{Binding HotkeyDisplay}"
                                                             Foreground="#E6E6E6"
@@ -1099,14 +1056,14 @@
                                                             HorizontalAlignment="Left"
                                                             Command="{Binding DataContext.BindVmixHotkeyCommand, ElementName=Root}"
                                                             CommandParameter="{Binding}"/>
-                                                </StackPanel>
+                                                </WrapPanel>
 
                                                 <Button Grid.Row="0" Grid.Column="3"
                                                         Content="Remove"
                                                         Command="{Binding DataContext.RemoveHotkeyCommand, ElementName=Root}"
                                                         CommandParameter="{Binding}"/>
 
-                                                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                                                <WrapPanel Grid.Row="1" Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
                                                     <TextBlock Grid.Row="1" Grid.Column="0"
                                                             Text="Category"
                                                             Foreground="#AAAAAA"
@@ -1123,23 +1080,23 @@
                                                             IsEditable="True"
                                                             ItemsSource="{Binding VmixFunctionOptions}"
                                                             Text="{Binding TargetVmixFunctionName, Mode=TwoWay}"/>
-                                                </StackPanel>
+                                                </WrapPanel>
 
                                                 <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" Spacing="4">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasValueParameter}">
+                                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8" IsVisible="{Binding VmixHasValueParameter}">
                                                         <TextBlock Text="Value" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                                                        <TextBox Width="260" Text="{Binding TargetVmixValue, Mode=TwoWay}" />
-                                                    </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasInputParameter}">
+                                                        <TextBox MinWidth="80" MaxWidth="260" Text="{Binding TargetVmixValue, Mode=TwoWay}" />
+                                                    </WrapPanel>
+                                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8" IsVisible="{Binding VmixHasInputParameter}">
                                                         <TextBlock Text="Input" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
                                                         <ComboBox Width="260"
                                                                   ItemsSource="{Binding DataContext.VmixInputOptions, ElementName=Root}"
                                                                   SelectedItem="{Binding SelectedVmixInput, Mode=TwoWay}" />
-                                                        <TextBox Width="80"
+                                                        <TextBox MinWidth="40" MaxWidth="80"
                                                                  PlaceholderText="#"
                                                                  Text="{Binding TargetVmixInputNumber, Mode=TwoWay}" />
-                                                    </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasChannelParameter}">
+                                                    </WrapPanel>
+                                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8" IsVisible="{Binding VmixHasChannelParameter}">
                                                         <TextBlock Text="Channel" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
                                                         <ComboBox Width="180"
                                                                   IsEditable="True"
@@ -1147,17 +1104,17 @@
                                                             <ComboBoxItem Content="A" />
                                                             <ComboBoxItem Content="B" />
                                                         </ComboBox>
-                                                    </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasDurationParameter}">
+                                                    </WrapPanel>
+                                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8" IsVisible="{Binding VmixHasDurationParameter}">
                                                         <TextBlock Text="Duration" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                                                        <TextBox Width="180" Text="{Binding TargetVmixDuration, Mode=TwoWay}" />
-                                                    </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding VmixHasCustomParameter}">
+                                                        <TextBox MinWidth="80" MaxWidth="180" Text="{Binding TargetVmixDuration, Mode=TwoWay}" />
+                                                    </WrapPanel>
+                                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8" IsVisible="{Binding VmixHasCustomParameter}">
                                                         <TextBlock Text="Extra" Width="70" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                                                        <TextBox Width="360"
+                                                        <TextBox MinWidth="80" MaxWidth="360"
                                                                  PlaceholderText="key=value&amp;key2=value2"
                                                                  Text="{Binding TargetVmixExtraQuery, Mode=TwoWay}" />
-                                                    </StackPanel>
+                                                    </WrapPanel>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
@@ -1173,764 +1130,473 @@
                 <TabControl Margin="10">
                     <TabItem Header="Camera">
                         <ScrollViewer>
-                            <Grid Margin="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="20"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Left Column: Mouse and Movement Settings -->
-                                <StackPanel Grid.Column="0" Spacing="12">
-
-                                    <!-- Mouse Settings -->
-                                    <TextBlock Text="Mouse Settings"
-                                               Foreground="#CCCCCC"
-                                               FontWeight="SemiBold"
-                                               Margin="0,8,0,0"/>
-
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="Mouse Sensitivity"
-                                                   Foreground="#CCCCCC"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <Slider Minimum="0.01"
-                                                    Maximum="1.0"
-                                                    SmallChange="0.01"
-                                                    LargeChange="0.1"
-                                                    Width="200"
-                                                    Value="{Binding FreecamSettings.MouseSensitivity, Mode=TwoWay}"/>
-                                            <TextBlock Text="{Binding FreecamSettings.MouseSensitivity, StringFormat={}{0:F3}}"
-                                                       Width="50"
-                                                       Foreground="#E6E6E6"/>
-                                        </StackPanel>
+                            <StackPanel Margin="10" Spacing="8">
+                                <Expander Header="Mouse &amp; movement" IsExpanded="True" HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="Mouse" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Mouse Sensitivity" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.MouseSensitivity, StringFormat={}{0:F3}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.01" LargeChange="0.1" Value="{Binding FreecamSettings.MouseSensitivity, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <ToggleSwitch IsChecked="{Binding FreecamSettings.ClampPitch, Mode=TwoWay}" Content="Clamp Pitch" hotkeys:HotkeyTarget.Path="FreecamSettings.ClampPitch" Foreground="#E6E6E6" />
+                                        </WrapPanel>
+                                        <TextBlock Text="Movement" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Move Speed" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.MoveSpeed, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="10.0" Maximum="1000.0" SmallChange="10.0" LargeChange="50.0" Value="{Binding FreecamSettings.MoveSpeed, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Sprint Multiplier" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.SprintMultiplier, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="1.0" Maximum="5.0" SmallChange="0.1" LargeChange="0.5" Value="{Binding FreecamSettings.SprintMultiplier, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Vertical Speed" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.VerticalSpeed, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="10.0" Maximum="1000.0" SmallChange="10.0" LargeChange="50.0" Value="{Binding FreecamSettings.VerticalSpeed, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Speed Adjust Rate" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.SpeedAdjustRate, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="1.0" Maximum="2.0" SmallChange="0.01" LargeChange="0.1" Value="{Binding FreecamSettings.SpeedAdjustRate, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Speed Min Multiplier" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.SpeedMinMultiplier, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.01" LargeChange="0.1" Value="{Binding FreecamSettings.SpeedMinMultiplier, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Speed Max Multiplier" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.SpeedMaxMultiplier, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="1.0" Maximum="10.0" SmallChange="0.5" LargeChange="1.0" Value="{Binding FreecamSettings.SpeedMaxMultiplier, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <ToggleSwitch IsChecked="{Binding FreecamSettings.HoldMovementFollowsCamera, Mode=TwoWay}" Content="Hold follows camera rotation" hotkeys:HotkeyTarget.Path="FreecamSettings.HoldMovementFollowsCamera" Foreground="#E6E6E6" />
                                     </StackPanel>
-
-                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.ClampPitch, Mode=TwoWay}"
-                                                  Content="Clamp Pitch"
-                                        hotkeys:HotkeyTarget.Path="FreecamSettings.ClampPitch"
-                                                  Foreground="#E6E6E6"/>
-
-                                    <!-- Movement Settings -->
-                                    <TextBlock Text="Movement Settings"
-                                               Foreground="#CCCCCC"
-                                               FontWeight="SemiBold"
-                                               Margin="0,8,0,0"/>
-
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="Move Speed"
-                                                   Foreground="#CCCCCC"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <Slider Minimum="10.0"
-                                                    Maximum="1000.0"
-                                                    SmallChange="10.0"
-                                                    LargeChange="50.0"
-                                                    Width="200"
-                                                    Value="{Binding FreecamSettings.MoveSpeed, Mode=TwoWay}"/>
-                                            <TextBlock Text="{Binding FreecamSettings.MoveSpeed, StringFormat={}{0:F0}}"
-                                                       Width="50"
-                                                       Foreground="#E6E6E6"/>
-                                        </StackPanel>
-
-                                        <TextBlock Text="Sprint Multiplier"
-                                                   Foreground="#CCCCCC"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <Slider Minimum="1.0"
-                                                    Maximum="5.0"
-                                                    SmallChange="0.1"
-                                                    LargeChange="0.5"
-                                                    Width="200"
-                                                    Value="{Binding FreecamSettings.SprintMultiplier, Mode=TwoWay}"/>
-                                            <TextBlock Text="{Binding FreecamSettings.SprintMultiplier, StringFormat={}{0:F1}}"
-                                                       Width="50"
-                                                       Foreground="#E6E6E6"/>
-                                        </StackPanel>
-
-                                        <TextBlock Text="Vertical Speed"
-                                                   Foreground="#CCCCCC"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <Slider Minimum="10.0"
-                                                    Maximum="1000.0"
-                                                    SmallChange="10.0"
-                                                    LargeChange="50.0"
-                                                    Width="200"
-                                                    Value="{Binding FreecamSettings.VerticalSpeed, Mode=TwoWay}"/>
-                                            <TextBlock Text="{Binding FreecamSettings.VerticalSpeed, StringFormat={}{0:F0}}"
-                                                       Width="50"
-                                                       Foreground="#E6E6E6"/>
-                                        </StackPanel>
-
-                                        <TextBlock Text="Speed Adjust Rate"
-                                                   Foreground="#CCCCCC"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <Slider Minimum="1.0"
-                                                    Maximum="2.0"
-                                                    SmallChange="0.01"
-                                                    LargeChange="0.1"
-                                                    Width="200"
-                                                    Value="{Binding FreecamSettings.SpeedAdjustRate, Mode=TwoWay}"/>
-                                            <TextBlock Text="{Binding FreecamSettings.SpeedAdjustRate, StringFormat={}{0:F2}}"
-                                                       Width="50"
-                                                       Foreground="#E6E6E6"/>
-                                        </StackPanel>
-
-                                        <TextBlock Text="Speed Min Multiplier"
-                                                   Foreground="#CCCCCC"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <Slider Minimum="0.01"
-                                                    Maximum="1.0"
-                                                    SmallChange="0.01"
-                                                    LargeChange="0.1"
-                                                    Width="200"
-                                                    Value="{Binding FreecamSettings.SpeedMinMultiplier, Mode=TwoWay}"/>
-                                            <TextBlock Text="{Binding FreecamSettings.SpeedMinMultiplier, StringFormat={}{0:F2}}"
-                                                       Width="50"
-                                                       Foreground="#E6E6E6"/>
-                                        </StackPanel>
-
-                                        <TextBlock Text="Speed Max Multiplier"
-                                                   Foreground="#CCCCCC"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <Slider Minimum="1.0"
-                                                    Maximum="10.0"
-                                                    SmallChange="0.5"
-                                                    LargeChange="1.0"
-                                                    Width="200"
-                                                    Value="{Binding FreecamSettings.SpeedMaxMultiplier, Mode=TwoWay}"/>
-                                            <TextBlock Text="{Binding FreecamSettings.SpeedMaxMultiplier, StringFormat={}{0:F1}}"
-                                                       Width="50"
-                                                       Foreground="#E6E6E6"/>
-                                        </StackPanel>
+                                </Expander>
+                                <Expander Header="Smoothing" IsExpanded="False" HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="10">
+                                        <ToggleSwitch IsChecked="{Binding FreecamSettings.SmoothEnabled, Mode=TwoWay}" Content="Enable Smoothing" hotkeys:HotkeyTarget.Path="FreecamSettings.SmoothEnabled" Foreground="#E6E6E6" />
+                                        <ToggleSwitch IsChecked="{Binding FreecamSettings.RotCriticalDamping, Mode=TwoWay}" Content="Use Damping (Rotation)" hotkeys:HotkeyTarget.Path="FreecamSettings.RotCriticalDamping" Foreground="#E6E6E6" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Rotation Damping Ratio (&gt;= 1.0)" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.RotDampingRatio, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="1.0" Maximum="5.0" SmallChange="0.1" LargeChange="0.5" Value="{Binding FreecamSettings.RotDampingRatio, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Position Half-time (s)" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HalfVec, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.05" Maximum="2.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding FreecamSettings.HalfVec, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Rotation Half-time (s)" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HalfRot, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.05" Maximum="2.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding FreecamSettings.HalfRot, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="FOV Half-time (s)" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HalfFov, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.05" Maximum="2.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding FreecamSettings.HalfFov, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Lock Half-time (s)" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.LockHalfRot, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.05" Maximum="2.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding FreecamSettings.LockHalfRot, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Lock Half-time Transition (s)" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.LockHalfRotTransition, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.05" Maximum="2.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding FreecamSettings.LockHalfRotTransition, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
                                     </StackPanel>
-                                    
-                                <!-- Smoothing Settings -->
-                                <TextBlock Text="Smoothing Settings"
-                                           Foreground="#CCCCCC"
-                                           FontWeight="SemiBold"
-                                           Margin="0,8,0,0"/>
-
-                                <StackPanel Spacing="8">
-                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.SmoothEnabled, Mode=TwoWay}"
-                                                  Content="Enable Smoothing"
-                                        hotkeys:HotkeyTarget.Path="FreecamSettings.SmoothEnabled"
-                                                  Foreground="#E6E6E6"/>
-                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.RotCriticalDamping, Mode=TwoWay}"
-                                                  Content="Use Damping (Rotation)"
-                                        hotkeys:HotkeyTarget.Path="FreecamSettings.RotCriticalDamping"
-                                                  Foreground="#E6E6E6"/>
-                                    <TextBlock Text="Rotation Damping Ratio (>= 1.0)"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="1.0"
-                                                Maximum="5.0"
-                                                SmallChange="0.1"
-                                                LargeChange="0.5"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.RotDampingRatio, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.RotDampingRatio, StringFormat={}{0:F2}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
+                                </Expander>
+                                <Expander Header="Roll &amp; lean" IsExpanded="False" HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="10">
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Roll Speed" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.RollSpeed, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="10.0" Maximum="180.0" SmallChange="5.0" LargeChange="15.0" Value="{Binding FreecamSettings.RollSpeed, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Roll Smoothing" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.RollSmoothing, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding FreecamSettings.RollSmoothing, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Lean Strength" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.LeanStrength, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="2.0" SmallChange="0.1" LargeChange="0.5" Value="{Binding FreecamSettings.LeanStrength, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Lean Accel Scale" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.LeanAccelScale, StringFormat={}{0:F4}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="0.1" SmallChange="0.001" LargeChange="0.01" Value="{Binding FreecamSettings.LeanAccelScale, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Lean Velocity Scale" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.LeanVelocityScale, StringFormat={}{0:F3}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="0.1" SmallChange="0.001" LargeChange="0.01" Value="{Binding FreecamSettings.LeanVelocityScale, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Lean Max Angle" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.LeanMaxAngle, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="45.0" SmallChange="1.0" LargeChange="5.0" Value="{Binding FreecamSettings.LeanMaxAngle, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Lean Half-time (s)" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.LeanHalfTime, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.LeanHalfTime, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
                                     </StackPanel>
-
-                                    <TextBlock Text="Position Smoothing Half-time (seconds)"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.05"
-                                                Maximum="2.0"
-                                                SmallChange="0.05"
-                                                LargeChange="0.1"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.HalfVec, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HalfVec, StringFormat={}{0:F2}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
+                                </Expander>
+                                <Expander Header="FOV" IsExpanded="False" HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="10">
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="FOV Min" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.FovMin, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="5.0" Maximum="90.0" SmallChange="1.0" LargeChange="5.0" Value="{Binding FreecamSettings.FovMin, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="FOV Max" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.FovMax, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="90.0" Maximum="180.0" SmallChange="5.0" LargeChange="10.0" Value="{Binding FreecamSettings.FovMax, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="FOV Step" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.FovStep, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.5" Maximum="10.0" SmallChange="0.5" LargeChange="1.0" Value="{Binding FreecamSettings.FovStep, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Default FOV" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.DefaultFov, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="60.0" Maximum="120.0" SmallChange="1.0" LargeChange="5.0" Value="{Binding FreecamSettings.DefaultFov, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
                                     </StackPanel>
-
-                                    <TextBlock Text="Rotation Smoothing Half-time (seconds)"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.05"
-                                                Maximum="2.0"
-                                                SmallChange="0.05"
-                                                LargeChange="0.1"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.HalfRot, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HalfRot, StringFormat={}{0:F2}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="FOV Smoothing Half-time (seconds)"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.05"
-                                                Maximum="2.0"
-                                                SmallChange="0.05"
-                                                LargeChange="0.1"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.HalfFov, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HalfFov, StringFormat={}{0:F2}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Player Lock Half-time (seconds)"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.05"
-                                                Maximum="2.0"
-                                                SmallChange="0.05"
-                                                LargeChange="0.1"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.LockHalfRot, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.LockHalfRot, StringFormat={}{0:F2}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Player Lock Half-time Transition (seconds)"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.05"
-                                                Maximum="2.0"
-                                                SmallChange="0.05"
-                                                LargeChange="0.1"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.LockHalfRotTransition, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.LockHalfRotTransition, StringFormat={}{0:F2}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-                                                                
-                                </StackPanel>
-
-                                </StackPanel>
-
-                                <!-- Right Column: Roll, FOV, and Smoothing Settings -->
-                                <StackPanel Grid.Column="2" Spacing="12">
-
-                                    <!-- Roll Settings -->
-                                <TextBlock Text="Roll Settings"
-                                           Foreground="#CCCCCC"
-                                           FontWeight="SemiBold"
-                                           Margin="0,8,0,0"/>
-
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="Roll Speed"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="10.0"
-                                                Maximum="180.0"
-                                                SmallChange="5.0"
-                                                LargeChange="15.0"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.RollSpeed, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.RollSpeed, StringFormat={}{0:F0}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Roll Smoothing"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0"
-                                                Maximum="1.0"
-                                                SmallChange="0.05"
-                                                LargeChange="0.1"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.RollSmoothing, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.RollSmoothing, StringFormat={}{0:F2}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Lean Strength"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0"
-                                                Maximum="2.0"
-                                                SmallChange="0.1"
-                                                LargeChange="0.5"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.LeanStrength, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.LeanStrength, StringFormat={}{0:F1}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Lean Accel Scale"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0"
-                                                Maximum="0.1"
-                                                SmallChange="0.001"
-                                                LargeChange="0.01"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.LeanAccelScale, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.LeanAccelScale, StringFormat={}{0:F4}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Lean Velocity Scale"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0"
-                                                Maximum="0.1"
-                                                SmallChange="0.001"
-                                                LargeChange="0.01"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.LeanVelocityScale, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.LeanVelocityScale, StringFormat={}{0:F3}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Lean Max Angle"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0"
-                                                Maximum="45.0"
-                                                SmallChange="1.0"
-                                                LargeChange="5.0"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.LeanMaxAngle, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.LeanMaxAngle, StringFormat={}{0:F0}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Lean Half-time (seconds)"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.01"
-                                                Maximum="1.0"
-                                                SmallChange="0.01"
-                                                LargeChange="0.05"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.LeanHalfTime, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.LeanHalfTime, StringFormat={}{0:F2}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-                                </StackPanel>
-
-                                <!-- FOV Settings -->
-                                <TextBlock Text="FOV Settings"
-                                           Foreground="#CCCCCC"
-                                           FontWeight="SemiBold"
-                                           Margin="0,8,0,0"/>
-
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="FOV Min"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="5.0"
-                                                Maximum="90.0"
-                                                SmallChange="1.0"
-                                                LargeChange="5.0"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.FovMin, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.FovMin, StringFormat={}{0:F0}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="FOV Max"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="90.0"
-                                                Maximum="180.0"
-                                                SmallChange="5.0"
-                                                LargeChange="10.0"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.FovMax, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.FovMax, StringFormat={}{0:F0}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="FOV Step"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.5"
-                                                Maximum="10.0"
-                                                SmallChange="0.5"
-                                                LargeChange="1.0"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.FovStep, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.FovStep, StringFormat={}{0:F1}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Default FOV"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="60.0"
-                                                Maximum="120.0"
-                                                SmallChange="1.0"
-                                                LargeChange="5.0"
-                                                Width="200"
-                                                Value="{Binding FreecamSettings.DefaultFov, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.DefaultFov, StringFormat={}{0:F0}}"
-                                                   Width="50"
-                                                   Foreground="#E6E6E6"/>
-                                    </StackPanel>
-                                </StackPanel>
-                                <!-- Hold Settings -->
-                                <TextBlock Text="Hold Settings"
-                                            Foreground="#CCCCCC"
-                                            FontWeight="SemiBold"
-                                            Margin="0,8,0,0"/>
-                                <ToggleSwitch IsChecked="{Binding FreecamSettings.HoldMovementFollowsCamera, Mode=TwoWay}"
-                                                Content="Hold follows camera rotation"
-                                    hotkeys:HotkeyTarget.Path="FreecamSettings.HoldMovementFollowsCamera"
-                                                Foreground="#E6E6E6"/>
-                                <Button Content="Reset to Default"
-                                        Command="{Binding ResetFreecamSettingsCommand}"
-                                        HorizontalAlignment="Left"/>
-                                </StackPanel>
-                            </Grid>
+                                </Expander>
+                                <Button Content="Reset to Default" Command="{Binding ResetFreecamSettingsCommand}" HorizontalAlignment="Left" />
+                            </StackPanel>
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="Controls">
                         <ScrollViewer>
                             <StackPanel Margin="10" Spacing="10">
-                                <ToggleSwitch IsChecked="{Binding FreecamSettings.SwapRightClickInitMode, Mode=TwoWay}"
-                                                Content="Swap RMB/Hold CapsLock+RMB init mode"
-                                    hotkeys:HotkeyTarget.Path="FreecamSettings.SwapRightClickInitMode"
-                                                Foreground="#E6E6E6"/>
-                                <TextBlock Text="Analog Keyboard"
-                                           Foreground="#CCCCCC"
-                                           FontWeight="SemiBold"/>
-                                <ToggleSwitch IsChecked="{Binding FreecamSettings.AnalogKeyboardEnabled, Mode=TwoWay}"
-                                              Content="Enable analog keyboard mode"
-                                    hotkeys:HotkeyTarget.Path="FreecamSettings.AnalogKeyboardEnabled"
-                                              Foreground="#E6E6E6"/>
-                                <TextBlock Text="Left Stick Deadzone"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="0.0"
-                                            Maximum="0.5"
-                                            SmallChange="0.01"
-                                            LargeChange="0.05"
-                                            Width="200"
-                                            Value="{Binding FreecamSettings.AnalogLeftDeadzone, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding FreecamSettings.AnalogLeftDeadzone, StringFormat={}{0:F2}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-
-                                <TextBlock Text="Right Stick Deadzone"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="0.0"
-                                            Maximum="0.5"
-                                            SmallChange="0.01"
-                                            LargeChange="0.05"
-                                            Width="200"
-                                            Value="{Binding FreecamSettings.AnalogRightDeadzone, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding FreecamSettings.AnalogRightDeadzone, StringFormat={}{0:F2}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-
-                                <TextBlock Text="Analog Curve"
-                                           Foreground="#CCCCCC"/>
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Slider Minimum="0.0"
-                                            Maximum="1.0"
-                                            SmallChange="0.05"
-                                            LargeChange="0.1"
-                                            Width="200"
-                                            Value="{Binding FreecamSettings.AnalogCurve, Mode=TwoWay}"/>
-                                    <TextBlock Text="{Binding FreecamSettings.AnalogCurve, StringFormat={}{0:F2}}"
-                                               Width="50"
-                                               Foreground="#E6E6E6"/>
-                                </StackPanel>
-
-                                <TextBlock Text="Sprint uses right stick X+."
-                                           Foreground="#888888"
-                                           FontSize="12"/>
+                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.SwapRightClickInitMode, Mode=TwoWay}" Content="Swap RMB/Hold CapsLock+RMB init mode" hotkeys:HotkeyTarget.Path="FreecamSettings.SwapRightClickInitMode" Foreground="#E6E6E6" />
+                                <TextBlock Text="Analog Keyboard" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.AnalogKeyboardEnabled, Mode=TwoWay}" Content="Enable analog keyboard mode" hotkeys:HotkeyTarget.Path="FreecamSettings.AnalogKeyboardEnabled" Foreground="#E6E6E6" />
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                    <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                            <TextBlock Text="Left Stick Deadzone" Foreground="#CCCCCC" />
+                                            <TextBlock Text="{Binding FreecamSettings.AnalogLeftDeadzone, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Slider Minimum="0.0" Maximum="0.5" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.AnalogLeftDeadzone, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                            <TextBlock Text="Right Stick Deadzone" Foreground="#CCCCCC" />
+                                            <TextBlock Text="{Binding FreecamSettings.AnalogRightDeadzone, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Slider Minimum="0.0" Maximum="0.5" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.AnalogRightDeadzone, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                            <TextBlock Text="Analog Curve" Foreground="#CCCCCC" />
+                                            <TextBlock Text="{Binding FreecamSettings.AnalogCurve, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Slider Minimum="0.0" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding FreecamSettings.AnalogCurve, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                    </StackPanel>
+                                </WrapPanel>
+                                <TextBlock Text="Sprint uses right stick X+." Foreground="#888888" FontSize="12" />
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="Walk">
                         <ScrollViewer>
-                            <Grid Margin="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="20"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0" Spacing="12">
-                                    <TextBlock Text="Movement"
-                                               Foreground="#CCCCCC"
-                                               FontWeight="SemiBold"/>
-
-                                    <TextBlock Text="Move Speed"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="10.0" Maximum="500.0" SmallChange="5.0" LargeChange="25.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkMoveSpeed, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkMoveSpeed, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
+                            <StackPanel Margin="10" Spacing="8">
+                                <Expander Header="Movement" IsExpanded="True" HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Movement" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Move Speed" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkMoveSpeed, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="10.0" Maximum="500.0" SmallChange="5.0" LargeChange="25.0" Value="{Binding FreecamSettings.WalkMoveSpeed, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Move Acceleration" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkMoveAcceleration, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="10.0" Maximum="3000.0" SmallChange="10.0" LargeChange="100.0" Value="{Binding FreecamSettings.WalkMoveAcceleration, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Move Deceleration" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkMoveDeceleration, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="10.0" Maximum="3000.0" SmallChange="10.0" LargeChange="100.0" Value="{Binding FreecamSettings.WalkMoveDeceleration, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Run Multiplier" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkRunMultiplier, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="1.0" Maximum="4.0" SmallChange="0.05" LargeChange="0.25" Value="{Binding FreecamSettings.WalkRunMultiplier, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Crouch Speed Multiplier" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkCrouchSpeedMultiplier, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.1" Maximum="1.5" SmallChange="0.05" LargeChange="0.1" Value="{Binding FreecamSettings.WalkCrouchSpeedMultiplier, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Gravity" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkGravity, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="100.0" Maximum="2000.0" SmallChange="25.0" LargeChange="100.0" Value="{Binding FreecamSettings.WalkGravity, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Jump Speed" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkJumpSpeed, StringFormat={}{0:F0}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="50.0" Maximum="600.0" SmallChange="10.0" LargeChange="25.0" Value="{Binding FreecamSettings.WalkJumpSpeed, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <TextBlock Text="Walk mode uses analog WASD, analog sprint on right-stick X+, and analog crouch on down/right-stick Y-." Foreground="#888888" FontSize="12" TextWrapping="Wrap" />
                                     </StackPanel>
-
-                                    <TextBlock Text="Move Acceleration"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="10.0" Maximum="3000.0" SmallChange="10.0" LargeChange="100.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkMoveAcceleration, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkMoveAcceleration, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
+                                </Expander>
+                                <Expander Header="Smoothing &amp; collision" IsExpanded="False" HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Smoothing" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Look Half-time" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkLookHalfTime, StringFormat={}{0:F3}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.WalkLookHalfTime, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="FOV Half-time" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkFovHalfTime, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.01" Maximum="1.5" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.WalkFovHalfTime, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <TextBlock Text="Collision" Foreground="#CCCCCC" FontWeight="SemiBold" Margin="0,8,0,0" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Hull Radius" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkHullRadius, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="2.0" Maximum="32.0" SmallChange="1.0" LargeChange="2.0" Value="{Binding FreecamSettings.WalkHullRadius, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Standing Half-height" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkHullHalfHeight, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="8.0" Maximum="64.0" SmallChange="1.0" LargeChange="4.0" Value="{Binding FreecamSettings.WalkHullHalfHeight, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Crouch Half-height" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkCrouchHullHalfHeight, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="8.0" Maximum="64.0" SmallChange="1.0" LargeChange="4.0" Value="{Binding FreecamSettings.WalkCrouchHullHalfHeight, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Camera Top Inset" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkCameraTopInset, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="16.0" SmallChange="0.5" LargeChange="1.0" Value="{Binding FreecamSettings.WalkCameraTopInset, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Step Height" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkStepHeight, StringFormat={}{0:F1}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="48.0" SmallChange="1.0" LargeChange="2.0" Value="{Binding FreecamSettings.WalkStepHeight, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Ground Probe" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkGroundProbe, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.25" LargeChange="0.5" Value="{Binding FreecamSettings.WalkGroundProbe, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Ground Normal Z" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkMinGroundNormalZ, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.1" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.WalkMinGroundNormalZ, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <ToggleSwitch IsChecked="{Binding FreecamSettings.WalkModeDefaultEnabled, Mode=TwoWay}" Content="Walk mode enabled by default" Foreground="#E6E6E6" />
                                     </StackPanel>
-
-                                    <TextBlock Text="Move Deceleration"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="10.0" Maximum="3000.0" SmallChange="10.0" LargeChange="100.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkMoveDeceleration, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkMoveDeceleration, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Run Multiplier"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="1.0" Maximum="4.0" SmallChange="0.05" LargeChange="0.25" Width="200"
-                                                Value="{Binding FreecamSettings.WalkRunMultiplier, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkRunMultiplier, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Crouch Speed Multiplier"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.1" Maximum="1.5" SmallChange="0.05" LargeChange="0.1" Width="200"
-                                                Value="{Binding FreecamSettings.WalkCrouchSpeedMultiplier, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkCrouchSpeedMultiplier, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Gravity"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="100.0" Maximum="2000.0" SmallChange="25.0" LargeChange="100.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkGravity, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkGravity, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Jump Speed"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="50.0" Maximum="600.0" SmallChange="10.0" LargeChange="25.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkJumpSpeed, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkJumpSpeed, StringFormat={}{0:F0}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Walk mode uses analog WASD, analog sprint on right-stick X+, and analog crouch on down/right-stick Y-."
-                                               Foreground="#888888"
-                                               FontSize="12"
-                                               TextWrapping="Wrap"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2" Spacing="12">
-                                    <TextBlock Text="Smoothing"
-                                               Foreground="#CCCCCC"
-                                               FontWeight="SemiBold"/>
-
-                                    <TextBlock Text="Look Half-time"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Width="200"
-                                                Value="{Binding FreecamSettings.WalkLookHalfTime, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkLookHalfTime, StringFormat={}{0:F3}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="FOV Half-time"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.01" Maximum="1.5" SmallChange="0.01" LargeChange="0.05" Width="200"
-                                                Value="{Binding FreecamSettings.WalkFovHalfTime, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkFovHalfTime, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Collision"
-                                               Foreground="#CCCCCC"
-                                               FontWeight="SemiBold"
-                                               Margin="0,8,0,0"/>
-
-                                    <TextBlock Text="Hull Radius"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="2.0" Maximum="32.0" SmallChange="1.0" LargeChange="2.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkHullRadius, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkHullRadius, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Standing Half-height"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="8.0" Maximum="64.0" SmallChange="1.0" LargeChange="4.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkHullHalfHeight, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkHullHalfHeight, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Crouch Half-height"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="8.0" Maximum="64.0" SmallChange="1.0" LargeChange="4.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkCrouchHullHalfHeight, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkCrouchHullHalfHeight, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Camera Top Inset"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="16.0" SmallChange="0.5" LargeChange="1.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkCameraTopInset, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkCameraTopInset, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Step Height"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="48.0" SmallChange="1.0" LargeChange="2.0" Width="200"
-                                                Value="{Binding FreecamSettings.WalkStepHeight, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkStepHeight, StringFormat={}{0:F1}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Ground Probe"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.25" LargeChange="0.5" Width="200"
-                                                Value="{Binding FreecamSettings.WalkGroundProbe, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkGroundProbe, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Ground Normal Z"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.1" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Width="200"
-                                                Value="{Binding FreecamSettings.WalkMinGroundNormalZ, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkMinGroundNormalZ, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.WalkModeDefaultEnabled, Mode=TwoWay}"
-                                                  Content="Walk mode enabled by default"
-                                                  Foreground="#E6E6E6"/>
-                                </StackPanel>
-                            </Grid>
+                                </Expander>
+                            </StackPanel>
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="Handheld">
                         <ScrollViewer>
-                            <Grid Margin="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="20"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0" Spacing="12">
-                                    <TextBlock Text="Shake"
-                                               Foreground="#CCCCCC"
-                                               FontWeight="SemiBold"/>
-
-                                    <TextBlock Text="Position Amplitude"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="5.0" SmallChange="0.05" LargeChange="0.25" Width="200"
-                                                Value="{Binding FreecamSettings.HandheldShakePosAmplitude, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HandheldShakePosAmplitude, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                            <StackPanel Margin="10" Spacing="8">
+                                <Expander Header="Shake &amp; walk bob" IsExpanded="True" HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Shake" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Position Amplitude" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HandheldShakePosAmplitude, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="5.0" SmallChange="0.05" LargeChange="0.25" Value="{Binding FreecamSettings.HandheldShakePosAmplitude, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Angle Amplitude" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HandheldShakeAngAmplitude, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="5.0" SmallChange="0.05" LargeChange="0.25" Value="{Binding FreecamSettings.HandheldShakeAngAmplitude, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Frequency" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HandheldShakeFrequency, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="2.0" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.HandheldShakeFrequency, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <TextBlock Text="Walk bob" Foreground="#CCCCCC" FontWeight="SemiBold" Margin="0,8,0,0" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Amplitude Z" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeZ, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Value="{Binding FreecamSettings.WalkBobAmplitudeZ, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Amplitude Side" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeSide, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Value="{Binding FreecamSettings.WalkBobAmplitudeSide, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Amplitude Roll" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeRoll, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Value="{Binding FreecamSettings.WalkBobAmplitudeRoll, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Bob Frequency" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.WalkBobFrequency, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="3.0" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.WalkBobFrequency, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
                                     </StackPanel>
-
-                                    <TextBlock Text="Angle Amplitude"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="5.0" SmallChange="0.05" LargeChange="0.25" Width="200"
-                                                Value="{Binding FreecamSettings.HandheldShakeAngAmplitude, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HandheldShakeAngAmplitude, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
+                                </Expander>
+                                <Expander Header="Drift" IsExpanded="False" HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Drift" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="14" LineSpacing="12">
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Position Amplitude" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HandheldDriftPosAmplitude, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="10.0" SmallChange="0.05" LargeChange="0.25" Value="{Binding FreecamSettings.HandheldDriftPosAmplitude, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Angle Amplitude" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HandheldDriftAngAmplitude, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="10.0" SmallChange="0.05" LargeChange="0.25" Value="{Binding FreecamSettings.HandheldDriftAngAmplitude, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                            <StackPanel Spacing="4" MinWidth="190" MaxWidth="280">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <TextBlock Text="Frequency" Foreground="#CCCCCC" />
+                                                    <TextBlock Text="{Binding FreecamSettings.HandheldDriftFrequency, StringFormat={}{0:F2}}" Foreground="#E6E6E6" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                </Grid>
+                                                <Slider Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Value="{Binding FreecamSettings.HandheldDriftFrequency, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="170" MaxWidth="280" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <ToggleSwitch IsChecked="{Binding FreecamSettings.HandheldDefaultEnabled, Mode=TwoWay}" Content="Handheld enabled by default for regular freecam" Foreground="#E6E6E6" Margin="0,8,0,0" />
                                     </StackPanel>
-
-                                    <TextBlock Text="Frequency"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="2.0" SmallChange="0.01" LargeChange="0.05" Width="200"
-                                                Value="{Binding FreecamSettings.HandheldShakeFrequency, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HandheldShakeFrequency, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Walk bob"
-                                               Foreground="#CCCCCC"
-                                               FontWeight="SemiBold"
-                                               Margin="0,8,0,0"/>
-
-                                    <TextBlock Text="Amplitude Z"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Width="200"
-                                                Value="{Binding FreecamSettings.WalkBobAmplitudeZ, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeZ, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Amplitude Side"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Width="200"
-                                                Value="{Binding FreecamSettings.WalkBobAmplitudeSide, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeSide, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Amplitude Roll"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="8.0" SmallChange="0.05" LargeChange="0.25" Width="200"
-                                                Value="{Binding FreecamSettings.WalkBobAmplitudeRoll, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkBobAmplitudeRoll, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Bob Frequency"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="3.0" SmallChange="0.01" LargeChange="0.05" Width="200"
-                                                Value="{Binding FreecamSettings.WalkBobFrequency, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.WalkBobFrequency, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2" Spacing="12">
-                                    <TextBlock Text="Drift"
-                                               Foreground="#CCCCCC"
-                                               FontWeight="SemiBold"/>
-
-                                    <TextBlock Text="Position Amplitude"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="10.0" SmallChange="0.05" LargeChange="0.25" Width="200"
-                                                Value="{Binding FreecamSettings.HandheldDriftPosAmplitude, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HandheldDriftPosAmplitude, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Angle Amplitude"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="10.0" SmallChange="0.05" LargeChange="0.25" Width="200"
-                                                Value="{Binding FreecamSettings.HandheldDriftAngAmplitude, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HandheldDriftAngAmplitude, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <TextBlock Text="Frequency"
-                                               Foreground="#CCCCCC"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Slider Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.05" Width="200"
-                                                Value="{Binding FreecamSettings.HandheldDriftFrequency, Mode=TwoWay}"/>
-                                        <TextBlock Text="{Binding FreecamSettings.HandheldDriftFrequency, StringFormat={}{0:F2}}" Width="50" Foreground="#E6E6E6"/>
-                                    </StackPanel>
-
-                                    <ToggleSwitch IsChecked="{Binding FreecamSettings.HandheldDefaultEnabled, Mode=TwoWay}"
-                                                  Content="Handheld enabled by default for regular freecam"
-                                                  Foreground="#E6E6E6"
-                                                  Margin="0,8,0,0"/>
-                                </StackPanel>
-                            </Grid>
+                                </Expander>
+                            </StackPanel>
                         </ScrollViewer>
                     </TabItem>
                 </TabControl>
@@ -1942,18 +1608,17 @@
         <Border Background="#1E1E1E" Padding="10" Focusable="True"
                 IsVisible="{Binding IsEditingAttachPresetAnimation}">
             <Grid RowDefinitions="Auto,*" RowSpacing="10">
-                <StackPanel Orientation="Horizontal" Spacing="8">
+                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
                     <Button Content="Back"
                             Command="{Binding CloseAttachPresetAnimationCommand}"/>
                     <TextBlock Text="{Binding AttachPresetAnimationEditor.Title}"
                                Foreground="#E6E6E6"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"/>
-                </StackPanel>
+                </WrapPanel>
                 <docks:AttachPresetAnimationDockView Grid.Row="1"
                                                      DataContext="{Binding AttachPresetAnimationEditor}"/>
             </Grid>
         </Border>
     </Grid>
 </UserControl>
-
