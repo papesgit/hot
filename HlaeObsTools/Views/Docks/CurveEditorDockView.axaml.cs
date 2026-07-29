@@ -126,6 +126,18 @@ public partial class CurveEditorDockView : UserControl
         }
     }
 
+    private void OnChannelGroupVisibilityPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Control { DataContext: CurveChannelGroupViewModel group }
+            && DataContext is CurveEditorDockViewModel vm
+            && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Control)) vm.SoloChannelGroup(group);
+            else group.IsVisible = !group.IsVisible;
+            e.Handled = true;
+        }
+    }
+
     private void OnChannelGroupPressed(object? sender, PointerPressedEventArgs e)
     {
         if (sender is Control { DataContext: CurveChannelGroupViewModel group }

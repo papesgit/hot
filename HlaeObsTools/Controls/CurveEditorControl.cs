@@ -23,7 +23,7 @@ public sealed class CurveEditorControl : Control
     public static readonly StyledProperty<CurveEditorViewMode> ViewModeProperty =
         AvaloniaProperty.Register<CurveEditorControl, CurveEditorViewMode>(nameof(ViewMode));
     public static readonly StyledProperty<bool> SnapEnabledProperty =
-        AvaloniaProperty.Register<CurveEditorControl, bool>(nameof(SnapEnabled), true);
+        AvaloniaProperty.Register<CurveEditorControl, bool>(nameof(SnapEnabled), false);
     public static readonly StyledProperty<double> SnapIntervalProperty =
         AvaloniaProperty.Register<CurveEditorControl, double>(nameof(SnapInterval), 0.1);
     public static readonly StyledProperty<int> FitAllRequestProperty =
@@ -35,12 +35,14 @@ public sealed class CurveEditorControl : Control
 
     private const double LeftGutter = 55;
     private const double BottomGutter = 22;
+    private const double StackedChannelGap = 12;
+    private const double NormalizedFitSpan = 1.1;
     private double _timeMin;
     private double _timeMax = 10;
     private double _valueMin = -1;
     private double _valueMax = 1;
-    private double _normalizedCenter;
-    private double _normalizedSpan = 2;
+    private double _normalizedCenter = .5;
+    private double _normalizedSpan = 1;
     private double _stackedScrollOffset;
     private Point _lastPointer;
     private bool _panning;
@@ -57,6 +59,7 @@ public sealed class CurveEditorControl : Control
     private DragAxis _dragAxis;
     private bool _historyEditActive;
     private readonly Dictionary<CampathCurveKey, (CampathCurveChannel channel, double time, double value)> _dragOrigins = new();
+    private readonly Dictionary<CampathCurveChannel, (double min, double max)> _dragValueRanges = new();
     private readonly HashSet<CampathCurveKey> _selectionBeforeBox = new();
     private readonly List<(Rect rect, CampathCurveChannel channel, CampathCurveKey key)> _keyHits = new();
     private readonly List<(Rect rect, CampathCurveChannel channel, CampathCurveKey key, TangentSide side)> _tangentHits = new();
@@ -346,6 +349,7 @@ public sealed class CurveEditorControl : Control
             foreach (var channel in Channels ?? [])
                 foreach (var key in channel.Keys.Where(key => key.Selected))
                     _dragOrigins[key] = (channel, key.Time, key.Value);
+            SnapshotDragValueRanges();
             BeginHistoryEdit();
             e.Pointer.Capture(this); InvalidateVisual(); e.Handled = true;
             SelectionChanged?.Invoke();
@@ -463,7 +467,7 @@ public sealed class CurveEditorControl : Control
         if (_dragKey != null && _dragTangent == TangentSide.None)
             foreach (var channel in _dragOrigins.Values.Select(value => value.channel).Distinct()) SortKeys(channel);
         EndHistoryEdit();
-        _panning = false; _draggingPlayhead = false; _boxSelecting = false; _dragKey = null; _dragChannel = null; _dragTangent = TangentSide.None; _dragOrigins.Clear(); e.Pointer.Capture(null); InvalidateVisual();
+        _panning = false; _draggingPlayhead = false; _boxSelecting = false; _dragKey = null; _dragChannel = null; _dragTangent = TangentSide.None; _dragOrigins.Clear(); _dragValueRanges.Clear(); e.Pointer.Capture(null); InvalidateVisual();
         if (completedPlayheadDrag)
             PlayheadDragCompleted?.Invoke();
     }
@@ -763,7 +767,7 @@ public sealed class CurveEditorControl : Control
         if (keys.Count == 0) return; var minT = keys.Min(k => k.Time); var maxT = keys.Max(k => k.Time); var minV = keys.Min(k => k.Value); var maxV = keys.Max(k => k.Value);
         var padT = Math.Max(.25, (maxT - minT) * .08); var padV = Math.Max(1, (maxV - minV) * .08);
         _timeMin = Math.Max(0, minT - padT); _timeMax = maxT + padT; _valueMin = minV - padV; _valueMax = maxV + padV;
-        _normalizedCenter = 0; _normalizedSpan = 2.2; _stackedScrollOffset = 0; InvalidateVisual();
+        _normalizedCenter = .5; _normalizedSpan = NormalizedFitSpan; _stackedScrollOffset = 0; InvalidateVisual();
     }
 
     private IEnumerable<CampathCurveKey> VisibleKeys() => Channels?.Where(c => c.IsVisible).SelectMany(c => c.Keys) ?? [];
@@ -776,10 +780,11 @@ public sealed class CurveEditorControl : Control
     private double ValueToY(CampathCurveChannel? c, double v, Rect p, int index, int count)
     {
         if (ViewMode == CurveEditorViewMode.Absolute || c == null) return p.Bottom - (v - _valueMin) / Math.Max(1e-9, _valueMax - _valueMin) * p.Height;
-        var min = c.Keys.Count == 0 ? 0 : c.Keys.Min(k => k.Value); var max = c.Keys.Count == 0 ? 1 : c.Keys.Max(k => k.Value); if (Math.Abs(max - min) < 1e-9) { min -= 1; max += 1; }
-        var normalized = (v - min) / (max - min) * 2.0 - 1.0;
+        var (min, max) = GetChannelValueRange(c);
+        var normalized = (v - min) / (max - min);
         if (ViewMode == CurveEditorViewMode.Normalized) return NormalizedToY(normalized, p);
-        return p.Top + index * StackedChannelHeight - _stackedScrollOffset + (1 - (normalized + 1) * .5) * StackedChannelHeight;
+        var (top, height) = GetStackedContentBounds(p, index);
+        return top + (1 - normalized) * height;
     }
     private double YToValue(CampathCurveChannel? c, double y, Rect p)
     {
@@ -787,8 +792,9 @@ public sealed class CurveEditorControl : Control
         var visible = Channels?.Where(x => x.IsVisible).ToList() ?? []; var index = Math.Max(0, visible.IndexOf(c));
         var normalized = ViewMode == CurveEditorViewMode.Normalized
             ? YToNormalized(y, p)
-            : (1 - (y - p.Top - index * StackedChannelHeight + _stackedScrollOffset) / StackedChannelHeight) * 2.0 - 1.0;
-        var min = c.Keys.Min(k => k.Value); var max = c.Keys.Max(k => k.Value); if (Math.Abs(max - min) < 1e-9) { min -= 1; max += 1; } return min + (normalized + 1.0) * .5 * (max - min);
+            : GetStackedNormalizedValue(y, p, index);
+        var (min, max) = GetChannelValueRange(c);
+        return min + normalized * (max - min);
     }
     private double ValueToScreenY(CampathCurveChannel channel, double value, Rect plot)
     {
@@ -801,6 +807,43 @@ public sealed class CurveEditorControl : Control
         return plot.Bottom - (value - min) / _normalizedSpan * plot.Height;
     }
     private double YToNormalized(double y, Rect plot) => _normalizedCenter - _normalizedSpan * .5 + (plot.Bottom - y) / plot.Height * _normalizedSpan;
+    private (double top, double height) GetStackedContentBounds(Rect plot, int index)
+    {
+        var gap = Math.Min(StackedChannelGap, StackedChannelHeight * .25);
+        return (
+            plot.Top + index * StackedChannelHeight - _stackedScrollOffset + gap * .5,
+            Math.Max(1, StackedChannelHeight - gap));
+    }
+    private double GetStackedNormalizedValue(double y, Rect plot, int index)
+    {
+        var (top, height) = GetStackedContentBounds(plot, index);
+        return 1 - (y - top) / height;
+    }
+    private (double min, double max) GetChannelValueRange(CampathCurveChannel channel)
+    {
+        if (_dragValueRanges.TryGetValue(channel, out var range))
+            return range;
+        return CalculateChannelValueRange(channel);
+    }
+    private static (double min, double max) CalculateChannelValueRange(CampathCurveChannel channel)
+    {
+        if (channel.Keys.Count == 0)
+            return (0, 1);
+        var min = channel.Keys.Min(key => key.Value);
+        var max = channel.Keys.Max(key => key.Value);
+        if (Math.Abs(max - min) < 1e-9)
+        {
+            min -= 1;
+            max += 1;
+        }
+        return (min, max);
+    }
+    private void SnapshotDragValueRanges()
+    {
+        _dragValueRanges.Clear();
+        foreach (var channel in Channels ?? [])
+            _dragValueRanges[channel] = CalculateChannelValueRange(channel);
+    }
     private void ClampStackedScroll(Rect plot, int count)
     {
         var maximum = Math.Max(0, count * StackedChannelHeight - plot.Height);

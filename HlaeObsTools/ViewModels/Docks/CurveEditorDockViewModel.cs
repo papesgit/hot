@@ -17,7 +17,7 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
     private CampathSequenceViewModel? _sequence;
     private readonly Viewport3DDockViewModel _viewport;
     private CurveEditorViewMode _viewMode;
-    private bool _snapEnabled = true;
+    private bool _snapEnabled;
     private double _snapInterval = 0.1;
     private int _fitAllRequest;
     private int _fitSelectionRequest;
@@ -148,6 +148,12 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
     {
         foreach (var candidate in Document.Channels)
             candidate.IsVisible = ReferenceEquals(candidate, channel);
+    }
+    public void SoloChannelGroup(CurveChannelGroupViewModel group)
+    {
+        var groupChannels = group.Channels.ToHashSet();
+        foreach (var candidate in Document.Channels)
+            candidate.IsVisible = groupChannels.Contains(candidate);
     }
     public void AddKeys(IEnumerable<CampathCurveChannel> channels, bool useEvaluatedValue)
     {
