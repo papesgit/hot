@@ -41,6 +41,7 @@ public sealed class CampathSequenceTimelineControl : Panel
     private readonly HashSet<CampathEditorViewModel> _historyEditors = new();
     private readonly HashSet<ObservableCollection<CampathCurveKey>> _observedCurveKeyCollections = new();
     private readonly HashSet<CampathCurveKey> _observedCurveKeys = new();
+    private readonly HashSet<TrackSelection> _selectedCurveTracks = new();
     private readonly List<ValueEditorEntry> _valueEditors = new();
     private readonly List<ModeEditorEntry> _modeEditors = new();
     private readonly TimelineDrawingSurface _drawingSurface;
@@ -65,6 +66,7 @@ public sealed class CampathSequenceTimelineControl : Panel
     private Rect _marqueeRect;
     private Point _keyDragStart;
     private Point _lastPointer;
+    private TrackSelectionAnchor? _trackSelectionAnchor;
 
     public CampathSequenceTimelineControl()
     {
@@ -266,7 +268,8 @@ public sealed class CampathSequenceTimelineControl : Panel
 
     private void DrawGroupRow(DrawingContext context, CampathCameraTrackViewModel camera, string group, ref double y)
     {
-        DrawRowBackground(context, y, 1);
+        DrawRowBackground(context, y, 1,
+            _selectedCurveTracks.Contains(new TrackSelection(camera.Id, RowKind.Group, group)));
         var expanded = _expandedGroups.Contains((camera.Id, group));
         DrawText(context, expanded ? "▼" : "▶", 25, y + 6, "#AEB3BD");
         DrawText(context, group, 50, y + 6, "#C7CBD3", true);
@@ -284,7 +287,8 @@ public sealed class CampathSequenceTimelineControl : Panel
     private void DrawChannelRow(DrawingContext context, CampathCameraTrackViewModel camera,
         CampathCurveChannel channel, ref double y)
     {
-        DrawRowBackground(context, y, 2);
+        DrawRowBackground(context, y, 2,
+            _selectedCurveTracks.Contains(new TrackSelection(camera.Id, RowKind.Channel, channel.Id)));
         context.FillRectangle(new SolidColorBrush(Color.Parse(channel.Color)), new Rect(55, y + 10, 7, 7));
         DrawText(context, channel.Name, 68, y + 6, "#D2D5DB");
         if (camera.Editor.IsCurveMode)
@@ -1030,6 +1034,14 @@ public sealed class CampathSequenceTimelineControl : Panel
                 BeginMarquee(point, e.KeyModifiers, e.Pointer);
                 e.Handled = true;
             }
+            else if (point.X < LabelWidth && point.Y >= RulerHeight)
+            {
+                _selectedCut = null;
+                ClearKeySelection();
+                ClearCurveTrackSelection();
+                e.Handled = true;
+                InvalidateVisual();
+            }
             return;
         }
         if (hit.Kind == RowKind.Group && hit.Camera != null
@@ -1075,13 +1087,18 @@ public sealed class CampathSequenceTimelineControl : Panel
         else if (hit.Kind == RowKind.Camera && hit.Camera?.CanExpand == true
             && point.X >= 0 && point.X <= 28)
         {
+            ClearCurveTrackSelection();
             hit.Camera.IsExpanded = !hit.Camera.IsExpanded;
             EnsureValueEditorLayout();
             InvalidateMeasure();
         }
         else if (hit.Kind == RowKind.Camera && hit.Camera != null && point.X < LabelWidth)
         {
+            ClearKeySelection();
+            ClearCurveTrackSelection();
             Sequence.SelectedCamera = hit.Camera;
+            ShowAllCurveChannels(hit.Camera);
+            e.Handled = true;
         }
         else if (hit.Kind == RowKind.Group && hit.Camera != null && hit.Value != null
             && point.X >= 16 && point.X <= 44)
@@ -1091,9 +1108,22 @@ public sealed class CampathSequenceTimelineControl : Panel
             EnsureValueEditorLayout();
             InvalidateMeasure();
         }
+        else if ((hit.Kind is RowKind.Group or RowKind.Channel)
+            && hit.Camera != null && hit.Value != null && point.X < LabelWidth)
+        {
+            ClearKeySelection();
+            SelectCurveTracks(hit, e.KeyModifiers);
+            e.Handled = true;
+        }
         else if (point.X >= LabelWidth && point.Y >= RulerHeight + RowHeight)
         {
             BeginMarquee(point, e.KeyModifiers, e.Pointer);
+            e.Handled = true;
+        }
+        else if (point.X < LabelWidth)
+        {
+            ClearKeySelection();
+            ClearCurveTrackSelection();
             e.Handled = true;
         }
         InvalidateVisual();
@@ -1164,6 +1194,8 @@ public sealed class CampathSequenceTimelineControl : Panel
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
         var point = e.GetPosition(this);
+        if (point.X < LabelWidth)
+            return;
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             ViewStart = Math.Max(0.0, ViewStart - e.Delta.Y * SecondsPerPixel * 80);
@@ -1177,6 +1209,122 @@ public sealed class CampathSequenceTimelineControl : Panel
                 ViewStart = Math.Max(0.0, anchor - (point.X - LabelWidth) * SecondsPerPixel);
         }
         e.Handled = true;
+    }
+
+    private void SelectCurveTracks(RowHit clickedRow, KeyModifiers modifiers)
+    {
+        if (Sequence == null || clickedRow.Camera == null || clickedRow.Value == null)
+            return;
+
+        var camera = clickedRow.Camera;
+        if (!ReferenceEquals(Sequence.SelectedCamera, camera)
+            || _selectedCurveTracks.Any(selection => selection.CameraId != camera.Id))
+            ClearCurveTrackSelection();
+        Sequence.SelectedCamera = camera;
+        var selectableRows = _rowHits
+            .Where(row => ReferenceEquals(row.Camera, camera)
+                && (row.Kind is RowKind.Group or RowKind.Channel)
+                && row.Value != null)
+            .ToList();
+        var clickedIndex = selectableRows.FindIndex(row => SameTrack(row, clickedRow));
+        if (clickedIndex < 0)
+            return;
+
+        var control = modifiers.HasFlag(KeyModifiers.Control);
+        var shift = modifiers.HasFlag(KeyModifiers.Shift);
+        var rangeStart = -1;
+        if (shift && _trackSelectionAnchor is { } anchor
+            && anchor.CameraId == camera.Id)
+        {
+            rangeStart = selectableRows.FindIndex(row =>
+                row.Kind == anchor.Kind && string.Equals(row.Value, anchor.Value, StringComparison.Ordinal));
+        }
+
+        if (rangeStart >= 0)
+        {
+            if (!control)
+                _selectedCurveTracks.Clear();
+
+            var first = Math.Min(rangeStart, clickedIndex);
+            var last = Math.Max(rangeStart, clickedIndex);
+            foreach (var row in selectableRows.Skip(first).Take(last - first + 1))
+                _selectedCurveTracks.Add(ToTrackSelection(row));
+        }
+        else
+        {
+            var selection = ToTrackSelection(clickedRow);
+            if (control)
+            {
+                if (!_selectedCurveTracks.Add(selection))
+                    _selectedCurveTracks.Remove(selection);
+            }
+            else
+            {
+                _selectedCurveTracks.Clear();
+                _selectedCurveTracks.Add(selection);
+            }
+            _trackSelectionAnchor = new TrackSelectionAnchor(
+                camera.Id, clickedRow.Kind, clickedRow.Value);
+        }
+
+        ApplyCurveTrackSelection(camera);
+        _drawingSurface.InvalidateVisual();
+    }
+
+    private void ApplyCurveTrackSelection(CampathCameraTrackViewModel camera)
+    {
+        var selections = _selectedCurveTracks
+            .Where(selection => selection.CameraId == camera.Id)
+            .ToList();
+        if (selections.Count == 0)
+        {
+            ShowAllCurveChannels(camera);
+            return;
+        }
+
+        var selectedChannels = selections
+            .SelectMany(selection => GetChannelsForSelection(camera, selection))
+            .ToHashSet();
+        foreach (var channel in camera.Editor.CurveDocument.Channels)
+            channel.IsVisible = selectedChannels.Contains(channel);
+    }
+
+    private void ClearCurveTrackSelection()
+    {
+        _selectedCurveTracks.Clear();
+        _trackSelectionAnchor = null;
+        if (Sequence == null)
+            return;
+        foreach (var camera in Sequence.Cameras)
+            ShowAllCurveChannels(camera);
+        _drawingSurface.InvalidateVisual();
+    }
+
+    private static void ShowAllCurveChannels(CampathCameraTrackViewModel camera)
+    {
+        foreach (var channel in camera.Editor.CurveDocument.Channels)
+            channel.IsVisible = true;
+    }
+
+    private static TrackSelection ToTrackSelection(RowHit row) =>
+        new(row.Camera!.Id, row.Kind, row.Value!);
+
+    private static bool SameTrack(RowHit first, RowHit second) =>
+        ReferenceEquals(first.Camera, second.Camera)
+        && first.Kind == second.Kind
+        && string.Equals(first.Value, second.Value, StringComparison.Ordinal);
+
+    private static IEnumerable<CampathCurveChannel> GetChannelsForSelection(
+        CampathCameraTrackViewModel camera, TrackSelection selection)
+    {
+        return selection.Kind switch
+        {
+            RowKind.Group => camera.Editor.CurveDocument.Channels
+                .Where(channel => string.Equals(channel.Group, selection.Value, StringComparison.Ordinal)),
+            RowKind.Channel => camera.Editor.CurveDocument.Channels
+                .Where(channel => string.Equals(channel.Id, selection.Value, StringComparison.Ordinal)),
+            _ => []
+        };
     }
 
     private void BeginKeyDrag(KeyBundle bundle, Point point, KeyModifiers modifiers, IPointer pointer)
@@ -1810,7 +1958,13 @@ public sealed class CampathSequenceTimelineControl : Panel
             oldSequence.SetGizmoSelection(null);
         }
         if (e.NewValue is CampathSequenceViewModel newSequence)
+        {
             newSequence.PropertyChanged += OnSequencePropertyChanged;
+            foreach (var camera in newSequence.Cameras)
+                ShowAllCurveChannels(camera);
+        }
+        _selectedCurveTracks.Clear();
+        _trackSelectionAnchor = null;
         RefreshCurveSelectionSubscriptions();
         PublishGizmoSelection();
         EnsureValueEditorLayout();
@@ -1823,7 +1977,12 @@ public sealed class CampathSequenceTimelineControl : Panel
         if (e.PropertyName == nameof(CampathSequenceViewModel.ContentEnd))
             RefreshCurveSelectionSubscriptions();
         if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))
+        {
+            ClearCurveTrackSelection();
+            if (Sequence?.SelectedCamera is { } selectedCamera)
+                ShowAllCurveChannels(selectedCamera);
             PublishGizmoSelection();
+        }
         EnsureValueEditorLayout();
         UpdateValueEditors();
         if (e.PropertyName != nameof(CampathSequenceViewModel.PlayheadTime)
@@ -1908,6 +2067,8 @@ public sealed class CampathSequenceTimelineControl : Panel
 
     private enum RowKind { Cuts, Camera, Group, Channel }
     private enum CutDragMode { None, Move, ResizeStart, ResizeEnd }
+    private sealed record TrackSelection(Guid CameraId, RowKind Kind, string Value);
+    private sealed record TrackSelectionAnchor(Guid CameraId, RowKind Kind, string Value);
     private sealed record RowHit(Rect Bounds, RowKind Kind, CampathCameraTrackViewModel? Camera, string? Value);
     private sealed record KeyHit(Rect Bounds, KeyBundle Bundle);
     private sealed record CutHit(Rect Bounds, CameraCutSectionViewModel Cut);

@@ -30,7 +30,7 @@
 
         <Grid Grid.Row="1" ColumnDefinitions="180,*" IsVisible="{Binding IsCurveMode}">
             <Border Grid.Column="0" Background="#181A20" BorderBrush="#30333B" BorderThickness="0,0,1,0">
-                <ScrollViewer>
+                <ScrollViewer VerticalScrollBarVisibility="Hidden">
                   <StackPanel>
                     <ItemsControl ItemsSource="{Binding AllChannelGroups}">
                       <ItemsControl.ItemTemplate>
