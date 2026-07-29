@@ -74,7 +74,18 @@ public partial class App : Application
                 mainWindow.Show();
 
                 await ReportStartupProgressAsync(progress, "Finalizing workspace...", "Waiting for dock content to finalize.", 16);
-                await VideoDisplayDockView.WaitForStartupReadyAsync();
+                if (mainWindowViewModel.ShouldWaitForVideoDockStartup)
+                {
+                    try
+                    {
+                        await VideoDisplayDockView.WaitForStartupReadyAsync()
+                            .WaitAsync(TimeSpan.FromSeconds(10));
+                    }
+                    catch (TimeoutException)
+                    {
+                        Console.WriteLine("Video display startup readiness timed out; continuing application startup.");
+                    }
+                }
 
                 await ReportStartupProgressAsync(progress, "Completing startup...", "Opening main window.", 17);
 

@@ -137,6 +137,38 @@ public class AppSettingsData
     public bool DisableFocusInputGate { get; set; }
     public int GraphicsTargetFps { get; set; } = 30;
     public List<HotkeyBindingData> Hotkeys { get; set; } = new();
+    public string ActiveDockLayout { get; set; } = "Observer";
+    public List<DockLayoutData> UserDockLayouts { get; set; } = new();
+}
+
+public sealed class DockLayoutData
+{
+    public string Name { get; set; } = string.Empty;
+    public DockLayoutNodeData? Main { get; set; }
+    public List<string> HiddenDockableIds { get; set; } = new();
+    public Dictionary<string, string> HiddenDockableOwners { get; set; } = new();
+    public List<DockLayoutWindowData> Windows { get; set; } = new();
+}
+
+public sealed class DockLayoutNodeData
+{
+    public string Kind { get; set; } = string.Empty;
+    public string Id { get; set; } = string.Empty;
+    public double? Proportion { get; set; }
+    public string Orientation { get; set; } = string.Empty;
+    public string ActiveDockableId { get; set; } = string.Empty;
+    public List<DockLayoutNodeData> Children { get; set; } = new();
+}
+
+public sealed class DockLayoutWindowData
+{
+    public string Id { get; set; } = string.Empty;
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
+    public string WindowState { get; set; } = string.Empty;
+    public DockLayoutNodeData? Layout { get; set; }
 }
 
 public class AttachmentPresetPageData

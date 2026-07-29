@@ -13,6 +13,7 @@ using Dock.Avalonia.Diagnostics.Controls;
 using HlaeObsTools.Services.Hotkeys;
 using HlaeObsTools.ViewModels;
 using System;
+using System.Collections.Generic;
 
 namespace HlaeObsTools.Views;
 
@@ -38,6 +39,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = viewModel;
         InitializeDockMenu(viewModel);
+        InitializeLayoutMenu(viewModel);
+        viewModel.LayoutMenuChanged += OnLayoutMenuChanged;
         if (DataContext is MainWindowViewModel vm && vm.HotkeyService != null)
         {
             SetHotkeyOverlaySource(vm.HotkeyService);
@@ -78,6 +81,87 @@ public partial class MainWindow : Window
         }
 
         ViewMenuItem.ItemsSource = menuItems;
+    }
+
+    private void InitializeLayoutMenu(MainWindowViewModel viewModel)
+    {
+        var items = new List<object>();
+        foreach (var layoutItem in viewModel.LayoutMenuItems)
+        {
+            var menuItem = new MenuItem
+            {
+                Header = layoutItem.Name,
+                ToggleType = MenuItemToggleType.Radio,
+                GroupName = "DockLayouts",
+                DataContext = layoutItem
+            };
+            menuItem.Bind(
+                MenuItem.IsCheckedProperty,
+                new Binding(nameof(LayoutMenuItemViewModel.IsSelected))
+                {
+                    Mode = BindingMode.OneWay
+                });
+            menuItem.Click += (_, _) => viewModel.SelectLayout(layoutItem.Name);
+            items.Add(menuItem);
+        }
+
+        items.Add(new Separator());
+        var newLayoutItem = new MenuItem { Header = "New Layout\u2026" };
+        newLayoutItem.Click += NewLayout;
+        items.Add(newLayoutItem);
+
+        var deleteLayoutItem = new MenuItem
+        {
+            Header = "Delete Layout\u2026",
+            IsEnabled = viewModel.CanDeleteActiveLayout
+        };
+        deleteLayoutItem.Click += DeleteLayout;
+        items.Add(deleteLayoutItem);
+
+        LayoutMenuItem.ItemsSource = items;
+    }
+
+    private void OnLayoutMenuChanged(object? sender, EventArgs e)
+    {
+        if (DataContext is MainWindowViewModel viewModel)
+            InitializeLayoutMenu(viewModel);
+    }
+
+    private async void NewLayout(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+            return;
+
+        var name = await DialogHelpers.PromptAsync(
+            this,
+            "New Layout",
+            "Save the current dock arrangement as:",
+            "Layout name");
+        if (name == null)
+            return;
+
+        var error = viewModel.SaveCurrentLayout(name);
+        if (error != null)
+            await DialogHelpers.MessageAsync(this, "Unable to save layout", error);
+    }
+
+    private async void DeleteLayout(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+            return;
+
+        if (!viewModel.CanDeleteActiveLayout
+            || string.IsNullOrWhiteSpace(viewModel.ActiveLayoutName))
+        {
+            return;
+        }
+
+        var confirmed = await DialogHelpers.ConfirmAsync(
+            this,
+            "Delete Layout",
+            $"Delete the layout \"{viewModel.ActiveLayoutName}\"? The current dock arrangement will remain open, but the saved layout cannot be recovered.");
+        if (confirmed)
+            viewModel.DeleteLayout(viewModel.ActiveLayoutName);
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -315,6 +399,9 @@ public partial class MainWindow : Window
             _hotkeyService.StatusChanged -= OnHotkeyStatusChanged;
             _hotkeyService.HoverTargetChanged -= OnHotkeyHoverTargetChanged;
         }
+
+        if (DataContext is MainWindowViewModel viewModel)
+            viewModel.LayoutMenuChanged -= OnLayoutMenuChanged;
 
         base.OnClosed(e);
 

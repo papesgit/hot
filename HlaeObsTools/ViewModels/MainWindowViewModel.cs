@@ -28,6 +28,11 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
         new("TopCenter", "Video Stream")
     ];
 
+    public List<LayoutMenuItemViewModel> LayoutMenuItems { get; } = new();
+    public event EventHandler? LayoutMenuChanged;
+    public string ActiveLayoutName { get; private set; } = string.Empty;
+    public bool CanDeleteActiveLayout { get; private set; }
+
     public string Version => GetVersion();
 
     public string Title =>
@@ -95,6 +100,58 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
             menuItem.IsOpen = isOpen;
     }
 
+    internal void SetLayouts(IEnumerable<(string Name, bool IsBuiltIn)> layouts, string activeLayout)
+    {
+        LayoutMenuItems.Clear();
+        foreach (var layout in layouts)
+        {
+            LayoutMenuItems.Add(new LayoutMenuItemViewModel(
+                layout.Name,
+                layout.IsBuiltIn,
+                string.Equals(layout.Name, activeLayout, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        UpdateActiveLayoutState(activeLayout);
+        LayoutMenuChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    internal void SetActiveLayout(string name)
+    {
+        foreach (var item in LayoutMenuItems)
+            item.IsSelected = string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase);
+
+        UpdateActiveLayoutState(name);
+        LayoutMenuChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void UpdateActiveLayoutState(string name)
+    {
+        ActiveLayoutName = name;
+        CanDeleteActiveLayout = LayoutMenuItems.Any(item =>
+            item.IsSelected && !item.IsBuiltIn);
+    }
+
+    public void SelectLayout(string name)
+    {
+        _factory?.SelectLayout(name);
+    }
+
+    public string? SaveCurrentLayout(string name)
+    {
+        if (_factory == null)
+            return "The workspace is not ready yet.";
+
+        return _factory.SaveCurrentLayout(name);
+    }
+
+    public void DeleteLayout(string name)
+    {
+        _factory?.DeleteLayout(name);
+    }
+
+    public bool ShouldWaitForVideoDockStartup =>
+        _factory?.IsDockContentActive("TopCenter") == true;
+
     public void SetKeyboardSuppression(bool suppress)
     {
         _factory?.SetKeyboardSuppression(suppress);
@@ -133,5 +190,26 @@ public sealed class DockMenuItemViewModel : ViewModelBase
     {
         get => _isOpen;
         internal set => SetProperty(ref _isOpen, value);
+    }
+}
+
+public sealed class LayoutMenuItemViewModel : ViewModelBase
+{
+    private bool _isSelected;
+
+    public LayoutMenuItemViewModel(string name, bool isBuiltIn, bool isSelected)
+    {
+        Name = name;
+        IsBuiltIn = isBuiltIn;
+        _isSelected = isSelected;
+    }
+
+    public string Name { get; }
+    public bool IsBuiltIn { get; }
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        internal set => SetProperty(ref _isSelected, value);
     }
 }

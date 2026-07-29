@@ -37,6 +37,9 @@
                     <MenuItem x:Name="ViewMenuItem"
                               Header="View"
                               Padding="12,6" />
+                    <MenuItem x:Name="LayoutMenuItem"
+                              Header="Layout"
+                              Padding="12,6" />
                     <MenuItem Header="Help" Padding="12,6">
                         <MenuItem Header="Documentation"
                                   Click="OpenDocumentation" />

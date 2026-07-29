@@ -32,6 +32,8 @@ namespace HlaeObsTools.ViewModels;
 public class MainDockFactory : Factory, IDisposable
 {
     private const string DefaultCs2GameFolder = @"C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive";
+    public const string ObserverLayoutName = "Observer";
+    public const string CreateLayoutName = "Create";
 
     private readonly object _context;
     private readonly HlaeWebSocketClient _webSocketClient;
@@ -60,6 +62,10 @@ public class MainDockFactory : Factory, IDisposable
     private readonly GraphicsProducerClient _producerClient;
     private readonly Cs2LiveLinkReceiver _liveLinkReceiver;
     private readonly Dictionary<string, IDockable> _viewDockables = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IDock> _restoreOwners = new(StringComparer.Ordinal);
+    private IRootDock? _currentRoot;
+    private DockLayoutData? _observerPreset;
+    private string _activeLayoutName = ObserverLayoutName;
     private VideoDisplayDockViewModel? _videoDisplayVm;
     private GraphicsDockViewModel? _graphicsDockVm;
     private ReplayDockViewModel? _replayDockVm;
@@ -80,9 +86,22 @@ public class MainDockFactory : Factory, IDisposable
             if (e.Dockable != null)
                 NotifyDockVisibility(e.Dockable, true);
         };
+        DockableClosing += (_, e) =>
+        {
+            if (e.Dockable != null)
+                RememberRestoreOwner(e.Dockable);
+        };
+        DockableMoved += (_, e) =>
+        {
+            if (e.Dockable != null)
+                RememberRestoreOwner(e.Dockable);
+        };
 
         _settingsStorage = new SettingsStorage();
         _storedSettings = _settingsStorage.Load();
+        _storedSettings.UserDockLayouts ??= new List<DockLayoutData>();
+        if (string.IsNullOrWhiteSpace(_storedSettings.ActiveDockLayout))
+            _storedSettings.ActiveDockLayout = ObserverLayoutName;
         _hotkeyService = new HotkeyService();
         _hotkeyService.SetBindings(_storedSettings.Hotkeys ?? new List<HotkeyBindingData>());
 
@@ -572,7 +591,133 @@ public class MainDockFactory : Factory, IDisposable
         rootDock.DefaultDockable = mainLayout;
         rootDock.VisibleDockables = CreateList<IDockable>(mainLayout);
 
-        return rootDock;
+        _observerPreset = CaptureLayout(rootDock, ObserverLayoutName);
+        var initialLayout = ResolveInitialLayout(rootDock);
+        _currentRoot = initialLayout;
+        PublishLayoutMenu();
+        return initialLayout;
+    }
+
+    private IRootDock ResolveInitialLayout(IRootDock observerLayout)
+    {
+        var requested = _storedSettings.ActiveDockLayout;
+        if (string.Equals(requested, CreateLayoutName, StringComparison.OrdinalIgnoreCase))
+        {
+            _activeLayoutName = CreateLayoutName;
+            return CreateCreateLayout();
+        }
+
+        var userLayout = _storedSettings.UserDockLayouts.FirstOrDefault(layout =>
+            string.Equals(layout.Name, requested, StringComparison.OrdinalIgnoreCase));
+        if (userLayout?.Main != null && TryBuildRoot(userLayout, out var root))
+        {
+            _activeLayoutName = userLayout.Name;
+            return root;
+        }
+
+        _activeLayoutName = ObserverLayoutName;
+        return observerLayout;
+    }
+
+    private IRootDock CreateCreateLayout()
+    {
+        var videoDock = CreateToolGroup(
+            "CreateVideoDock",
+            0.51,
+            "TopCenter");
+        var viewportDock = CreateToolGroup(
+            "CreateViewportDock",
+            0.49,
+            "BottomCenter");
+        var settingsDock = CreateToolGroup(
+            "CreateSettingsDock",
+            0.18,
+            "BottomLeft",
+            "TopRight");
+        var curveDock = CreateToolGroup(
+            "CreateCurveDock",
+            0.36,
+            "CurveEditor");
+        var sequencerDock = CreateToolGroup(
+            "CreateSequencerDock",
+            0.46,
+            "CampathSequencer");
+
+        var topRow = new ProportionalDock
+        {
+            Id = "CreateTopRow",
+            Proportion = 0.56,
+            Orientation = Orientation.Horizontal,
+            VisibleDockables = CreateList<IDockable>(
+                videoDock,
+                new ProportionalDockSplitter(),
+                viewportDock)
+        };
+        var bottomRow = new ProportionalDock
+        {
+            Id = "CreateBottomRow",
+            Proportion = 0.44,
+            Orientation = Orientation.Horizontal,
+            VisibleDockables = CreateList<IDockable>(
+                settingsDock,
+                new ProportionalDockSplitter(),
+                curveDock,
+                new ProportionalDockSplitter(),
+                sequencerDock)
+        };
+        var main = new ProportionalDock
+        {
+            Id = "CreateMainLayout",
+            Proportion = double.NaN,
+            Orientation = Orientation.Vertical,
+            VisibleDockables = CreateList<IDockable>(
+                topRow,
+                new ProportionalDockSplitter(),
+                bottomRow)
+        };
+
+        var root = CreateWorkspaceRoot(main);
+        AddHiddenDockable(root, "TopLeft", videoDock);
+        AddHiddenDockable(root, "Graphics", settingsDock);
+        AddHiddenDockable(root, "Replay", settingsDock);
+        AddHiddenDockable(root, "BottomRight", settingsDock);
+        return root;
+    }
+
+    private ToolDock CreateToolGroup(string id, double proportion, params string[] dockableIds)
+    {
+        var dockables = dockableIds
+            .Select(id => _viewDockables[id])
+            .ToArray();
+        return new ToolDock
+        {
+            Id = id,
+            Proportion = proportion,
+            ActiveDockable = dockables[0],
+            VisibleDockables = CreateList(dockables)
+        };
+    }
+
+    private IRootDock CreateWorkspaceRoot(IDockable main)
+    {
+        var root = CreateRootDock();
+        root.Id = "Root";
+        root.Title = "HLAE Observer Tools";
+        root.ActiveDockable = main;
+        root.DefaultDockable = main;
+        root.VisibleDockables = CreateList(main);
+        return root;
+    }
+
+    private void AddHiddenDockable(IRootDock root, string dockableId, IDock originalOwner)
+    {
+        if (!_viewDockables.TryGetValue(dockableId, out var dockable))
+            return;
+
+        root.HiddenDockables ??= CreateList<IDockable>();
+        dockable.OriginalOwner = originalOwner;
+        _restoreOwners[dockableId] = originalOwner;
+        root.HiddenDockables.Add(dockable);
     }
 
     private void RegisterViewDockable(IDockable dockable)
@@ -595,14 +740,114 @@ public class MainDockFactory : Factory, IDisposable
 
         if (isHidden)
         {
-            var restored = RestoreDockable(id);
-            if (restored != null)
-                SetActiveDockable(restored);
+            RestoreViewDockable(dockable);
         }
         else
         {
+            RememberRestoreOwner(dockable);
             HideDockable(dockable);
         }
+    }
+
+    private void RestoreViewDockable(IDockable dockable)
+    {
+        if (_currentRoot == null || string.IsNullOrWhiteSpace(dockable.Id))
+            return;
+
+        RemoveFromHiddenDockables(_currentRoot, dockable);
+        if (_currentRoot.Windows != null)
+        {
+            foreach (var window in _currentRoot.Windows)
+            {
+                if (window.Layout is IRootDock floatingRoot)
+                    RemoveFromHiddenDockables(floatingRoot, dockable);
+            }
+        }
+
+        _restoreOwners.TryGetValue(dockable.Id, out var owner);
+        if (owner == null || !IsDockInCurrentLayout(owner))
+        {
+            owner = FindFirstToolDock(_currentRoot);
+            if (owner == null && _currentRoot.Windows != null)
+            {
+                foreach (var window in _currentRoot.Windows)
+                {
+                    owner = window.Layout == null ? null : FindFirstToolDock(window.Layout);
+                    if (owner != null)
+                        break;
+                }
+            }
+        }
+
+        if (owner == null)
+            return;
+
+        dockable.OriginalOwner = owner;
+        _restoreOwners[dockable.Id] = owner;
+        AddDockable(owner, dockable);
+        SetActiveDockable(dockable);
+        NotifyDockVisibility(dockable, true);
+    }
+
+    private bool IsDockInCurrentLayout(IDock target)
+    {
+        if (_currentRoot == null)
+            return false;
+        if (ContainsDock(_currentRoot, target))
+            return true;
+
+        if (_currentRoot.Windows != null)
+        {
+            foreach (var window in _currentRoot.Windows)
+            {
+                if (window.Layout != null && ContainsDock(window.Layout, target))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void RemoveFromHiddenDockables(IRootDock root, IDockable dockable)
+    {
+        root.HiddenDockables?.Remove(dockable);
+    }
+
+    private static bool ContainsDock(IDockable dockable, IDock target)
+    {
+        if (ReferenceEquals(dockable, target))
+            return true;
+        if (dockable is not IDock dock || dock.VisibleDockables == null)
+            return false;
+
+        foreach (var child in dock.VisibleDockables)
+        {
+            if (ContainsDock(child, target))
+                return true;
+        }
+        return false;
+    }
+
+    private static IDock? FindFirstToolDock(IDockable dockable)
+    {
+        if (dockable is IToolDock toolDock)
+            return toolDock;
+        if (dockable is not IDock dock || dock.VisibleDockables == null)
+            return null;
+
+        foreach (var child in dock.VisibleDockables)
+        {
+            var found = FindFirstToolDock(child);
+            if (found != null)
+                return found;
+        }
+        return null;
+    }
+
+    private void RememberRestoreOwner(IDockable dockable)
+    {
+        if (!string.IsNullOrWhiteSpace(dockable.Id) && dockable.Owner is IDock owner)
+            _restoreOwners[dockable.Id] = owner;
     }
 
     private void NotifyDockVisibility(IDockable dockable, bool isOpen)
@@ -611,8 +856,408 @@ public class MainDockFactory : Factory, IDisposable
             viewModel.SetDockVisibility(dockable.Id, isOpen);
     }
 
+    private void PublishLayoutMenu()
+    {
+        if (_context is not MainWindowViewModel viewModel)
+            return;
+
+        var layouts = new List<(string Name, bool IsBuiltIn)>
+        {
+            (ObserverLayoutName, true),
+            (CreateLayoutName, true)
+        };
+        layouts.AddRange(_storedSettings.UserDockLayouts
+            .OrderBy(layout => layout.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(layout => (layout.Name, false)));
+        viewModel.SetLayouts(layouts, _activeLayoutName);
+    }
+
+    public void SelectLayout(string name)
+    {
+        IRootDock? root = null;
+        if (string.Equals(name, ObserverLayoutName, StringComparison.OrdinalIgnoreCase)
+            && _observerPreset != null)
+        {
+            TryBuildRoot(_observerPreset, out root);
+            name = ObserverLayoutName;
+        }
+        else if (string.Equals(name, CreateLayoutName, StringComparison.OrdinalIgnoreCase))
+        {
+            root = CreateCreateLayout();
+            name = CreateLayoutName;
+        }
+        else
+        {
+            var saved = _storedSettings.UserDockLayouts.FirstOrDefault(layout =>
+                string.Equals(layout.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (saved != null)
+                TryBuildRoot(saved, out root);
+        }
+
+        if (root == null)
+            return;
+
+        ApplyLayout(root, name);
+    }
+
+    public string? SaveCurrentLayout(string name)
+    {
+        name = name.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return "Enter a layout name.";
+        if (string.Equals(name, ObserverLayoutName, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, CreateLayoutName, StringComparison.OrdinalIgnoreCase))
+        {
+            return "Observer and Create are built-in layout names.";
+        }
+        if (_storedSettings.UserDockLayouts.Any(layout =>
+                string.Equals(layout.Name, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return "A layout with that name already exists.";
+        }
+        if (_currentRoot == null)
+            return "The current layout is unavailable.";
+
+        _storedSettings.UserDockLayouts.Add(CaptureLayout(_currentRoot, name));
+        _activeLayoutName = name;
+        _storedSettings.ActiveDockLayout = name;
+        _settingsStorage.Save(_storedSettings);
+        PublishLayoutMenu();
+        return null;
+    }
+
+    public void DeleteLayout(string name)
+    {
+        if (!string.Equals(_activeLayoutName, name, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var removed = _storedSettings.UserDockLayouts.RemoveAll(layout =>
+            string.Equals(layout.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (removed == 0)
+            return;
+
+        // Remove only the saved preset. Keep the live dock tree untouched.
+        // Observer becomes the next-launch fallback because this arrangement
+        // no longer has a persisted layout behind it.
+        _activeLayoutName = string.Empty;
+        _storedSettings.ActiveDockLayout = ObserverLayoutName;
+        _settingsStorage.Save(_storedSettings);
+        PublishLayoutMenu();
+    }
+
+    private void ApplyLayout(IRootDock root, string name)
+    {
+        if (_currentRoot?.Windows != null)
+        {
+            foreach (var window in _currentRoot.Windows.ToList())
+                window.Host?.Exit();
+        }
+
+        _currentRoot = root;
+        _activeLayoutName = name;
+        _storedSettings.ActiveDockLayout = name;
+        _settingsStorage.Save(_storedSettings);
+
+        if (_context is MainWindowViewModel viewModel)
+        {
+            viewModel.Layout = root;
+            viewModel.SetActiveLayout(name);
+        }
+
+        InitLayout(root);
+        SyncDockVisibility(root);
+    }
+
+    private void SyncDockVisibility(IRootDock root)
+    {
+        var visibleIds = new HashSet<string>(StringComparer.Ordinal);
+        CollectDockableIds(root, visibleIds);
+        if (root.Windows != null)
+        {
+            foreach (var window in root.Windows)
+            {
+                if (window.Layout != null)
+                    CollectDockableIds(window.Layout, visibleIds);
+            }
+        }
+
+        foreach (var dockable in _viewDockables.Values)
+            NotifyDockVisibility(dockable, dockable.Id != null && visibleIds.Contains(dockable.Id));
+    }
+
+    public bool IsDockContentActive(string id)
+    {
+        if (_currentRoot == null)
+            return false;
+        if (ContainsActiveDockContent(_currentRoot, id))
+            return true;
+
+        if (_currentRoot.Windows != null)
+        {
+            foreach (var window in _currentRoot.Windows)
+            {
+                if (window.Layout != null && ContainsActiveDockContent(window.Layout, id))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ContainsActiveDockContent(IDockable dockable, string id)
+    {
+        if (string.Equals(dockable.Id, id, StringComparison.Ordinal))
+            return true;
+
+        if (dockable is IToolDock toolDock)
+            return toolDock.ActiveDockable != null
+                && ContainsActiveDockContent(toolDock.ActiveDockable, id);
+
+        if (dockable is IDock dock && dock.VisibleDockables != null)
+        {
+            foreach (var child in dock.VisibleDockables)
+            {
+                if (ContainsActiveDockContent(child, id))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void CollectDockableIds(IDockable dockable, ISet<string> ids)
+    {
+        if (dockable is IDock dock && dock.VisibleDockables != null)
+        {
+            foreach (var child in dock.VisibleDockables)
+                CollectDockableIds(child, ids);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dockable.Id))
+            ids.Add(dockable.Id);
+    }
+
+    private DockLayoutData CaptureLayout(IRootDock root, string name)
+    {
+        var data = new DockLayoutData { Name = name };
+        var main = root.VisibleDockables?.FirstOrDefault();
+        if (main != null)
+            data.Main = CaptureNode(main);
+
+        if (root.HiddenDockables != null)
+        {
+            foreach (var hidden in root.HiddenDockables)
+            {
+                if (string.IsNullOrWhiteSpace(hidden.Id) || !_viewDockables.ContainsKey(hidden.Id))
+                    continue;
+
+                data.HiddenDockableIds.Add(hidden.Id);
+                if (!string.IsNullOrWhiteSpace(hidden.OriginalOwner?.Id))
+                    data.HiddenDockableOwners[hidden.Id] = hidden.OriginalOwner.Id;
+            }
+        }
+
+        if (root.Windows != null)
+        {
+            foreach (var window in root.Windows)
+            {
+                var floatingMain = window.Layout?.VisibleDockables?.FirstOrDefault();
+                if (floatingMain == null)
+                    continue;
+
+                data.Windows.Add(new DockLayoutWindowData
+                {
+                    Id = window.Id ?? string.Empty,
+                    X = double.IsFinite(window.X) ? window.X : 100,
+                    Y = double.IsFinite(window.Y) ? window.Y : 100,
+                    Width = double.IsFinite(window.Width) ? window.Width : 800,
+                    Height = double.IsFinite(window.Height) ? window.Height : 600,
+                    WindowState = window.WindowState.ToString(),
+                    Layout = CaptureNode(floatingMain)
+                });
+            }
+        }
+
+        return data;
+    }
+
+    private static DockLayoutNodeData CaptureNode(IDockable dockable)
+    {
+        if (dockable is IProportionalDockSplitter)
+        {
+            return new DockLayoutNodeData
+            {
+                Kind = "Splitter",
+                Id = dockable.Id ?? string.Empty
+            };
+        }
+
+        if (dockable is IDock dock)
+        {
+            var node = new DockLayoutNodeData
+            {
+                Kind = dockable is IProportionalDock ? "Proportional" : "Tool",
+                Id = dockable.Id ?? string.Empty,
+                Proportion = double.IsFinite(dockable.Proportion) ? dockable.Proportion : null,
+                ActiveDockableId = dock.ActiveDockable?.Id ?? string.Empty
+            };
+            if (dockable is IProportionalDock proportional)
+                node.Orientation = proportional.Orientation.ToString();
+            if (dock.VisibleDockables != null)
+            {
+                foreach (var child in dock.VisibleDockables)
+                    node.Children.Add(CaptureNode(child));
+            }
+            return node;
+        }
+
+        return new DockLayoutNodeData
+        {
+            Kind = "Dockable",
+            Id = dockable.Id ?? string.Empty,
+            Proportion = double.IsFinite(dockable.Proportion) ? dockable.Proportion : null
+        };
+    }
+
+    private bool TryBuildRoot(DockLayoutData data, out IRootDock root)
+    {
+        root = null!;
+        if (data.Main == null)
+            return false;
+
+        var owners = new Dictionary<string, IDock>(StringComparer.Ordinal);
+        var usedDockables = new HashSet<string>(StringComparer.Ordinal);
+        var main = BuildNode(data.Main, owners, usedDockables);
+        if (main == null)
+            return false;
+
+        root = CreateWorkspaceRoot(main);
+        var windows = new List<IDockWindow>();
+        foreach (var savedWindow in data.Windows)
+        {
+            if (savedWindow.Layout == null)
+                continue;
+
+            var floatingMain = BuildNode(savedWindow.Layout, owners, usedDockables);
+            if (floatingMain == null)
+                continue;
+
+            var floatingRoot = CreateWorkspaceRoot(floatingMain);
+            floatingRoot.Id = $"FloatingRoot-{savedWindow.Id}";
+            var window = CreateDockWindow();
+            window.Id = string.IsNullOrWhiteSpace(savedWindow.Id)
+                ? $"LayoutWindow-{windows.Count + 1}"
+                : savedWindow.Id;
+            window.X = savedWindow.X;
+            window.Y = savedWindow.Y;
+            window.Width = savedWindow.Width;
+            window.Height = savedWindow.Height;
+            if (Enum.TryParse<DockWindowState>(savedWindow.WindowState, out var state))
+                window.WindowState = state;
+            window.Owner = root;
+            window.Layout = floatingRoot;
+            floatingRoot.Window = window;
+            windows.Add(window);
+        }
+        if (windows.Count > 0)
+            root.Windows = CreateList(windows.ToArray());
+
+        var hiddenIds = new HashSet<string>(data.HiddenDockableIds, StringComparer.Ordinal);
+        foreach (var dockable in _viewDockables.Values)
+        {
+            if (dockable.Id == null || usedDockables.Contains(dockable.Id))
+                continue;
+            hiddenIds.Add(dockable.Id);
+        }
+
+        var fallbackOwner = owners.Values.FirstOrDefault();
+        foreach (var id in hiddenIds)
+        {
+            if (!_viewDockables.TryGetValue(id, out var dockable))
+                continue;
+
+            IDock? owner = null;
+            if (data.HiddenDockableOwners.TryGetValue(id, out var ownerId))
+                owners.TryGetValue(ownerId, out owner);
+            owner ??= fallbackOwner;
+            if (owner != null)
+                AddHiddenDockable(root, id, owner);
+        }
+
+        return true;
+    }
+
+    private IDockable? BuildNode(
+        DockLayoutNodeData data,
+        IDictionary<string, IDock> owners,
+        ISet<string> usedDockables)
+    {
+        if (string.Equals(data.Kind, "Dockable", StringComparison.Ordinal))
+        {
+            if (!_viewDockables.TryGetValue(data.Id, out var dockable)
+                || !usedDockables.Add(data.Id))
+            {
+                return null;
+            }
+            if (data.Proportion.HasValue)
+                dockable.Proportion = data.Proportion.Value;
+            return dockable;
+        }
+
+        if (string.Equals(data.Kind, "Splitter", StringComparison.Ordinal))
+            return new ProportionalDockSplitter { Id = data.Id };
+
+        IDock dock;
+        if (string.Equals(data.Kind, "Proportional", StringComparison.Ordinal))
+        {
+            dock = new ProportionalDock
+            {
+                Orientation = Enum.TryParse<Orientation>(data.Orientation, out var orientation)
+                    ? orientation
+                    : Orientation.Horizontal
+            };
+        }
+        else if (string.Equals(data.Kind, "Tool", StringComparison.Ordinal))
+        {
+            dock = new ToolDock();
+        }
+        else
+        {
+            return null;
+        }
+
+        dock.Id = string.IsNullOrWhiteSpace(data.Id)
+            ? $"LayoutDock-{Guid.NewGuid():N}"
+            : data.Id;
+        if (data.Proportion.HasValue)
+            dock.Proportion = data.Proportion.Value;
+
+        var children = data.Children
+            .Select(child => BuildNode(child, owners, usedDockables))
+            .Where(child => child != null)
+            .Cast<IDockable>()
+            .ToArray();
+        dock.VisibleDockables = CreateList(children);
+        dock.ActiveDockable = children.FirstOrDefault(child =>
+            string.Equals(child.Id, data.ActiveDockableId, StringComparison.Ordinal))
+            ?? children.FirstOrDefault(child => child is not IProportionalDockSplitter);
+        owners[dock.Id] = dock;
+        return dock;
+    }
+
     public override void InitLayout(IDockable layout)
     {
+        RefreshRestoreOwners(layout);
+        if (layout is IRootDock { Windows: not null } rootWithWindows)
+        {
+            foreach (var window in rootWithWindows.Windows)
+            {
+                if (window.Layout != null)
+                    RefreshRestoreOwners(window.Layout);
+            }
+        }
+
         ContextLocator = new Dictionary<string, Func<object?>>
         {
             ["Root"] = () => _context
@@ -635,6 +1280,29 @@ public class MainDockFactory : Factory, IDisposable
         };
 
         base.InitLayout(layout);
+        if (layout is IRootDock root)
+        {
+            _currentRoot = root;
+            SyncDockVisibility(root);
+        }
+    }
+
+    private void RefreshRestoreOwners(IDockable dockable)
+    {
+        if (dockable is not IDock dock || dock.VisibleDockables == null)
+            return;
+
+        foreach (var child in dock.VisibleDockables)
+        {
+            if (child is not IProportionalDockSplitter)
+            {
+                child.OriginalOwner = dock;
+                if (!string.IsNullOrWhiteSpace(child.Id) && _viewDockables.ContainsKey(child.Id))
+                    _restoreOwners[child.Id] = dock;
+            }
+
+            RefreshRestoreOwners(child);
+        }
     }
 
     public void SetKeyboardSuppression(bool suppress)
