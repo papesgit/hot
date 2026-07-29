@@ -1423,7 +1423,14 @@ public sealed class CampathSequenceTimelineControl : Panel
         foreach (var (key, origin) in _keyDragOrigins)
             key.Time = origin + delta;
         foreach (var editor in _historyEditors.Where(editor => editor.IsCurveMode))
+        {
+            foreach (var channel in GetDraggedCurveChannels(editor))
+            {
+                SortCurveKeys(channel);
+                CampathPathConversion.AutoTangents(channel);
+            }
             editor.NotifyCurveDocumentChanged();
+        }
         PublishGizmoSelection();
         InvalidateVisual();
     }
@@ -1438,15 +1445,10 @@ public sealed class CampathSequenceTimelineControl : Panel
             {
                 if (editor.IsCurveMode)
                 {
-                    foreach (var channel in editor.CurveDocument.Channels)
+                    foreach (var channel in GetDraggedCurveChannels(editor))
                     {
-                        var ordered = channel.Keys.OrderBy(key => key.Time).ToList();
-                        for (var index = 0; index < ordered.Count; index++)
-                        {
-                            var current = channel.Keys.IndexOf(ordered[index]);
-                            if (current != index)
-                                channel.Keys.Move(current, index);
-                        }
+                        SortCurveKeys(channel);
+                        CampathPathConversion.AutoTangents(channel);
                     }
                     editor.NotifyCurveDocumentChanged();
                 }
@@ -1459,6 +1461,23 @@ public sealed class CampathSequenceTimelineControl : Panel
         _keyDragActivated = false;
         _draggingKeys = false;
         UpdateValueEditors();
+    }
+
+    private IEnumerable<CampathCurveChannel> GetDraggedCurveChannels(CampathEditorViewModel editor) =>
+        _keyDragOrigins.Keys
+            .Where(key => ReferenceEquals(key.Editor, editor) && key.CurveChannel != null)
+            .Select(key => key.CurveChannel!)
+            .Distinct();
+
+    private static void SortCurveKeys(CampathCurveChannel channel)
+    {
+        var ordered = channel.Keys.OrderBy(key => key.Time).ToList();
+        for (var index = 0; index < ordered.Count; index++)
+        {
+            var current = channel.Keys.IndexOf(ordered[index]);
+            if (current != index)
+                channel.Keys.Move(current, index);
+        }
     }
 
     private void BeginMarquee(Point point, KeyModifiers modifiers, IPointer pointer)
