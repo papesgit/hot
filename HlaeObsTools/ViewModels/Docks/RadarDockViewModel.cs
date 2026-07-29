@@ -1799,20 +1799,30 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             if (string.IsNullOrWhiteSpace(campath.FilePath) || !File.Exists(campath.FilePath))
                 continue;
 
-            var parsed = CampathFileParser.Parse(campath.FilePath);
-            if (parsed?.Points == null || parsed.Points.Count == 0)
+            var parsed = CampathFileParser.ParseSet(campath.FilePath);
+            if (parsed == null || parsed.Tracks.Count == 0)
                 continue;
 
-            var points = BuildCampathPolyline(parsed);
-            if (points.Count == 0)
-                continue;
+            foreach (var track in parsed.Tracks)
+            {
+                if (track.Campath.Points.Count == 0)
+                    continue;
+                var points = BuildCampathPolyline(track.Campath);
+                if (points.Count == 0)
+                    continue;
 
-            var forward = parsed.Points[0].Forward;
-            var angle = NormalizeDegrees(Math.Atan2(forward.X, forward.Y) * 180.0 / Math.PI) - 90;
-            var iconX = points[0].X - 12.0; // center 24px icon
-            var iconY = points[0].Y - 12.0;
+                var forward = track.Campath.Points[0].Forward;
+                var angle = NormalizeDegrees(Math.Atan2(forward.X, forward.Y) * 180.0 / Math.PI) - 90;
+                var iconX = points[0].X - 12.0; // center 24px icon
+                var iconY = points[0].Y - 12.0;
+                var displayName = parsed.Tracks.Count > 1
+                    ? $"{campath.Name} — {track.Name}"
+                    : campath.Name;
 
-            CampathPaths.Add(new CampathPathViewModel(campath.Id, campath.Name, campath.FilePath, points, iconX, iconY, angle, campath.Thumbnail));
+                CampathPaths.Add(new CampathPathViewModel(
+                    campath.Id, displayName, campath.FilePath, points,
+                    iconX, iconY, angle, campath.Thumbnail));
+            }
         }
     }
 
@@ -1840,13 +1850,18 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         {
             foreach (var p in CampathPaths)
             {
-                p.IsHighlighted = ReferenceEquals(p, target);
+                p.IsHighlighted = target != null && p.Id == target.Id;
             }
             SetCampathHover(target);
         }
         else if (target != null)
         {
-            target.IsHighlighted = false;
+            if (_hoveredCampath != null
+                && !ReferenceEquals(_hoveredCampath, target)
+                && _hoveredCampath.Id == target.Id)
+                return;
+            foreach (var path in CampathPaths.Where(path => path.Id == target.Id))
+                path.IsHighlighted = false;
             if (ReferenceEquals(_hoveredCampath, target))
             {
                 ClearCampathHover();

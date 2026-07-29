@@ -911,13 +911,10 @@ public class CampathsDockViewModel : Tool
         SetCurrentPlayingCampath(null);
 
         // Parse campath file to get duration
-        var campathFile = CampathFileParser.Parse(campath.FilePath);
-        if (campathFile != null && campathFile.Points.Count > 0)
+        var campathFile = CampathFileParser.ParseSet(campath.FilePath);
+        if (campathFile != null && campathFile.Tracks.Count > 0)
         {
-            var firstTime = campathFile.Points[0].Time;
-            var lastTime = campathFile.Points[campathFile.Points.Count - 1].Time;
-            var duration = lastTime - firstTime;
-            var effectiveDuration = Math.Max(0.0, duration - campath.Offset);
+            var effectiveDuration = Math.Max(0.0, campathFile.Duration - campath.Offset);
 
             if (effectiveDuration > 0)
             {
@@ -974,13 +971,10 @@ public class CampathsDockViewModel : Tool
         SetCurrentPlayingCampath(null);
 
         // Parse campath file to get duration
-        var campathFile = CampathFileParser.Parse(selected.FilePath!);
-        if (campathFile != null && campathFile.Points.Count > 0)
+        var campathFile = CampathFileParser.ParseSet(selected.FilePath!);
+        if (campathFile != null && campathFile.Tracks.Count > 0)
         {
-            var firstTime = campathFile.Points[0].Time;
-            var lastTime = campathFile.Points[campathFile.Points.Count - 1].Time;
-            var duration = lastTime - firstTime;
-            var effectiveDuration = Math.Max(0.0, duration - selected.Offset);
+            var effectiveDuration = Math.Max(0.0, campathFile.Duration - selected.Offset);
 
             if (effectiveDuration > 0)
             {

@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Xml;
-using System.Xml.Linq;
 using HlaeObsTools.Services.Gsi;
 
 namespace HlaeObsTools.Services.Campaths;
@@ -28,12 +27,29 @@ public sealed class CampathFile
     public bool IsLinearPosition { get; }
 }
 
+public sealed record CampathFileTrack(string Id, string Name, CampathFile Campath);
+
+public sealed class CampathFileSet
+{
+    public CampathFileSet(IReadOnlyList<CampathFileTrack> tracks, double startTime, double endTime)
+    {
+        Tracks = tracks;
+        StartTime = startTime;
+        EndTime = Math.Max(startTime, endTime);
+    }
+
+    public IReadOnlyList<CampathFileTrack> Tracks { get; }
+    public double StartTime { get; }
+    public double EndTime { get; }
+    public double Duration => EndTime - StartTime;
+}
+
 /// <summary>
 /// Lightweight parser for .campath files used to render paths on the radar.
 /// </summary>
 public static class CampathFileParser
 {
-    public const long MaxInspectionFileSizeBytes = 256 * 1024;
+    public const long MaxInspectionFileSizeBytes = 8 * 1024 * 1024;
 
     public static bool LooksLikeCampath(string path)
     {
@@ -60,7 +76,9 @@ public static class CampathFileParser
                 return false;
 
             reader.MoveToContent();
-            if (reader.NodeType != XmlNodeType.Element || !reader.Name.Equals("campath", StringComparison.Ordinal))
+            if (reader.NodeType != XmlNodeType.Element
+                || (!reader.Name.Equals("campath", StringComparison.Ordinal)
+                    && !reader.Name.Equals("campathSequence", StringComparison.Ordinal)))
                 return false;
 
             if (reader.IsEmptyElement)
@@ -68,9 +86,10 @@ public static class CampathFileParser
 
             while (reader.Read())
             {
-                if (reader.NodeType == XmlNodeType.Element
-                    && (reader.Name.Equals("points", StringComparison.Ordinal)
-                        || reader.Name.Equals("curveEditor", StringComparison.Ordinal)))
+                if (reader.NodeType != XmlNodeType.Element)
+                    continue;
+                if (reader.Name.Equals("points", StringComparison.Ordinal)
+                    || reader.Name.Equals("curveEditor", StringComparison.Ordinal))
                     return true;
             }
 
@@ -84,52 +103,43 @@ public static class CampathFileParser
 
     public static CampathFile? Parse(string path)
     {
+        return ParseSet(path)?.Tracks.FirstOrDefault()?.Campath;
+    }
+
+    public static CampathFileSet? ParseSet(string path)
+    {
         try
         {
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                 return null;
 
-            var doc = XDocument.Load(path);
-            var root = doc.Element("campath");
-            if (root == null)
+            var sequence = CampathFileIo.LoadSequence(path);
+            if (sequence == null)
                 return null;
 
-            if (string.Equals(root.Attribute("model")?.Value, "curves", StringComparison.OrdinalIgnoreCase))
-                return ParseCurves(path);
-
-            var positionInterp = root.Attribute("positionInterp")?.Value;
-            bool isLinearPosition = string.Equals(positionInterp, "linear", StringComparison.OrdinalIgnoreCase);
-
-            var pointsElement = root.Element("points");
-            if (pointsElement == null)
-                return null;
-
-            var points = new List<CampathPoint>();
-            foreach (var p in pointsElement.Elements("p"))
+            var tracks = new List<CampathFileTrack>();
+            foreach (var camera in sequence.Cameras)
             {
-                var time = ParseDouble(p.Attribute("t")?.Value);
-
-                var pos = new Vec3(
-                    ParseDouble(p.Attribute("x")?.Value),
-                    ParseDouble(p.Attribute("y")?.Value),
-                    ParseDouble(p.Attribute("z")?.Value));
-
-                var forward = TryParseQuaternion(p, out var q)
-                    ? RotateForward(q)
-                    : RotateForward(FromEuler(p));
-
-                points.Add(new CampathPoint
-                {
-                    Time = time,
-                    Position = pos,
-                    Forward = forward
-                });
+                var parsed = ParseCamera(camera.Campath);
+                if (parsed != null)
+                    tracks.Add(new CampathFileTrack(camera.Id, camera.Name, parsed));
             }
-
-            if (points.Count == 0)
+            if (tracks.Count == 0)
                 return null;
 
-            return new CampathFile(points, isLinearPosition);
+            double start;
+            double end;
+            if (sequence.CameraCuts.Count > 0)
+            {
+                start = sequence.TimeOffset + sequence.CameraCuts.Min(cut => cut.StartTime);
+                end = sequence.TimeOffset + sequence.CameraCuts.Max(cut => cut.EndTime);
+            }
+            else
+            {
+                start = tracks.SelectMany(track => track.Campath.Points).Min(point => point.Time);
+                end = tracks.SelectMany(track => track.Campath.Points).Max(point => point.Time);
+            }
+            return new CampathFileSet(tracks, start, end);
         }
         catch
         {
@@ -137,13 +147,28 @@ public static class CampathFileParser
         }
     }
 
-    private static CampathFile? ParseCurves(string path)
+    private static CampathFile? ParseCamera(CampathFileIo.CampathFileData data)
     {
-        var data = CampathFileIo.Load(path);
-        var document = data?.CurveDocument;
+        if (data.PathModel == CameraPathModel.Classic)
+        {
+            var classicPoints = data.Keyframes
+                .OrderBy(key => key.Time)
+                .Select(key => new CampathPoint
+                {
+                    Time = key.Time + data.TimeOffset,
+                    Position = new Vec3(key.Position.X, key.Position.Y, key.Position.Z),
+                    Forward = RotateForward(key.Rotation)
+                })
+                .ToList();
+            return classicPoints.Count == 0
+                ? null
+                : new CampathFile(classicPoints,
+                    data.ClassicInterpolation == ClassicCampathInterpolation.Linear);
+        }
+
+        var document = data.CurveDocument;
         if (document?.CanEvaluateCamera != true)
             return null;
-
         var times = document.GetCameraKeyTimes();
         if (times.Count == 0)
             return null;
@@ -152,16 +177,16 @@ public static class CampathFileParser
         var end = times[^1];
         var duration = Math.Max(0.0, end - start);
         var sampleCount = duration <= 0.0
-            ? 1
+            ? 0
             : Math.Clamp((int)Math.Ceiling(duration * 30.0), 32, 512);
-        var points = new List<CampathPoint>(sampleCount + 1);
+        var curvePoints = new List<CampathPoint>(sampleCount + 1);
         for (var i = 0; i <= sampleCount; i++)
         {
             var time = sampleCount == 0 ? start : start + duration * i / sampleCount;
             var sample = document.Evaluate(time);
-            points.Add(new CampathPoint
+            curvePoints.Add(new CampathPoint
             {
-                Time = time + data!.TimeOffset,
+                Time = time + data.TimeOffset,
                 Position = new Vec3(sample.Position.X, sample.Position.Y, sample.Position.Z),
                 Forward = RotateForward(sample.Rotation)
             });
@@ -169,45 +194,7 @@ public static class CampathFileParser
 
         // These points already sample the authored curves; the radar must connect
         // them directly instead of applying a second Catmull-Rom interpolation.
-        return new CampathFile(points, isLinearPosition: true);
-    }
-
-    private static double ParseDouble(string? value)
-    {
-        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result)
-            ? result
-            : 0.0;
-    }
-
-    private static bool TryParseQuaternion(XElement p, out Quaternion quaternion)
-    {
-        quaternion = default;
-        if (p.Attribute("qw") == null || p.Attribute("qx") == null || p.Attribute("qy") == null || p.Attribute("qz") == null)
-            return false;
-
-        quaternion = new Quaternion(
-            (float)ParseDouble(p.Attribute("qx")!.Value),
-            (float)ParseDouble(p.Attribute("qy")!.Value),
-            (float)ParseDouble(p.Attribute("qz")!.Value),
-            (float)ParseDouble(p.Attribute("qw")!.Value));
-
-        quaternion = Quaternion.Normalize(quaternion);
-        return true;
-    }
-
-    private static Quaternion FromEuler(XElement p)
-    {
-        // Quake coords: roll (x), pitch (y), yaw (z), applied in order rx -> ry -> rz
-        var rx = DegreesToRadians(ParseDouble(p.Attribute("rx")?.Value));
-        var ry = DegreesToRadians(ParseDouble(p.Attribute("ry")?.Value));
-        var rz = DegreesToRadians(ParseDouble(p.Attribute("rz")?.Value));
-
-        var qx = Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)rx);
-        var qy = Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)ry);
-        var qz = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)rz);
-
-        var combined = Quaternion.Normalize(Quaternion.Multiply(Quaternion.Multiply(qz, qy), qx));
-        return combined;
+        return new CampathFile(curvePoints, isLinearPosition: true);
     }
 
     private static Vector3 RotateForward(in Quaternion rotation)
@@ -217,6 +204,4 @@ public static class CampathFileParser
             forward = Vector3.UnitX;
         return forward;
     }
-
-    private static double DegreesToRadians(double deg) => deg * Math.PI / 180.0;
 }
