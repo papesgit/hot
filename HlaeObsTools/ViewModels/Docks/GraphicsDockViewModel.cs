@@ -26,6 +26,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private string? _selectedInstanceImageFile;
     private AttachSlotOption? _selectedInstanceAttachSlot;
     private AttachAttachmentOption? _selectedInstanceAttachment;
+    private AttachAttachmentOption? _selectedInstanceBone;
     private string _selectedProfileName = GraphicsProfileStorage.EmptyProfileName;
     private string _toastMessage = string.Empty;
     private bool _isToastVisible;
@@ -40,6 +41,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public ObservableCollection<string> AvailableImages { get; } = new();
     public ObservableCollection<AttachSlotOption> AttachSlotOptions { get; } = new();
     public ObservableCollection<AttachAttachmentOption> AttachAttachmentOptions { get; } = new();
+    public ObservableCollection<AttachAttachmentOption> AttachBoneOptions { get; } = new();
     public ObservableCollection<string> Profiles { get; } = new();
 
     public GraphicsDockViewModel(GraphicsService graphicsService)
@@ -63,6 +65,11 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         foreach (var attachment in AttachPresetViewModel.DefaultAttachmentOptionsList)
         {
             AttachAttachmentOptions.Add(new AttachAttachmentOption(attachment, attachment));
+        }
+        AttachBoneOptions.Add(new AttachAttachmentOption("None", string.Empty));
+        foreach (var bone in AttachPresetViewModel.DefaultBoneOptionsList)
+        {
+            AttachBoneOptions.Add(new AttachAttachmentOption(bone, bone.Replace(" (CT)", string.Empty)));
         }
         RefreshProfiles();
         SelectedProfileName = _graphicsService.CurrentProfileName;
@@ -161,6 +168,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             OnPropertyChanged(nameof(SelectedInstanceImageFile));
             SelectedInstanceAttachSlot = ResolveAttachSlot(_selectedInstance?.AttachSlot ?? -1);
             SelectedInstanceAttachment = ResolveAttachmentName(_selectedInstance?.AttachAttachmentName);
+            SelectedInstanceBone = ResolveBoneName(_selectedInstance?.AttachBoneName);
             SelectedInstanceRegion = ResolveRegionById(SelectedInstanceAtlas, _selectedInstance?.Region);
         }
     }
@@ -256,6 +264,29 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             if (SelectedInstance != null)
             {
                 SelectedInstance.AttachAttachmentName = value?.Value ?? string.Empty;
+                if (!string.IsNullOrEmpty(SelectedInstance.AttachAttachmentName))
+                {
+                    SelectedInstance.AttachBoneName = string.Empty;
+                    SetProperty(ref _selectedInstanceBone, AttachBoneOptions.FirstOrDefault(), nameof(SelectedInstanceBone));
+                }
+            }
+        }
+    }
+
+    public AttachAttachmentOption? SelectedInstanceBone
+    {
+        get => _selectedInstanceBone;
+        set
+        {
+            if (!SetProperty(ref _selectedInstanceBone, value)) return;
+            if (SelectedInstance != null)
+            {
+                SelectedInstance.AttachBoneName = value?.Value ?? string.Empty;
+                if (!string.IsNullOrEmpty(SelectedInstance.AttachBoneName))
+                {
+                    SelectedInstance.AttachAttachmentName = string.Empty;
+                    SetProperty(ref _selectedInstanceAttachment, AttachAttachmentOptions.FirstOrDefault(), nameof(SelectedInstanceAttachment));
+                }
             }
         }
     }
@@ -510,6 +541,12 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         if (string.IsNullOrWhiteSpace(name))
             return AttachAttachmentOptions.FirstOrDefault();
         return AttachAttachmentOptions.FirstOrDefault(option => option.Value == name) ?? AttachAttachmentOptions.FirstOrDefault();
+    }
+
+    private AttachAttachmentOption? ResolveBoneName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return AttachBoneOptions.FirstOrDefault();
+        return AttachBoneOptions.FirstOrDefault(option => option.Value == name) ?? AttachBoneOptions.FirstOrDefault();
     }
 
     public async Task RefreshAvailableImagesAsync()
@@ -1095,6 +1132,12 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         {
             get => Model.AttachAttachmentName;
             set { Model.AttachAttachmentName = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        public string AttachBoneName
+        {
+            get => Model.AttachBoneName;
+            set { Model.AttachBoneName = value ?? string.Empty; OnPropertyChanged(); }
         }
 
         public bool AttachUseYaw

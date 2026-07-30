@@ -531,7 +531,8 @@ public sealed class GraphicsService : IDisposable
                 useYaw = inst.AttachUseYaw,
                 usePitch = inst.AttachUsePitch,
                 useRoll = inst.AttachUseRoll,
-                attachment = inst.AttachAttachmentName
+                attachment = inst.AttachAttachmentName,
+                bone = inst.AttachBoneName
             },
             ["pos"] = new[] { inst.PosX, inst.PosY, inst.PosZ },
             ["ang"] = new[] { inst.Pitch, inst.Yaw, inst.Roll },

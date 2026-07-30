@@ -748,14 +748,23 @@
                                             </WrapPanel>
                                             <TextBlock Text="Preset Name" Foreground="#AAAAAA" FontSize="12"/>
                                             <TextBox MinWidth="80" MaxWidth="300"
-                                                     PlaceholderText="Preset name"
-                                                     Text="{Binding Name, Mode=TwoWay}"
-                                                     HorizontalAlignment="Left" />
-                                            <TextBlock Text="Attachment" Foreground="#AAAAAA" FontSize="12"/>
-                                            <ComboBox ItemsSource="{Binding AttachmentOptions}"
-                                                      SelectedItem="{Binding AttachmentName, Mode=TwoWay}"
-                                                      HorizontalAlignment="Left"/>
-
+                                                    PlaceholderText="Preset name"
+                                                    Text="{Binding Name, Mode=TwoWay}"
+                                                    HorizontalAlignment="Left" />
+                                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+                                                <StackPanel>
+                                                    <TextBlock Text="Attachment" Foreground="#AAAAAA" FontSize="12"/>
+                                                    <ComboBox ItemsSource="{Binding AttachmentOptions}"
+                                                            SelectedItem="{Binding AttachmentName, Mode=TwoWay}"
+                                                            HorizontalAlignment="Left"/>
+                                                </StackPanel>
+                                                <StackPanel>
+                                                    <TextBlock Text="Bone" Foreground="#AAAAAA" FontSize="12"/>
+                                                    <ComboBox ItemsSource="{Binding BoneOptions}"
+                                                            SelectedItem="{Binding BoneSelection, Mode=TwoWay}"
+                                                            HorizontalAlignment="Left"/>
+                                                </StackPanel>
+                                            </WrapPanel>
                                             <TextBlock Text="Position Offset" Foreground="#AAAAAA" FontSize="12"/>
                                             <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                                                 <TextBox MinWidth="40" MaxWidth="80" PlaceholderText="X" Text="{Binding OffsetPosX, Mode=TwoWay, Converter={StaticResource NullableDouble}}" />

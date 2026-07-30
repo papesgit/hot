@@ -2653,6 +2653,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 observer_slot = observerSlot,
                 target_observer_slot = targetObserverSlot,
                 attachment = preset.AttachmentName,
+                bone = preset.BoneName,
                 offset_pos = new { x = preset.OffsetPosX, y = preset.OffsetPosY, z = preset.OffsetPosZ },
                 offset_angles = new { pitch = preset.OffsetPitch, yaw = preset.OffsetYaw, roll = preset.OffsetRoll },
                 fov = preset.Fov,

@@ -14,9 +14,15 @@ public sealed class AttachPresetViewModel : ViewModelBase
         "c4","primary_smg","primary","clip_limit","weapon","weapon_hand_r","weapon_hand_l","weapon_center"
     };
     public static IReadOnlyList<string> DefaultAttachmentOptionsList => DefaultAttachmentOptions;
+    private static readonly string[] DefaultBoneOptions = new[]
+    {
+        "root_motion", "pelvis", "spine_0", "spine_1", "spine_2", "spine_3", "neck_0", "head_0", "eyeball_l", "eyeball_r", "eye_target", "jiggle_hood (CT)", "clavicle_L", "arm_upper_L", "arm_lower_L", "hand_L", "finger_middle_meta_L", "finger_middle_0_L", "finger_middle_1_L", "finger_middle_2_L", "finger_pinky_meta_L", "finger_pinky_0_L", "finger_pinky_1_L", "finger_pinky_2_L", "finger_index_meta_L", "finger_index_0_L", "finger_index_1_L", "finger_index_2_L", "finger_thumb_0_L", "finger_thumb_1_L", "finger_thumb_2_L", "finger_ring_meta_L", "finger_ring_0_L", "finger_ring_1_L", "finger_ring_2_L", "arm_lower_L_TWIST", "arm_lower_L_TWIST1", "arm_upper_L_TWIST", "arm_upper_L_TWIST1", "scapula_L (CT)", "clavicle_R", "arm_upper_R", "arm_lower_R", "hand_R", "finger_middle_meta_R", "finger_middle_0_R", "finger_middle_1_R", "finger_middle_2_R", "finger_pinky_meta_R", "finger_pinky_0_R", "finger_pinky_1_R", "finger_pinky_2_R", "finger_index_meta_R", "finger_index_0_R", "finger_index_1_R", "finger_index_2_R", "finger_thumb_0_R", "finger_thumb_1_R", "finger_thumb_2_R", "finger_ring_meta_R", "finger_ring_0_R", "finger_ring_1_R", "finger_ring_2_R", "arm_lower_R_TWIST", "arm_lower_R_TWIST1", "arm_upper_R_TWIST", "arm_upper_R_TWIST1", "scapula_R (CT)", "jiggle_primary", "jiggle_front_micropouches (CT)", "jiggle_radio (CT)", "jiggle_front_pouch_01 (CT)", "jiggle_front_pouch_02 (CT)", "leg_upper_L", "leg_lower_L", "ankle_L", "ball_L", "leg_upper_L_TWIST", "leg_upper_L_TWIST1", "jiggle_climbinggear_01 (CT)", "jiggle_climbinggear_02 (CT)", "leg_upper_R", "leg_lower_R", "ankle_R", "ball_R", "leg_upper_R_TWIST", "leg_upper_R_TWIST1", "jiggle_holster (CT)", "wpnPivot", "wpn"
+    };
+    public static IReadOnlyList<string> DefaultBoneOptionsList => DefaultBoneOptions;
     private string _title;
     private string _name = string.Empty;
     private string _attachmentName = string.Empty;
+    private string _boneName = string.Empty;
     private double? _offsetPosX;
     private double? _offsetPosY;
     private double? _offsetPosZ;
@@ -38,6 +44,7 @@ public sealed class AttachPresetViewModel : ViewModelBase
     private bool _animationEnabled;
     private readonly ObservableCollection<AttachPresetAnimationEventViewModel> _animationEvents = new();
     public IReadOnlyList<string> AttachmentOptions { get; } = DefaultAttachmentOptions;
+    public IReadOnlyList<string> BoneOptions { get; } = DefaultBoneOptions;
     public IReadOnlyList<HudSettings.AttachmentPresetRotationReference> RotationReferenceOptions { get; } =
         new[]
         {
@@ -80,7 +87,29 @@ public sealed class AttachPresetViewModel : ViewModelBase
     public string AttachmentName
     {
         get => _attachmentName;
-        set => SetProperty(ref _attachmentName, value);
+        set
+        {
+            if (!SetProperty(ref _attachmentName, value ?? string.Empty)) return;
+            if (!string.IsNullOrEmpty(_attachmentName)) BoneName = string.Empty;
+        }
+    }
+
+    public string BoneName
+    {
+        get => _boneName;
+        set
+        {
+            var normalized = (value ?? string.Empty).Replace(" (CT)", string.Empty);
+            if (!SetProperty(ref _boneName, normalized)) return;
+            OnPropertyChanged(nameof(BoneSelection));
+            if (!string.IsNullOrEmpty(_boneName)) AttachmentName = string.Empty;
+        }
+    }
+
+    public string BoneSelection
+    {
+        get => BoneOptions.FirstOrDefault(option => option.Replace(" (CT)", string.Empty) == BoneName) ?? BoneName;
+        set => BoneName = value;
     }
 
     public double? OffsetPosX
@@ -192,6 +221,7 @@ public sealed class AttachPresetViewModel : ViewModelBase
     {
         Name = preset.Name;
         AttachmentName = preset.AttachmentName;
+        BoneName = preset.BoneName;
         OffsetPosX = preset.OffsetPosX == 0.0 ? null : preset.OffsetPosX;
         OffsetPosY = preset.OffsetPosY == 0.0 ? null : preset.OffsetPosY;
         OffsetPosZ = preset.OffsetPosZ == 0.0 ? null : preset.OffsetPosZ;
@@ -216,6 +246,7 @@ public sealed class AttachPresetViewModel : ViewModelBase
         {
             Name = Name ?? string.Empty,
             AttachmentName = AttachmentName ?? string.Empty,
+            BoneName = BoneName ?? string.Empty,
             OffsetPosX = OffsetPosX ?? 0.0,
             OffsetPosY = OffsetPosY ?? 0.0,
             OffsetPosZ = OffsetPosZ ?? 0.0,

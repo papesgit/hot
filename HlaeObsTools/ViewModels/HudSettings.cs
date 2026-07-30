@@ -20,6 +20,7 @@ public sealed class HudSettings : ViewModelBase
     {
         public string Name { get; init; } = string.Empty;
         public string AttachmentName { get; init; } = string.Empty;
+        public string BoneName { get; init; } = string.Empty;
         public double OffsetPosX { get; init; }
         public double OffsetPosY { get; init; }
         public double OffsetPosZ { get; init; }
@@ -298,6 +299,7 @@ public sealed class HudSettings : ViewModelBase
         {
             Name = preset.Name,
             AttachmentName = preset.AttachmentName,
+            BoneName = preset.BoneName,
             OffsetPosX = preset.OffsetPosX,
             OffsetPosY = preset.OffsetPosY,
             OffsetPosZ = preset.OffsetPosZ,
@@ -322,6 +324,7 @@ public sealed class HudSettings : ViewModelBase
         {
             Name = preset.Name,
             AttachmentName = preset.AttachmentName,
+            BoneName = preset.BoneName,
             OffsetPosX = preset.OffsetPosX,
             OffsetPosY = preset.OffsetPosY,
             OffsetPosZ = preset.OffsetPosZ,

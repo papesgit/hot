@@ -181,6 +181,7 @@ public class AttachmentPresetData
 {
     public string Name { get; set; } = string.Empty;
     public string AttachmentName { get; set; } = string.Empty;
+    public string BoneName { get; set; } = string.Empty;
     public double OffsetPosX { get; set; }
     public double OffsetPosY { get; set; }
     public double OffsetPosZ { get; set; }
