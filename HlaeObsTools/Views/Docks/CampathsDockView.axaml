@@ -3,6 +3,7 @@
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:c="using:HlaeObsTools.Converters"
              xmlns:hotkeys="using:HlaeObsTools.Services.Hotkeys"
+             xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
              x:Name="Root"
              x:Class="HlaeObsTools.Views.Docks.CampathsDockView"
              x:CompileBindings="False">
@@ -10,6 +11,7 @@
   <UserControl.Resources>
     <c:ClampedScaleToWidthConverter x:Key="CampathWidthConverter" BaseWidth="260" MinimumWidth="100" HorizontalMargins="12" />
     <c:ClampedScaleToWidthConverter x:Key="GroupWidthConverter" BaseWidth="180" MinimumWidth="110" HorizontalMargins="12" />
+    <c:CardWidthToBadgeSizeConverter x:Key="GroupHotkeySizeConverter" MinimumCardWidth="110" MinimumSize="28" SizePerCardWidth="0.1111111111" />
     <c:ScaleToHeightConverter x:Key="CardHeightConverter" BaseWidth="1" AspectRatio="1.7777777778" />
     <c:RoundWithOffsetConverter x:Key="TopControlsWidthConverter" Offset="-20"/>
   </UserControl.Resources>
@@ -48,7 +50,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border Background="#222" BorderBrush="#2E2E2E" BorderThickness="1" Padding="10" Margin="6"
+                <Border Background="#222" BorderBrush="#2E2E2E" BorderThickness="1" Padding="0" Margin="6"
                         hotkeys:HotkeyTarget.CampathGroupId="{Binding Id}"
                         DragDrop.AllowDrop="True" DragDrop.DragOver="OnGroupDragOver" DragDrop.Drop="OnGroupDrop"
                         PointerPressed="OnGroupPointerPressed" PointerMoved="OnGroupPointerMoved" PointerReleased="OnGroupPointerReleased" PointerCaptureLost="OnGroupPointerCaptureLost">
@@ -67,10 +69,18 @@
                       <MenuItem Header="Delete group" Command="{Binding #Root.DataContext.DeleteGroupCommand}" CommandParameter="{Binding}" />
                     </MenuFlyout>
                   </Border.ContextFlyout>
-                  <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto">
-                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <TextBlock Grid.Row="1" Text="{Binding CampathIds.Count}" Foreground="#A8A8A8" FontSize="12" />
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Mode}" Foreground="#79B8FF" FontSize="12" HorizontalAlignment="Right" />
+                  <Grid>
+                    <Grid Margin="10" RowDefinitions="*,Auto" ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Grid.Row="1" Text="{Binding CampathIds.Count}" Foreground="#A8A8A8" FontSize="12" />
+                      <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Mode}" Foreground="#79B8FF" FontSize="12" HorizontalAlignment="Right" />
+                    </Grid>
+                    <Grid Width="{Binding Path=Bounds.Width, RelativeSource={RelativeSource AncestorType=Border}, Converter={StaticResource GroupHotkeySizeConverter}}"
+                          Height="{Binding Path=Bounds.Width, RelativeSource={RelativeSource AncestorType=Border}, Converter={StaticResource GroupHotkeySizeConverter}}"
+                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="2" IsVisible="{Binding HasHotkey}" IsHitTestVisible="False">
+                      <svg:Svg Path="/Assets/icons/keycap.svg" />
+                      <TextBlock Text="{Binding HotkeyDisplay}" Foreground="#E0E0E0" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
                   </Grid>
                 </Border>
               </DataTemplate>
@@ -114,6 +124,10 @@
                 </Border.ContextFlyout>
                 <Grid>
                   <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                  <Grid Width="36" Height="36" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="2" IsVisible="{Binding HasHotkey}" IsHitTestVisible="False">
+                    <svg:Svg Path="/Assets/icons/keycap.svg" />
+                    <TextBlock Text="{Binding HotkeyDisplay}" Foreground="#E0E0E0" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Grid>
                   <Grid IsHitTestVisible="False">
                     <Grid.Effect><DropShadowEffect Color="Black" BlurRadius="4" OffsetX="0" OffsetY="0" /></Grid.Effect>
                     <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontWeight="SemiBold" TextWrapping="Wrap" Margin="8" VerticalAlignment="Top" />

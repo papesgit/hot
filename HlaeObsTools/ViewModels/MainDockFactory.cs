@@ -351,7 +351,7 @@ public class MainDockFactory : Factory, IDisposable
             await reportProgressAsync("Creating campaths dock...", "Preparing campath profiles, groups, and editor integration.", 4);
         }
 
-        var bottomRight = new CampathsDockViewModel { Id = "BottomRight", Title = "Campaths" };
+        var bottomRight = new CampathsDockViewModel(_hotkeyService) { Id = "BottomRight", Title = "Campaths" };
 
         if (reportProgressAsync != null)
         {

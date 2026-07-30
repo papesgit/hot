@@ -16,6 +16,7 @@ using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.Services.WebSocket;
+using HlaeObsTools.Services.Hotkeys;
 using System.Diagnostics;
 using System.Text.Json;
 using Vortice.Direct3D;
@@ -54,6 +55,7 @@ public class CampathsDockViewModel : Tool
     private readonly DelegateCommand _viewGroupCommand;
     private readonly DelegateCommand _playCampathCommand;
     private readonly DelegateCommand _playCampathGroupCommand;
+    private readonly HotkeyService? _hotkeyService;
     public event EventHandler<Guid>? ProfileRemoved;
     private HlaeWebSocketClient? _webSocketClient;
     private TaskCompletionSource<IntPtr>? _sharedHandleTcs;
@@ -70,8 +72,11 @@ public class CampathsDockViewModel : Tool
     private double _groupScale = 1.0;
     private CancellationTokenSource? _thumbnailLoadCts;
 
-    public CampathsDockViewModel()
+    public CampathsDockViewModel(HotkeyService? hotkeyService = null)
     {
+        _hotkeyService = hotkeyService;
+        if (_hotkeyService != null)
+            _hotkeyService.BindingsChanged += OnHotkeyBindingsChanged;
         Title = "Campaths";
         CanClose = true;
         CanFloat = true;
@@ -115,6 +120,7 @@ public class CampathsDockViewModel : Tool
             _populateFromFolderCommand.RaiseCanExecuteChanged();
             _addGroupCommand.RaiseCanExecuteChanged();
             StartSelectedProfileThumbnailLoading();
+            RefreshHotkeyDisplays();
         }
     }
 
@@ -145,6 +151,25 @@ public class CampathsDockViewModel : Tool
     public void AdjustCampathScale(double delta) => CampathScale += delta;
 
     public void AdjustGroupScale(double delta) => GroupScale += delta;
+
+    private void OnHotkeyBindingsChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            RefreshHotkeyDisplays();
+        else
+            Dispatcher.UIThread.Post(RefreshHotkeyDisplays);
+    }
+
+    private void RefreshHotkeyDisplays()
+    {
+        if (SelectedProfile == null)
+            return;
+
+        foreach (var campath in SelectedProfile.Campaths)
+            campath.HotkeyDisplay = _hotkeyService?.GetCampathHotkeyDisplay(SelectedProfile.Id, campath.Id, false);
+        foreach (var group in SelectedProfile.Groups)
+            group.HotkeyDisplay = _hotkeyService?.GetCampathHotkeyDisplay(SelectedProfile.Id, group.Id, true);
+    }
 
     public ICommand AddProfileCommand => _addProfileCommand;
     public ICommand RemoveProfileCommand => _removeProfileCommand;
@@ -1179,6 +1204,7 @@ public class CampathItemViewModel : ViewModelBase
     private string? _imagePath;
     private Avalonia.Media.Imaging.Bitmap? _thumbnail;
     private double _offset;
+    private string? _hotkeyDisplay;
     private double _playbackProgress;
     private bool _isPlaying;
     private System.Timers.Timer? _progressTimer;
@@ -1231,6 +1257,18 @@ public class CampathItemViewModel : ViewModelBase
         get => _offset;
         set => SetProperty(ref _offset, value);
     }
+
+    public string? HotkeyDisplay
+    {
+        get => _hotkeyDisplay;
+        set
+        {
+            if (SetProperty(ref _hotkeyDisplay, value))
+                OnPropertyChanged(nameof(HasHotkey));
+        }
+    }
+
+    public bool HasHotkey => !string.IsNullOrWhiteSpace(HotkeyDisplay);
 
     public double PlaybackProgress
     {
@@ -1344,6 +1382,7 @@ public class CampathGroupViewModel : ViewModelBase
     private string _name;
     private CampathGroupMode _mode;
     private readonly ObservableCollection<Guid> _campathIds;
+    private string? _hotkeyDisplay;
 
     public CampathGroupViewModel(CampathGroupData data)
     {
@@ -1368,6 +1407,18 @@ public class CampathGroupViewModel : ViewModelBase
     }
 
     public ObservableCollection<Guid> CampathIds => _campathIds;
+
+    public string? HotkeyDisplay
+    {
+        get => _hotkeyDisplay;
+        set
+        {
+            if (SetProperty(ref _hotkeyDisplay, value))
+                OnPropertyChanged(nameof(HasHotkey));
+        }
+    }
+
+    public bool HasHotkey => !string.IsNullOrWhiteSpace(HotkeyDisplay);
 
     public void ToggleMode()
     {

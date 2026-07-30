@@ -34,6 +34,7 @@ public sealed class HotkeyService
     public event EventHandler<bool>? BindingModeChanged;
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<HotkeyHoverChangedEventArgs>? HoverTargetChanged;
+    public event EventHandler? BindingsChanged;
 
     public bool IsBindingMode => _isBindingMode;
     public string StatusMessage => _statusMessage;
@@ -51,6 +52,65 @@ public sealed class HotkeyService
     {
         _bindings.Clear();
         _bindings.AddRange(bindings);
+        BindingsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public string? GetCampathHotkeyDisplay(Guid profileId, Guid targetId, bool isGroup)
+    {
+        var binding = _bindings.FirstOrDefault(binding =>
+            binding.Enabled &&
+            binding.TargetKind == (isGroup ? HotkeyTargetKind.CampathGroup : HotkeyTargetKind.Campath) &&
+            binding.TargetCampathProfileId == profileId &&
+            (isGroup ? binding.TargetCampathGroupId : binding.TargetCampathId) == targetId);
+
+        return binding == null ? null : FormatHotkeyForBadge(binding.Key, binding.Modifiers);
+    }
+
+    private static string FormatHotkeyForBadge(Key key, KeyModifiers modifiers)
+    {
+        if (key == Key.None)
+            return string.Empty;
+
+        var parts = new List<string>();
+        if (modifiers.HasFlag(KeyModifiers.Control)) parts.Add("Ctrl");
+        if (modifiers.HasFlag(KeyModifiers.Shift)) parts.Add("Shift");
+        if (modifiers.HasFlag(KeyModifiers.Alt)) parts.Add("Alt");
+        if (modifiers.HasFlag(KeyModifiers.Meta)) parts.Add("Win");
+
+        parts.Add(FormatKeyForBadge(key));
+        return string.Join("+", parts);
+    }
+
+    private static string FormatKeyForBadge(Key key)
+    {
+        var name = key.ToString();
+        if (name.StartsWith("NumPad", StringComparison.Ordinal))
+            return "Num" + name[6..];
+
+        return name switch
+        {
+            "PageUp" => "PgUp",
+            "PageDown" => "PgDn",
+            "CapsLock" => "Caps",
+            "Scroll" => "ScrLk",
+            "PrintScreen" => "PrtSc",
+            "Back" => "Bksp",
+            "Delete" => "Del",
+            "Insert" => "Ins",
+            "Return" => "Enter",
+            "OemPlus" => "+",
+            "OemMinus" => "-",
+            "OemComma" => ",",
+            "OemPeriod" => ".",
+            "OemQuestion" => "?",
+            "OemSemicolon" => ";",
+            "OemQuotes" => "'",
+            "OemOpenBrackets" => "[",
+            "OemCloseBrackets" => "]",
+            "OemBackslash" => "\\",
+            "OemTilde" => "~",
+            _ => name
+        };
     }
 
     public void SetVmixApiClient(VmixApiClient vmixApiClient)
@@ -452,9 +512,10 @@ public sealed class HotkeyService
                 return true;
             }
 
+            var rebindId = _rebindId ?? FindExistingCampathBindingId(profileId, campathId, isGroup: false);
             var binding = new HotkeyBindingData
             {
-                Id = _rebindId ?? Guid.NewGuid(),
+                Id = rebindId ?? Guid.NewGuid(),
                 Enabled = true,
                 Key = e.Key,
                 Modifiers = e.KeyModifiers,
@@ -466,8 +527,8 @@ public sealed class HotkeyService
                 DisplayName = campathName
             };
 
-            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, rebindId));
+            UpdateStatus($"{(rebindId.HasValue ? "Rebound" : "Bound")} {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
@@ -479,9 +540,10 @@ public sealed class HotkeyService
                 return true;
             }
 
+            var rebindId = _rebindId ?? FindExistingCampathBindingId(profileId, groupId, isGroup: true);
             var binding = new HotkeyBindingData
             {
-                Id = _rebindId ?? Guid.NewGuid(),
+                Id = rebindId ?? Guid.NewGuid(),
                 Enabled = true,
                 Key = e.Key,
                 Modifiers = e.KeyModifiers,
@@ -493,14 +555,24 @@ public sealed class HotkeyService
                 DisplayName = groupName
             };
 
-            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, _rebindId));
-            UpdateStatus($"Bound {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
+            BindingCaptured?.Invoke(this, new HotkeyBindingCapturedEventArgs(binding, rebindId));
+            UpdateStatus($"{(rebindId.HasValue ? "Rebound" : "Bound")} {FormatHotkey(binding.Key, binding.Modifiers)} to {binding.DisplayName}.");
             return true;
         }
 
         Console.WriteLine($"[Hotkeys] Capture: hovered control not bindable: {_hoveredControl.GetType().Name}. {GetBindFailureReason(_hoveredControl)}");
         UpdateStatus("That control cannot be bound yet.");
         return true;
+    }
+
+    private Guid? FindExistingCampathBindingId(Guid profileId, Guid targetId, bool isGroup)
+    {
+        var binding = _bindings.FirstOrDefault(binding =>
+            binding.TargetKind == (isGroup ? HotkeyTargetKind.CampathGroup : HotkeyTargetKind.Campath) &&
+            binding.TargetCampathProfileId == profileId &&
+            (isGroup ? binding.TargetCampathGroupId : binding.TargetCampathId) == targetId);
+
+        return binding?.Id;
     }
 
     private string GetBindFailureReason(Control control)
@@ -1163,7 +1235,7 @@ public sealed class HotkeyService
         return null;
     }
 
-    private static string FormatHotkey(Key key, KeyModifiers modifiers)
+    public static string FormatHotkey(Key key, KeyModifiers modifiers)
     {
         if (key == Key.None)
             return string.Empty;
