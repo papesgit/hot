@@ -62,6 +62,8 @@ public class CampathStorageData
     public List<CampathProfileData> Profiles { get; set; } = new();
     public Guid? SelectedProfileId { get; set; }
     public double? Scale { get; set; }
+    public double? CampathScale { get; set; }
+    public double? GroupScale { get; set; }
 }
 
 public class CampathProfileData

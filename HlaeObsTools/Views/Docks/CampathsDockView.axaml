@@ -3,33 +3,24 @@
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:c="using:HlaeObsTools.Converters"
              xmlns:hotkeys="using:HlaeObsTools.Services.Hotkeys"
+             x:Name="Root"
              x:Class="HlaeObsTools.Views.Docks.CampathsDockView"
              x:CompileBindings="False">
 
   <UserControl.Resources>
-    <c:ScaleToWidthConverter x:Key="ScaleToWidthConverter" BaseWidth="260"/>
-    <c:ScaleToHeightConverter x:Key="ScaleToHeightConverter" BaseWidth="260" AspectRatio="1.7777777778"/>
+    <c:ClampedScaleToWidthConverter x:Key="CampathWidthConverter" BaseWidth="260" MinimumWidth="100" HorizontalMargins="12" />
+    <c:ClampedScaleToWidthConverter x:Key="GroupWidthConverter" BaseWidth="180" MinimumWidth="110" HorizontalMargins="12" />
+    <c:ScaleToHeightConverter x:Key="CardHeightConverter" BaseWidth="1" AspectRatio="1.7777777778" />
     <c:RoundWithOffsetConverter x:Key="TopControlsWidthConverter" Offset="-20"/>
   </UserControl.Resources>
 
-  <!-- Root layout -->
-  <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,*">
-    <!-- Top controls -->
-    <Border Grid.Row="0"
-            Grid.ColumnSpan="2"
-            x:Name="TopControlsHost"
-            Background="#121212"
-            Padding="10,0">
-      <WrapPanel Orientation="Horizontal"
-                 VerticalAlignment="Center"
-                 UseLayoutRounding="True"
+  <Grid ColumnDefinitions="220,6,*" RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Grid.ColumnSpan="3" x:Name="TopControlsHost" Background="#121212" Padding="10,0">
+      <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" UseLayoutRounding="True"
                  Width="{Binding ElementName=TopControlsHost, Path=Bounds.Width, Converter={StaticResource TopControlsWidthConverter}}">
         <Button Content="Add Profile" Command="{Binding AddProfileCommand}" Margin="0,4,8,4" />
         <Button Content="Add Campath" Command="{Binding AddCampathCommand}" Margin="0,4,8,4" />
-        <Button x:Name="PopulateProfileButton"
-                Content="Populate Profile"
-                Command="{Binding PopulateFromFolderCommand}"
-                Margin="0,4,8,4">
+        <Button x:Name="PopulateProfileButton" Content="Populate Profile" Command="{Binding PopulateFromFolderCommand}" Margin="0,4,8,4">
           <FlyoutBase.AttachedFlyout>
             <MenuFlyout>
               <MenuItem Header="Select folder" Click="OnPopulateSelectFolderClicked" />
@@ -39,235 +30,98 @@
             </MenuFlyout>
           </FlyoutBase.AttachedFlyout>
         </Button>
-
-        <ComboBox Width="100"
-                  Padding="10,6"
-                  VerticalAlignment="Center"
-                  ItemsSource="{Binding Profiles}"
-                  SelectedItem="{Binding SelectedProfile}"
-                  Margin="0,4,8,4">
-          <ComboBox.ItemTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding Name}"/>
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
+        <ComboBox MinWidth="70" Padding="10,6" VerticalAlignment="Center" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" Margin="0,4,8,4">
+          <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate></ComboBox.ItemTemplate>
         </ComboBox>
-
         <Button Content="Remove Profile" Command="{Binding RemoveProfileCommand}" Margin="0,4,8,4" />
-
-        <StackPanel Orientation="Horizontal"
-                    Spacing="4"
-                    VerticalAlignment="Center"
-                    Margin="0,0,8,0">
-          <TextBlock Text="Scale"
-                     Foreground="#E0E0E0"
-                     VerticalAlignment="Center"/>
-          <Slider Width="120"
-                  Minimum="0.4"
-                  Maximum="2.0"
-                  VerticalAlignment="Center"
-                  Value="{Binding Scale}" >
-            <Slider.Resources>
-              <!-- reduce the extra vertical space the Fluent template reserves -->
-              <GridLength x:Key="SliderPreContentMargin">6</GridLength>
-              <GridLength x:Key="SliderPostContentMargin">6</GridLength>
-              <!-- reduce the slider's measured height -->
-              <x:Double x:Key="SliderHorizontalHeight">20</x:Double>
-              <!-- make the thumb smaller -->
-              <x:Double x:Key="SliderHorizontalThumbWidth">14</x:Double>
-              <x:Double x:Key="SliderHorizontalThumbHeight">14</x:Double>
-            </Slider.Resources>
-          </Slider>
-
-        </StackPanel>
       </WrapPanel>
     </Border>
 
-    <!-- Groups panel (left) -->
-    <Border Grid.Row="1"
-            Grid.Column="0"
-            Background="#1A1A1A"
-            BorderBrush="#2E2E2E"
-            BorderThickness="0,0,1,0"
-            Padding="10"
-            Focusable="True">
-      <!-- Internal layout for groups -->
+    <Border Grid.Row="1" Grid.Column="0" Background="#1A1A1A" Padding="10" Focusable="True">
       <Grid RowDefinitions="Auto,*" RowSpacing="8">
-        <TextBlock Grid.Row="0"
-                   Text="Groups"
-                   FontWeight="SemiBold"
-                   Foreground="#E0E0E0"/>
-
-        <Button Grid.Row="0"
-                HorizontalAlignment="Right"
-                Content="Add Group"
-                Command="{Binding AddGroupCommand}" />
-        <ListBox Grid.Row="1"
-                 ItemsSource="{Binding SelectedProfile.Groups}"
-                 Background="Transparent"
-                 BorderThickness="0"
-                 SelectionMode="Single"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto">
-          <ListBox.ItemTemplate>
-            <DataTemplate>
-              <Border Background="#222"
-                      Padding="8"
-                      hotkeys:HotkeyTarget.CampathGroupId="{Binding Id}"
-                      DragDrop.AllowDrop="True"
-                      DragDrop.DragOver="OnGroupDragOver"
-                      DragDrop.Drop="OnGroupDrop"
-                      PointerPressed="OnGroupPointerPressed"
-                      PointerMoved="OnGroupPointerMoved"
-                      PointerReleased="OnGroupPointerReleased"
-                      PointerCaptureLost="OnGroupPointerCaptureLost">
-                <Grid ColumnDefinitions="*,Auto">
-                  <StackPanel Spacing="6" Grid.Column="0">
-                    <TextBlock Text="{Binding Name}"
-                               Foreground="#E0E0E0"
-                               FontWeight="SemiBold"
-                               FontSize="30"/>
-                  </StackPanel>
-
-                  <Viewbox Grid.Column="1"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Center"
-                           Stretch="Uniform"
-                           StretchDirection="Both">
-                    <StackPanel Spacing="6" Width="50">
-                      <Button Content="Del"
-                              Command="{Binding DataContext.DeleteGroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                              CommandParameter="{Binding}" />
-                      <Button Content="{Binding Mode}"
-                              Command="{Binding DataContext.ToggleGroupModeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                              CommandParameter="{Binding}" />
-                      <Button Content="View"
-                              Command="{Binding DataContext.ViewGroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                              CommandParameter="{Binding}" />
-                    </StackPanel>
-                  </Viewbox>
-                </Grid>
-              </Border>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
+        <TextBlock Text="Groups" FontWeight="SemiBold" Foreground="#E0E0E0" />
+        <Button HorizontalAlignment="Right" Content="Add Group" Command="{Binding AddGroupCommand}" />
+        <ScrollViewer x:Name="GroupScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding SelectedProfile.Groups}" VerticalAlignment="Top">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel Width="{Binding ElementName=GroupScrollViewer, Path=Viewport.Width}" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Background="#222" BorderBrush="#2E2E2E" BorderThickness="1" Padding="10" Margin="6"
+                        hotkeys:HotkeyTarget.CampathGroupId="{Binding Id}"
+                        DragDrop.AllowDrop="True" DragDrop.DragOver="OnGroupDragOver" DragDrop.Drop="OnGroupDrop"
+                        PointerPressed="OnGroupPointerPressed" PointerMoved="OnGroupPointerMoved" PointerReleased="OnGroupPointerReleased" PointerCaptureLost="OnGroupPointerCaptureLost">
+                  <Border.Width>
+                    <MultiBinding Converter="{StaticResource GroupWidthConverter}">
+                      <Binding Path="#Root.DataContext.GroupScale" />
+                      <Binding ElementName="GroupScrollViewer" Path="Viewport.Width" />
+                    </MultiBinding>
+                  </Border.Width>
+                  <Border.Height><Binding Path="Width" RelativeSource="{RelativeSource Self}" Converter="{StaticResource CardHeightConverter}" /></Border.Height>
+                  <Border.ContextFlyout>
+                    <MenuFlyout>
+                      <MenuItem Header="View group" Command="{Binding #Root.DataContext.ViewGroupCommand}" CommandParameter="{Binding}" />
+                      <MenuItem Header="Toggle sequence/random" Command="{Binding #Root.DataContext.ToggleGroupModeCommand}" CommandParameter="{Binding}" />
+                      <Separator />
+                      <MenuItem Header="Delete group" Command="{Binding #Root.DataContext.DeleteGroupCommand}" CommandParameter="{Binding}" />
+                    </MenuFlyout>
+                  </Border.ContextFlyout>
+                  <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Grid.Row="1" Text="{Binding CampathIds.Count}" Foreground="#A8A8A8" FontSize="12" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Mode}" Foreground="#79B8FF" FontSize="12" HorizontalAlignment="Right" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
       </Grid>
     </Border>
 
-    <!-- Main body (right) -->
-    <DockPanel Grid.Row="1"
-               Grid.Column="1"
-               Focusable="True"
-               Background="#121212">
+    <GridSplitter Grid.Row="1" Grid.Column="1" Background="#2E2E2E" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" ShowsPreview="False" />
 
-      <!-- Scrollable campaths area -->
-      <ScrollViewer x:Name="CampathScrollViewer"
-                    VerticalScrollBarVisibility="Auto"
-                    HorizontalScrollBarVisibility="Disabled">
-        <ItemsControl ItemsSource="{Binding SelectedProfile.Campaths}"
-                      VerticalAlignment="Top"
-                      HorizontalAlignment="Left">
+    <DockPanel Grid.Row="1" Grid.Column="2" Focusable="True" Background="#121212">
+      <ScrollViewer x:Name="CampathScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding SelectedProfile.Campaths}" VerticalAlignment="Top">
           <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <WrapPanel HorizontalAlignment="Left"
-                         Width="{Binding ElementName=CampathScrollViewer, Path=Viewport.Width}" />
-            </ItemsPanelTemplate>
+            <ItemsPanelTemplate><WrapPanel Width="{Binding ElementName=CampathScrollViewer, Path=Viewport.Width}" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
-
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border Background="#222"
-                      BorderBrush="#2E2E2E"
-                      BorderThickness="1"
-                      Padding="0"
-                      Margin="6"
+              <Border Background="#222" BorderBrush="#2E2E2E" BorderThickness="1" Padding="0" Margin="6"
                       hotkeys:HotkeyTarget.CampathId="{Binding Id}"
-                      DragDrop.AllowDrop="True"
-                      DragDrop.Drop="OnCampathDrop"
-                      DragDrop.DragOver="OnCampathDragOver"
-                      PointerPressed="OnCampathPointerPressed"
-                      PointerMoved="OnCampathPointerMoved"
-                      PointerReleased="OnCampathPointerReleased"
-                      PointerCaptureLost="OnCampathPointerCaptureLost"
-                      Width="{Binding DataContext.Scale, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource ScaleToWidthConverter}}"
-                      Height="{Binding DataContext.Scale, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource ScaleToHeightConverter}}">
+                      DragDrop.AllowDrop="True" DragDrop.Drop="OnCampathDrop" DragDrop.DragOver="OnCampathDragOver"
+                      PointerPressed="OnCampathPointerPressed" PointerMoved="OnCampathPointerMoved" PointerReleased="OnCampathPointerReleased" PointerCaptureLost="OnCampathPointerCaptureLost">
+                <Border.Width>
+                  <MultiBinding Converter="{StaticResource CampathWidthConverter}">
+                    <Binding Path="#Root.DataContext.CampathScale" />
+                    <Binding ElementName="CampathScrollViewer" Path="Viewport.Width" />
+                  </MultiBinding>
+                </Border.Width>
+                <Border.Height><Binding Path="Width" RelativeSource="{RelativeSource Self}" Converter="{StaticResource CardHeightConverter}" /></Border.Height>
+                <Border.ContextFlyout>
+                  <MenuFlyout>
+                    <MenuItem Header="Rename" Command="{Binding #Root.DataContext.RenameCampathCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Browse campath file" Command="{Binding #Root.DataContext.BrowseCampathCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Set thumbnail image" Command="{Binding #Root.DataContext.BrowseImageCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Capture thumbnail" Command="{Binding #Root.DataContext.ScreenShotCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Set offset" Command="{Binding #Root.DataContext.SetOffsetCommand}" CommandParameter="{Binding}" />
+                    <Separator />
+                    <MenuItem Header="Remove campath" Command="{Binding #Root.DataContext.RemoveCampathCommand}" CommandParameter="{Binding}" />
+                  </MenuFlyout>
+                </Border.ContextFlyout>
                 <Grid>
-                  <Image Source="{Binding Thumbnail}"
-                         Stretch="UniformToFill" />
-
-                  <Border Background="Transparent" Padding="8">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <Grid.Effect>
-                        <DropShadowEffect Color="#AA000000"
-                                          BlurRadius="6"
-                                          OffsetX="0"
-                                          OffsetY="0" />
-                      </Grid.Effect>
-
-                      <TextBlock Grid.Column="0"
-                                 Text="{Binding Name}"
-                                 Foreground="#E0E0E0"
-                                 FontWeight="SemiBold"
-                                 FontSize="20"
-                                 VerticalAlignment="Top"
-                                 HorizontalAlignment="Left"/>
-
-                      <Viewbox Grid.Column="1"
-                               HorizontalAlignment="Right"
-                               VerticalAlignment="Center"
-                               Stretch="Uniform"
-                               StretchDirection="Both">
-                        <StackPanel Spacing="6" Width="80">
-                          <Button Content="Remove"
-                                  Command="{Binding DataContext.RemoveCampathCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                  CommandParameter="{Binding}" />
-                          <Button Content="Rename"
-                                  Command="{Binding DataContext.RenameCampathCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                  CommandParameter="{Binding}" />
-                          <Button Content="Browse"
-                                  Command="{Binding DataContext.BrowseCampathCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                  CommandParameter="{Binding}" />
-                          <Button Content="Image"
-                                  Command="{Binding DataContext.BrowseImageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                  CommandParameter="{Binding}" />
-                          <Button Content="Screen"
-                                  Command="{Binding DataContext.ScreenShotCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                  CommandParameter="{Binding}" />
-                        </StackPanel>
-                      </Viewbox>
-                    </Grid>
-                  </Border>
-
-                  <!-- Offset -->
-                  <StackPanel Orientation="Horizontal"
-                              HorizontalAlignment="Left"
-                              VerticalAlignment="Bottom"
-                              Margin="8"
-                              Spacing="6">
-                    <Button Content="Offset"
-                            Command="{Binding DataContext.SetOffsetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                            CommandParameter="{Binding}" />
-                    <TextBlock Text="{Binding Offset, StringFormat={}{0:0.###}}"
-                               VerticalAlignment="Center"
-                               Foreground="#E0E0E0" />
-
-                  </StackPanel>
-
-                  <!-- Progress bar -->
-                  <Grid VerticalAlignment="Bottom"
-                        HorizontalAlignment="Stretch"
-                        Height="4"
-                        IsVisible="{Binding IsPlaying}">
-                    <Rectangle Fill="#FF0000"
-                               HorizontalAlignment="Left">
-                      <Rectangle.Width>
-                        <MultiBinding>
-                          <MultiBinding.Converter>
-                            <c:ProgressBarWidthConverter />
-                          </MultiBinding.Converter>
-                          <Binding Path="PlaybackProgress" />
-                          <Binding Path="Bounds.Width" RelativeSource="{RelativeSource AncestorType=Grid}" />
-                        </MultiBinding>
-                      </Rectangle.Width>
+                  <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                  <Grid IsHitTestVisible="False">
+                    <Grid.Effect><DropShadowEffect Color="Black" BlurRadius="4" OffsetX="0" OffsetY="0" /></Grid.Effect>
+                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontWeight="SemiBold" TextWrapping="Wrap" Margin="8" VerticalAlignment="Top" />
+                    <TextBlock Text="{Binding Offset, StringFormat=Offset: {0:0.###}}" Foreground="#E0E0E0" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" />
+                  </Grid>
+                  <Grid VerticalAlignment="Bottom" Height="4" IsVisible="{Binding IsPlaying}">
+                    <Rectangle Fill="#FF0000" HorizontalAlignment="Left">
+                      <Rectangle.Width><MultiBinding><MultiBinding.Converter><c:ProgressBarWidthConverter /></MultiBinding.Converter><Binding Path="PlaybackProgress" /><Binding Path="Bounds.Width" RelativeSource="{RelativeSource AncestorType=Grid}" /></MultiBinding></Rectangle.Width>
                     </Rectangle>
                   </Grid>
                 </Grid>

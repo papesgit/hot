@@ -52,6 +52,8 @@ public class CampathsDockViewModel : Tool
     private readonly DelegateCommand _deleteGroupCommand;
     private readonly DelegateCommand _toggleGroupModeCommand;
     private readonly DelegateCommand _viewGroupCommand;
+    private readonly DelegateCommand _playCampathCommand;
+    private readonly DelegateCommand _playCampathGroupCommand;
     public event EventHandler<Guid>? ProfileRemoved;
     private HlaeWebSocketClient? _webSocketClient;
     private TaskCompletionSource<IntPtr>? _sharedHandleTcs;
@@ -64,7 +66,8 @@ public class CampathsDockViewModel : Tool
 
     private ObservableCollection<CampathProfileViewModel> _profiles = new();
     private CampathProfileViewModel? _selectedProfile;
-    private double _scale = 1.0;
+    private double _campathScale = 1.0;
+    private double _groupScale = 1.0;
     private CancellationTokenSource? _thumbnailLoadCts;
 
     public CampathsDockViewModel()
@@ -88,6 +91,8 @@ public class CampathsDockViewModel : Tool
         _deleteGroupCommand = new DelegateCommand(async param => await DeleteGroupAsync(param as CampathGroupViewModel), _ => SelectedProfile != null);
         _toggleGroupModeCommand = new DelegateCommand(param => { ToggleGroupMode(param as CampathGroupViewModel); return Task.CompletedTask; }, _ => SelectedProfile != null);
         _viewGroupCommand = new DelegateCommand(param => { ViewGroupRequested?.Invoke(this, param as CampathGroupViewModel); return Task.CompletedTask; }, _ => SelectedProfile != null);
+        _playCampathCommand = new DelegateCommand(async param => await PlayCampathAsync(param as CampathItemViewModel), _ => SelectedProfile != null);
+        _playCampathGroupCommand = new DelegateCommand(async param => await PlayCampathGroupAsync(param as CampathGroupViewModel), _ => SelectedProfile != null);
 
         Load();
     }
@@ -113,17 +118,33 @@ public class CampathsDockViewModel : Tool
         }
     }
 
-    public double Scale
+    public double CampathScale
     {
-        get => _scale;
+        get => _campathScale;
         set
         {
-            if (SetProperty(ref _scale, value))
+            if (SetProperty(ref _campathScale, Math.Clamp(value, 0.4, 2.0)))
             {
                 Save();
             }
         }
     }
+
+    public double GroupScale
+    {
+        get => _groupScale;
+        set
+        {
+            if (SetProperty(ref _groupScale, Math.Clamp(value, 0.55, 2.0)))
+            {
+                Save();
+            }
+        }
+    }
+
+    public void AdjustCampathScale(double delta) => CampathScale += delta;
+
+    public void AdjustGroupScale(double delta) => GroupScale += delta;
 
     public ICommand AddProfileCommand => _addProfileCommand;
     public ICommand RemoveProfileCommand => _removeProfileCommand;
@@ -139,6 +160,8 @@ public class CampathsDockViewModel : Tool
     public ICommand DeleteGroupCommand => _deleteGroupCommand;
     public ICommand ToggleGroupModeCommand => _toggleGroupModeCommand;
     public ICommand ViewGroupCommand => _viewGroupCommand;
+    public ICommand PlayCampathCommand => _playCampathCommand;
+    public ICommand PlayCampathGroupCommand => _playCampathGroupCommand;
 
     public double CampathPlaybackProgress
     {
@@ -262,7 +285,8 @@ public class CampathsDockViewModel : Tool
         {
             Profiles = Profiles.Select(p => p.ToData()).ToList(),
             SelectedProfileId = SelectedProfile?.Id,
-            Scale = Scale
+            CampathScale = CampathScale,
+            GroupScale = GroupScale
         };
 
         _storage.Save(data);
@@ -271,15 +295,18 @@ public class CampathsDockViewModel : Tool
     private void Load()
     {
         var data = _storage.Load();
-        _scale = data.Scale
+        var legacyScale = data.Scale
             ?? data.Profiles.Select(p => p.Scale).FirstOrDefault(scale => scale.HasValue)
             ?? 1.0;
+        _campathScale = data.CampathScale ?? legacyScale;
+        _groupScale = data.GroupScale ?? legacyScale;
         Profiles = new ObservableCollection<CampathProfileViewModel>(
             data.Profiles
                 .Select(p => new CampathProfileViewModel(p))
                 .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase));
         SelectedProfile = Profiles.FirstOrDefault(p => p.Id == data.SelectedProfileId) ?? Profiles.FirstOrDefault();
-        OnPropertyChanged(nameof(Scale));
+        OnPropertyChanged(nameof(CampathScale));
+        OnPropertyChanged(nameof(GroupScale));
     }
 
     private void StartSelectedProfileThumbnailLoading()

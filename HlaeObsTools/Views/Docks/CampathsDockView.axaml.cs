@@ -24,6 +24,9 @@ public partial class CampathsDockView : UserControl
     public CampathsDockView()
     {
         InitializeComponent();
+        _groupScrollViewer = this.FindControl<ScrollViewer>("GroupScrollViewer");
+        _campathScrollViewer = this.FindControl<ScrollViewer>("CampathScrollViewer");
+        AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel, true);
         InitializePopulateFlyout();
         DataContextChanged += OnDataContextChanged;
         AttachedToVisualTree += (_, _) => AttachViewModel();
@@ -48,6 +51,8 @@ public partial class CampathsDockView : UserControl
     private Button? _populateProfileButton;
     private FlyoutBase? _populateSourceFlyout;
     private TaskCompletionSource<CampathPopulateSource?>? _populateSourceTcs;
+    private readonly ScrollViewer? _groupScrollViewer;
+    private readonly ScrollViewer? _campathScrollViewer;
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
@@ -303,6 +308,30 @@ public partial class CampathsDockView : UserControl
     private void OnCampathPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
         ResetCampathPointerState(sender as Control);
+    }
+
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) || DataContext is not CampathsDockViewModel vm || e.Delta.Y == 0)
+            return;
+
+        if (IsPointerWithin(e, _groupScrollViewer))
+            vm.AdjustGroupScale(Math.Sign(e.Delta.Y) * 0.1);
+        else if (IsPointerWithin(e, _campathScrollViewer))
+            vm.AdjustCampathScale(Math.Sign(e.Delta.Y) * 0.1);
+        else
+            return;
+
+        e.Handled = true;
+    }
+
+    private static bool IsPointerWithin(PointerEventArgs e, Control? control)
+    {
+        if (control == null)
+            return false;
+
+        var point = e.GetPosition(control);
+        return point.X >= 0 && point.Y >= 0 && point.X <= control.Bounds.Width && point.Y <= control.Bounds.Height;
     }
 
     private void ResetCampathPointerState(Control? control = null)
