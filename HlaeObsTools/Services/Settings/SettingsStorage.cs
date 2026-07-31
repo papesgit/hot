@@ -60,6 +60,8 @@ public class SettingsStorage
 
 public class AppSettingsData
 {
+    public DateTimeOffset? LastUpdateCheckUtc { get; set; }
+    public string? SkippedUpdateVersion { get; set; }
     public List<AttachmentPresetData>? AttachPresets { get; set; }
     public List<AttachmentPresetPageData> AttachPresetPages { get; set; } = new();
     public int ActiveAttachPresetPage { get; set; }

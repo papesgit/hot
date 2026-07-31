@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using HlaeObsTools.Services.Graphics;
+using HlaeObsTools.Services.Updates;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.Views;
 using HlaeObsTools.Views.Docks;
@@ -92,6 +93,8 @@ public partial class App : Application
                 mainWindow.ShowInTaskbar = true;
                 mainWindow.WindowState = WindowState.Normal;
                 mainWindow.Activate();
+
+                _ = new UpdateCheckService().CheckForUpdatesAsync(mainWindow);
             }
             catch (Exception)
             {
