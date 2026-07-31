@@ -1,32 +1,57 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="using:HlaeObsTools.Views.Docks"
+        xmlns:c="using:HlaeObsTools.Converters"
+        x:Name="Root"
         x:Class="HlaeObsTools.Views.Docks.CampathGroupViewWindow"
         x:CompileBindings="False"
-        Width="400" Height="500"
+        Width="720" Height="520"
+        MinWidth="340" MinHeight="260"
         Title="Group Campaths">
-  <Grid RowDefinitions="Auto,*" Margin="12">
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <TextBlock Text="{Binding GroupName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-      <TextBlock Text="{Binding ModeText}" Foreground="#9AA5B1" VerticalAlignment="Center"/>
-    </StackPanel>
-    <ListBox Grid.Row="1"
-             ItemsSource="{Binding CampathItems}"
-             SelectionMode="Single"
-             Background="Transparent"
-             BorderThickness="1">
-      <ListBox.ItemTemplate>
-        <DataTemplate>
-          <Border Background="#222" Padding="8" Margin="4">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding Name}" Foreground="#E0E0E0"/>
-              <Button Content="Up" Command="{Binding DataContext.MoveCampathUpCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-              <Button Content="Down" Command="{Binding DataContext.MoveCampathDownCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-              <Button Content="Remove" Command="{Binding DataContext.RemoveCampathFromGroupCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
-            </StackPanel>
-          </Border>
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
+  <Window.Resources>
+    <c:ClampedScaleToWidthConverter x:Key="CardWidthConverter" BaseWidth="260" MinimumWidth="100" HorizontalMargins="12" />
+    <c:ScaleToHeightConverter x:Key="CardHeightConverter" BaseWidth="1" AspectRatio="1.7777777778" />
+  </Window.Resources>
+  <Grid RowDefinitions="Auto,*" Background="#121212">
+    <Border Background="#1A1A1A" Padding="12,8">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="{Binding GroupName}" FontWeight="SemiBold" Foreground="#E0E0E0" VerticalAlignment="Center"/>
+        <TextBlock Text="{Binding ModeText}" Foreground="#9AA5B1" VerticalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+    <ScrollViewer x:Name="CardScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <ItemsControl ItemsSource="{Binding CampathItems}" VerticalAlignment="Top">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel Width="{Binding ElementName=CardScrollViewer, Path=Viewport.Width}" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Background="#222" BorderBrush="#2E2E2E" BorderThickness="1" Margin="6"
+                    DragDrop.AllowDrop="True" DragDrop.DragOver="OnCardDragOver" DragDrop.Drop="OnCardDrop"
+                    PointerPressed="OnCardPointerPressed" PointerMoved="OnCardPointerMoved" PointerReleased="OnCardPointerReleased" PointerCaptureLost="OnCardPointerCaptureLost">
+              <Border.Width>
+                <MultiBinding Converter="{StaticResource CardWidthConverter}">
+                  <Binding Path="#Root.DataContext.CardScale" />
+                  <Binding ElementName="CardScrollViewer" Path="Viewport.Width" />
+                </MultiBinding>
+              </Border.Width>
+              <Border.Height><Binding Path="Width" RelativeSource="{RelativeSource Self}" Converter="{StaticResource CardHeightConverter}" /></Border.Height>
+              <Border.ContextFlyout>
+                <MenuFlyout>
+                  <MenuItem Header="Remove from group" Command="{Binding #Root.DataContext.RemoveCampathFromGroupCommand}" CommandParameter="{Binding}" />
+                </MenuFlyout>
+              </Border.ContextFlyout>
+              <Grid>
+                <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                <Grid IsHitTestVisible="False">
+                  <Grid.Effect><DropShadowEffect Color="#CC000000" BlurRadius="6" OffsetX="0" OffsetY="0" /></Grid.Effect>
+                  <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontWeight="SemiBold" TextWrapping="Wrap" Margin="8" VerticalAlignment="Top" />
+                  <TextBlock Text="{Binding Offset, StringFormat=Offset: {0:0.###}}" Foreground="#E0E0E0" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" />
+                </Grid>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
   </Grid>
 </Window>
