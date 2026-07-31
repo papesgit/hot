@@ -6,6 +6,7 @@
              RequestedThemeVariant="Dark">
     <Application.Styles>
         <FluentTheme DensityStyle="Compact" />
+        <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml" />
         <StyleInclude Source="avares://HlaeObsTools/Themes/ScrubbyNumericField.axaml"/>
         <Style Selector="Button, ToggleSwitch, CheckBox">
             <Setter Property="Focusable" Value="False"/>
@@ -17,6 +18,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://LiveMarkdown.Avalonia/Defaults.axaml" />
                 <ResourceInclude Source="avares://HlaeObsTools/Themes/DockHostWindow.axaml" />
             </ResourceDictionary.MergedDictionaries>
             <conv:RelativeToCanvasConverter x:Key="RelativeToCanvasConverter" />

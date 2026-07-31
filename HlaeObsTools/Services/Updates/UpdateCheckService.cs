@@ -47,7 +47,8 @@ public sealed class UpdateCheckService
                 owner,
                 currentVersion,
                 latestVersion,
-                string.IsNullOrWhiteSpace(release.HtmlUrl) ? FallbackReleasePageUrl : release.HtmlUrl);
+                string.IsNullOrWhiteSpace(release.HtmlUrl) ? FallbackReleasePageUrl : release.HtmlUrl,
+                release.Body);
 
             if (response == UpdateAvailableDialogResult.SkipVersion)
             {
@@ -104,5 +105,8 @@ public sealed class UpdateCheckService
 
         [JsonPropertyName("html_url")]
         public string? HtmlUrl { get; init; }
+
+        [JsonPropertyName("body")]
+        public string? Body { get; init; }
     }
 }

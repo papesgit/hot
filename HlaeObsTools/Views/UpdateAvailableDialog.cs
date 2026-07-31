@@ -19,13 +19,14 @@ public static class UpdateAvailableDialog
         Window owner,
         Version currentVersion,
         Version latestVersion,
-        string releasePageUrl)
+        string releasePageUrl,
+        string? releaseNotes)
     {
         var dialog = new Window
         {
             Title = "Update available",
-            Width = 460,
-            SizeToContent = SizeToContent.Height,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            MaxWidth = 560,
             CanResize = false,
             ShowInTaskbar = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -33,6 +34,7 @@ public static class UpdateAvailableDialog
 
         var result = UpdateAvailableDialogResult.RemindLater;
         var downloadButton = new Button { Content = "View release", IsDefault = true };
+        var showNotesButton = new Button { Content = "Show release notes" };
         var remindLaterButton = new Button { Content = "Remind me later" };
         var skipButton = new Button { Content = "Skip this version", IsCancel = true };
 
@@ -40,6 +42,7 @@ public static class UpdateAvailableDialog
         {
             ExternalLinkLauncher.TryOpen(releasePageUrl);
         };
+        showNotesButton.Click += (_, _) => new ReleaseNotesWindow(latestVersion, releaseNotes).Show(dialog);
         remindLaterButton.Click += (_, _) => dialog.Close();
         skipButton.Click += (_, _) =>
         {
@@ -50,7 +53,7 @@ public static class UpdateAvailableDialog
         var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
         panel.Children.Add(new TextBlock
         {
-            Text = $"HLAE Observer Tools {latestVersion} is available. You are currently using {currentVersion}.",
+            Text = $"HLAE Observer Tools {latestVersion} is available.\nYou are currently using {currentVersion}.",
             TextWrapping = TextWrapping.Wrap
         });
 
@@ -58,9 +61,10 @@ public static class UpdateAvailableDialog
         {
             Orientation = Orientation.Horizontal,
             Spacing = 8,
-            HorizontalAlignment = HorizontalAlignment.Right
+            HorizontalAlignment = HorizontalAlignment.Left
         };
         buttons.Children.Add(downloadButton);
+        buttons.Children.Add(showNotesButton);
         buttons.Children.Add(remindLaterButton);
         buttons.Children.Add(skipButton);
         panel.Children.Add(buttons);
