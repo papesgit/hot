@@ -81,6 +81,11 @@
                       <svg:Svg Path="/Assets/icons/keycap.svg" />
                       <TextBlock Text="{Binding HotkeyDisplay}" Foreground="#E0E0E0" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
+                    <Grid VerticalAlignment="Bottom" Height="4" IsVisible="{Binding IsPlaying}">
+                      <Rectangle Fill="#FF0000" HorizontalAlignment="Left">
+                        <Rectangle.Width><MultiBinding><MultiBinding.Converter><c:ProgressBarWidthConverter /></MultiBinding.Converter><Binding Path="PlaybackProgress" /><Binding Path="Bounds.Width" RelativeSource="{RelativeSource AncestorType=Grid}" /></MultiBinding></Rectangle.Width>
+                      </Rectangle>
+                    </Grid>
                   </Grid>
                 </Border>
               </DataTemplate>

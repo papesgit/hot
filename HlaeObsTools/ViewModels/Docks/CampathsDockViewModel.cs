@@ -63,6 +63,7 @@ public class CampathsDockViewModel : Tool
     private readonly Dictionary<Guid, int> _groupPlaybackIndex = new();
     private readonly Random _random = new();
     private CampathItemViewModel? _currentlyPlayingCampath;
+    private CampathGroupViewModel? _currentlyPlayingGroup;
     private double _campathPlaybackProgress;
     private bool _isCampathPlaying;
 
@@ -1031,7 +1032,7 @@ public class CampathsDockViewModel : Tool
             if (effectiveDuration > 0)
             {
                 selected.StartPlayback(effectiveDuration);
-                SetCurrentPlayingCampath(selected);
+                SetCurrentPlayingCampath(selected, group);
             }
         }
 
@@ -1073,7 +1074,7 @@ public class CampathsDockViewModel : Tool
         Save();
     }
 
-    private void SetCurrentPlayingCampath(CampathItemViewModel? campath)
+    private void SetCurrentPlayingCampath(CampathItemViewModel? campath, CampathGroupViewModel? group = null)
     {
         if (_currentlyPlayingCampath != null)
         {
@@ -1081,6 +1082,11 @@ public class CampathsDockViewModel : Tool
         }
 
         _currentlyPlayingCampath = campath;
+        if (!ReferenceEquals(_currentlyPlayingGroup, group))
+        {
+            _currentlyPlayingGroup?.SetPlaybackState(false, 0);
+            _currentlyPlayingGroup = group;
+        }
 
         if (_currentlyPlayingCampath != null)
         {
@@ -1105,11 +1111,13 @@ public class CampathsDockViewModel : Tool
         {
             IsCampathPlaying = false;
             CampathPlaybackProgress = 0;
+            _currentlyPlayingGroup?.SetPlaybackState(false, 0);
             return;
         }
 
         IsCampathPlaying = _currentlyPlayingCampath.IsPlaying;
         CampathPlaybackProgress = _currentlyPlayingCampath.PlaybackProgress;
+        _currentlyPlayingGroup?.SetPlaybackState(IsCampathPlaying, CampathPlaybackProgress);
     }
 }
 
@@ -1383,6 +1391,8 @@ public class CampathGroupViewModel : ViewModelBase
     private CampathGroupMode _mode;
     private readonly ObservableCollection<Guid> _campathIds;
     private string? _hotkeyDisplay;
+    private double _playbackProgress;
+    private bool _isPlaying;
 
     public CampathGroupViewModel(CampathGroupData data)
     {
@@ -1419,6 +1429,24 @@ public class CampathGroupViewModel : ViewModelBase
     }
 
     public bool HasHotkey => !string.IsNullOrWhiteSpace(HotkeyDisplay);
+
+    public double PlaybackProgress
+    {
+        get => _playbackProgress;
+        private set => SetProperty(ref _playbackProgress, value);
+    }
+
+    public bool IsPlaying
+    {
+        get => _isPlaying;
+        private set => SetProperty(ref _isPlaying, value);
+    }
+
+    public void SetPlaybackState(bool isPlaying, double playbackProgress)
+    {
+        IsPlaying = isPlaying;
+        PlaybackProgress = isPlaying ? playbackProgress : 0;
+    }
 
     public void ToggleMode()
     {
