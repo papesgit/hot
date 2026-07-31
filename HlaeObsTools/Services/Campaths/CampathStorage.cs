@@ -90,6 +90,7 @@ public class CampathGroupData
     public string Name { get; set; } = "Group";
     public CampathGroupMode Mode { get; set; } = CampathGroupMode.Seq;
     public List<Guid> CampathIds { get; set; } = new();
+    public bool HideInRadar { get; set; }
 }
 
 public enum CampathGroupMode

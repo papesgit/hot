@@ -145,6 +145,20 @@ public class CampathGroupViewWindowVm : ViewModelBase
         private set => SetProperty(ref _cardScale, Math.Clamp(value, 0.4, 2.0));
     }
 
+    public bool HideInRadar
+    {
+        get => _groupVm.HideInRadar;
+        set
+        {
+            if (_groupVm.HideInRadar == value)
+                return;
+
+            _groupVm.HideInRadar = value;
+            _ownerVm.Save();
+            OnPropertyChanged();
+        }
+    }
+
     public CampathGroupViewWindowVm(CampathsDockViewModel ownerVm, CampathGroupViewModel groupVm)
     {
         _ownerVm = ownerVm;

@@ -1754,15 +1754,43 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         RefreshCampathOverlay();
     }
 
+    private void OnCampathGroupChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CampathGroupViewModel.HideInRadar))
+            RefreshCampathOverlay();
+    }
+
+    private void OnCampathGroupCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+        {
+            foreach (var group in e.OldItems.OfType<CampathGroupViewModel>())
+                group.PropertyChanged -= OnCampathGroupChanged;
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (var group in e.NewItems.OfType<CampathGroupViewModel>())
+                group.PropertyChanged += OnCampathGroupChanged;
+        }
+
+        RefreshCampathOverlay();
+    }
+
     private void AttachProfile(CampathProfileViewModel? profile)
     {
         if (profile == null)
             return;
 
         profile.Campaths.CollectionChanged += OnCampathCollectionChanged;
+        profile.Groups.CollectionChanged += OnCampathGroupCollectionChanged;
         foreach (var item in profile.Campaths)
         {
             item.PropertyChanged += OnCampathItemChanged;
+        }
+        foreach (var group in profile.Groups)
+        {
+            group.PropertyChanged += OnCampathGroupChanged;
         }
 
         _attachedProfile = profile;
@@ -1775,9 +1803,14 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             return;
 
         target.Campaths.CollectionChanged -= OnCampathCollectionChanged;
+        target.Groups.CollectionChanged -= OnCampathGroupCollectionChanged;
         foreach (var item in target.Campaths)
         {
             item.PropertyChanged -= OnCampathItemChanged;
+        }
+        foreach (var group in target.Groups)
+        {
+            group.PropertyChanged -= OnCampathGroupChanged;
         }
 
         if (ReferenceEquals(_attachedProfile, target))
@@ -1794,8 +1827,16 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         if (_campathsVm?.SelectedProfile == null || string.IsNullOrWhiteSpace(_currentMap) || !HasRadar)
             return;
 
+        var hiddenCampathIds = _campathsVm.SelectedProfile.Groups
+            .Where(group => group.HideInRadar)
+            .SelectMany(group => group.CampathIds)
+            .ToHashSet();
+
         foreach (var campath in _campathsVm.SelectedProfile.Campaths)
         {
+            if (hiddenCampathIds.Contains(campath.Id))
+                continue;
+
             if (string.IsNullOrWhiteSpace(campath.FilePath) || !File.Exists(campath.FilePath))
                 continue;
 

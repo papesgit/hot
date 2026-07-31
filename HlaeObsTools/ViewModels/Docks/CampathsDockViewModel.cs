@@ -1393,12 +1393,14 @@ public class CampathGroupViewModel : ViewModelBase
     private string? _hotkeyDisplay;
     private double _playbackProgress;
     private bool _isPlaying;
+    private bool _hideInRadar;
 
     public CampathGroupViewModel(CampathGroupData data)
     {
         Id = data.Id;
         _name = data.Name;
         _mode = data.Mode;
+        _hideInRadar = data.HideInRadar;
         _campathIds = new ObservableCollection<Guid>(data.CampathIds);
     }
 
@@ -1417,6 +1419,12 @@ public class CampathGroupViewModel : ViewModelBase
     }
 
     public ObservableCollection<Guid> CampathIds => _campathIds;
+
+    public bool HideInRadar
+    {
+        get => _hideInRadar;
+        set => SetProperty(ref _hideInRadar, value);
+    }
 
     public string? HotkeyDisplay
     {
@@ -1480,6 +1488,7 @@ public class CampathGroupViewModel : ViewModelBase
         Id = Id,
         Name = Name,
         Mode = Mode,
+        HideInRadar = HideInRadar,
         CampathIds = _campathIds.ToList()
     };
 }

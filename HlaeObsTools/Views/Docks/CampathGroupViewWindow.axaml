@@ -16,6 +16,7 @@
       <StackPanel Orientation="Horizontal" Spacing="8">
         <TextBlock Text="{Binding GroupName}" FontWeight="SemiBold" Foreground="#E0E0E0" VerticalAlignment="Center"/>
         <TextBlock Text="{Binding ModeText}" Foreground="#9AA5B1" VerticalAlignment="Center"/>
+        <CheckBox Content="Hide in Radar" IsChecked="{Binding HideInRadar, Mode=TwoWay}" Foreground="#E0E0E0" VerticalAlignment="Center" />
       </StackPanel>
     </Border>
     <ScrollViewer x:Name="CardScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
