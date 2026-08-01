@@ -24,6 +24,7 @@ public static class CampathFileIo
     public sealed class CampathSequenceFileData
     {
         public double TimeOffset { get; set; }
+        public bool Hold { get; set; }
         public List<CameraTrackFileData> Cameras { get; } = new();
         public List<CameraCutFileData> CameraCuts { get; } = new();
     }
@@ -62,7 +63,7 @@ public static class CampathFileIo
             if (doc.Element("campath") is { } legacyRoot)
             {
                 var legacy = ReadCampath(legacyRoot, normalizeTimes: true);
-                var result = new CampathSequenceFileData { TimeOffset = legacy.TimeOffset };
+                var result = new CampathSequenceFileData { TimeOffset = legacy.TimeOffset, Hold = legacy.Hold };
                 result.Cameras.Add(new CameraTrackFileData("camera-1", "Camera 1", legacy));
                 return result;
             }
@@ -74,7 +75,8 @@ public static class CampathFileIo
 
             var sequence = new CampathSequenceFileData
             {
-                TimeOffset = ParseDouble(root.Attribute("offset")?.Value)
+                TimeOffset = ParseDouble(root.Attribute("offset")?.Value),
+                Hold = root.Attribute("hold") != null
             };
             foreach (var cameraElement in camerasElement.Elements("camera"))
             {
@@ -250,6 +252,8 @@ public static class CampathFileIo
             new XAttribute("version", "1"));
         if (offset != 0.0)
             root.SetAttributeValue("offset", ToXml(offset));
+        if (sequence.Hold)
+            root.SetAttributeValue("hold", string.Empty);
 
         var cameras = new XElement("cameras");
         foreach (var camera in sequence.Cameras)

@@ -330,6 +330,10 @@ public class MainDockFactory : Factory, IDisposable
             ShowFps = _storedSettings.ViewportShowFps,
             ViewportCampathOverlayEnabled = _storedSettings.ViewportCampathOverlayEnabled,
             ViewportCampathGizmoEnabled = _storedSettings.ViewportCampathGizmoEnabled,
+            HlaeSyncTimeSkipMode = Enum.TryParse<HlaeSyncTimeSkipMode>(
+                _storedSettings.HlaeSyncTimeSkipMode, ignoreCase: true, out var hlaeSyncTimeSkipMode)
+                ? hlaeSyncTimeSkipMode
+                : HlaeSyncTimeSkipMode.AfterTick,
             CampathGizmoLocalSpace = _storedSettings.CampathGizmoLocalSpace,
             LiveLinkEnabled = _storedSettings.ViewportLiveLinkEnabled,
             LiveLinkItemIconsEnabled = _storedSettings.ViewportLiveLinkItemIconsEnabled,

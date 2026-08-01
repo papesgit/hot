@@ -198,9 +198,9 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                             <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" Margin="0,4,0,0">
-                                <ToggleSwitch IsChecked="{Binding CampathEditor.Hold, Mode=TwoWay}"
+                                <ToggleSwitch IsChecked="{Binding CampathHold, Mode=TwoWay}"
                                               Content="Hold"
-                                    hotkeys:HotkeyTarget.Path="CampathEditor.Hold"
+                                    hotkeys:HotkeyTarget.Path="CampathHold"
                                               Foreground="#E6E6E6"/>
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ViewportCampathOverlayEnabled, Mode=TwoWay}"
                                               Content="Draw Path"
@@ -224,6 +224,11 @@
                                               Foreground="#E6E6E6"
                                     hotkeys:HotkeyTarget.Path="Viewport3DSettings.ViewportCampathSyncEnabled"
                                               Margin="0,0,10,0"/>
+                            </WrapPanel>
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center" IsVisible="{Binding Viewport3DSettings.ViewportCampathSyncEnabled, Mode=TwoWay}">
+                                <TextBlock Text="Timeskip-mode" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                                <ComboBox ItemsSource="{Binding Viewport3DSettings.HlaeSyncTimeSkipModes}"
+                                          SelectedItem="{Binding Viewport3DSettings.HlaeSyncTimeSkipMode, Mode=TwoWay}"/>
                             </WrapPanel>
                             <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center" Margin="0,4,0,0">
                                 <TextBlock Text="Time Offset" Foreground="#AAAAAA" VerticalAlignment="Center"/>

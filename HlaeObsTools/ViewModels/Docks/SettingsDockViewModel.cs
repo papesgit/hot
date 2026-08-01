@@ -383,6 +383,18 @@ namespace HlaeObsTools.ViewModels.Docks
         public ObservableCollection<string> ReplayDirectorRoleOptions => HlaeObsTools.ViewModels.ReplayDirectorSettings.RoleOptions;
         public CampathEditorViewModel CampathEditor =>
             _campathSequence?.SelectedCamera?.Editor ?? _campathEditor;
+        public bool CampathHold
+        {
+            get => _campathSequence?.Hold ?? CampathEditor.Hold;
+            set
+            {
+                if (_campathSequence != null)
+                    _campathSequence.Hold = value;
+                else
+                    CampathEditor.Hold = value;
+                OnPropertyChanged();
+            }
+        }
         public IReadOnlyList<CampathEditorModeOption> DefaultCampathInterpOptions =>
             _campathEditor.EditorModeOptions;
         public CampathEditorMode DefaultCampathInterpMode => _defaultCampathInterp;
@@ -420,12 +432,18 @@ namespace HlaeObsTools.ViewModels.Docks
             _campathSequence.DefaultCameraMode = _defaultCampathInterp;
             _campathSequence.PropertyChanged += OnCampathSequenceChanged;
             OnPropertyChanged(nameof(CampathEditor));
+            OnPropertyChanged(nameof(CampathHold));
         }
 
         private void OnCampathSequenceChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))
+            {
                 OnPropertyChanged(nameof(CampathEditor));
+                OnPropertyChanged(nameof(CampathHold));
+            }
+            else if (e.PropertyName == nameof(CampathSequenceViewModel.Hold))
+                OnPropertyChanged(nameof(CampathHold));
         }
         public AttachPresetAnimationDockViewModel AttachPresetAnimationEditor { get; }
         public ObservableCollection<HotkeyBindingViewModel> HotkeyBindings { get; } = new();
@@ -1828,6 +1846,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 DefaultCampathInterp = _defaultCampathInterp.ToString(),
                 ViewportCampathOverlayEnabled = _viewport3DSettings.ViewportCampathOverlayEnabled,
                 ViewportCampathGizmoEnabled = _viewport3DSettings.ViewportCampathGizmoEnabled,
+                HlaeSyncTimeSkipMode = _viewport3DSettings.HlaeSyncTimeSkipMode.ToString(),
                 CampathGizmoLocalSpace = _viewport3DSettings.CampathGizmoLocalSpace,
                 ViewportLiveLinkEnabled = _viewport3DSettings.LiveLinkEnabled,
                 ViewportLiveLinkItemIconsEnabled = _viewport3DSettings.LiveLinkItemIconsEnabled,

@@ -139,6 +139,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     private DateTime _lastPlayTick;
     private double _playheadTime;
     private bool _isPlaying;
+    private bool _hold = true;
     private bool _limitPlaybackToContent;
     private bool _isPiloting;
     private bool _useExternalPlaybackTicks;
@@ -199,6 +200,15 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     public SequencerPossession Possession => _possession;
     public SequencerPossessionKind PossessionKind => Possession.Kind;
     public bool IsPlaying { get => _isPlaying; private set => SetProperty(ref _isPlaying, value); }
+    public bool Hold
+    {
+        get => _hold;
+        set
+        {
+            if (SetProperty(ref _hold, value))
+                RecordExternalMutation();
+        }
+    }
     public bool LimitPlaybackToContent
     {
         get => _limitPlaybackToContent;
@@ -543,6 +553,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
         {
             StopPlayback();
             ClearPossession();
+            Hold = data.Hold;
             var reusableCamera = Cameras.FirstOrDefault();
             CameraCuts.Clear();
             Cameras.Clear();
@@ -902,6 +913,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     }
 
     private SequenceSnapshot CaptureHistorySnapshot() => new(
+        Hold,
         Cameras.Select(camera => new CameraTrackSnapshot(
             camera,
             camera.Name,
@@ -915,6 +927,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
         var selectedBeforeRestore = SelectedCamera;
         try
         {
+            Hold = snapshot.Hold;
             Cameras.Clear();
             foreach (var state in snapshot.Cameras)
             {
@@ -947,7 +960,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
 
     private static bool HistoryEquals(SequenceSnapshot left, SequenceSnapshot right)
     {
-        if (left.Cameras.Count != right.Cameras.Count || !left.Cuts.SequenceEqual(right.Cuts))
+        if (left.Hold != right.Hold || left.Cameras.Count != right.Cameras.Count || !left.Cuts.SequenceEqual(right.Cuts))
             return false;
         for (var index = 0; index < left.Cameras.Count; index++)
         {
@@ -973,6 +986,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     }
 
     private sealed record SequenceSnapshot(
+        bool Hold,
         List<CameraTrackSnapshot> Cameras,
         List<CutSnapshot> Cuts);
     private sealed record CameraTrackSnapshot(

@@ -400,7 +400,10 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             return;
         var offset = _sequence.Cameras.FirstOrDefault()?.Editor.TimeOffset ?? 0.0;
         var seconds = _sequence.PlayheadTime + offset;
-        var command = $"mirv_freecam stop; mirv_campath enabled 1; mirv_skip time toGame {seconds.ToString("G", CultureInfo.InvariantCulture)}";
+        var skipMode = _settings.HlaeSyncTimeSkipMode == HlaeSyncTimeSkipMode.BeforeTick
+            ? "toGameBefore"
+            : "toGameAfter";
+        var command = $"mirv_freecam stop; mirv_campath enabled 1; mirv_skip time {skipMode} {seconds.ToString("G", CultureInfo.InvariantCulture)}";
         _ = _webSocketClient?.SendExecCommandAsync(command);
     }
 

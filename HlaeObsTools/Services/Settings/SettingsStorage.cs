@@ -102,6 +102,7 @@ public class AppSettingsData
     public string DefaultCampathInterp { get; set; } = "Curves";
     public bool ViewportCampathOverlayEnabled { get; set; } = true;
     public bool ViewportCampathGizmoEnabled { get; set; } = true;
+    public string HlaeSyncTimeSkipMode { get; set; } = "AfterTick";
     public bool CampathGizmoLocalSpace { get; set; } = true;
     public bool ViewportLiveLinkEnabled { get; set; }
     public bool ViewportLiveLinkItemIconsEnabled { get; set; } = true;

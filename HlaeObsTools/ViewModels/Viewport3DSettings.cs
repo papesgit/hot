@@ -1,9 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using ValveResourceFormat.Renderer.Materials;
 
 namespace HlaeObsTools.ViewModels;
+
+public enum HlaeSyncTimeSkipMode
+{
+    BeforeTick,
+    AfterTick
+}
 
 /// <summary>
 /// Shared settings for the 3D viewport.
@@ -32,6 +39,7 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _viewportCampathGizmoEnabled = true;
     private bool _campathGizmoLocalSpace = true;
     private bool _viewportCampathSyncEnabled;
+    private HlaeSyncTimeSkipMode _hlaeSyncTimeSkipMode = HlaeSyncTimeSkipMode.AfterTick;
     private bool _liveLinkEnabled;
     private bool _liveLinkItemIconsEnabled = true;
     private bool _liveLinkWeaponIconsEnabled = true;
@@ -248,6 +256,17 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _viewportCampathSyncEnabled;
         set => SetProperty(ref _viewportCampathSyncEnabled, value);
+    }
+
+    public IReadOnlyList<HlaeSyncTimeSkipMode> HlaeSyncTimeSkipModes { get; } = Enum.GetValues<HlaeSyncTimeSkipMode>();
+
+    /// <summary>
+    /// Determines whether HLAE-sync seeks to the tick before or at/after the requested time.
+    /// </summary>
+    public HlaeSyncTimeSkipMode HlaeSyncTimeSkipMode
+    {
+        get => _hlaeSyncTimeSkipMode;
+        set => SetProperty(ref _hlaeSyncTimeSkipMode, value);
     }
 
     /// <summary>
