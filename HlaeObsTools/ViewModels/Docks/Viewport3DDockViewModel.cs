@@ -387,7 +387,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         if (e.PropertyName == nameof(CampathSequenceViewModel.IsPlaying) && IsHlaeSyncActive())
         {
             _ = _webSocketClient?.SendExecCommandAsync(
-                _sequence?.IsPlaying == true ? "demo_resume" : "demo_pause");
+                $"mirv_freecam stop; mirv_campath enabled 1; {(_sequence?.IsPlaying == true ? "demo_resume" : "demo_pause")}");
         }
         if (e.PropertyName is nameof(CampathSequenceViewModel.ContentEnd)
             or nameof(CampathSequenceViewModel.PlaybackEnd))
@@ -400,7 +400,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
             return;
         var offset = _sequence.Cameras.FirstOrDefault()?.Editor.TimeOffset ?? 0.0;
         var seconds = _sequence.PlayheadTime + offset;
-        var command = $"mirv_skip time toGame {seconds.ToString("G", CultureInfo.InvariantCulture)}";
+        var command = $"mirv_freecam stop; mirv_campath enabled 1; mirv_skip time toGame {seconds.ToString("G", CultureInfo.InvariantCulture)}";
         _ = _webSocketClient?.SendExecCommandAsync(command);
     }
 

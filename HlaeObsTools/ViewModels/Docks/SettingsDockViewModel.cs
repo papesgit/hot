@@ -1828,7 +1828,6 @@ namespace HlaeObsTools.ViewModels.Docks
                 DefaultCampathInterp = _defaultCampathInterp.ToString(),
                 ViewportCampathOverlayEnabled = _viewport3DSettings.ViewportCampathOverlayEnabled,
                 ViewportCampathGizmoEnabled = _viewport3DSettings.ViewportCampathGizmoEnabled,
-                ViewportCampathSyncEnabled = _viewport3DSettings.ViewportCampathSyncEnabled,
                 CampathGizmoLocalSpace = _viewport3DSettings.CampathGizmoLocalSpace,
                 ViewportLiveLinkEnabled = _viewport3DSettings.LiveLinkEnabled,
                 ViewportLiveLinkItemIconsEnabled = _viewport3DSettings.LiveLinkItemIconsEnabled,
