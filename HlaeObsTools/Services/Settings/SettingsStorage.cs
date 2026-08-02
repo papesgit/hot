@@ -81,6 +81,9 @@ public class AppSettingsData
     public int RtpPort { get; set; } = 5000;
     public int GsiPort { get; set; } = 31337;
     public string NetConsoleHostPort { get; set; } = "127.0.0.1:54545";
+    public bool NetConsoleFilterGameEvents { get; set; } = true;
+    public bool NetConsoleFilterUnknownNetMessages { get; set; } = true;
+    public List<string> NetConsoleUserFilters { get; set; } = new();
     public List<string> GsiRelayUris { get; set; } = new();
     public string MapObjPath { get; set; } = string.Empty;
     public string Cs2GameFolder { get; set; } = string.Empty;

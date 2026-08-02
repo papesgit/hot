@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="HlaeObsTools.Views.Docks.NetConsoleFiltersWindow"
+        x:Name="Root"
+        x:CompileBindings="False"
+        Title="Console Filters"
+        Width="480"
+        Height="400"
+        MinWidth="360"
+        MinHeight="280"
+        WindowStartupLocation="CenterOwner">
+  <Grid Focusable="True" Margin="16" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+    <TextBlock Text="Built-in filters" FontWeight="SemiBold" Foreground="#E0E0E0" />
+    <StackPanel Grid.Row="1" Spacing="6">
+      <CheckBox Content="Filter game events" IsChecked="{Binding FilterGameEvents, Mode=TwoWay}" Foreground="#E0E0E0" />
+      <CheckBox Content="Filter unknown net messages" IsChecked="{Binding FilterUnknownNetMessages, Mode=TwoWay}" Foreground="#E0E0E0" />
+    </StackPanel>
+    <Grid Grid.Row="2" RowDefinitions="Auto,*,Auto" RowSpacing="6">
+      <TextBlock Text="Custom filters" FontWeight="SemiBold" Foreground="#E0E0E0" />
+      <ListBox Grid.Row="1" ItemsSource="{Binding UserFilters}" Background="#121212" BorderBrush="#2E2E2E" BorderThickness="1">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="6,3">
+              <TextBlock Text="{Binding}" VerticalAlignment="Center" Foreground="#E0E0E0" TextWrapping="Wrap" />
+              <Button Grid.Column="1" Content="Remove" Command="{Binding #Root.DataContext.RemoveUserFilterCommand}" CommandParameter="{Binding}" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox Text="{Binding NewUserFilterText, Mode=TwoWay}" PlaceholderText="Text to filter (case-insensitive)" />
+        <Button Grid.Column="1" Content="Add" Command="{Binding AddUserFilterCommand}" />
+      </Grid>
+    </Grid>
+    <Button Grid.Row="3" Content="Close" Width="88" HorizontalAlignment="Right" IsDefault="True" IsCancel="True" Click="CloseDialog" />
+  </Grid>
+</Window>

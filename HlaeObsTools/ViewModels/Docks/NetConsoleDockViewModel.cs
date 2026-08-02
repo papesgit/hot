@@ -28,14 +28,18 @@ public class NetConsoleDockViewModel : Tool, IDisposable
 
     private readonly ObservableCollection<NetConsoleLogLineViewModel> _logLines = new();
     private readonly ObservableCollection<ConsoleCommandInfo> _suggestions = new();
+    private readonly ObservableCollection<string> _userFilters = new();
     private readonly Lazy<IReadOnlyList<ConsoleCommandInfo>> _allCommands = new(LoadCommands);
     private readonly DelegateCommand _toggleConnectionCommand;
     private readonly DelegateCommand _sendCommand;
+    private readonly DelegateCommand _addUserFilterCommand;
+    private readonly DelegateCommand _removeUserFilterCommand;
     private readonly List<string> _history = new();
     private readonly ConcurrentQueue<NetConsoleLogLineViewModel> _pendingLogLines = new();
     private readonly DispatcherTimer _logFlushTimer;
     private readonly StringBuilder _incomingBuffer = new();
     private readonly object _incomingBufferLock = new();
+    private readonly object _userFiltersLock = new();
     private readonly object _playerTeamLookupLock = new();
     private readonly GsiServer? _gsiServer;
     private readonly SettingsStorage? _settingsStorage;
@@ -57,7 +61,6 @@ public class NetConsoleDockViewModel : Tool, IDisposable
 
     private string _hostPortText = "127.0.0.1:54545";
     private string _inputText = string.Empty;
-    private string _statusText = "Not connected";
     private bool _isConnected;
     private bool _isConnecting;
     private bool _disposed;
@@ -68,6 +71,7 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private bool _filterGameEvents = true;
     private bool _filterUnknownNetMessages = true;
     private bool _isSkippingGameEventBlock;
+    private string _newUserFilterText = string.Empty;
 
     public NetConsoleDockViewModel(GsiServer? gsiServer = null, SettingsStorage? settingsStorage = null, AppSettingsData? settings = null)
     {
@@ -84,8 +88,20 @@ public class NetConsoleDockViewModel : Tool, IDisposable
             _hostPortText = settings.NetConsoleHostPort;
         }
 
+        if (settings != null)
+        {
+            _filterGameEvents = settings.NetConsoleFilterGameEvents;
+            _filterUnknownNetMessages = settings.NetConsoleFilterUnknownNetMessages;
+            foreach (var filter in settings.NetConsoleUserFilters.Where(filter => !string.IsNullOrWhiteSpace(filter)).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                _userFilters.Add(filter.Trim());
+            }
+        }
+
         _toggleConnectionCommand = new DelegateCommand(_ => ToggleConnectionAsync(), _ => CanToggleConnection);
         _sendCommand = new DelegateCommand(_ => SendAsync(), _ => IsConnected && !IsConnecting);
+        _addUserFilterCommand = new DelegateCommand(_ => { AddUserFilter(); return Task.CompletedTask; }, _ => !string.IsNullOrWhiteSpace(NewUserFilterText));
+        _removeUserFilterCommand = new DelegateCommand(filter => { RemoveUserFilter(filter as string); return Task.CompletedTask; });
 
         _logFlushTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
@@ -101,6 +117,7 @@ public class NetConsoleDockViewModel : Tool, IDisposable
 
     public ObservableCollection<NetConsoleLogLineViewModel> LogLines => _logLines;
     public ObservableCollection<ConsoleCommandInfo> Suggestions => _suggestions;
+    public ObservableCollection<string> UserFilters => _userFilters;
 
     public bool HasSuggestions => _suggestions.Count > 0;
 
@@ -146,20 +163,16 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         set => SetSelectedSuggestion(value, applyToInput: false);
     }
 
-    public string StatusText
-    {
-        get => _statusText;
-        private set => SetProperty(ref _statusText, value);
-    }
-
     public bool FilterGameEvents
     {
         get => _filterGameEvents;
         set
         {
-            if (SetProperty(ref _filterGameEvents, value) && !value)
+            if (SetProperty(ref _filterGameEvents, value))
             {
-                _isSkippingGameEventBlock = false;
+                if (!value)
+                    _isSkippingGameEventBlock = false;
+                SaveFilterSettings();
             }
         }
     }
@@ -167,7 +180,21 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     public bool FilterUnknownNetMessages
     {
         get => _filterUnknownNetMessages;
-        set => SetProperty(ref _filterUnknownNetMessages, value);
+        set
+        {
+            if (SetProperty(ref _filterUnknownNetMessages, value))
+                SaveFilterSettings();
+        }
+    }
+
+    public string NewUserFilterText
+    {
+        get => _newUserFilterText;
+        set
+        {
+            if (SetProperty(ref _newUserFilterText, value))
+                _addUserFilterCommand.RaiseCanExecuteChanged();
+        }
     }
 
     public bool IsHistoryActive => _historyIndex != -1;
@@ -209,6 +236,8 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     public ICommand ToggleConnectionCommand => _toggleConnectionCommand;
 
     public ICommand SendCommand => _sendCommand;
+    public ICommand AddUserFilterCommand => _addUserFilterCommand;
+    public ICommand RemoveUserFilterCommand => _removeUserFilterCommand;
 
     public async Task ToggleConnectionAsync()
     {
@@ -239,8 +268,6 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         _currentPort = port;
         _currentHost = host;
         IsConnecting = true;
-        StatusText = $"Connecting to {host}:{port}...";
-
         AppendLog("SYS", $"Connecting to {host}:{port}...");
 
         var client = new Cs2NetConsoleClient(host, port);
@@ -255,7 +282,6 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         if (!success)
         {
             AppendLog("SYS", $"Failed to connect to port {port}");
-            StatusText = "Connection failed";
             CleanupClient();
             IsConnecting = false;
             return;
@@ -274,7 +300,6 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         if (client == null)
             return;
 
-        StatusText = "Disconnecting...";
         AppendLog("SYS", "Disconnecting...");
 
         client.MessageReceived -= OnMessageReceived;
@@ -401,7 +426,6 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         {
             IsConnecting = false;
             IsConnected = true;
-            StatusText = $"Connected to {_currentHost}:{_currentPort}";
             AppendLog("SYS", "Connected");
         });
     }
@@ -412,7 +436,6 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         {
             IsConnecting = false;
             IsConnected = false;
-            StatusText = reason;
             AppendLog("SYS", reason);
         });
     }
@@ -430,6 +453,7 @@ public class NetConsoleDockViewModel : Tool, IDisposable
             var content = string.IsNullOrWhiteSpace(line) ? "<empty>" : line;
             _pendingLogLines.Enqueue(new NetConsoleLogLineViewModel(
                 $"[{timestamp:HH:mm:ss}] [{prefix}] {content}",
+                content,
                 ResolveLogBrush(prefix, content)));
         }
 
@@ -702,6 +726,12 @@ public class NetConsoleDockViewModel : Tool, IDisposable
             return lines;
 
         var filtered = new List<string>(lines.Count);
+        string[] userFilters;
+        lock (_userFiltersLock)
+        {
+            userFilters = _userFilters.ToArray();
+        }
+
         foreach (var line in lines)
         {
             if (FilterUnknownNetMessages && UnknownNetMessageRegex.IsMatch(line))
@@ -725,10 +755,60 @@ public class NetConsoleDockViewModel : Tool, IDisposable
                 _isSkippingGameEventBlock = false;
             }
 
+            if (userFilters.Any(filter => line.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
             filtered.Add(line);
         }
 
         return filtered;
+    }
+
+    private void AddUserFilter()
+    {
+        var filter = NewUserFilterText.Trim();
+        if (filter.Length == 0)
+            return;
+
+        lock (_userFiltersLock)
+        {
+            if (_userFilters.Any(existing => string.Equals(existing, filter, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            _userFilters.Add(filter);
+        }
+
+        NewUserFilterText = string.Empty;
+        SaveFilterSettings();
+    }
+
+    private void RemoveUserFilter(string? filter)
+    {
+        if (string.IsNullOrEmpty(filter))
+            return;
+
+        lock (_userFiltersLock)
+        {
+            _userFilters.Remove(filter);
+        }
+
+        SaveFilterSettings();
+    }
+
+    private void SaveFilterSettings()
+    {
+        if (_settings == null || _settingsStorage == null)
+            return;
+
+        _settings.NetConsoleFilterGameEvents = FilterGameEvents;
+        _settings.NetConsoleFilterUnknownNetMessages = FilterUnknownNetMessages;
+        lock (_userFiltersLock)
+        {
+            _settings.NetConsoleUserFilters = _userFilters.ToList();
+        }
+        _settingsStorage.Save(_settings);
     }
 
     private void FlushIncomingBuffer()
@@ -890,11 +970,13 @@ public class NetConsoleDockViewModel : Tool, IDisposable
 public sealed class NetConsoleLogLineViewModel : ViewModelBase
 {
     private string _text;
+    private readonly string _message;
     private IBrush _foreground;
 
-    public NetConsoleLogLineViewModel(string text, IBrush foreground)
+    public NetConsoleLogLineViewModel(string text, string message, IBrush foreground)
     {
         _text = text;
+        _message = message;
         _foreground = foreground;
     }
 
@@ -909,6 +991,8 @@ public sealed class NetConsoleLogLineViewModel : ViewModelBase
         get => _foreground;
         set => SetProperty(ref _foreground, value);
     }
+
+    public string Message => _message;
 }
 
 public class DelegateCommand : ICommand

@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia;
@@ -16,13 +17,24 @@ public partial class NetConsoleDockView : UserControl
     private INotifyCollectionChanged? _logLinesChanged;
     private bool _scrollPending;
     private bool _logLinesAttached;
+    private bool _logViewportWasVisible;
 
     public NetConsoleDockView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        AttachedToVisualTree += (_, _) => AttachLogLines();
-        DetachedFromVisualTree += (_, _) => DetachLogLines();
+        AttachedToVisualTree += (_, _) =>
+        {
+            AttachLogLines();
+            _logViewportWasVisible = false;
+            RequestScrollToEnd();
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            DetachLogLines();
+            _logViewportWasVisible = false;
+        };
+        LayoutUpdated += OnLayoutUpdated;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -150,13 +162,34 @@ public partial class NetConsoleDockView : UserControl
         if (LogListBox?.SelectedItems is not { Count: > 0 } selected)
             return;
 
-        var text = string.Join(Environment.NewLine, selected.Cast<NetConsoleLogLineViewModel>().Select(line => line.Text));
+        var text = string.Join(Environment.NewLine, selected.Cast<NetConsoleLogLineViewModel>().Select(line => line.Message));
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard == null)
             return;
 
         await clipboard.SetTextAsync(text);
         e.Handled = true;
+    }
+
+    private void OnLayoutUpdated(object? sender, EventArgs e)
+    {
+        var scrollViewer = LogListBox?.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        var isVisible = scrollViewer is { Viewport.Height: > 0, Bounds.Height: > 0 };
+
+        if (isVisible && !_logViewportWasVisible)
+        {
+            RequestScrollToEnd();
+        }
+
+        _logViewportWasVisible = isVisible;
+    }
+
+    private async void OnFiltersClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not NetConsoleDockViewModel vm || TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+
+        await new NetConsoleFiltersWindow(vm).ShowDialog(owner);
     }
 
     private void RequestScrollToEnd()
