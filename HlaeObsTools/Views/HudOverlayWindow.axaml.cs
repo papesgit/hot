@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform;
+using HlaeObsTools.Services.Input;
 using HlaeObsTools.ViewModels.Docks;
 
 namespace HlaeObsTools.Views;
@@ -76,6 +77,12 @@ public partial class HudOverlayWindow : Window
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (Owner != null)
+        {
+            Owner.FocusManager?.Focus(null, NavigationMethod.Pointer, KeyModifiers.None);
+        }
+        KeyboardInputGate.SetFocusSuppression(false);
+
         var properties = e.GetCurrentPoint(this).Properties;
         if (properties.IsRightButtonPressed)
         {

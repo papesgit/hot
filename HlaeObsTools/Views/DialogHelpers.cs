@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using HlaeObsTools.Services.Input;
 
 namespace HlaeObsTools.Views;
 
@@ -84,7 +85,12 @@ public static class DialogHelpers
         };
         cancelButton.Click += (_, _) => dialog.Close(false);
 
-        await dialog.ShowDialog<bool?>(owner);
+        // Keep spectator bindings disabled for the lifetime of this text-entry dialog.
+        await KeyboardInputGate.RunSuppressedAsync(async () =>
+        {
+            await dialog.ShowDialog<bool?>(owner);
+            return true;
+        });
         return result;
     }
 

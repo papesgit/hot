@@ -6,6 +6,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using HlaeObsTools.Services.Input;
 using Avalonia;
 using System.Linq;
 using HlaeObsTools.ViewModels.Docks;
@@ -189,7 +190,11 @@ public partial class NetConsoleDockView : UserControl
         if (DataContext is not NetConsoleDockViewModel vm || TopLevel.GetTopLevel(this) is not Window owner)
             return;
 
-        await new NetConsoleFiltersWindow(vm).ShowDialog(owner);
+        await KeyboardInputGate.RunSuppressedAsync(async () =>
+        {
+            await new NetConsoleFiltersWindow(vm).ShowDialog(owner);
+            return true;
+        });
     }
 
     private void RequestScrollToEnd()
