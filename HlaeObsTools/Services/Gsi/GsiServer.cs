@@ -840,9 +840,14 @@ public sealed class GsiServer : IDisposable
             }
 
             string? focusedPlayerSteamId = null;
+            string? playerActivity = null;
             if (root.TryGetProperty("player", out var focusedPlayerElem) && focusedPlayerElem.TryGetProperty("steamid", out var steamIdElem))
             {
                 focusedPlayerSteamId = steamIdElem.GetString();
+            }
+            if (root.TryGetProperty("player", out focusedPlayerElem) && focusedPlayerElem.TryGetProperty("activity", out var activityElem))
+            {
+                playerActivity = activityElem.GetString();
             }
 
             var grenades = new List<GsiGrenade>();
@@ -895,6 +900,8 @@ public sealed class GsiServer : IDisposable
             return new GsiGameState
             {
                 RawJson = body,
+                PlayerActivity = playerActivity,
+                HasAllPlayers = root.TryGetProperty("allplayers", out _),
                 MapName = mapName,
                 Players = players,
                 Grenades = grenades,

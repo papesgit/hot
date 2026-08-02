@@ -43,6 +43,7 @@ public class MainDockFactory : Factory, IDisposable
     private FreecamSettings? _freecamSettings;
     private readonly Timer _inputFlushTimer;
     private readonly GsiServer _gsiServer;
+    private readonly SpectatorBindingsRefreshCoordinator _spectatorBindingsRefreshCoordinator;
     private readonly RadarConfigProvider _radarConfigProvider;
     private readonly SettingsStorage _settingsStorage;
     private readonly AppSettingsData _storedSettings;
@@ -118,6 +119,7 @@ public class MainDockFactory : Factory, IDisposable
 
         _gsiServer = new GsiServer();
         _gsiServer.ConfigureRelayEndpoints(_storedSettings.GsiRelayUris);
+        _spectatorBindingsRefreshCoordinator = new SpectatorBindingsRefreshCoordinator(_webSocketClient, _gsiServer);
         _radarConfigProvider = new RadarConfigProvider();
         _vmixSettings = new VmixSettings
         {
@@ -1440,6 +1442,7 @@ public class MainDockFactory : Factory, IDisposable
         }
         _xinputHandler?.Dispose();
 
+        _spectatorBindingsRefreshCoordinator.Dispose();
         _gsiServer.Dispose();
         _webSocketClient.MessageReceived -= OnHlaeMessage;
         _webSocketClient.Dispose();

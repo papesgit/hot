@@ -92,6 +92,8 @@ public sealed class GsiTeam
 public sealed class GsiGameState
 {
     public string RawJson { get; init; } = string.Empty;
+    public string? PlayerActivity { get; init; }
+    public bool HasAllPlayers { get; init; }
     public string MapName { get; init; } = string.Empty;
     public IReadOnlyList<GsiPlayer> Players { get; init; } = Array.Empty<GsiPlayer>();
     public IReadOnlyList<GsiDroppedDefuser> DroppedDefusers { get; set; } = Array.Empty<GsiDroppedDefuser>();
