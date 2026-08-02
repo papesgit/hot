@@ -22,6 +22,7 @@ public sealed class ReplayDirectorPublisher : IDisposable
     private readonly ReplayDirectorSettings _settings;
     private readonly VmixReplaySettings _replaySettings;
     private readonly VmixReplayMarker _delayedReplayMarker;
+    private readonly ReplayDirectorServiceDiscovery _serviceDiscovery;
     private readonly object _sync = new();
     private readonly List<ReplayDirectorKillEvent> _events = new();
     private IHost? _host;
@@ -43,13 +44,15 @@ public sealed class ReplayDirectorPublisher : IDisposable
         GsiServer gsiServer,
         ReplayDirectorSettings settings,
         VmixReplaySettings replaySettings,
-        VmixReplayMarker delayedReplayMarker)
+        VmixReplayMarker delayedReplayMarker,
+        ReplayDirectorServiceDiscovery serviceDiscovery)
     {
         _webSocketClient = webSocketClient;
         _gsiServer = gsiServer;
         _settings = settings;
         _replaySettings = replaySettings;
         _delayedReplayMarker = delayedReplayMarker;
+        _serviceDiscovery = serviceDiscovery;
         _webSocketClient.MessageReceived += OnWebSocketMessage;
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
         _delayedReplayMarker.StatusChanged += OnDelayedReplayMarkerStatusChanged;
@@ -224,6 +227,7 @@ public sealed class ReplayDirectorPublisher : IDisposable
                 }
 
                 await host.StartAsync(cts.Token).ConfigureAwait(false);
+                _serviceDiscovery.Advertise(port);
                 _settings.Status = $"Publisher running on port {port}.";
                 await Task.Delay(Timeout.Infinite, cts.Token).ConfigureAwait(false);
             }
@@ -236,6 +240,7 @@ public sealed class ReplayDirectorPublisher : IDisposable
             }
             finally
             {
+                _serviceDiscovery.StopAdvertising();
                 if (host != null)
                 {
                     try { await host.StopAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false); } catch { }

@@ -15,6 +15,8 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     private string _role = "Off";
     private int _publisherPort = 31341;
     private string _publisherIp = "127.0.0.1";
+    private bool _manualHost;
+    private bool _followerConnectionEnabled;
     private double _preSwitchSeconds = 2.0;
     private double _mergeWindowSeconds = 3.0;
     private double _switchLockSeconds = 0.75;
@@ -40,6 +42,8 @@ public sealed class ReplayDirectorSettings : ViewModelBase
             OnPropertyChanged(nameof(IsPublisher));
             OnPropertyChanged(nameof(IsFollower));
             OnPropertyChanged(nameof(IsActive));
+            if (!IsFollower)
+                FollowerConnectionEnabled = false;
         }
     }
 
@@ -53,6 +57,27 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     {
         get => _publisherIp;
         set => SetProperty(ref _publisherIp, value?.Trim() ?? string.Empty);
+    }
+
+    public bool ManualHost
+    {
+        get => _manualHost;
+        set
+        {
+            if (SetProperty(ref _manualHost, value))
+                OnPropertyChanged(nameof(IsDiscoveryHostEnabled));
+        }
+    }
+
+    /// <summary>Whether the follower should actively poll and schedule replay events.</summary>
+    public bool FollowerConnectionEnabled
+    {
+        get => _followerConnectionEnabled;
+        set
+        {
+            if (SetProperty(ref _followerConnectionEnabled, value))
+                OnPropertyChanged(nameof(IsFollowerDisconnected));
+        }
     }
 
     public double PreSwitchSeconds
@@ -139,6 +164,10 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     public bool IsPublisher => string.Equals(Role, "Main Publisher", StringComparison.Ordinal);
 
     public bool IsFollower => string.Equals(Role, "Delayed Follower", StringComparison.Ordinal);
+
+    public bool IsDiscoveryHostEnabled => !ManualHost;
+
+    public bool IsFollowerDisconnected => !FollowerConnectionEnabled;
 
     public bool IsActive => IsPublisher || IsFollower;
 }

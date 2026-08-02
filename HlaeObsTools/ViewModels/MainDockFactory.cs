@@ -57,6 +57,7 @@ public class MainDockFactory : Factory, IDisposable
     private readonly VmixReplayMarker _delayedReplayMarker;
     private readonly ReplayDirectorPublisher _replayDirectorPublisher;
     private readonly ReplayDirectorFollower _replayDirectorFollower;
+    private readonly ReplayDirectorServiceDiscovery _replayDirectorServiceDiscovery;
     private readonly GraphicsProfileStorage _graphicsProfileStorage;
     private readonly GraphicsService _graphicsService;
     private readonly GraphicsProducerClient _producerClient;
@@ -137,6 +138,7 @@ public class MainDockFactory : Factory, IDisposable
             Role = _storedSettings.ReplayDirectorRole,
             PublisherPort = _storedSettings.ReplayDirectorPublisherPort,
             PublisherIp = GetReplayDirectorPublisherHost(_storedSettings),
+            ManualHost = _storedSettings.ReplayDirectorManualHost,
             PreSwitchSeconds = _storedSettings.ReplayDirectorPreSwitchSeconds,
             MergeWindowSeconds = _storedSettings.ReplayDirectorMergeWindowSeconds,
             SwitchLockSeconds = _storedSettings.ReplayDirectorSwitchLockSeconds,
@@ -151,7 +153,8 @@ public class MainDockFactory : Factory, IDisposable
         _hotkeyService.SetVmixApiClient(_vmixApiClient);
         _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixApiClient, _vmixReplayCoordinator, _vmixReplaySettings);
         _delayedReplayMarker = new VmixReplayMarker(_vmixApiClient, _vmixReplayCoordinator);
-        _replayDirectorPublisher = new ReplayDirectorPublisher(_webSocketClient, _gsiServer, _replayDirectorSettings, _vmixReplaySettings, _delayedReplayMarker);
+        _replayDirectorServiceDiscovery = new ReplayDirectorServiceDiscovery();
+        _replayDirectorPublisher = new ReplayDirectorPublisher(_webSocketClient, _gsiServer, _replayDirectorSettings, _vmixReplaySettings, _delayedReplayMarker, _replayDirectorServiceDiscovery);
         _replayDirectorFollower = new ReplayDirectorFollower(_webSocketClient, _gsiServer, _replayDirectorSettings);
 
         _graphicsProfileStorage = new GraphicsProfileStorage();
@@ -408,6 +411,7 @@ public class MainDockFactory : Factory, IDisposable
             _vmixReplaySettings,
             _replayDirectorSettings,
             _vmixApiClient,
+            replayDirectorServiceDiscovery: _replayDirectorServiceDiscovery,
             setFocusInputGateDisabled: disable => _rawInputHandler.CaptureOnlyWhenAppFocused = !disable,
             campathEditor: campathEditor,
             gsiServer: _gsiServer,
@@ -1444,6 +1448,7 @@ public class MainDockFactory : Factory, IDisposable
         _vmixReplayService.Dispose();
         _replayDirectorFollower.Dispose();
         _replayDirectorPublisher.Dispose();
+        _replayDirectorServiceDiscovery.Dispose();
         _delayedReplayMarker.Dispose();
         _vmixApiClient.Dispose();
         _replayDockVm?.Dispose();

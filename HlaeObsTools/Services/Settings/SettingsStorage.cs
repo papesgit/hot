@@ -127,6 +127,7 @@ public class AppSettingsData
     public string ReplayDirectorRole { get; set; } = "Off";
     public int ReplayDirectorPublisherPort { get; set; } = 31341;
     public string ReplayDirectorPublisherIp { get; set; } = "";
+    public bool ReplayDirectorManualHost { get; set; }
     // Retained solely to migrate configurations written by older versions.
     public string ReplayDirectorFollowerEndpoint { get; set; } = "";
     public double ReplayDirectorPreSwitchSeconds { get; set; } = 2.0;

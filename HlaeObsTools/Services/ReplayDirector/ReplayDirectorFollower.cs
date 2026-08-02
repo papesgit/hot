@@ -54,8 +54,7 @@ public sealed class ReplayDirectorFollower : IDisposable
         _settings.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ReplayDirectorSettings.Role) ||
-                e.PropertyName == nameof(ReplayDirectorSettings.PublisherIp) ||
-                e.PropertyName == nameof(ReplayDirectorSettings.PublisherPort))
+                e.PropertyName == nameof(ReplayDirectorSettings.FollowerConnectionEnabled))
             {
                 ApplyRole();
             }
@@ -65,7 +64,7 @@ public sealed class ReplayDirectorFollower : IDisposable
 
     private void ApplyRole()
     {
-        if (string.Equals(_settings.Role, "Delayed Follower", StringComparison.Ordinal))
+        if (string.Equals(_settings.Role, "Delayed Follower", StringComparison.Ordinal) && _settings.FollowerConnectionEnabled)
             Start();
         else
             Stop();
@@ -97,8 +96,9 @@ public sealed class ReplayDirectorFollower : IDisposable
         }
 
         try { cts?.Cancel(); } catch { }
-        if (!string.Equals(_settings.Role, "Delayed Follower", StringComparison.Ordinal))
-            _settings.Status = "Replay director disabled.";
+        _settings.Status = string.Equals(_settings.Role, "Delayed Follower", StringComparison.Ordinal)
+            ? "Follower disconnected."
+            : "Replay director disabled.";
     }
 
     private async Task PollLoopAsync(CancellationToken token)

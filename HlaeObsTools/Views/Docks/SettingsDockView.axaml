@@ -133,10 +133,27 @@
                                     <TextBlock VerticalAlignment="Center" Text="Publisher port" Foreground="#AAAAAA" />
                                     <TextBox MaxWidth="80" Text="{Binding ReplayDirectorSettings.PublisherPort, Mode=TwoWay}" />
                                 </WrapPanel>
-                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
-                                    <TextBlock VerticalAlignment="Center" Text="Publisher IP" Foreground="#AAAAAA" />
-                                    <TextBox MinWidth="80" Text="{Binding ReplayDirectorSettings.PublisherIp, Mode=TwoWay}" />
-                                </WrapPanel>
+                                <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsFollower}" Spacing="6">
+                                    <WrapPanel IsVisible="{Binding ReplayDirectorSettings.IsDiscoveryHostEnabled}" Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                        <Button Content="Refresh hosts" Command="{Binding RefreshReplayDirectorHostsCommand}" />
+                                        <ComboBox MinWidth="260" ItemsSource="{Binding ReplayDirectorHosts}" SelectedItem="{Binding SelectedReplayDirectorHost, Mode=TwoWay}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding DisplayName}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </WrapPanel>
+                                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                                        <ToggleSwitch IsChecked="{Binding ReplayDirectorSettings.ManualHost, Mode=TwoWay}" Content="Manual Host" Foreground="#E6E6E6" />
+                                        <StackPanel IsVisible="{Binding ReplayDirectorSettings.ManualHost}" Orientation="Horizontal" Spacing="8">
+                                            <TextBlock VerticalAlignment="Center" Text="Publisher IP" Foreground="#AAAAAA" />
+                                            <TextBox MinWidth="80" MaxLines="1" VerticalAlignment="Center" Text="{Binding ReplayDirectorSettings.PublisherIp, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </WrapPanel>
+                                    <Button IsVisible="{Binding ReplayDirectorSettings.IsFollowerDisconnected}" IsEnabled="{Binding CanConnectReplayDirectorFollower}" Content="Connect" Command="{Binding ConnectReplayDirectorFollowerCommand}" />
+                                    <Button IsVisible="{Binding ReplayDirectorSettings.FollowerConnectionEnabled}" Content="Disconnect" Command="{Binding DisconnectReplayDirectorFollowerCommand}" />
+                                </StackPanel>
                                 <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Pre-switch (s)" Foreground="#AAAAAA" />
@@ -161,17 +178,18 @@
                                     <ToggleSwitch IsChecked="{Binding ReplayDirectorSettings.DelayedVmixEnabled, Mode=TwoWay}" Content="Enable delayed vMix replay marking" Foreground="#E6E6E6" />
                                 </StackPanel>
                                 <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsPublisher}" Spacing="6">
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                 </StackPanel>
                                 <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsFollower}" Spacing="6">
+                                    <TextBlock Text="{Binding ReplayDirectorSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding ReplayDirectorSettings.LocalGameTime}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding ReplayDirectorSettings.ScheduledTarget}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding ReplayDirectorSettings.LastSwitch}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                                 </StackPanel>
-                                <TextBlock IsVisible="{Binding ReplayDirectorSettings.IsActive}" Text="{Binding ReplayDirectorSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap" />
                             </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
