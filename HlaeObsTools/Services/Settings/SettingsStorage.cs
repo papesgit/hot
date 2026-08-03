@@ -9,7 +9,11 @@ namespace HlaeObsTools.Services.Settings;
 
 public class SettingsStorage
 {
+    // All SettingsStorage instances target the same file. Serializing access prevents
+    // independently-created services from interleaving a read or write in this process.
+    private static readonly object StorageLock = new();
     private readonly string _storagePath;
+    private readonly string _backupPath;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true,
@@ -22,38 +26,101 @@ public class SettingsStorage
         var baseDir = Path.Combine(appData, "HlaeObsTools");
         Directory.CreateDirectory(baseDir);
         _storagePath = Path.Combine(baseDir, "settings.json");
+        _backupPath = Path.Combine(baseDir, "settings.json.bak");
     }
 
     public AppSettingsData Load()
     {
+        lock (StorageLock)
+        {
+            return LoadUnsafe();
+        }
+    }
+
+    public void Save(AppSettingsData data)
+    {
+        lock (StorageLock)
+        {
+            SaveUnsafe(data);
+        }
+    }
+
+    /// <summary>
+    /// Applies a small change to the latest on-disk settings while holding the storage lock.
+    /// Use this for background services which do not share the application's live settings object.
+    /// </summary>
+    public void Update(Action<AppSettingsData> update)
+    {
+        ArgumentNullException.ThrowIfNull(update);
+
+        lock (StorageLock)
+        {
+            var data = LoadUnsafe();
+            update(data);
+            SaveUnsafe(data);
+        }
+    }
+
+    private AppSettingsData LoadUnsafe()
+    {
         try
         {
             if (File.Exists(_storagePath))
-            {
-                var json = File.ReadAllText(_storagePath);
-                var data = JsonSerializer.Deserialize<AppSettingsData>(json, _jsonOptions);
-                if (data != null)
-                    return data;
-            }
+                return Deserialize(_storagePath);
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore load errors, return defaults
+            Console.WriteLine($"Failed to load settings from '{_storagePath}': {ex.Message}");
+
+            try
+            {
+                if (File.Exists(_backupPath))
+                {
+                    var backup = Deserialize(_backupPath);
+                    Console.WriteLine("Recovered settings from the previous backup.");
+                    return backup;
+                }
+            }
+            catch (Exception backupEx)
+            {
+                Console.WriteLine($"Failed to load settings backup from '{_backupPath}': {backupEx.Message}");
+            }
         }
 
         return new AppSettingsData();
     }
 
-    public void Save(AppSettingsData data)
+    private AppSettingsData Deserialize(string path)
     {
+        var json = File.ReadAllText(path);
+        return JsonSerializer.Deserialize<AppSettingsData>(json, _jsonOptions)
+            ?? throw new JsonException("Settings file did not contain an object.");
+    }
+
+    private void SaveUnsafe(AppSettingsData data)
+    {
+        var temporaryPath = Path.Combine(
+            Path.GetDirectoryName(_storagePath)!,
+            $".{Path.GetFileName(_storagePath)}.{Guid.NewGuid():N}.tmp");
+
         try
         {
             var json = JsonSerializer.Serialize(data, _jsonOptions);
-            File.WriteAllText(_storagePath, json);
+            File.WriteAllText(temporaryPath, json);
+
+            if (File.Exists(_storagePath))
+                File.Replace(temporaryPath, _storagePath, _backupPath);
+            else
+                File.Move(temporaryPath, _storagePath);
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore save errors
+            Console.WriteLine($"Failed to save settings to '{_storagePath}': {ex.Message}");
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+                File.Delete(temporaryPath);
         }
     }
 }

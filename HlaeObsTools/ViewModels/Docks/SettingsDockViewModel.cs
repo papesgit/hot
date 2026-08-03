@@ -1967,7 +1967,28 @@ namespace HlaeObsTools.ViewModels.Docks
                 DisableFocusInputGate = _disableFocusInputGate,
                 Hotkeys = HotkeyBindings.Select(binding => binding.ToData()).ToList()
             };
-            _settingsStorage.Save(data);
+            // Preserve settings that are owned by other docks or background services.
+            data.LastUpdateCheckUtc = _storedSettings.LastUpdateCheckUtc;
+            data.SkippedUpdateVersion = _storedSettings.SkippedUpdateVersion;
+            data.AttachPresets = _storedSettings.AttachPresets;
+            data.NetConsoleFilterGameEvents = _storedSettings.NetConsoleFilterGameEvents;
+            data.NetConsoleFilterUnknownNetMessages = _storedSettings.NetConsoleFilterUnknownNetMessages;
+            data.NetConsoleUserFilters = _storedSettings.NetConsoleUserFilters;
+            data.ReplayDirectorFollowerEndpoint = _storedSettings.ReplayDirectorFollowerEndpoint;
+            data.GraphicsTargetFps = _storedSettings.GraphicsTargetFps;
+            data.ActiveDockLayout = _storedSettings.ActiveDockLayout;
+            data.UserDockLayouts = _storedSettings.UserDockLayouts;
+            CopySettingsData(data, _storedSettings);
+            _settingsStorage.Save(_storedSettings);
+        }
+
+        private static void CopySettingsData(AppSettingsData source, AppSettingsData destination)
+        {
+            foreach (var property in typeof(AppSettingsData).GetProperties())
+            {
+                if (property.CanRead && property.CanWrite)
+                    property.SetValue(destination, property.GetValue(source));
+            }
         }
 
         private async Task RefreshReplayDirectorHostsAsync()

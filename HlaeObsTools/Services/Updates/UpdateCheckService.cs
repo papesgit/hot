@@ -21,16 +21,24 @@ public sealed class UpdateCheckService
     {
         try
         {
-            var settingsStorage = new SettingsStorage();
-            var settings = settingsStorage.Load();
             var now = DateTimeOffset.UtcNow;
+            var settingsStorage = new SettingsStorage();
+            var shouldCheck = false;
 
-            if (settings.LastUpdateCheckUtc is { } lastCheck && now - lastCheck < CheckInterval)
+            // Update the timestamp through a locked read-modify-write. This service has its
+            // own SettingsStorage instance, unlike the main dock factory's shared settings.
+            settingsStorage.Update(settings =>
+            {
+                if (settings.LastUpdateCheckUtc is { } lastCheck && now - lastCheck < CheckInterval)
+                    return;
+
+                shouldCheck = true;
+                // Store attempts too, so repeated restarts cannot repeatedly hit GitHub during an outage.
+                settings.LastUpdateCheckUtc = now;
+            });
+
+            if (!shouldCheck)
                 return;
-
-            // Store attempts too, so repeated restarts cannot repeatedly hit GitHub during an outage.
-            settings.LastUpdateCheckUtc = now;
-            settingsStorage.Save(settings);
 
             var release = await GetLatestReleaseAsync();
             if (release is null || !TryParseReleaseVersion(release.TagName, out var latestVersion))
@@ -40,6 +48,7 @@ public sealed class UpdateCheckService
             if (currentVersion is null || latestVersion <= currentVersion)
                 return;
 
+            var settings = settingsStorage.Load();
             if (string.Equals(settings.SkippedUpdateVersion, latestVersion.ToString(), StringComparison.OrdinalIgnoreCase))
                 return;
 
@@ -52,11 +61,8 @@ public sealed class UpdateCheckService
 
             if (response == UpdateAvailableDialogResult.SkipVersion)
             {
-                // Reload before writing the choice so an open Settings dock cannot lose changes
-                // made while this dialog was visible.
-                var latestSettings = settingsStorage.Load();
-                latestSettings.SkippedUpdateVersion = latestVersion.ToString();
-                settingsStorage.Save(latestSettings);
+                settingsStorage.Update(latestSettings =>
+                    latestSettings.SkippedUpdateVersion = latestVersion.ToString());
             }
         }
         catch (Exception ex)
