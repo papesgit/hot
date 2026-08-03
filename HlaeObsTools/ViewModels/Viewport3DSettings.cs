@@ -48,6 +48,7 @@ public sealed class Viewport3DSettings : ViewModelBase
     private bool _liveLinkObjectiveIconsEnabled = true;
     private bool _liveLinkDeadPlayerIconsEnabled = true;
     private int _liveLinkPort = 31237;
+    private int _liveLinkFps = 10;
     private int _targetOrbitResetRequest;
     private int _shadowTextureSize = 1024;
     private int _maxTextureSize = 1024;
@@ -339,6 +340,15 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _liveLinkPort;
         set => SetProperty(ref _liveLinkPort, value < 1 ? 1 : value > 65535 ? 65535 : value);
+    }
+
+    /// <summary>
+    /// Frame rate requested from CS2 when starting the LiveLink stream.
+    /// </summary>
+    public int LiveLinkFps
+    {
+        get => _liveLinkFps;
+        set => SetProperty(ref _liveLinkFps, value < 1 ? 1 : value > 1000 ? 1000 : value);
     }
 
     /// <summary>

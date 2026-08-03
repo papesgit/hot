@@ -648,6 +648,20 @@
                                             PlaceholderText="31237"/>
                                 </StackPanel>
                             </WrapPanel>
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="12">
+                                <Button Content="Start LiveLink Stream"
+                                        Command="{Binding StartLiveLinkStreamCommand}"/>
+                                <Button Content="Stop LiveLink Stream"
+                                        Command="{Binding StopLiveLinkStreamCommand}"/>
+                                <StackPanel Orientation="Vertical" Spacing="4">
+                                    <TextBlock Text="FPS"
+                                            Foreground="#CCCCCC"
+                                            FontWeight="SemiBold"/>
+                                    <TextBox MinWidth="60" MaxWidth="80"
+                                            Text="{Binding Viewport3DSettings.LiveLinkFps, Mode=TwoWay}"
+                                            PlaceholderText="10"/>
+                                </StackPanel>
+                            </WrapPanel>
                         </StackPanel>
 
                     </StackPanel>

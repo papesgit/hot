@@ -6,6 +6,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -150,6 +152,8 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _refreshReplayDirectorHostsCommand;
         private readonly ICommand _connectReplayDirectorFollowerCommand;
         private readonly ICommand _disconnectReplayDirectorFollowerCommand;
+        private readonly ICommand _startLiveLinkStreamCommand;
+        private readonly ICommand _stopLiveLinkStreamCommand;
         private ReplayDirectorHost? _selectedReplayDirectorHost;
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort, IReadOnlyList<string> GsiRelayUris);
@@ -216,6 +220,8 @@ namespace HlaeObsTools.ViewModels.Docks
             _refreshReplayDirectorHostsCommand = new AsyncRelay(RefreshReplayDirectorHostsAsync);
             _connectReplayDirectorFollowerCommand = new Relay(ConnectReplayDirectorFollower);
             _disconnectReplayDirectorFollowerCommand = new Relay(DisconnectReplayDirectorFollower);
+            _startLiveLinkStreamCommand = new AsyncRelay(StartLiveLinkStreamAsync);
+            _stopLiveLinkStreamCommand = new AsyncRelay(StopLiveLinkStreamAsync);
             _browseMapObjCommand = new AsyncRelay(BrowseCs2GameFolderAsync);
             _clearMapObjCommand = new Relay(ClearCs2MapSelection);
             _resetTargetOrbitCommand = new Relay(() => _viewport3DSettings.TargetOrbitResetRequest++);
@@ -810,6 +816,50 @@ namespace HlaeObsTools.ViewModels.Docks
         public ICommand BrowseMapObjCommand => _browseMapObjCommand;
         public ICommand ClearMapObjCommand => _clearMapObjCommand;
         public ICommand ResetTargetOrbitCommand => _resetTargetOrbitCommand;
+        public ICommand StartLiveLinkStreamCommand => _startLiveLinkStreamCommand;
+        public ICommand StopLiveLinkStreamCommand => _stopLiveLinkStreamCommand;
+
+        private async Task StartLiveLinkStreamAsync()
+        {
+            var targetIp = await ResolveLiveLinkTargetIpAsync();
+            var command =
+                $"mirv_livelink target {targetIp} {_viewport3DSettings.LiveLinkPort}; " +
+                $"mirv_livelink fps {_viewport3DSettings.LiveLinkFps}; " +
+                "mirv_livelink recordSpectated 0; " +
+                "mirv_livelink recordPlayers 1; " +
+                "mirv_livelink recordViewmodel 0; " +
+                "mirv_livelink recordWeapons 1; " +
+                "mirv_livelink recordProjectiles 1; " +
+                "mirv_livelink recordCamera 0; " +
+                "mirv_livelink udp 1";
+
+            await SendExecCommandAsync(command);
+        }
+
+        private Task StopLiveLinkStreamAsync()
+        {
+            return SendExecCommandAsync("mirv_livelink udp 0");
+        }
+
+        private async Task<string> ResolveLiveLinkTargetIpAsync()
+        {
+            var host = WebSocketHost.Trim();
+            if (string.IsNullOrEmpty(host) ||
+                string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ||
+                (IPAddress.TryParse(host, out var parsedHost) && IPAddress.IsLoopback(parsedHost)))
+            {
+                return IPAddress.Loopback.ToString();
+            }
+
+            var remoteAddresses = await Dns.GetHostAddressesAsync(host);
+            var remoteAddress = remoteAddresses.FirstOrDefault(address => address.AddressFamily == AddressFamily.InterNetwork);
+            if (remoteAddress == null || IPAddress.IsLoopback(remoteAddress))
+                return IPAddress.Loopback.ToString();
+
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.Connect(new IPEndPoint(remoteAddress, WebSocketPort));
+            return ((IPEndPoint)socket.LocalEndPoint!).Address.ToString();
+        }
 
         private async Task BrowseCs2GameFolderAsync()
         {
@@ -1890,6 +1940,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 ViewportLiveLinkObjectiveIconsEnabled = _viewport3DSettings.LiveLinkObjectiveIconsEnabled,
                 ViewportLiveLinkDeadPlayerIconsEnabled = _viewport3DSettings.LiveLinkDeadPlayerIconsEnabled,
                 ViewportLiveLinkPort = _viewport3DSettings.LiveLinkPort,
+                ViewportLiveLinkFps = _viewport3DSettings.LiveLinkFps,
                 ViewportShadowTextureSize = _viewport3DSettings.ShadowTextureSize,
                 ViewportMaxTextureSize = _viewport3DSettings.MaxTextureSize,
                 ViewportRenderMode = _viewport3DSettings.RenderMode,

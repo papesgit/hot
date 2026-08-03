@@ -115,6 +115,7 @@ public class AppSettingsData
     public bool ViewportLiveLinkObjectiveIconsEnabled { get; set; } = true;
     public bool ViewportLiveLinkDeadPlayerIconsEnabled { get; set; } = true;
     public int ViewportLiveLinkPort { get; set; } = 31237;
+    public int ViewportLiveLinkFps { get; set; } = 10;
     public int ViewportShadowTextureSize { get; set; } = 1024;
     public int ViewportMaxTextureSize { get; set; } = 1024;
     public string ViewportRenderMode { get; set; } = "Default";

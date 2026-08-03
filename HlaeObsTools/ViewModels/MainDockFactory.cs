@@ -348,6 +348,7 @@ public class MainDockFactory : Factory, IDisposable
             LiveLinkObjectiveIconsEnabled = _storedSettings.ViewportLiveLinkObjectiveIconsEnabled,
             LiveLinkDeadPlayerIconsEnabled = _storedSettings.ViewportLiveLinkDeadPlayerIconsEnabled,
             LiveLinkPort = _storedSettings.ViewportLiveLinkPort,
+            LiveLinkFps = _storedSettings.ViewportLiveLinkFps,
             ShadowTextureSize = _storedSettings.ViewportShadowTextureSize,
             MaxTextureSize = _storedSettings.ViewportMaxTextureSize,
             RenderMode = _storedSettings.ViewportRenderMode
