@@ -129,6 +129,10 @@ public class AppSettingsData
 {
     public DateTimeOffset? LastUpdateCheckUtc { get; set; }
     public string? SkippedUpdateVersion { get; set; }
+    public string? LastConnectedHlaeVersion { get; set; }
+    public string? LastConnectedHlaeHotVersion { get; set; }
+    public int? LastConnectedHlaeRevision { get; set; }
+    public string? SkippedHlaeUpdateVersion { get; set; }
     public List<AttachmentPresetData>? AttachPresets { get; set; }
     public List<AttachmentPresetPageData> AttachPresetPages { get; set; } = new();
     public int ActiveAttachPresetPage { get; set; }

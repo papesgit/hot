@@ -6,7 +6,7 @@ HLAE Observer Tools is a observing control system for Counter-Strike 2 observing
 ## Getting Started
 
 1. Install .NET Desktop Runtime 10 https://dotnet.microsoft.com/en-us/download/dotnet/10.0
-2. Download the latest **custom** HOT-HLAE (official HLAE will **NOT** work) and HOT build from  https://github.com/papesgit/hot/releases/latest (e.g. HLAEx.x.x-HOTx.x.x and HOTx.x.x)
+2. Download the latest **custom** HOT-HLAE (official HLAE will **NOT** work) and HOT build from  https://github.com/papesgit/hot/releases/latest (e.g. `HLAEvx.x.x-HOTvx.x.x.zip` and `HOTvx.x.x.zip`)
 3. Launch CS2 with HOT-HLAE (File>Launch CS2, Example launch parameters: `-steam -insecure +sv_lan 1 -novid -console -afxDisableSteamStorage -allow_third_party_software -netconport 54545`)
 4. Launch HlaeObsTools.exe
    

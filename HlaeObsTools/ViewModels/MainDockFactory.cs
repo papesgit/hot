@@ -26,6 +26,7 @@ using HlaeObsTools.Services.Graphics;
 using HlaeObsTools.Services.Hotkeys;
 using HlaeObsTools.Services.LiveLink;
 using HlaeObsTools.Services.Video;
+using HlaeObsTools.Services.Updates;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -63,6 +64,7 @@ public class MainDockFactory : Factory, IDisposable
     private readonly GraphicsService _graphicsService;
     private readonly GraphicsProducerClient _producerClient;
     private readonly Cs2LiveLinkReceiver _liveLinkReceiver;
+    private readonly UpdateCheckService _updateCheckService;
     private readonly Dictionary<string, IDockable> _viewDockables = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IDock> _restoreOwners = new(StringComparer.Ordinal);
     private IRootDock? _currentRoot;
@@ -74,9 +76,10 @@ public class MainDockFactory : Factory, IDisposable
     private bool _disposed;
     public HotkeyService HotkeyService => _hotkeyService;
 
-    public MainDockFactory(object context)
+    public MainDockFactory(object context, UpdateCheckService updateCheckService)
     {
         _context = context;
+        _updateCheckService = updateCheckService;
         HideToolsOnClose = true;
         DockableHidden += (_, e) =>
         {
@@ -110,6 +113,7 @@ public class MainDockFactory : Factory, IDisposable
         // Initialize WebSocket client
         _webSocketClient = new HlaeWebSocketClient(_storedSettings.WebSocketHost, _storedSettings.WebSocketPort);
         _webSocketClient.MessageReceived += OnHlaeMessage;
+        _webSocketClient.Connected += OnHlaeWebSocketConnected;
         _ = _webSocketClient.ConnectAsync(); // Fire and forget
 
         // Initialize UDP input sender (send at 240Hz to HLAE)
@@ -196,11 +200,52 @@ public class MainDockFactory : Factory, IDisposable
 
     private void OnHlaeMessage(object? sender, string json)
     {
+        TryProcessHlaeVersionMessage(json);
+
         if (IsHlaeErrorMessage(json))
         {
             Console.WriteLine($"HLAE error message: {json}");
         }
         // TODO: Parse JSON and update UI state
+    }
+
+    private void OnHlaeWebSocketConnected(object? sender, EventArgs e)
+    {
+        _ = _webSocketClient.SendCommandAsync("version_get");
+    }
+
+    private void TryProcessHlaeVersionMessage(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("type", out var type)
+                || type.GetString() != "version"
+                || !root.TryGetProperty("ok", out var ok)
+                || ok.ValueKind != JsonValueKind.True
+                || !root.TryGetProperty("hlae_version", out var hlaeVersionValue)
+                || !root.TryGetProperty("hot_version", out var hotVersionValue)
+                || !Version.TryParse(hlaeVersionValue.GetString(), out var hlaeVersion)
+                || !Version.TryParse(hotVersionValue.GetString(), out var hotVersion)
+                || !root.TryGetProperty("revision", out var revisionValue)
+                || !revisionValue.TryGetInt32(out var revision)
+                || revision < 1)
+            {
+                return;
+            }
+
+            _storedSettings.LastConnectedHlaeVersion = hlaeVersion.ToString();
+            _storedSettings.LastConnectedHlaeHotVersion = hotVersion.ToString();
+            _storedSettings.LastConnectedHlaeRevision = revision;
+            _settingsStorage.Save(_storedSettings);
+            _updateCheckService.ReportConnectedHlaeVersion(hlaeVersion, hotVersion, revision);
+        }
+        catch (JsonException)
+        {
+            // Ignore unrelated or malformed WebSocket messages.
+        }
     }
 
     private static bool IsHlaeErrorMessage(string json)
@@ -1446,6 +1491,7 @@ public class MainDockFactory : Factory, IDisposable
         _spectatorBindingsRefreshCoordinator.Dispose();
         _gsiServer.Dispose();
         _webSocketClient.MessageReceived -= OnHlaeMessage;
+        _webSocketClient.Connected -= OnHlaeWebSocketConnected;
         _webSocketClient.Dispose();
         _producerClient.Dispose();
         _liveLinkReceiver.Dispose();

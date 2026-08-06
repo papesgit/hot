@@ -6,12 +6,14 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using HlaeObsTools.Services.Hotkeys;
+using HlaeObsTools.Services.Updates;
 
 namespace HlaeObsTools.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private MainDockFactory? _factory;
+    private readonly UpdateCheckService _updateCheckService;
     private IDock? _layout;
 
     public IReadOnlyList<DockMenuItemViewModel> DockMenuItems { get; } =
@@ -57,8 +59,9 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
         set => SetProperty(ref _layout, value);
     }
 
-    public MainWindowViewModel()
+    public MainWindowViewModel(UpdateCheckService? updateCheckService = null)
     {
+        _updateCheckService = updateCheckService ?? new UpdateCheckService();
     }
 
     public async Task InitializeAsync(Func<string, string, double, Task>? reportProgressAsync = null)
@@ -72,7 +75,7 @@ public class MainWindowViewModel : ViewModelBase, IDisposable
         if (reportProgressAsync != null)
             await reportProgressAsync("Initializing core services...", "Configuring network, input, graphics, and hotkey services.", 2);
 
-        _factory = new MainDockFactory(this);
+        _factory = new MainDockFactory(this, _updateCheckService);
 
         if (reportProgressAsync != null)
             Layout = await _factory.CreateLayoutAsync(reportProgressAsync);

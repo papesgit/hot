@@ -55,7 +55,8 @@ public partial class App : Application
             {
                 await ReportStartupProgressAsync(progress, "Starting application...", "Preparing the startup workflow.", 0);
 
-                mainWindowViewModel = new MainWindowViewModel();
+                var updateCheckService = new UpdateCheckService();
+                mainWindowViewModel = new MainWindowViewModel(updateCheckService);
                 await mainWindowViewModel.InitializeAsync((status, detail, value) =>
                     ReportStartupProgressAsync(progress, status, detail, value));
 
@@ -94,7 +95,7 @@ public partial class App : Application
                 mainWindow.WindowState = WindowState.Normal;
                 mainWindow.Activate();
 
-                _ = new UpdateCheckService().CheckForUpdatesAsync(mainWindow);
+                _ = updateCheckService.CheckForUpdatesAsync(mainWindow);
             }
             catch (Exception)
             {

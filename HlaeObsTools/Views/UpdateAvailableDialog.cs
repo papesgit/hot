@@ -17,10 +17,14 @@ public static class UpdateAvailableDialog
 {
     public static async Task<UpdateAvailableDialogResult> ShowAsync(
         Window owner,
+        string productName,
         Version currentVersion,
         Version latestVersion,
         string releasePageUrl,
-        string? releaseNotes)
+        string? releaseNotes,
+        string downloadButtonText = "View release",
+        string? availabilityMessage = null,
+        bool showReleaseNotes = true)
     {
         var dialog = new Window
         {
@@ -33,7 +37,7 @@ public static class UpdateAvailableDialog
         };
 
         var result = UpdateAvailableDialogResult.RemindLater;
-        var downloadButton = new Button { Content = "View release", IsDefault = true };
+        var downloadButton = new Button { Content = downloadButtonText, IsDefault = true };
         var showNotesButton = new Button { Content = "Show release notes" };
         var remindLaterButton = new Button { Content = "Remind me later" };
         var skipButton = new Button { Content = "Skip this version", IsCancel = true };
@@ -53,7 +57,8 @@ public static class UpdateAvailableDialog
         var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
         panel.Children.Add(new TextBlock
         {
-            Text = $"HLAE Observer Tools {latestVersion} is available.\nYou are currently using {currentVersion}.",
+            Text = availabilityMessage
+                ?? $"{productName} {latestVersion} is available.\nYou are currently using {currentVersion}.",
             TextWrapping = TextWrapping.Wrap
         });
 
@@ -64,7 +69,8 @@ public static class UpdateAvailableDialog
             HorizontalAlignment = HorizontalAlignment.Left
         };
         buttons.Children.Add(downloadButton);
-        buttons.Children.Add(showNotesButton);
+        if (showReleaseNotes)
+            buttons.Children.Add(showNotesButton);
         buttons.Children.Add(remindLaterButton);
         buttons.Children.Add(skipButton);
         panel.Children.Add(buttons);
