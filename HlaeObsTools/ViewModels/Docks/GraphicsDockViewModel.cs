@@ -41,6 +41,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private AttachAttachmentOption? _selectedInstanceAttachment;
     private AttachAttachmentOption? _selectedInstanceBone;
     private string _selectedProfileName = GraphicsProfileStorage.EmptyProfileName;
+    private GraphicsProfileListItem? _selectedProfile;
     private string _toastMessage = string.Empty;
     private bool _isToastVisible;
     private CancellationTokenSource? _toastCts;
@@ -60,7 +61,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public ObservableCollection<AttachSlotOption> AttachSlotOptions { get; } = new();
     public ObservableCollection<AttachAttachmentOption> AttachAttachmentOptions { get; } = new();
     public ObservableCollection<AttachAttachmentOption> AttachBoneOptions { get; } = new();
-    public ObservableCollection<string> Profiles { get; } = new();
+    public ObservableCollection<GraphicsProfileListItem> Profiles { get; } = new();
 
     public GraphicsDockViewModel(GraphicsService graphicsService)
     {
@@ -94,6 +95,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         RefreshFromProfile();
 
         _graphicsService.ProfileChanged += OnProfileChanged;
+        _graphicsService.DirtyStateChanged += OnDirtyStateChanged;
         _graphicsService.InstancesVisibilityChanged += OnInstancesVisibilityChanged;
 
         ShowSetupCommand = new Relay(() => IsSetupView = true);
@@ -343,7 +345,6 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             }
             if (!SetProperty(ref _selectedProfileName, value))
                 return;
-            _graphicsService.LoadProfile(value);
             OnPropertyChanged(nameof(CanRemoveSelectedProfile));
             OnPropertyChanged(nameof(IsEmptyProfile));
             OnPropertyChanged(nameof(CanManageSelectedProfile));
@@ -500,10 +501,19 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             Enabled = true
         };
         _graphicsService.Profile.Atlases.Add(atlas);
-        var vm = new GraphicsAtlasViewModel(atlas, OnAtlasEnabledChanged, OnAtlasInstancesVisibleChanged);
+        var vm = CreateAtlasViewModel(atlas);
         Atlases.Add(vm);
         SelectedAtlas = vm;
+        NotifyProfileEdited();
     }
+
+    public GraphicsProfileListItem? SelectedProfile
+    {
+        get => _selectedProfile;
+        set => SetProperty(ref _selectedProfile, value);
+    }
+
+    public bool HasUnsavedChanges => _graphicsService.HasUnsavedChanges;
 
     public void ActivateAtlas(GraphicsAtlasViewModel atlas)
     {
@@ -741,9 +751,10 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         id = MakeUnique(id.Trim(), n => SelectedAtlas.Regions.Any(r => r.Id == n));
         var region = new GraphicsRegion { Id = id };
         SelectedAtlas.Model.Regions.Add(region);
-        var vm = new GraphicsRegionViewModel(region);
+        var vm = CreateRegionViewModel(region);
         SelectedAtlas.Regions.Add(vm);
         SelectedRegion = vm;
+        NotifyProfileEdited();
     }
 
     public void AddInstance(string name)
@@ -760,9 +771,10 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             ImageFile = AvailableImages.FirstOrDefault() ?? string.Empty
         };
         _graphicsService.Profile.Instances.Add(instance);
-        var vm = new GraphicsInstanceViewModel(instance, OnInstanceVisibleChanged);
+        var vm = CreateInstanceViewModel(instance);
         Instances.Add(vm);
         SelectedInstance = vm;
+        NotifyProfileEdited();
     }
 
     private void AddAtlas()
@@ -813,7 +825,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                     if (atlas == null) return false;
                     atlas.Name = MakeUnique(atlas.Name, n => _graphicsService.Profile.Atlases.Any(a => a.Name == n));
                     _graphicsService.Profile.Atlases.Add(atlas);
-                    var vm = new GraphicsAtlasViewModel(atlas, OnAtlasEnabledChanged, OnAtlasInstancesVisibleChanged);
+                    var vm = CreateAtlasViewModel(atlas);
                     Atlases.Add(vm);
                     SelectedAtlas = vm;
                     break;
@@ -828,7 +840,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                     {
                         region.Id = MakeUnique(region.Id, n => SelectedAtlas.Regions.Any(r => r.Id == n));
                         SelectedAtlas.Model.Regions.Add(region);
-                        var vm = new GraphicsRegionViewModel(region);
+                        var vm = CreateRegionViewModel(region);
                         SelectedAtlas.Regions.Add(vm);
                         pasted.Add(vm);
                     }
@@ -844,7 +856,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                     {
                         instance.Name = MakeUnique(instance.Name, n => _graphicsService.Profile.Instances.Any(i => i.Name == n));
                         _graphicsService.Profile.Instances.Add(instance);
-                        var vm = new GraphicsInstanceViewModel(instance, OnInstanceVisibleChanged);
+                        var vm = CreateInstanceViewModel(instance);
                         Instances.Add(vm);
                         pasted.Add(vm);
                     }
@@ -861,6 +873,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         }
 
         ShowToast("Pasted");
+        NotifyProfileEdited();
         return true;
     }
 
@@ -894,6 +907,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         Atlases.Remove(atlas);
         _graphicsService.Profile.Atlases.Remove(atlas.Model);
         SelectedAtlas = Atlases.FirstOrDefault();
+        NotifyProfileEdited();
     }
 
     private void RemoveSelectedRegion()
@@ -904,6 +918,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         atlas.Regions.Remove(region);
         atlas.Model.Regions.Remove(region.Model);
         SelectedRegion = atlas.Regions.FirstOrDefault();
+        NotifyProfileEdited();
     }
 
     private void RemoveSelectedRegions()
@@ -924,6 +939,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         SelectedRegions.Clear();
         SelectedRegion = atlas.Regions.FirstOrDefault();
         SetSetupSelection(GraphicsSetupSelection.None);
+        NotifyProfileEdited();
     }
 
     private void RemoveSelectedInstance()
@@ -933,6 +949,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         Instances.Remove(instance);
         _graphicsService.Profile.Instances.Remove(instance.Model);
         SelectedInstance = Instances.FirstOrDefault();
+        NotifyProfileEdited();
     }
 
     private void RemoveSelectedInstances()
@@ -951,6 +968,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         SelectedInstances.Clear();
         SelectedInstance = Instances.FirstOrDefault();
         SetSetupSelection(GraphicsSetupSelection.None);
+        NotifyProfileEdited();
     }
 
     private void SetSetupSelection(GraphicsSetupSelection selection)
@@ -975,12 +993,12 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         Atlases.Clear();
         foreach (var atlas in _graphicsService.Profile.Atlases)
         {
-            Atlases.Add(new GraphicsAtlasViewModel(atlas, OnAtlasEnabledChanged, OnAtlasInstancesVisibleChanged));
+            Atlases.Add(CreateAtlasViewModel(atlas));
         }
         Instances.Clear();
         foreach (var inst in _graphicsService.Profile.Instances)
         {
-            Instances.Add(new GraphicsInstanceViewModel(inst, OnInstanceVisibleChanged));
+            Instances.Add(CreateInstanceViewModel(inst));
         }
 
         foreach (var atlas in Atlases)
@@ -1282,6 +1300,51 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         RefreshFromProfile();
     }
 
+    private void OnDirtyStateChanged(object? sender, EventArgs e)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnDirtyStateChanged(sender, e));
+            return;
+        }
+
+        RefreshProfileDisplayNames();
+        OnPropertyChanged(nameof(HasUnsavedChanges));
+    }
+
+    private GraphicsAtlasViewModel CreateAtlasViewModel(GraphicsAtlas atlas)
+    {
+        var viewModel = new GraphicsAtlasViewModel(atlas, OnAtlasEnabledChanged, OnAtlasInstancesVisibleChanged);
+        viewModel.PropertyChanged += (_, _) => NotifyProfileEdited();
+        foreach (var region in viewModel.Regions)
+            TrackRegionViewModel(region);
+        return viewModel;
+    }
+
+    private GraphicsRegionViewModel CreateRegionViewModel(GraphicsRegion region)
+    {
+        var viewModel = new GraphicsRegionViewModel(region);
+        TrackRegionViewModel(viewModel);
+        return viewModel;
+    }
+
+    private void TrackRegionViewModel(GraphicsRegionViewModel viewModel)
+    {
+        viewModel.PropertyChanged += (_, _) => NotifyProfileEdited();
+    }
+
+    private GraphicsInstanceViewModel CreateInstanceViewModel(GraphicsInstance instance)
+    {
+        var viewModel = new GraphicsInstanceViewModel(instance, OnInstanceVisibleChanged);
+        viewModel.PropertyChanged += (_, _) => NotifyProfileEdited();
+        return viewModel;
+    }
+
+    private void NotifyProfileEdited()
+    {
+        _graphicsService.NotifyProfileEdited();
+    }
+
     private void OnAtlasEnabledChanged(GraphicsAtlasViewModel atlas)
     {
     }
@@ -1342,6 +1405,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         _toastCts?.Cancel();
         _toastCts?.Dispose();
         _graphicsService.ProfileChanged -= OnProfileChanged;
+        _graphicsService.DirtyStateChanged -= OnDirtyStateChanged;
         _graphicsService.InstancesVisibilityChanged -= OnInstancesVisibilityChanged;
     }
 
@@ -1377,6 +1441,11 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
         if (string.IsNullOrWhiteSpace(name))
             return;
+        if (_graphicsService.HasUnsavedChanges && !_graphicsService.SaveCurrentProfile())
+        {
+            ShowToast("Profile could not be saved");
+            return;
+        }
         if (!_graphicsService.DuplicateCurrentProfile(name))
         {
             ShowToast("Choose a new, non-reserved profile name.");
@@ -1406,6 +1475,24 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         ShowToast(_graphicsService.SaveCurrentProfile() ? "Profile saved" : "Profile could not be saved");
     }
 
+    public void LoadProfile(string profileName)
+    {
+        if (string.IsNullOrWhiteSpace(profileName)
+            || string.Equals(profileName, SelectedProfileName, StringComparison.OrdinalIgnoreCase))
+        {
+            RestoreSelectedProfile();
+            return;
+        }
+
+        _graphicsService.LoadProfile(profileName);
+    }
+
+    public void RestoreSelectedProfile()
+    {
+        SelectedProfile = Profiles.FirstOrDefault(profile =>
+            string.Equals(profile.Name, SelectedProfileName, StringComparison.OrdinalIgnoreCase));
+    }
+
     public void RemoveSelectedProfile()
     {
         if (string.IsNullOrWhiteSpace(SelectedProfileName))
@@ -1433,14 +1520,14 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             // even when the selected profile still exists.
             for (var i = Profiles.Count - 1; i >= 0; i--)
             {
-                if (!profiles.Any(name => string.Equals(name, Profiles[i], StringComparison.OrdinalIgnoreCase)))
+                if (!profiles.Any(name => string.Equals(name, Profiles[i].Name, StringComparison.OrdinalIgnoreCase)))
                     Profiles.RemoveAt(i);
             }
 
             foreach (var name in profiles)
             {
-                if (!Profiles.Any(existing => string.Equals(existing, name, StringComparison.OrdinalIgnoreCase)))
-                    Profiles.Add(name);
+                if (!Profiles.Any(existing => string.Equals(existing.Name, name, StringComparison.OrdinalIgnoreCase)))
+                    Profiles.Add(new GraphicsProfileListItem(name));
             }
 
             _selectedProfileName = profiles.FirstOrDefault(name =>
@@ -1450,11 +1537,27 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             OnPropertyChanged(nameof(CanRemoveSelectedProfile));
             OnPropertyChanged(nameof(IsEmptyProfile));
             OnPropertyChanged(nameof(CanManageSelectedProfile));
+            RestoreSelectedProfile();
+            RefreshProfileDisplayNames();
         }
         finally
         {
             _refreshingProfiles = false;
         }
+    }
+
+    private void RefreshProfileDisplayNames()
+    {
+        foreach (var profile in Profiles)
+            profile.DisplayName = GetProfileDisplayName(profile.Name);
+    }
+
+    private string GetProfileDisplayName(string profileName)
+    {
+        return string.Equals(profileName, SelectedProfileName, StringComparison.OrdinalIgnoreCase)
+            && _graphicsService.HasUnsavedChanges
+            ? $"{profileName}*"
+            : profileName;
     }
 
     private void ShowToast(string message)
@@ -1496,6 +1599,25 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         }
     }
 
+
+    public sealed class GraphicsProfileListItem : ViewModelBase
+    {
+        private string _displayName;
+
+        public GraphicsProfileListItem(string name)
+        {
+            Name = name;
+            _displayName = name;
+        }
+
+        public string Name { get; }
+
+        public string DisplayName
+        {
+            get => _displayName;
+            set => SetProperty(ref _displayName, value);
+        }
+    }
 
     public sealed class GraphicsAtlasViewModel : ViewModelBase
     {

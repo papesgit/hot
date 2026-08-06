@@ -67,8 +67,11 @@ public partial class GraphicsDockView : UserControl
             return;
 
         var name = await DialogHelpers.PromptAsync(this, "New profile", "Profile name", "profile");
-        if (!string.IsNullOrWhiteSpace(name))
-            vm.CreateProfile(name);
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+        if (vm.HasUnsavedChanges && !await ConfirmDiscardChangesAsync())
+            return;
+        vm.CreateProfile(name);
     }
 
     private async void OnDuplicateProfileClick(object? sender, RoutedEventArgs e)
@@ -77,8 +80,14 @@ public partial class GraphicsDockView : UserControl
             return;
 
         var name = await DialogHelpers.PromptAsync(this, "Duplicate profile", "New profile name", $"{vm.SelectedProfileName} copy");
-        if (!string.IsNullOrWhiteSpace(name))
-            vm.DuplicateCurrentProfile(name);
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+        if (vm.HasUnsavedChanges && !await DialogHelpers.ConfirmAsync(this, "Unsaved changes",
+                "You have unsaved changes. They will be saved before duplicating. Are you sure you wanna proceed?"))
+        {
+            return;
+        }
+        vm.DuplicateCurrentProfile(name);
     }
 
     private async void OnRenameProfileClick(object? sender, RoutedEventArgs e)
@@ -95,6 +104,32 @@ public partial class GraphicsDockView : UserControl
     {
         if (DataContext is GraphicsDockViewModel vm)
             vm.SaveCurrentProfile();
+    }
+
+    private async void OnProfileSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DataContext is not GraphicsDockViewModel vm
+            || sender is not ComboBox { SelectedItem: GraphicsDockViewModel.GraphicsProfileListItem profile })
+        {
+            return;
+        }
+
+        if (string.Equals(profile.Name, vm.SelectedProfileName, System.StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (vm.HasUnsavedChanges && !await ConfirmDiscardChangesAsync())
+        {
+            vm.RestoreSelectedProfile();
+            return;
+        }
+
+        vm.LoadProfile(profile.Name);
+    }
+
+    private Task<bool> ConfirmDiscardChangesAsync()
+    {
+        return DialogHelpers.ConfirmAsync(this, "Unsaved changes",
+            "You have unsaved changes. Are you sure you wanna proceed?");
     }
 
     private async void OnRemoveProfileClick(object? sender, RoutedEventArgs e)

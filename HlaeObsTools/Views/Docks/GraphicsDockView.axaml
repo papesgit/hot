@@ -16,7 +16,13 @@
         <WrapPanel Orientation="Horizontal" IsVisible="{Binding IsSetupView}">
           <Button Content="Back" Command="{Binding ShowLiveCommand}" Margin="0,0,8,8" />
           <TextBlock Text="Profile" VerticalAlignment="Center" Foreground="#B0B0B0" Margin="0,0,6,8" />
-          <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfileName}" VerticalAlignment="Center" Margin="0,0,8,8" />
+          <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" SelectionChanged="OnProfileSelectionChanged" VerticalAlignment="Center" Margin="0,0,8,8">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding DisplayName}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
           <Button Content="..." FontWeight="ExtraBold" FontSize="16" Margin="0,0,8,8">
             <Button.Flyout>
               <MenuFlyout>

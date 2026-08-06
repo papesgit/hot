@@ -18,6 +18,7 @@ public sealed class GraphicsService : IDisposable
     private readonly GraphicsProfileStorage _storage;
     private string _currentProfileName = GraphicsProfileStorage.EmptyProfileName;
     private GraphicsProfile _profile = new();
+    private string _cleanProfileSnapshot;
     private readonly int _targetFps;
     private readonly HashSet<string> _producerAtlases = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _appliedAtlasProducerState = new(StringComparer.OrdinalIgnoreCase);
@@ -31,6 +32,7 @@ public sealed class GraphicsService : IDisposable
     private readonly ConcurrentDictionary<string, TaskCompletionSource<GraphicsCameraTransform?>> _pendingCameraRequests = new(StringComparer.Ordinal);
 
     public event EventHandler? ProfileChanged;
+    public event EventHandler? DirtyStateChanged;
     public event EventHandler<GraphicsVisibilityEvent>? InstancesVisibilityChanged;
 
     public GraphicsService(HlaeWebSocketClient webSocket, GraphicsProducerClient producerClient, GsiServer gsiServer, GraphicsProfileStorage storage, int targetFps = 30)
@@ -40,6 +42,7 @@ public sealed class GraphicsService : IDisposable
         _gsiServer = gsiServer;
         _storage = storage;
         _targetFps = targetFps;
+        _cleanProfileSnapshot = SerializeProfile(_profile);
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
         _webSocket.MessageReceived += OnWebSocketMessageReceived;
         _producerClient.TriggerCompleted += OnProducerTriggerCompleted;
@@ -47,11 +50,18 @@ public sealed class GraphicsService : IDisposable
 
     public GraphicsProfile Profile => _profile;
     public string CurrentProfileName => _currentProfileName;
+    public bool HasUnsavedChanges => !string.Equals(SerializeProfile(_profile), _cleanProfileSnapshot, StringComparison.Ordinal);
+
+    public void NotifyProfileEdited()
+    {
+        DirtyStateChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     public void LoadProfile(string profileName)
     {
         _currentProfileName = string.IsNullOrWhiteSpace(profileName) ? GraphicsProfileStorage.EmptyProfileName : profileName.Trim();
         _profile = _storage.Load(_currentProfileName);
+        UpdateCleanSnapshot();
         ProfileChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -62,6 +72,7 @@ public sealed class GraphicsService : IDisposable
             return false;
 
         _currentProfileName = name;
+        UpdateCleanSnapshot();
         ProfileChanged?.Invoke(this, EventArgs.Empty);
         return true;
     }
@@ -79,7 +90,11 @@ public sealed class GraphicsService : IDisposable
     {
         if (GraphicsProfileStorage.IsReservedProfileName(_currentProfileName))
             return false;
-        return _storage.Save(_currentProfileName, _profile);
+        if (!_storage.Save(_currentProfileName, _profile))
+            return false;
+
+        UpdateCleanSnapshot();
+        return true;
     }
 
     public bool SaveEmptyProfileAs(string profileName)
@@ -110,11 +125,8 @@ public sealed class GraphicsService : IDisposable
             return false;
         }
 
-        var previousName = _currentProfileName;
-        if (!_storage.Save(profileName, _profile))
+        if (!_storage.Rename(_currentProfileName, profileName))
             return false;
-
-        _storage.Delete(previousName);
         _currentProfileName = profileName.Trim();
         ProfileChanged?.Invoke(this, EventArgs.Empty);
         return true;
@@ -130,6 +142,7 @@ public sealed class GraphicsService : IDisposable
         {
             _currentProfileName = GraphicsProfileStorage.EmptyProfileName;
             _profile = _storage.Load(_currentProfileName);
+            UpdateCleanSnapshot();
             ProfileChanged?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -142,6 +155,17 @@ public sealed class GraphicsService : IDisposable
     private bool ProfileExists(string profileName)
     {
         return ListProfiles().Any(name => string.Equals(name, profileName?.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void UpdateCleanSnapshot()
+    {
+        _cleanProfileSnapshot = SerializeProfile(_profile);
+        DirtyStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static string SerializeProfile(GraphicsProfile profile)
+    {
+        return JsonSerializer.Serialize(profile);
     }
 
     public Task<ProducerCommandResult> ReloadAtlasAsync(string atlasName)

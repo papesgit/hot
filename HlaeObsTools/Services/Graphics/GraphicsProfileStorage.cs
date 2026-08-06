@@ -123,6 +123,26 @@ public sealed class GraphicsProfileStorage
         }
     }
 
+    public bool Rename(string oldProfileName, string newProfileName)
+    {
+        if (IsReservedProfileName(oldProfileName) || IsReservedProfileName(newProfileName))
+            return false;
+
+        var oldPath = GetProfilePath(oldProfileName);
+        var newPath = GetProfilePath(newProfileName);
+        try
+        {
+            if (!File.Exists(oldPath) || File.Exists(newPath))
+                return false;
+            File.Move(oldPath, newPath);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public static bool IsReservedProfileName(string? profileName)
     {
         return string.Equals(SanitizeProfileName(profileName), EmptyProfileName, StringComparison.OrdinalIgnoreCase);
