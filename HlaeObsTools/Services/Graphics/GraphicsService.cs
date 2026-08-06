@@ -66,6 +66,60 @@ public sealed class GraphicsService : IDisposable
         return true;
     }
 
+    public bool CreateProfile(string profileName)
+    {
+        if (GraphicsProfileStorage.IsReservedProfileName(profileName) || ProfileExists(profileName))
+            return false;
+
+        _profile = new GraphicsProfile();
+        return SaveProfile(profileName);
+    }
+
+    public bool SaveCurrentProfile()
+    {
+        if (GraphicsProfileStorage.IsReservedProfileName(_currentProfileName))
+            return false;
+        return _storage.Save(_currentProfileName, _profile);
+    }
+
+    public bool SaveEmptyProfileAs(string profileName)
+    {
+        if (!GraphicsProfileStorage.IsReservedProfileName(_currentProfileName)
+            || GraphicsProfileStorage.IsReservedProfileName(profileName)
+            || ProfileExists(profileName))
+        {
+            return false;
+        }
+
+        return SaveProfile(profileName);
+    }
+
+    public bool DuplicateCurrentProfile(string profileName)
+    {
+        if (GraphicsProfileStorage.IsReservedProfileName(profileName) || ProfileExists(profileName))
+            return false;
+        return SaveProfile(profileName);
+    }
+
+    public bool RenameCurrentProfile(string profileName)
+    {
+        if (GraphicsProfileStorage.IsReservedProfileName(_currentProfileName)
+            || GraphicsProfileStorage.IsReservedProfileName(profileName)
+            || ProfileExists(profileName))
+        {
+            return false;
+        }
+
+        var previousName = _currentProfileName;
+        if (!_storage.Save(profileName, _profile))
+            return false;
+
+        _storage.Delete(previousName);
+        _currentProfileName = profileName.Trim();
+        ProfileChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
     public void DeleteProfile(string profileName)
     {
         if (string.IsNullOrWhiteSpace(profileName))
@@ -83,6 +137,11 @@ public sealed class GraphicsService : IDisposable
     public string[] ListProfiles()
     {
         return _storage.ListProfiles();
+    }
+
+    private bool ProfileExists(string profileName)
+    {
+        return ListProfiles().Any(name => string.Equals(name, profileName?.Trim(), StringComparison.OrdinalIgnoreCase));
     }
 
     public Task<ProducerCommandResult> ReloadAtlasAsync(string atlasName)

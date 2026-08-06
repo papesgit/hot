@@ -1,485 +1,367 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
-             xmlns:conv="using:HlaeObsTools.Converters"
-             xmlns:hotkeys="using:HlaeObsTools.Services.Hotkeys"
-             x:Class="HlaeObsTools.Views.Docks.GraphicsDockView"
-             x:DataType="vm:GraphicsDockViewModel"
-             x:Name="Root"
-             xmlns:controls="clr-namespace:HlaeObsTools.Controls">
+﻿<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:HlaeObsTools.ViewModels.Docks" xmlns:conv="using:HlaeObsTools.Converters" xmlns:hotkeys="using:HlaeObsTools.Services.Hotkeys" xmlns:controls="clr-namespace:HlaeObsTools.Controls" x:Class="HlaeObsTools.Views.Docks.GraphicsDockView" x:DataType="vm:GraphicsDockViewModel" x:Name="Root">
   <UserControl.Resources>
     <conv:DoubleTextConverter x:Key="DoubleText" DefaultValue="0" />
     <conv:DoubleTextConverter x:Key="PreciseUvText" DefaultValue="0" Format="0.########" />
   </UserControl.Resources>
-  <UserControl.Styles>
-    <Style Selector="HeaderedContentControl">
-      <Setter Property="Template">
-        <ControlTemplate>
-          <Grid>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto"/>
-              <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="Auto"/>
-              <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <Border ZIndex="1"
-                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                    Padding="5,0,5,0"
-                    Margin="5,0,0,0">
-              <TextBlock Text="{TemplateBinding Header}"
-                         FontWeight="Bold"/>
-            </Border>
-
-            <Border Grid.RowSpan="2"
-                    Grid.ColumnSpan="2"
-                    Padding="0,5,0,0"
-                    CornerRadius="4"
-                    Margin="0,10,0,0"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    BorderThickness="1">
-              <ContentPresenter Name="PART_ContentPresenter"
-                                Padding="8"
-                                Content="{TemplateBinding Content}"/>
-            </Border>
-          </Grid>
-        </ControlTemplate>
-      </Setter>
-    </Style>
-  </UserControl.Styles>
   <Border Background="#1E1E1E" Padding="10" Focusable="True">
     <Grid RowDefinitions="Auto,*" RowSpacing="10">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <WrapPanel Orientation="Horizontal"
-                   IsVisible="{Binding IsSetupView, Converter={StaticResource BooleanNegationConverter}}">
+        <WrapPanel Orientation="Horizontal" IsVisible="{Binding IsSetupView, Converter={StaticResource BooleanNegationConverter}}">
           <Button Content="Reload All" Command="{Binding ReloadAllCommand}" Margin="0,0,8,8" />
           <Button Content="Show All" Command="{Binding ShowAllCommand}" Margin="0,0,8,8" />
           <Button Content="Hide All" Command="{Binding HideAllCommand}" Margin="0,0,8,8" />
           <Button Content="Apply" Command="{Binding ApplyCommand}" Margin="0,0,8,8" />
           <Button Content="Setup" Command="{Binding ShowSetupCommand}" Margin="0,0,8,8" />
         </WrapPanel>
-        <WrapPanel Orientation="Horizontal"
-                   IsVisible="{Binding IsSetupView}">
+        <WrapPanel Orientation="Horizontal" IsVisible="{Binding IsSetupView}">
           <Button Content="Back" Command="{Binding ShowLiveCommand}" Margin="0,0,8,8" />
+          <TextBlock Text="Profile" VerticalAlignment="Center" Foreground="#B0B0B0" Margin="0,0,6,8" />
+          <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfileName}" VerticalAlignment="Center" Margin="0,0,8,8" />
+          <Button Content="..." FontWeight="ExtraBold" FontSize="16" Margin="0,0,8,8">
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="New" Click="OnNewProfileClick" />
+                <MenuItem Header="Save As" Click="OnSaveProfileClick" IsVisible="{Binding IsEmptyProfile}" />
+                <MenuItem Header="Rename" Click="OnRenameProfileClick" IsVisible="{Binding CanManageSelectedProfile}" />
+                <MenuItem Header="Duplicate" Click="OnDuplicateProfileClick" />
+                <MenuItem Header="Save" Click="OnSaveCurrentProfileClick" IsVisible="{Binding CanManageSelectedProfile}" />
+                <Separator />
+                <MenuItem Header="Delete Profile" Click="OnRemoveProfileClick" IsEnabled="{Binding CanRemoveSelectedProfile}" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
           <Button Content="Apply" Command="{Binding ApplyCommand}" Margin="0,0,8,8" />
-          <Button Content="Save Profile" Click="OnSaveProfileClick" Margin="0,0,8,8" />
-          <ComboBox ItemsSource="{Binding Profiles}"
-                    SelectedItem="{Binding SelectedProfileName}"
-                    Width="120"
-                    Margin="0,0,8,8" />
-          <Button Content="Remove"
-                  Click="OnRemoveProfileClick"
-                  IsEnabled="{Binding CanRemoveSelectedProfile}"
-                  Margin="0,0,8,8" />
         </WrapPanel>
       </Grid>
-
-      <Grid Grid.Row="1"
-            IsVisible="{Binding IsSetupView, Converter={StaticResource BooleanNegationConverter}}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
+      <Grid Grid.Row="1" IsVisible="{Binding IsSetupView, Converter={StaticResource BooleanNegationConverter}}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="10">
-
-
-          <TextBlock Text="Atlases" Foreground="#B0B0B0" />
-          <ListBox ItemsSource="{Binding Atlases}" SelectedItem="{Binding SelectedAtlas}" Background="#292929" BorderBrush="#2E2E2E" Focusable="False">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" Margin="4">
-                  <StackPanel Orientation="Vertical" Spacing="4">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" />
-                    <TextBlock Text="{Binding Width}" Foreground="#9AA5B1" />
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Button Content="AnimIn"
-                          Command="{Binding DataContext.AnimInAtlasCommand, ElementName=Root}"
-                          CommandParameter="{Binding}"
-                          hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
-                          hotkeys:HotkeyTarget.GraphicsAction="anim_in" />
-                  <Button Content="AnimOut"
-                          Command="{Binding DataContext.AnimOutAtlasCommand, ElementName=Root}"
-                          CommandParameter="{Binding}"
-                          hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
-                          hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
-                  </StackPanel>
-                  </StackPanel>
-                  <Button Grid.Column="4"
-                          Content="Reload"
-                          Command="{Binding DataContext.ReloadAtlasCommand, ElementName=Root}"
-                          CommandParameter="{Binding}"
-                          hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
-                          hotkeys:HotkeyTarget.GraphicsAction="reload" />
-                  <ToggleSwitch Grid.Column="5"
-                                IsChecked="{Binding InstancesVisible}"
-                                Content="Show"
-                                hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
-                                hotkeys:HotkeyTarget.GraphicsAction="toggle_instances_visible" />
-                  <ToggleSwitch Grid.Column="6"
-                                IsChecked="{Binding Enabled}"
-                                Content="On"
-                                hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}"
-                                hotkeys:HotkeyTarget.GraphicsAction="toggle_enabled" />
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-
-          <TextBlock Text="Instances" Foreground="#B0B0B0" Margin="0,6,0,0" />
-          <ListBox ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" Background="#292929" BorderBrush="#2E2E2E" Focusable="False">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Margin="4">
-                  <StackPanel Orientation="Vertical" Spacing="4">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" />
-                    <TextBlock Text="{Binding SourceSummary}" MaxWidth="150" Foreground="#9AA5B1" />
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Button Content="AnimIn"
-                          Command="{Binding DataContext.AnimInInstanceCommand, ElementName=Root}"
-                          CommandParameter="{Binding}"
-                          hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}"
-                          hotkeys:HotkeyTarget.GraphicsAction="anim_in" />
-                  <Button Content="AnimOut"
-                          Command="{Binding DataContext.AnimOutInstanceCommand, ElementName=Root}"
-                          CommandParameter="{Binding}"
-                          hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}"
-                          hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
-                  </StackPanel>
-                  </StackPanel>
-                  <ToggleSwitch Grid.Column="4"
-                                IsChecked="{Binding Visible}"
-                                Content="Show"
-                                hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}"
-                                hotkeys:HotkeyTarget.GraphicsAction="toggle_visible" />
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
+            <TextBlock Text="Atlases" Foreground="#B0B0B0" />
+            <ListBox ItemsSource="{Binding Atlases}" SelectedItem="{Binding SelectedAtlas}" Background="#292929">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+                    <TextBlock Text="{Binding Name}" Margin="6" />
+                    <Button Grid.Column="1" Content="Anim In" Command="{Binding DataContext.AnimInAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_in" />
+                    <Button Grid.Column="2" Content="Anim Out" Command="{Binding DataContext.AnimOutAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
+                    <Button Grid.Column="3" Content="Reload" Command="{Binding DataContext.ReloadAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="reload" />
+                    <ToggleSwitch Grid.Column="4" IsChecked="{Binding InstancesVisible}" Content="Show" />
+                    <ToggleSwitch Grid.Column="5" IsChecked="{Binding Enabled}" Content="On" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock Text="Instances" Foreground="#B0B0B0" />
+            <ListBox ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" Background="#292929">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                    <StackPanel Margin="6">
+                      <TextBlock Text="{Binding Name}" />
+                      <TextBlock Text="{Binding SourceSummary}" Foreground="#9AA5B1" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Anim In" Command="{Binding DataContext.AnimInInstanceCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_in" />
+                    <Button Grid.Column="2" Content="Anim Out" Command="{Binding DataContext.AnimOutInstanceCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
+                    <ToggleSwitch Grid.Column="3" IsChecked="{Binding Visible}" Content="Show" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
           </StackPanel>
         </ScrollViewer>
       </Grid>
-
       <Grid Grid.Row="1" IsVisible="{Binding IsSetupView}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Spacing="12">
-
-
-          <HeaderedContentControl Header="Atlas Setup">
-            <StackPanel Spacing="6">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Add" Click="OnAddAtlasClick" />
-                <Button Content="Remove" Command="{Binding RemoveAtlasCommand}" />
-                <TextBlock Text="Atlas" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                <ComboBox ItemsSource="{Binding Atlases}"
-                          SelectedItem="{Binding SelectedAtlas}"
-                          MinWidth="160">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
-              </StackPanel>
-              <StackPanel Spacing="2">
-                <TextBlock Text="Name" Foreground="#B0B0B0" />
-                <TextBox Text="{Binding SelectedAtlas.Name, Mode=TwoWay}" PlaceholderText="Name" />
-              </StackPanel>
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="Width" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedAtlas.Width, Mode=TwoWay}" PlaceholderText="Width" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="2">
-                  <TextBlock Text="Height" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedAtlas.Height, Mode=TwoWay}" PlaceholderText="Height" />
-                </StackPanel>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="250" MinWidth="140" MaxWidth="450" />
+          <ColumnDefinition Width="6" />
+          <ColumnDefinition Width="*" MinWidth="180" />
+        </Grid.ColumnDefinitions>
+        <Border Background="#252525" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="4" Padding="6">
+          <Border.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Paste" Click="OnPasteClick" />
+            </ContextMenu>
+          </Border.ContextMenu>
+          <ScrollViewer VerticalScrollBarVisibility="Hidden">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="ATLASES" Foreground="#B0B0B0" FontWeight="SemiBold" />
+                <Button Grid.Column="1" Content="+" Click="OnAddAtlasClick" ToolTip.Tip="Add atlas" />
               </Grid>
-              <StackPanel Spacing="2">
-                <TextBlock Text="HTML Path" Foreground="#B0B0B0" />
-                <TextBox Text="{Binding SelectedAtlas.HtmlPath, Mode=TwoWay}" PlaceholderText="HTML path" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="Enabled" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                <ToggleSwitch IsChecked="{Binding SelectedAtlas.Enabled}" />
-              </StackPanel>
-            </StackPanel>
-          </HeaderedContentControl>
-
-          <HeaderedContentControl Header="Region Editor">
-            <StackPanel Spacing="6">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Add" Click="OnAddRegionClick" />
-                <Button Content="Remove" Command="{Binding RemoveRegionCommand}" />
-                <TextBlock Text="Region" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                <ComboBox ItemsSource="{Binding SelectedAtlas.Regions}"
-                          SelectedItem="{Binding SelectedRegion}"
-                          MinWidth="160">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Text="{Binding Id}" />
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
-              </StackPanel>
-              <StackPanel Spacing="2">
-                <TextBlock Text="Region Id" Foreground="#B0B0B0" />
-                <TextBox Text="{Binding SelectedRegion.Id, Mode=TwoWay}" PlaceholderText="Region Id" />
-              </StackPanel>
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="U0" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.U0, Mode=TwoWay, Converter={StaticResource PreciseUvText}}" PlaceholderText="U0" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="2">
-                  <TextBlock Text="V0" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.V0, Mode=TwoWay, Converter={StaticResource PreciseUvText}}" PlaceholderText="V0" />
-                </StackPanel>
-              </Grid>
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="U1" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.U1, Mode=TwoWay, Converter={StaticResource PreciseUvText}}" PlaceholderText="U1" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="2">
-                  <TextBlock Text="V1" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.V1, Mode=TwoWay, Converter={StaticResource PreciseUvText}}" PlaceholderText="V1" />
-                </StackPanel>
-              </Grid>
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="Default Width" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.DefaultWidth, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="Default W" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="2">
-                  <TextBlock Text="Default Height" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedRegion.DefaultHeight, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="Default H" />
-                </StackPanel>
-              </Grid>
-            </StackPanel>
-          </HeaderedContentControl>
-
-          <HeaderedContentControl Header="Instance Editor">
-            <StackPanel Spacing="6">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Add" Click="OnAddInstanceClick" />
-                <Button Content="Remove" Command="{Binding RemoveInstanceCommand}" />
-                <TextBlock Text="Instance" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                <ComboBox ItemsSource="{Binding Instances}"
-                          SelectedItem="{Binding SelectedInstance}"
-                          MinWidth="160">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
-              </StackPanel>
-              <StackPanel Spacing="2">
-                <TextBlock Text="Name" Foreground="#B0B0B0" />
-                <TextBox Text="{Binding SelectedInstance.Name, Mode=TwoWay}" PlaceholderText="Name" />
-              </StackPanel>
-              <StackPanel Spacing="2">
-                <TextBlock Text="Source" Foreground="#B0B0B0" />
-                <ComboBox ItemsSource="{Binding InstanceSourceOptions}"
-                          SelectedItem="{Binding SelectedInstanceSource}"
-                          MinWidth="160">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Text="{Binding Label}" />
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsAtlasSourceSelected}">
-                <StackPanel Spacing="2" Width="180">
-                  <TextBlock Text="Atlas" Foreground="#B0B0B0" />
-                  <ComboBox ItemsSource="{Binding Atlases}"
-                            SelectedItem="{Binding SelectedInstanceAtlas}"
-                            MinWidth="160">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
+              <ListBox ItemsSource="{Binding Atlases}" SelectedItem="{Binding SelectedAtlasNavigation}" x:Name="AtlasList">
+                <ListBox.ContextMenu>
+                  <ContextMenu>
+                    <MenuItem Header="Duplicate" Command="{Binding DuplicateSelectedCommand}" />
+                    <MenuItem Header="Copy" Click="OnCopyClick" />
+                    <MenuItem Header="Paste" Click="OnPasteClick" />
+                    <Separator />
+                    <MenuItem Header="Delete" Command="{Binding DeleteSelectedCommand}" />
+                  </ContextMenu>
+                </ListBox.ContextMenu>
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="{Binding NavigationBackground}" HorizontalAlignment="Stretch" PointerPressed="OnAtlasItemPointerPressed">
+                      <StackPanel Margin="4,3">
                         <TextBlock Text="{Binding Name}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                </StackPanel>
-                <StackPanel Spacing="2" Width="180">
-                  <TextBlock Text="Region" Foreground="#B0B0B0" />
-                  <ComboBox ItemsSource="{Binding SelectedInstanceAtlas.Regions}"
-                            SelectedItem="{Binding SelectedInstanceRegion}"
-                            MinWidth="160">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Id}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                </StackPanel>
+                        <TextBlock Text="{Binding Width}" Foreground="#8D99A5" FontSize="11" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Margin="14,0,0,0" Spacing="4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="REGIONS" Foreground="#B0B0B0" FontWeight="SemiBold" />
+                  <Button Grid.Column="1" Content="+" Click="OnAddRegionClick" ToolTip.Tip="Add region" />
+                </Grid>
+                <ListBox ItemsSource="{Binding SelectedAtlas.Regions}" SelectedItems="{Binding SelectedRegions}" SelectionMode="Multiple" x:Name="RegionList" SelectionChanged="OnRegionSelectionChanged">
+                  <ListBox.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="Duplicate" Command="{Binding DuplicateSelectedCommand}" />
+                      <MenuItem Header="Copy" Click="OnCopyClick" />
+                      <MenuItem Header="Paste" Click="OnPasteClick" />
+                      <Separator />
+                      <MenuItem Header="Delete" Command="{Binding DeleteSelectedCommand}" />
+                    </ContextMenu>
+                  </ListBox.ContextMenu>
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <Border Background="Transparent" HorizontalAlignment="Stretch" PointerPressed="OnRegionItemPointerPressed">
+                        <TextBlock Text="{Binding Id}" Margin="4,3" />
+                      </Border>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
               </StackPanel>
-              <StackPanel Spacing="2" IsVisible="{Binding IsImageSourceSelected}">
-                <TextBlock Text="Image" Foreground="#B0B0B0" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <ComboBox ItemsSource="{Binding AvailableImages}"
-                            SelectedItem="{Binding SelectedInstanceImageFile}"
-                            MinWidth="220" />
-                  <Button Content="Refresh" Command="{Binding RefreshImagesCommand}" />
-                </StackPanel>
-              </StackPanel>
-              <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
-                <StackPanel Orientation="Vertical" Spacing="2">
-                  <TextBlock Text="Attach Slot" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                  <ComboBox ItemsSource="{Binding AttachSlotOptions}"
-                            SelectedItem="{Binding SelectedInstanceAttachSlot}"
-                            Width="80">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Label}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                </StackPanel>
-                <StackPanel Orientation="Vertical" Spacing="2">
-                  <TextBlock Text="Attachment" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                  <ComboBox ItemsSource="{Binding AttachAttachmentOptions}"
-                            SelectedItem="{Binding SelectedInstanceAttachment, Mode=TwoWay}"
-                            Width="80">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Label}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                </StackPanel>
-                <StackPanel Orientation="Vertical" Spacing="2">
-                  <TextBlock Text="Bone" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                  <ComboBox ItemsSource="{Binding AttachBoneOptions}"
-                            SelectedItem="{Binding SelectedInstanceBone, Mode=TwoWay}"
-                            Width="80">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Label}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                </StackPanel>
-                <CheckBox IsChecked="{Binding SelectedInstance.AttachUseYaw}" Content="Use Yaw" VerticalAlignment="Bottom"/>
-                <CheckBox IsChecked="{Binding SelectedInstance.AttachUsePitch}" Content="Use Pitch" VerticalAlignment="Bottom"/>
-                <CheckBox IsChecked="{Binding SelectedInstance.AttachUseRoll}" Content="Use Roll" VerticalAlignment="Bottom"/>
-              </WrapPanel>
-              <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="6">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="Pos X" Foreground="#B0B0B0" />
-                  <controls:ScrubbyNumericField
-                      Value="{Binding SelectedInstance.PosX, Mode=TwoWay}"
-                      FormatString="0.###"
-                      Step="0.1"
-                      PixelsPerStep="6"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="2">
-                  <TextBlock Text="Pos Y" Foreground="#B0B0B0" />
-                  <controls:ScrubbyNumericField
-                      Value="{Binding SelectedInstance.PosY, Mode=TwoWay}"
-                      FormatString="0.###"
-                      Step="0.1"
-                      PixelsPerStep="6"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" Spacing="2">
-                  <TextBlock Text="Pos Z" Foreground="#B0B0B0" />
-                  <controls:ScrubbyNumericField
-                      Value="{Binding SelectedInstance.PosZ, Mode=TwoWay}"
-                      FormatString="0.###"
-                      Step="0.1"
-                      PixelsPerStep="6"/>
-                </StackPanel>
-                <Button Grid.Column="3"
-                        Content="Get"
-                        Command="{Binding GetCurrentCameraPositionCommand}"
-                        VerticalAlignment="Bottom"
-                        MinWidth="56"/>
-
-                <StackPanel Grid.Row="1" Spacing="2">
-                  <TextBlock Text="Pitch" Foreground="#B0B0B0" />
-                  <controls:ScrubbyNumericField
-                      Value="{Binding SelectedInstance.Pitch, Mode=TwoWay}"
-                      FormatString="0.##"
-                      Step="1"
-                      PixelsPerStep="6"/>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
-                  <TextBlock Text="Yaw" Foreground="#B0B0B0" />
-                  <controls:ScrubbyNumericField
-                      Value="{Binding SelectedInstance.Yaw, Mode=TwoWay}"
-                      FormatString="0.##"
-                      Step="1"
-                      PixelsPerStep="6"/>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="2">
-                  <TextBlock Text="Roll" Foreground="#B0B0B0" />
-                  <controls:ScrubbyNumericField
-                      Value="{Binding SelectedInstance.Roll, Mode=TwoWay}"
-                      FormatString="0.##"
-                      Step="1"
-                      PixelsPerStep="6"/>
-                </StackPanel>
-                <Button Grid.Row="1"
-                        Grid.Column="3"
-                        Content="Get"
-                        Command="{Binding GetCurrentCameraRotationCommand}"
-                        VerticalAlignment="Bottom"
-                        MinWidth="56"/>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="INSTANCES" Foreground="#B0B0B0" FontWeight="SemiBold" />
+                <Button Grid.Column="1" Content="+" Click="OnAddInstanceClick" ToolTip.Tip="Add instance" />
               </Grid>
-
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="Scale X" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedInstance.ScaleX, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="Scale X" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="2">
-                  <TextBlock Text="Scale Y" Foreground="#B0B0B0" />
-                  <TextBox Text="{Binding SelectedInstance.ScaleY, Mode=TwoWay, Converter={StaticResource DoubleText}}" PlaceholderText="Scale Y" />
-                </StackPanel>
-              </Grid>
-              <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
-                <StackPanel>
-                  <TextBlock Text="Visible" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                  <ToggleSwitch IsChecked="{Binding SelectedInstance.Visible}" />
-                </StackPanel>
-                <StackPanel>
-                  <TextBlock Text="Depth Test" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                  <ToggleSwitch IsChecked="{Binding SelectedInstance.DepthTest}" />
-                </StackPanel>
-                <StackPanel>
-                  <TextBlock Text="Depth Write" VerticalAlignment="Center" Foreground="#B0B0B0" />
-                  <ToggleSwitch IsChecked="{Binding SelectedInstance.DepthWrite}" />
-                </StackPanel>
-              </WrapPanel>
+              <ListBox ItemsSource="{Binding Instances}" SelectedItems="{Binding SelectedInstances}" SelectionMode="Multiple" x:Name="InstanceList" SelectionChanged="OnInstanceSelectionChanged">
+                <ListBox.ContextMenu>
+                  <ContextMenu>
+                    <MenuItem Header="Duplicate" Command="{Binding DuplicateSelectedCommand}" />
+                    <MenuItem Header="Copy" Click="OnCopyClick" />
+                    <MenuItem Header="Paste" Click="OnPasteClick" />
+                    <Separator />
+                    <MenuItem Header="Delete" Command="{Binding DeleteSelectedCommand}" />
+                  </ContextMenu>
+                </ListBox.ContextMenu>
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="Transparent" HorizontalAlignment="Stretch" PointerPressed="OnInstanceItemPointerPressed">
+                      <StackPanel Margin="4,3">
+                        <TextBlock Text="{Binding Name}" />
+                        <TextBlock Text="{Binding SourceSummary}" Foreground="#8D99A5" FontSize="11" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
             </StackPanel>
-          </HeaderedContentControl>
-          </StackPanel>
-        </ScrollViewer>
+          </ScrollViewer>
+        </Border>
+        <GridSplitter Grid.Column="1" Background="#4A4A4A" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" HorizontalAlignment="Stretch" />
+        <Border Grid.Column="2" Background="#252525" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="4" Padding="14">
+          <ScrollViewer VerticalScrollBarVisibility="Hidden">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{Binding SelectedItemTitle}" FontSize="18" FontWeight="SemiBold" />
+              <TextBlock Text="Select an atlas, region, or instance from the outline to edit it." Foreground="#9AA5B1" IsVisible="{Binding HasSelection, Converter={StaticResource BooleanNegationConverter}}" />
+              <StackPanel Spacing="8" IsVisible="{Binding HasSelectedAtlas}">
+                <TextBlock Text="Atlas" Foreground="#B0B0B0" FontWeight="SemiBold" />
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Name" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedAtlas.Name, Mode=TwoWay}" PlaceholderText="Atlas name" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Width" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding SelectedAtlas.Width, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="Height" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding SelectedAtlas.Height, Mode=TwoWay}" />
+                  </StackPanel>
+                </Grid>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="HTML Path" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding SelectedAtlas.HtmlPath, Mode=TwoWay}" PlaceholderText="HTML path" />
+                </StackPanel>
+                <ToggleSwitch IsChecked="{Binding SelectedAtlas.Enabled}" Content="Enabled" />
+              </StackPanel>
+              <StackPanel Spacing="8" IsVisible="{Binding HasSelectedRegion}">
+                <TextBlock Text="Region" Foreground="#B0B0B0" FontWeight="SemiBold" />
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Region ID" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding RegionIdValue, Mode=TwoWay}" IsReadOnly="{Binding HasMultipleRegions}" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="U0" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding RegionU0Value, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="V0" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding RegionV0Value, Mode=TwoWay}" />
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="U1" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding RegionU1Value, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="V1" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding RegionV1Value, Mode=TwoWay}" />
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Default Width" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding RegionDefaultWidthValue, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="Default Height" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding RegionDefaultHeightValue, Mode=TwoWay}" />
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+              <StackPanel Spacing="8" IsVisible="{Binding HasSelectedInstance}">
+                <TextBlock Text="Instance" Foreground="#B0B0B0" FontWeight="SemiBold" />
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Name" Foreground="#B0B0B0" />
+                  <TextBox Text="{Binding InstanceNameValue, Mode=TwoWay}" IsReadOnly="{Binding HasMultipleInstances}" />
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Source" Foreground="#B0B0B0" />
+                  <ComboBox ItemsSource="{Binding InstanceSourceOptions}" SelectedItem="{Binding SelectedInstanceSource}" PlaceholderText="—">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <WrapPanel ItemSpacing="8" LineSpacing="8" IsVisible="{Binding IsAtlasSourceSelected}">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Atlas" Foreground="#B0B0B0" />
+                    <ComboBox ItemsSource="{Binding Atlases}" SelectedItem="{Binding SelectedInstanceAtlas}" PlaceholderText="—">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Region" Foreground="#B0B0B0" />
+                    <ComboBox ItemsSource="{Binding SelectedInstanceAtlas.Regions}" SelectedItem="{Binding SelectedInstanceRegion}" PlaceholderText="—">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Id}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                </WrapPanel>
+                <StackPanel Spacing="2" IsVisible="{Binding IsImageSourceSelected}">
+                  <TextBlock Text="Image" Foreground="#B0B0B0" />
+                  <WrapPanel ItemSpacing="8">
+                    <ComboBox ItemsSource="{Binding AvailableImages}" SelectedItem="{Binding SelectedInstanceImageFile}" PlaceholderText="—" MinWidth="40" />
+                    <Button Content="Refresh" Command="{Binding RefreshImagesCommand}" />
+                  </WrapPanel>
+                </StackPanel>
+                <TextBlock Text="Attachment" Foreground="#B0B0B0" FontWeight="SemiBold" Margin="0,8,0,0" />
+                <WrapPanel ItemSpacing="8" LineSpacing="8">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Attach Slot" Foreground="#B0B0B0" />
+                    <ComboBox ItemsSource="{Binding AttachSlotOptions}" SelectedItem="{Binding SelectedInstanceAttachSlot}" PlaceholderText="—">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Attachment" Foreground="#B0B0B0" />
+                    <ComboBox ItemsSource="{Binding AttachAttachmentOptions}" SelectedItem="{Binding SelectedInstanceAttachment}" PlaceholderText="—">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Bone" Foreground="#B0B0B0" />
+                    <ComboBox ItemsSource="{Binding AttachBoneOptions}" SelectedItem="{Binding SelectedInstanceBone}" PlaceholderText="—">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                </WrapPanel>
+                <WrapPanel ItemSpacing="12">
+                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceAttachUseYawValue}" Content="Use Yaw" />
+                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceAttachUsePitchValue}" Content="Use Pitch" />
+                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceAttachUseRollValue}" Content="Use Roll" />
+                </WrapPanel>
+                <TextBlock Text="Transform" Foreground="#B0B0B0" FontWeight="SemiBold" Margin="0,8,0,0" />
+                <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Position X" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding InstancePosXValue, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="Position Y" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding InstancePosYValue, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="2">
+                    <TextBlock Text="Position Z" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding InstancePosZValue, Mode=TwoWay}" />
+                  </StackPanel>
+                  <Button Grid.Column="3" Content="Get" Command="{Binding GetCurrentCameraPositionCommand}" VerticalAlignment="Bottom" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Pitch" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding InstancePitchValue, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="Yaw" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding InstanceYawValue, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="2">
+                    <TextBlock Text="Roll" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding InstanceRollValue, Mode=TwoWay}" />
+                  </StackPanel>
+                  <Button Grid.Column="3" Content="Get" Command="{Binding GetCurrentCameraRotationCommand}" VerticalAlignment="Bottom" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Scale X" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding InstanceScaleXValue, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="Scale Y" Foreground="#B0B0B0" />
+                    <TextBox Text="{Binding InstanceScaleYValue, Mode=TwoWay}" />
+                  </StackPanel>
+                </Grid>
+                <WrapPanel ItemSpacing="12">
+                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceVisibleValue}" Content="Visible" />
+                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceDepthTestValue}" Content="Depth test" />
+                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceDepthWriteValue}" Content="Depth write" />
+                </WrapPanel>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Border>
       </Grid>
-
-      <Border Grid.RowSpan="2"
-              IsVisible="{Binding IsToastVisible}"
-              IsHitTestVisible="False"
-              HorizontalAlignment="Center"
-              VerticalAlignment="Top"
-              Margin="0,35,0,0"
-              Background="#DD252525"
-              BorderBrush="#555555"
-              BorderThickness="1"
-              CornerRadius="6"
-              Padding="12,8"
-              ZIndex="10">
-        <TextBlock Text="{Binding ToastMessage}"
-                   Foreground="#F2F2F2"
-                   TextWrapping="Wrap"
-                   MaxWidth="360" />
+      <Border Grid.RowSpan="2" IsVisible="{Binding IsToastVisible}" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,35,0,0" Background="#DD252525" BorderBrush="#555555" BorderThickness="1" CornerRadius="6" Padding="12,8" ZIndex="10">
+        <TextBlock Text="{Binding ToastMessage}" Foreground="#F2F2F2" TextWrapping="Wrap" MaxWidth="360" />
       </Border>
     </Grid>
   </Border>
