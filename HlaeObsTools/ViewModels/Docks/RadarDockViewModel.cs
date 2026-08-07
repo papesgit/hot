@@ -1549,6 +1549,10 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
     private void LoadRadarResources(string mapName)
     {
+        // The bundled radar metadata uses a 1024x1024 reference image. Reset this
+        // before loading so a missing image cannot retain the previous map's size.
+        _projector.SetRadarImageSize(1024, 1024);
+
         if (!_configProvider.TryGet(mapName, out var cfg))
         {
             HasRadar = false;
@@ -1599,6 +1603,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             try
             {
                 RadarImage = new Bitmap(AssetLoader.Open(CreateRadarAssetUri(imagePath!)));
+                SetRadarImageSize(RadarImage);
                 return;
             }
             catch
@@ -1630,6 +1635,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         {
             using var stream = File.OpenRead(resolvedPath);
             RadarImage = new Bitmap(stream);
+            SetRadarImageSize(RadarImage);
             return true;
         }
         catch (Exception ex)
@@ -1752,6 +1758,11 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         }
 
         RefreshCampathOverlay();
+    }
+
+    private void SetRadarImageSize(Bitmap image)
+    {
+        _projector.SetRadarImageSize(image.PixelSize.Width, image.PixelSize.Height);
     }
 
     private void OnCampathGroupChanged(object? sender, PropertyChangedEventArgs e)
