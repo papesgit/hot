@@ -160,6 +160,7 @@ public class AppSettingsData
     public string Cs2GameFolder { get; set; } = string.Empty;
     public string ViewportSelectedMapName { get; set; } = string.Empty;
     public bool ViewportActiveDutyMapsOnly { get; set; } = true;
+    public bool ViewportShowWorkshopMaps { get; set; } = true;
     public bool ViewportShowPlayerPins { get; set; } = true;
     public double PinScale { get; set; } = 200.0;
     public double PinOffsetZ { get; set; } = 55.0;

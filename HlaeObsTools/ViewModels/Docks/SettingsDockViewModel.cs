@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -28,6 +29,7 @@ using HlaeObsTools.Services.Hotkeys;
 using HlaeObsTools.Services.Vmix;
 using HlaeObsTools.Services.ReplayDirector;
 using HlaeObsTools.ViewModels.Hotkeys;
+using ValveKeyValue;
 
 
 namespace HlaeObsTools.ViewModels.Docks
@@ -913,6 +915,7 @@ namespace HlaeObsTools.ViewModels.Docks
             var noMap = new ViewportMapOption
             {
                 Name = string.Empty,
+                DisplayName = "None",
                 Path = string.Empty
             };
             _viewport3DSettings.AvailableMaps.Add(noMap);
@@ -935,16 +938,130 @@ namespace HlaeObsTools.ViewModels.Docks
             if (string.IsNullOrWhiteSpace(mapsDirectory) || !Directory.Exists(mapsDirectory))
                 return Enumerable.Empty<ViewportMapOption>();
 
-            return Directory.EnumerateFiles(mapsDirectory, "*.vpk", SearchOption.TopDirectoryOnly)
+            var officialMaps = Directory.EnumerateFiles(mapsDirectory, "*.vpk", SearchOption.TopDirectoryOnly)
                 .Select(path => new ViewportMapOption
                 {
                     Name = Path.GetFileNameWithoutExtension(path),
+                    DisplayName = Path.GetFileNameWithoutExtension(path),
                     Path = path
                 })
                 .Where(option => IsUsefulViewportMap(option.Name))
                 .Where(option => !_viewport3DSettings.ActiveDutyMapsOnly || ActiveDutyMapNames.Contains(option.Name))
-                .OrderBy(option => option.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (_viewport3DSettings.ShowWorkshopMaps)
+            {
+                officialMaps.AddRange(DiscoverWorkshopViewportMaps());
+            }
+
+            return officialMaps
+                .OrderBy(option => option.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+        }
+
+        private IEnumerable<ViewportMapOption> DiscoverWorkshopViewportMaps()
+        {
+            var steamAppsDirectory = GetSteamAppsDirectory(_viewport3DSettings.Cs2GameFolder);
+            if (steamAppsDirectory == null)
+            {
+                return Enumerable.Empty<ViewportMapOption>();
+            }
+
+            var workshopManifest = Path.Combine(steamAppsDirectory, "workshop", "appworkshop_730.acf");
+            if (!File.Exists(workshopManifest))
+            {
+                return Enumerable.Empty<ViewportMapOption>();
+            }
+
+            try
+            {
+                var serializer = KVSerializer.Create(KVSerializationFormat.KeyValues1Text);
+                KVObject workshopInfo;
+                using (var stream = File.OpenRead(workshopManifest))
+                {
+                    workshopInfo = serializer.Deserialize(stream);
+                }
+
+                var installedItems = workshopInfo["WorkshopItemsInstalled"];
+                if (installedItems == null)
+                {
+                    return Enumerable.Empty<ViewportMapOption>();
+                }
+
+                var workshopContentDirectory = Path.Combine(steamAppsDirectory, "workshop", "content", "730");
+                var maps = new List<ViewportMapOption>();
+                foreach (var item in installedItems.Children)
+                {
+                    var workshopId = item.Key;
+                    var addonDirectory = Path.Combine(workshopContentDirectory, workshopId);
+                    var vpkPath = Path.Combine(addonDirectory, $"{workshopId}.vpk");
+                    if (!File.Exists(vpkPath))
+                    {
+                        vpkPath = Path.Combine(addonDirectory, $"{workshopId}_dir.vpk");
+                    }
+
+                    if (!File.Exists(vpkPath))
+                    {
+                        continue;
+                    }
+
+                    var title = GetWorkshopMapTitle(serializer, Path.Combine(addonDirectory, "publish_data.txt"));
+                    maps.Add(new ViewportMapOption
+                    {
+                        Name = workshopId,
+                        DisplayName = string.IsNullOrWhiteSpace(title)
+                            ? workshopId
+                            : title,
+                        Path = vpkPath
+                    });
+                }
+
+                return maps;
+            }
+            catch
+            {
+                // Workshop data is managed by Steam and can be temporarily incomplete while it updates.
+                return Enumerable.Empty<ViewportMapOption>();
+            }
+        }
+
+        private static string? GetWorkshopMapTitle(KVSerializer serializer, string publishDataPath)
+        {
+            if (!File.Exists(publishDataPath))
+            {
+                return null;
+            }
+
+            using var stream = File.OpenRead(publishDataPath);
+            var publishData = serializer.Deserialize(stream);
+            return publishData["title"]?.ToString();
+        }
+
+        private static string? GetSteamAppsDirectory(string cs2GameFolder)
+        {
+            if (string.IsNullOrWhiteSpace(cs2GameFolder))
+            {
+                return null;
+            }
+
+            try
+            {
+                var cs2Directory = Path.GetFullPath(cs2GameFolder);
+                var commonDirectory = Directory.GetParent(cs2Directory);
+                if (commonDirectory?.Name.Equals("common", StringComparison.OrdinalIgnoreCase) != true)
+                {
+                    return null;
+                }
+
+                var steamAppsDirectory = commonDirectory.Parent;
+                return steamAppsDirectory?.Name.Equals("steamapps", StringComparison.OrdinalIgnoreCase) == true
+                    ? steamAppsDirectory.FullName
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static string GetCs2MapsDirectory(string cs2GameFolder)
@@ -1914,6 +2031,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 Cs2GameFolder = _viewport3DSettings.Cs2GameFolder,
                 ViewportSelectedMapName = _viewport3DSettings.SelectedMapName,
                 ViewportActiveDutyMapsOnly = _viewport3DSettings.ActiveDutyMapsOnly,
+                ViewportShowWorkshopMaps = _viewport3DSettings.ShowWorkshopMaps,
                 ViewportShowPlayerPins = _viewport3DSettings.ShowPlayerPins,
                 PinScale = _viewport3DSettings.PinScale,
                 PinOffsetZ = _viewport3DSettings.PinOffsetZ,
@@ -2426,7 +2544,8 @@ namespace HlaeObsTools.ViewModels.Docks
                 return;
 
             if (e.PropertyName == nameof(Viewport3DSettings.Cs2GameFolder) ||
-                e.PropertyName == nameof(Viewport3DSettings.ActiveDutyMapsOnly))
+                e.PropertyName == nameof(Viewport3DSettings.ActiveDutyMapsOnly) ||
+                e.PropertyName == nameof(Viewport3DSettings.ShowWorkshopMaps))
             {
                 _suppressSettingsSave = true;
                 RefreshViewportMapOptions();

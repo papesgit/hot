@@ -475,6 +475,11 @@
                                       Foreground="#E6E6E6"
                                       VerticalAlignment="Center"
                                       hotkeys:HotkeyTarget.Path="Viewport3DSettings.ActiveDutyMapsOnly"/>
+                            <CheckBox IsChecked="{Binding Viewport3DSettings.ShowWorkshopMaps, Mode=TwoWay}"
+                                      Content="Workshop Maps"
+                                      Foreground="#E6E6E6"
+                                      VerticalAlignment="Center"
+                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.ShowWorkshopMaps"/>
                         </WrapPanel>
                         <TextBlock Text="{Binding Viewport3DSettings.MapObjPath}" TextWrapping="Wrap"
                                 Foreground="#888888"

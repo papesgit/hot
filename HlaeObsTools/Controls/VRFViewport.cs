@@ -263,7 +263,6 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private float _distance = 10f;
     private float _yaw = DegToRad(45f);
     private float _pitch = DegToRad(30f);
-    private float _minDistance = 0.5f;
     private float _maxDistance = 1000f;
     private Vector3 _orbitTargetBeforeFreecam;
     private float _orbitYawBeforeFreecam;
@@ -4247,11 +4246,11 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 return;
             }
 
-            var resolvedMapPath = ResolveMapPath(mapPath, out var mapPackage);
+            var resolvedMapPath = ResolveMapPath(mapPath, out var mapPackage, out var supportingPackages);
             if (string.IsNullOrWhiteSpace(resolvedMapPath))
             {
                 LogMessage("LoadMap aborted: could not resolve map path.");
-                DisposeRenderer();
+                DisposeRenderer(disposeWindow: false);
                 FailMapLoad(generation, mapPath, "The map package could not be resolved.");
                 return;
             }
@@ -4261,6 +4260,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             {
                 _fileLoader.CurrentPackage = mapPackage;
                 _fileLoader.AddPackageToSearch(mapPackage);
+                foreach (var supportingPackage in supportingPackages)
+                {
+                    _fileLoader.AddPackageToSearch(supportingPackage);
+                }
                 _mapPackage = mapPackage;
                 LogMessage($"Using VPK package: {mapPackage.FileName}");
             }
@@ -4288,7 +4291,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             catch (Exception ex)
             {
                 LogMessage($"Renderer init failed: {ex}");
-                DisposeRenderer();
+                DisposeRenderer(disposeWindow: false);
                 FailMapLoad(generation, mapPath, "Renderer initialization failed.");
                 return;
             }
@@ -4316,7 +4319,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             if (worldResource?.DataBlock is not World world)
             {
                 LogMessage("LoadMap failed: world resource not found or invalid.");
-                DisposeRenderer();
+                DisposeRenderer(disposeWindow: false);
                 FailMapLoad(generation, mapPath, "The map world resource could not be loaded.");
                 return;
             }
@@ -4351,13 +4354,18 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
         finally
         {
-            _nativeWindow.Context.MakeNoneCurrent();
+            var nativeWindow = _nativeWindow;
+            if (nativeWindow != null)
+            {
+                nativeWindow.Context.MakeNoneCurrent();
+            }
         }
     }
 
-    private static string? ResolveMapPath(string mapPath, out Package? mapPackage)
+    private static string? ResolveMapPath(string mapPath, out Package? mapPackage, out List<Package> supportingPackages)
     {
         mapPackage = null;
+        supportingPackages = [];
 
         if (mapPath.EndsWith(".vmap_c", StringComparison.OrdinalIgnoreCase))
         {
@@ -4371,14 +4379,77 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return null;
         }
 
-        var package = new Package();
-        package.OptimizeEntriesForBinarySearch(StringComparison.OrdinalIgnoreCase);
-        package.Read(mapPath);
-        mapPackage = package;
+        var outerPackage = new Package();
+        try
+        {
+            outerPackage.OptimizeEntriesForBinarySearch(StringComparison.OrdinalIgnoreCase);
+            outerPackage.Read(mapPath);
 
-        var candidate = FindVmapInPackage(package, Path.GetFileNameWithoutExtension(mapPath));
-        LogMessage($"ResolveMapPath: candidate={candidate ?? "null"}");
-        return candidate;
+            var candidate = FindVmapInPackage(outerPackage, Path.GetFileNameWithoutExtension(mapPath));
+            if (candidate != null)
+            {
+                mapPackage = outerPackage;
+                outerPackage = null!;
+                LogMessage($"ResolveMapPath: candidate={candidate}");
+                return candidate;
+            }
+
+            if (outerPackage.Entries == null)
+            {
+                LogMessage("ResolveMapPath: package entries are missing.");
+                return null;
+            }
+
+            foreach (var entries in outerPackage.Entries.Values)
+            {
+                foreach (var entry in entries)
+                {
+                    if (!entry.GetFullPath().EndsWith(".vpk", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var innerPackage = new Package();
+                    try
+                    {
+                        // Package retains this stream for archive entries. Its lifetime is tied to
+                        // the package, as in VRF's nested-VPK loader.
+                        var stream = GameFileLoader.GetPackageEntryStream(outerPackage, entry);
+                        innerPackage.SetFileName(entry.GetFullPath());
+                        innerPackage.OptimizeEntriesForBinarySearch(StringComparison.OrdinalIgnoreCase);
+                        innerPackage.Read(stream);
+
+                        candidate = FindVmapInPackage(innerPackage, Path.GetFileNameWithoutExtension(entry.GetFullPath()));
+                        if (candidate == null)
+                        {
+                            continue;
+                        }
+
+                        mapPackage = innerPackage;
+                        supportingPackages.Add(outerPackage);
+                        innerPackage = null!;
+                        outerPackage = null!;
+                        LogMessage($"ResolveMapPath: found map package {entry.GetFullPath()}, candidate={candidate}");
+                        return candidate;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage($"ResolveMapPath: failed to read embedded VPK {entry.GetFullPath()}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        innerPackage?.Dispose();
+                    }
+                }
+            }
+
+            LogMessage("ResolveMapPath: no vmap_c found in package or embedded map packages.");
+            return null;
+        }
+        finally
+        {
+            outerPackage?.Dispose();
+        }
     }
 
     private static string? FindVmapInPackage(Package package, string mapNameHint)
@@ -4728,49 +4799,18 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         ApplyModelVisibility();
         _renderer.Scene.UpdateOctrees();
 
-        ResetCameraToScene();
+        ResetCameraToDefaultOrbit();
         _renderer.Camera.SetViewportSize(_renderWidth, _renderHeight);
     }
 
-    private void ResetCameraToScene()
+    private void ResetCameraToDefaultOrbit()
     {
-        if (_renderer == null)
-        {
-            return;
-        }
-
-        var first = true;
-        var bbox = new AABB();
-        foreach (var node in _renderer.Scene.AllNodes)
-        {
-            bbox = first ? node.BoundingBox : bbox.Union(node.BoundingBox);
-            first = false;
-        }
-
-        if (!first)
-        {
-            ResetOrbitToBounds(bbox.Min, bbox.Max);
-        }
-    }
-
-    private void ResetOrbitToBounds(Vector3 min, Vector3 max)
-    {
-        _target = (min + max) * 0.5f;
-        var radius = (max - min).Length() * 0.5f;
-        if (radius < 0.1f)
-            radius = 0.1f;
-
-        _distance = radius * 2.0f;
-        _minDistance = radius * 0.2f;
-        _maxDistance = radius * 20f;
-
-        if (_distance < _minDistance)
-            _distance = _minDistance;
-        if (_distance > _maxDistance)
-            _distance = _maxDistance;
-
+        _targetOrbitActive = false;
+        _target = Vector3.Zero;
+        _distance = 4000f;
+        _maxDistance = 100_000f;
         _yaw = DegToRad(45f);
-        _pitch = DegToRad(30f);
+        _pitch = DegToRad(75f);
     }
 
     private void ApplyModelVisibility()

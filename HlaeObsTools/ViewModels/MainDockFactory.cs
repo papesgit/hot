@@ -365,6 +365,7 @@ public class MainDockFactory : Factory, IDisposable
             Cs2GameFolder = cs2GameFolder,
             SelectedMapName = _storedSettings.ViewportSelectedMapName ?? string.Empty,
             ActiveDutyMapsOnly = _storedSettings.ViewportActiveDutyMapsOnly,
+            ShowWorkshopMaps = _storedSettings.ViewportShowWorkshopMaps,
             UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds,
             ShowPlayerPins = _storedSettings.ViewportShowPlayerPins,
             PinScale = (float)_storedSettings.PinScale,

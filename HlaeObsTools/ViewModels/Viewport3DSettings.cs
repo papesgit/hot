@@ -22,6 +22,7 @@ public sealed class Viewport3DSettings : ViewModelBase
     private string _selectedMapName = string.Empty;
     private ViewportMapOption? _selectedMap;
     private bool _activeDutyMapsOnly = true;
+    private bool _showWorkshopMaps = true;
     private bool _useAltPlayerBinds;
     private bool _showPlayerPins = true;
     private float _pinScale = 200.0f;
@@ -104,6 +105,15 @@ public sealed class Viewport3DSettings : ViewModelBase
     {
         get => _activeDutyMapsOnly;
         set => SetProperty(ref _activeDutyMapsOnly, value);
+    }
+
+    /// <summary>
+    /// Show installed Steam Workshop maps in the map dropdown.
+    /// </summary>
+    public bool ShowWorkshopMaps
+    {
+        get => _showWorkshopMaps;
+        set => SetProperty(ref _showWorkshopMaps, value);
     }
 
     /// <summary>
