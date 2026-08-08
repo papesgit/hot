@@ -22,18 +22,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.0.4" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.0.4" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
-    <PackageReference Include="Avalonia.HarfBuzz" Version="12.0.4" />
-    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.0" />
+    <PackageReference Include="Avalonia" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+    <PackageReference Include="Avalonia.HarfBuzz" Version="12.1.1" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
     <PackageReference Include="LiveMarkdown.Avalonia" Version="2.2.2" />
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.1" />
-    <PackageReference Include="Dock.Avalonia" Version="12.0.0.1" />
-    <PackageReference Include="Dock.Avalonia.Diagnostics" Version="12.0.0.1" />
-    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.0.0.1" />
-    <PackageReference Include="Dock.Model.Mvvm" Version="12.0.0.1" />
+    <PackageReference Include="Dock.Avalonia" Version="12.1.0" />
+    <PackageReference Include="Dock.Avalonia.Diagnostics" Version="12.1.0" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageReference Include="Dock.Model.Mvvm" Version="12.1.0" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />

@@ -627,7 +627,7 @@ public class CampathsDockViewModel : Tool
         {
             using var bitmap = CreateBitmapFromFrame(frame);
             using var stream = File.Open(path, FileMode.Create, FileAccess.Write, FileShare.None);
-            bitmap.Save(stream);
+            bitmap.Save(stream, PngBitmapEncoderOptions.Default);
             return true;
         }
         catch (Exception ex)
