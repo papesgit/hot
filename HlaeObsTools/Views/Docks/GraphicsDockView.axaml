@@ -40,39 +40,55 @@
         </WrapPanel>
       </Grid>
       <Grid Grid.Row="1" IsVisible="{Binding IsSetupView, Converter={StaticResource BooleanNegationConverter}}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <StackPanel Spacing="10">
-            <TextBlock Text="Atlases" Foreground="#B0B0B0" />
-            <ListBox ItemsSource="{Binding Atlases}" SelectedItem="{Binding SelectedAtlas}" Background="#292929">
-              <ListBox.ItemTemplate>
-                <DataTemplate>
-                  <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
-                    <TextBlock Text="{Binding Name}" Margin="6" />
-                    <Button Grid.Column="1" Content="Anim In" Command="{Binding DataContext.AnimInAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_in" />
-                    <Button Grid.Column="2" Content="Anim Out" Command="{Binding DataContext.AnimOutAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
-                    <Button Grid.Column="3" Content="Reload" Command="{Binding DataContext.ReloadAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="reload" />
-                    <ToggleSwitch Grid.Column="4" IsChecked="{Binding InstancesVisible}" Content="Show" />
-                    <ToggleSwitch Grid.Column="5" IsChecked="{Binding Enabled}" Content="On" />
-                  </Grid>
-                </DataTemplate>
-              </ListBox.ItemTemplate>
-            </ListBox>
-            <TextBlock Text="Instances" Foreground="#B0B0B0" />
-            <ListBox ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" Background="#292929">
-              <ListBox.ItemTemplate>
-                <DataTemplate>
-                  <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                    <StackPanel Margin="6">
-                      <TextBlock Text="{Binding Name}" />
-                      <TextBlock Text="{Binding SourceSummary}" Foreground="#9AA5B1" />
-                    </StackPanel>
-                    <Button Grid.Column="1" Content="Anim In" Command="{Binding DataContext.AnimInInstanceCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_in" />
-                    <Button Grid.Column="2" Content="Anim Out" Command="{Binding DataContext.AnimOutInstanceCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_out" />
-                    <ToggleSwitch Grid.Column="3" IsChecked="{Binding Visible}" Content="Show" />
-                  </Grid>
-                </DataTemplate>
-              </ListBox.ItemTemplate>
-            </ListBox>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="16">
+            <StackPanel Spacing="6">
+              <TextBlock Text="ATLASES" Foreground="#B0B0B0" FontWeight="SemiBold" />
+              <ItemsControl ItemsSource="{Binding Atlases}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><controls:ResponsiveCardPanel MinimumCardWidth="200" Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="#292929" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="4" Padding="10">
+                      <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4">
+                          <ToggleButton IsChecked="{Binding Enabled}" Width="32" Height="28" Padding="0" ToolTip.Tip="Atlas enabled">
+                            <Grid>
+                              <controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-power.svg" SvgCss="path { stroke: #68727D; }" IsVisible="{Binding Enabled, Converter={StaticResource BooleanNegationConverter}}" Width="18" Height="18" />
+                              <controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-power.svg" SvgCss="path { stroke: #5FCB75; }" IsVisible="{Binding Enabled}" Width="18" Height="18" />
+                            </Grid>
+                          </ToggleButton>
+                          <ToggleButton IsChecked="{Binding InstancesVisible}" Width="32" Height="28" Padding="0" ToolTip.Tip="Show or hide atlas instances"><Grid><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-eye-off.svg" SvgCss="path { stroke: #68727D; }" IsVisible="{Binding InstancesVisible, Converter={StaticResource BooleanNegationConverter}}" Width="18" Height="18" /><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-eye.svg" SvgCss="path { stroke: #59B8FF; }" IsVisible="{Binding InstancesVisible}" Width="18" Height="18" /></Grid></ToggleButton>
+                          <Button Width="32" Height="28" Padding="0" ToolTip.Tip="Reload atlas" Command="{Binding DataContext.ReloadAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="reload"><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-reload.svg" SvgCss="path { stroke: #C7D1DD; }" Width="18" Height="18" /></Button>
+                          <Button Width="32" Height="28" Padding="0" ToolTip.Tip="Animate in" Command="{Binding DataContext.AnimInAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_in"><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-anim-in.svg" SvgCss="path { stroke: #C7D1DD; }" Width="18" Height="18" /></Button>
+                          <Button Width="32" Height="28" Padding="0" ToolTip.Tip="Animate out" Command="{Binding DataContext.AnimOutAtlasCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsAtlasName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_out"><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-anim-out.svg" SvgCss="path { stroke: #C7D1DD; }" Width="18" Height="18" /></Button>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <StackPanel Spacing="6">
+              <TextBlock Text="INSTANCES" Foreground="#B0B0B0" FontWeight="SemiBold" />
+              <ItemsControl ItemsSource="{Binding Instances}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><controls:ResponsiveCardPanel MinimumCardWidth="125" Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="#292929" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="4" Padding="10">
+                      <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4">
+                          <ToggleButton IsChecked="{Binding LiveVisible}" Width="32" Height="28" Padding="0" ToolTip.Tip="Show or hide instance"><Grid><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-eye-off.svg" SvgCss="path { stroke: #68727D; }" IsVisible="{Binding LiveVisible, Converter={StaticResource BooleanNegationConverter}}" Width="18" Height="18" /><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-eye.svg" SvgCss="path { stroke: #59B8FF; }" IsVisible="{Binding LiveVisible}" Width="18" Height="18" /></Grid></ToggleButton>
+                          <Button Width="32" Height="28" Padding="0" ToolTip.Tip="Animate in" Command="{Binding DataContext.AnimInInstanceCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_in"><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-anim-in.svg" SvgCss="path { stroke: #C7D1DD; }" Width="18" Height="18" /></Button>
+                          <Button Width="32" Height="28" Padding="0" ToolTip.Tip="Animate out" Command="{Binding DataContext.AnimOutInstanceCommand, ElementName=Root}" CommandParameter="{Binding}" hotkeys:HotkeyTarget.GraphicsInstanceName="{Binding Name}" hotkeys:HotkeyTarget.GraphicsAction="anim_out"><controls:GraphicsIcon IconPath="avares://HlaeObsTools/Assets/icons/graphics-anim-out.svg" SvgCss="path { stroke: #C7D1DD; }" Width="18" Height="18" /></Button>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
           </StackPanel>
         </ScrollViewer>
       </Grid>

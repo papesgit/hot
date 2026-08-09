@@ -446,6 +446,9 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         if (response.Result == GraphicsApplyResult.ProducerAtlasCreateNoResponse)
             return;
 
+        if (response.Result == GraphicsApplyResult.Applied)
+            RestoreLiveVisibilityToProfileDefaults();
+
         ShowToast(response.Result switch
         {
             GraphicsApplyResult.Applied => "Applied",
@@ -1147,7 +1150,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         _suppressApply = true;
         foreach (var inst in Instances)
         {
-            inst.Visible = visible;
+            inst.LiveVisible = visible;
         }
         foreach (var atlas in Atlases)
         {
@@ -1155,6 +1158,22 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         }
         _suppressApply = false;
         await _graphicsService.UpdateInstancesVisibilityAsync(_graphicsService.Profile.Instances, visible);
+    }
+
+    private void RestoreLiveVisibilityToProfileDefaults()
+    {
+        _suppressApply = true;
+        try
+        {
+            foreach (var instance in Instances)
+                instance.SetLiveVisibleInternal(instance.Visible);
+            foreach (var atlas in Atlases)
+                UpdateAtlasInstancesVisibilityState(atlas);
+        }
+        finally
+        {
+            _suppressApply = false;
+        }
     }
 
     private async Task SetAtlasInstancesVisibleAsync(GraphicsAtlasViewModel atlas, bool visible)
@@ -1165,7 +1184,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         _suppressApply = true;
         foreach (var inst in related)
         {
-            inst.Visible = visible;
+            inst.LiveVisible = visible;
         }
         _suppressApply = false;
         atlas.SetInstancesVisibleInternal(visible);
@@ -1175,7 +1194,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private async Task SetInstanceVisibleAsync(GraphicsInstanceViewModel instance, bool visible)
     {
         _suppressApply = true;
-        instance.Visible = visible;
+        instance.LiveVisible = visible;
         _suppressApply = false;
         await _graphicsService.UpdateInstanceVisibilityAsync(instance.Name, visible);
         if (instance.SourceType != GraphicsInstanceSourceType.Atlas)
@@ -1197,7 +1216,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             atlas.SetInstancesVisibleInternal(false);
             return;
         }
-        var allVisible = related.All(inst => inst.Visible);
+        var allVisible = related.All(inst => inst.LiveVisible);
         atlas.SetInstancesVisibleInternal(allVisible);
     }
 
@@ -1299,7 +1318,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                 await TriggerInstanceAsync(instance, "animOut");
                 break;
             case "toggle_visible":
-                await SetInstanceVisibleAsync(instance, !instance.Visible);
+                    await SetInstanceVisibleAsync(instance, !instance.LiveVisible);
                 break;
         }
     }
@@ -1325,7 +1344,11 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     private GraphicsAtlasViewModel CreateAtlasViewModel(GraphicsAtlas atlas)
     {
         var viewModel = new GraphicsAtlasViewModel(atlas, OnAtlasEnabledChanged, OnAtlasInstancesVisibleChanged);
-        viewModel.PropertyChanged += (_, _) => NotifyProfileEdited();
+        viewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(GraphicsAtlasViewModel.InstancesVisible))
+                NotifyProfileEdited();
+        };
         foreach (var region in viewModel.Regions)
             TrackRegionViewModel(region);
         return viewModel;
@@ -1345,8 +1368,12 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
     private GraphicsInstanceViewModel CreateInstanceViewModel(GraphicsInstance instance)
     {
-        var viewModel = new GraphicsInstanceViewModel(instance, OnInstanceVisibleChanged);
-        viewModel.PropertyChanged += (_, _) => NotifyProfileEdited();
+        var viewModel = new GraphicsInstanceViewModel(instance, OnInstanceLiveVisibleChanged);
+        viewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(GraphicsInstanceViewModel.LiveVisible))
+                NotifyProfileEdited();
+        };
         return viewModel;
     }
 
@@ -1359,11 +1386,11 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     {
     }
 
-    private void OnInstanceVisibleChanged(GraphicsInstanceViewModel instance)
+    private void OnInstanceLiveVisibleChanged(GraphicsInstanceViewModel instance)
     {
         if (_suppressApply)
             return;
-        _ = _graphicsService.UpdateInstanceVisibilityAsync(instance.Name, instance.Visible);
+        _ = _graphicsService.UpdateInstanceVisibilityAsync(instance.Name, instance.LiveVisible);
         if (instance.SourceType != GraphicsInstanceSourceType.Atlas)
             return;
         var atlas = Atlases.FirstOrDefault(a => a.Name == instance.Atlas);
@@ -1393,7 +1420,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                 var vm = Instances.FirstOrDefault(inst => inst.Name == name);
                 if (vm == null)
                     continue;
-                vm.SetVisibleInternal(e.Visible);
+                vm.SetLiveVisibleInternal(e.Visible);
                 if (vm.SourceType != GraphicsInstanceSourceType.Atlas)
                     continue;
                 var atlas = Atlases.FirstOrDefault(a => a.Name == vm.Atlas);
@@ -1794,12 +1821,14 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public sealed class GraphicsInstanceViewModel : ViewModelBase
     {
         public GraphicsInstance Model { get; }
-        private readonly Action<GraphicsInstanceViewModel>? _visibleChanged;
+        private readonly Action<GraphicsInstanceViewModel>? _liveVisibleChanged;
+        private bool _liveVisible;
 
-        public GraphicsInstanceViewModel(GraphicsInstance model, Action<GraphicsInstanceViewModel>? visibleChanged)
+        public GraphicsInstanceViewModel(GraphicsInstance model, Action<GraphicsInstanceViewModel>? liveVisibleChanged)
         {
             Model = model;
-            _visibleChanged = visibleChanged;
+            _liveVisibleChanged = liveVisibleChanged;
+            _liveVisible = model.Visible;
         }
 
         public string Name
@@ -1951,16 +1980,28 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                     return;
                 Model.Visible = value;
                 OnPropertyChanged();
-                _visibleChanged?.Invoke(this);
             }
         }
 
-        public void SetVisibleInternal(bool visible)
+        public bool LiveVisible
         {
-            if (Model.Visible == visible)
+            get => _liveVisible;
+            set
+            {
+                if (_liveVisible == value)
+                    return;
+                _liveVisible = value;
+                OnPropertyChanged();
+                _liveVisibleChanged?.Invoke(this);
+            }
+        }
+
+        public void SetLiveVisibleInternal(bool visible)
+        {
+            if (_liveVisible == visible)
                 return;
-            Model.Visible = visible;
-            OnPropertyChanged(nameof(Visible));
+            _liveVisible = visible;
+            OnPropertyChanged(nameof(LiveVisible));
         }
 
         public bool DepthTest

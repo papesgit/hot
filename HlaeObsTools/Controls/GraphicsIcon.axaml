@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svg="using:Avalonia.Svg.Skia"
+             x:Class="HlaeObsTools.Controls.GraphicsIcon"
+             x:Name="Root"
+             IsHitTestVisible="False"
+             x:CompileBindings="False">
+  <svg:Svg Path="{Binding IconPath, ElementName=Root}"
+           Css="{Binding SvgCss, ElementName=Root}"
+           Stretch="Uniform" />
+</UserControl>
