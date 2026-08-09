@@ -335,30 +335,30 @@
                 <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8">
                   <StackPanel Spacing="2">
                     <TextBlock Text="Position X" Foreground="#B0B0B0" />
-                    <TextBox Text="{Binding InstancePosXValue, Mode=TwoWay}" />
+                    <controls:ScrubbyNumericField Value="{Binding InstancePosX, Mode=TwoWay}" IsMixedValue="{Binding IsInstancePosXMixed}" Step="1" FormatString="0.###" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="2">
                     <TextBlock Text="Position Y" Foreground="#B0B0B0" />
-                    <TextBox Text="{Binding InstancePosYValue, Mode=TwoWay}" />
+                    <controls:ScrubbyNumericField Value="{Binding InstancePosY, Mode=TwoWay}" IsMixedValue="{Binding IsInstancePosYMixed}" Step="1" FormatString="0.###" />
                   </StackPanel>
                   <StackPanel Grid.Column="2" Spacing="2">
                     <TextBlock Text="Position Z" Foreground="#B0B0B0" />
-                    <TextBox Text="{Binding InstancePosZValue, Mode=TwoWay}" />
+                    <controls:ScrubbyNumericField Value="{Binding InstancePosZ, Mode=TwoWay}" IsMixedValue="{Binding IsInstancePosZMixed}" Step="1" FormatString="0.###" />
                   </StackPanel>
                   <Button Grid.Column="3" Content="Get" Command="{Binding GetCurrentCameraPositionCommand}" VerticalAlignment="Bottom" />
                 </Grid>
                 <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8">
                   <StackPanel Spacing="2">
                     <TextBlock Text="Pitch" Foreground="#B0B0B0" />
-                    <TextBox Text="{Binding InstancePitchValue, Mode=TwoWay}" />
+                    <controls:ScrubbyNumericField Value="{Binding InstancePitch, Mode=TwoWay}" IsMixedValue="{Binding IsInstancePitchMixed}" Step="1" FormatString="0.###" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="2">
                     <TextBlock Text="Yaw" Foreground="#B0B0B0" />
-                    <TextBox Text="{Binding InstanceYawValue, Mode=TwoWay}" />
+                    <controls:ScrubbyNumericField Value="{Binding InstanceYaw, Mode=TwoWay}" IsMixedValue="{Binding IsInstanceYawMixed}" Step="1" FormatString="0.###" />
                   </StackPanel>
                   <StackPanel Grid.Column="2" Spacing="2">
                     <TextBlock Text="Roll" Foreground="#B0B0B0" />
-                    <TextBox Text="{Binding InstanceRollValue, Mode=TwoWay}" />
+                    <controls:ScrubbyNumericField Value="{Binding InstanceRoll, Mode=TwoWay}" IsMixedValue="{Binding IsInstanceRollMixed}" Step="1" FormatString="0.###" />
                   </StackPanel>
                   <Button Grid.Column="3" Content="Get" Command="{Binding GetCurrentCameraRotationCommand}" VerticalAlignment="Bottom" />
                 </Grid>

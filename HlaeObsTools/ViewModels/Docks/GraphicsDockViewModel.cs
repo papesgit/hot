@@ -427,6 +427,18 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public string InstanceRollValue { get => GetMixedInstance(instance => instance.Roll); set => SetInstancesDouble(value, (instance, number) => instance.Roll = number); }
     public string InstanceScaleXValue { get => GetMixedInstance(instance => instance.ScaleX); set => SetInstancesDouble(value, (instance, number) => instance.ScaleX = number); }
     public string InstanceScaleYValue { get => GetMixedInstance(instance => instance.ScaleY); set => SetInstancesDouble(value, (instance, number) => instance.ScaleY = number); }
+    public double InstancePosX { get => GetFirstInstanceValue(instance => instance.PosX); set => SetInstances(instance => instance.PosX = value); }
+    public double InstancePosY { get => GetFirstInstanceValue(instance => instance.PosY); set => SetInstances(instance => instance.PosY = value); }
+    public double InstancePosZ { get => GetFirstInstanceValue(instance => instance.PosZ); set => SetInstances(instance => instance.PosZ = value); }
+    public double InstancePitch { get => GetFirstInstanceValue(instance => instance.Pitch); set => SetInstances(instance => instance.Pitch = value); }
+    public double InstanceYaw { get => GetFirstInstanceValue(instance => instance.Yaw); set => SetInstances(instance => instance.Yaw = value); }
+    public double InstanceRoll { get => GetFirstInstanceValue(instance => instance.Roll); set => SetInstances(instance => instance.Roll = value); }
+    public bool IsInstancePosXMixed => HasMixedInstanceValue(instance => instance.PosX);
+    public bool IsInstancePosYMixed => HasMixedInstanceValue(instance => instance.PosY);
+    public bool IsInstancePosZMixed => HasMixedInstanceValue(instance => instance.PosZ);
+    public bool IsInstancePitchMixed => HasMixedInstanceValue(instance => instance.Pitch);
+    public bool IsInstanceYawMixed => HasMixedInstanceValue(instance => instance.Yaw);
+    public bool IsInstanceRollMixed => HasMixedInstanceValue(instance => instance.Roll);
     public bool? InstanceVisibleValue { get => GetMixedInstanceBool(instance => instance.Visible); set => SetInstancesBool(value, instance => instance.Visible = value.GetValueOrDefault()); }
     public bool? InstanceDepthTestValue { get => GetMixedInstanceBool(instance => instance.DepthTest); set => SetInstancesBool(value, instance => instance.DepthTest = value.GetValueOrDefault()); }
     public bool? InstanceDepthWriteValue { get => GetMixedInstanceBool(instance => instance.DepthWrite); set => SetInstancesBool(value, instance => instance.DepthWrite = value.GetValueOrDefault()); }
@@ -708,6 +720,12 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             : "-";
     }
 
+    private double GetFirstInstanceValue(Func<GraphicsInstanceViewModel, double> selector)
+    {
+        var instance = GetSelectedInstances().FirstOrDefault();
+        return instance == null ? 0 : selector(instance);
+    }
+
     private void SetInstances(Action<GraphicsInstanceViewModel> apply)
     {
         foreach (var instance in SelectedInstances.Count > 0 ? SelectedInstances : SelectedInstance == null ? [] : [SelectedInstance])
@@ -751,6 +769,18 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         OnPropertyChanged(nameof(InstanceRollValue));
         OnPropertyChanged(nameof(InstanceScaleXValue));
         OnPropertyChanged(nameof(InstanceScaleYValue));
+        OnPropertyChanged(nameof(InstancePosX));
+        OnPropertyChanged(nameof(InstancePosY));
+        OnPropertyChanged(nameof(InstancePosZ));
+        OnPropertyChanged(nameof(InstancePitch));
+        OnPropertyChanged(nameof(InstanceYaw));
+        OnPropertyChanged(nameof(InstanceRoll));
+        OnPropertyChanged(nameof(IsInstancePosXMixed));
+        OnPropertyChanged(nameof(IsInstancePosYMixed));
+        OnPropertyChanged(nameof(IsInstancePosZMixed));
+        OnPropertyChanged(nameof(IsInstancePitchMixed));
+        OnPropertyChanged(nameof(IsInstanceYawMixed));
+        OnPropertyChanged(nameof(IsInstanceRollMixed));
         OnPropertyChanged(nameof(InstanceVisibleValue));
         OnPropertyChanged(nameof(InstanceDepthTestValue));
         OnPropertyChanged(nameof(InstanceDepthWriteValue));
