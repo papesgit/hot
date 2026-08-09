@@ -215,6 +215,11 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         get => _selectedInstanceAtlas;
         set
         {
+            // ComboBox can transiently clear its selection while its ItemsSource is rebuilt.
+            // Atlas-source instances do not have a meaningful empty atlas selection, so do not
+            // let that UI transition erase the saved atlas and region values.
+            if (value == null && !_suppressInstanceSelectionApply && SelectedInstance != null)
+                return;
             if (!SetProperty(ref _selectedInstanceAtlas, value))
                 return;
             if (!_suppressInstanceSelectionApply && SelectedInstance != null)
@@ -250,6 +255,9 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         get => _selectedInstanceRegion;
         set
         {
+            // See SelectedInstanceAtlas: ignore transient null ComboBox selections.
+            if (value == null && !_suppressInstanceSelectionApply && SelectedInstance != null)
+                return;
             if (!SetProperty(ref _selectedInstanceRegion, value))
                 return;
             if (!_suppressInstanceSelectionApply && SelectedInstance != null)
@@ -1130,6 +1138,8 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             SelectedInstance.Yaw = camera.Yaw;
             SelectedInstance.Roll = camera.Roll;
         }
+
+        NotifyInstanceInspectorValues();
     }
 
     private async Task SetAllInstancesVisibleAsync(bool visible)
