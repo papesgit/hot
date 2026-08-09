@@ -433,6 +433,12 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
     public bool? InstanceAttachUseYawValue { get => GetMixedInstanceBool(instance => instance.AttachUseYaw); set => SetInstancesBool(value, instance => instance.AttachUseYaw = value.GetValueOrDefault()); }
     public bool? InstanceAttachUsePitchValue { get => GetMixedInstanceBool(instance => instance.AttachUsePitch); set => SetInstancesBool(value, instance => instance.AttachUsePitch = value.GetValueOrDefault()); }
     public bool? InstanceAttachUseRollValue { get => GetMixedInstanceBool(instance => instance.AttachUseRoll); set => SetInstancesBool(value, instance => instance.AttachUseRoll = value.GetValueOrDefault()); }
+    public bool IsInstanceVisibleMixed => InstanceVisibleValue is null;
+    public bool IsInstanceDepthTestMixed => InstanceDepthTestValue is null;
+    public bool IsInstanceDepthWriteMixed => InstanceDepthWriteValue is null;
+    public bool IsInstanceAttachUseYawMixed => InstanceAttachUseYawValue is null;
+    public bool IsInstanceAttachUsePitchMixed => InstanceAttachUsePitchValue is null;
+    public bool IsInstanceAttachUseRollMixed => InstanceAttachUseRollValue is null;
     public ICommand AddAtlasCommand { get; }
     public ICommand RemoveAtlasCommand { get; }
     public ICommand AddRegionCommand { get; }
@@ -751,6 +757,12 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         OnPropertyChanged(nameof(InstanceAttachUseYawValue));
         OnPropertyChanged(nameof(InstanceAttachUsePitchValue));
         OnPropertyChanged(nameof(InstanceAttachUseRollValue));
+        OnPropertyChanged(nameof(IsInstanceVisibleMixed));
+        OnPropertyChanged(nameof(IsInstanceDepthTestMixed));
+        OnPropertyChanged(nameof(IsInstanceDepthWriteMixed));
+        OnPropertyChanged(nameof(IsInstanceAttachUseYawMixed));
+        OnPropertyChanged(nameof(IsInstanceAttachUsePitchMixed));
+        OnPropertyChanged(nameof(IsInstanceAttachUseRollMixed));
         OnPropertyChanged(nameof(HasMultipleInstances));
         OnPropertyChanged(nameof(SelectedItemTitle));
     }

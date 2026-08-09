@@ -327,9 +327,9 @@
                   </StackPanel>
                 </WrapPanel>
                 <WrapPanel ItemSpacing="12">
-                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceAttachUseYawValue}" Content="Use Yaw" />
-                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceAttachUsePitchValue}" Content="Use Pitch" />
-                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceAttachUseRollValue}" Content="Use Roll" />
+                  <CheckBox IsThreeState="{Binding IsInstanceAttachUseYawMixed}" IsChecked="{Binding InstanceAttachUseYawValue}" Content="Use Yaw" />
+                  <CheckBox IsThreeState="{Binding IsInstanceAttachUsePitchMixed}" IsChecked="{Binding InstanceAttachUsePitchValue}" Content="Use Pitch" />
+                  <CheckBox IsThreeState="{Binding IsInstanceAttachUseRollMixed}" IsChecked="{Binding InstanceAttachUseRollValue}" Content="Use Roll" />
                 </WrapPanel>
                 <TextBlock Text="Transform" Foreground="#B0B0B0" FontWeight="SemiBold" Margin="0,8,0,0" />
                 <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8">
@@ -373,9 +373,9 @@
                   </StackPanel>
                 </Grid>
                 <WrapPanel ItemSpacing="12">
-                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceVisibleValue}" Content="Visible" />
-                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceDepthTestValue}" Content="Depth test" />
-                  <CheckBox IsThreeState="True" IsChecked="{Binding InstanceDepthWriteValue}" Content="Depth write" />
+                  <CheckBox IsThreeState="{Binding IsInstanceVisibleMixed}" IsChecked="{Binding InstanceVisibleValue}" Content="Visible" />
+                  <CheckBox IsThreeState="{Binding IsInstanceDepthTestMixed}" IsChecked="{Binding InstanceDepthTestValue}" Content="Depth test" />
+                  <CheckBox IsThreeState="{Binding IsInstanceDepthWriteMixed}" IsChecked="{Binding InstanceDepthWriteValue}" Content="Depth write" />
                 </WrapPanel>
               </StackPanel>
             </StackPanel>
