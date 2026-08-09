@@ -27,11 +27,15 @@ public partial class HudPlayerCardControl : UserControl
     private bool _pointerCaptured;
     private HudPlayerCardViewModel? _currentViewModel;
     private bool _viewModelAttached;
+    private readonly ContextMenu _animToContextMenu;
     private Popup? RadialPopupControl => this.FindControl<Popup>("RadialPopup");
 
     public HudPlayerCardControl()
     {
         InitializeComponent();
+        var animToMenuItem = new MenuItem { Header = "AnimTo" };
+        animToMenuItem.Click += OnAnimToClick;
+        _animToContextMenu = new ContextMenu { ItemsSource = new[] { animToMenuItem } };
         DataContextChanged += OnDataContextChanged;
         AttachedToVisualTree += (_, _) => AttachViewModel();
         DetachedFromVisualTree += (_, _) => DetachViewModel();
@@ -222,7 +226,7 @@ public partial class HudPlayerCardControl : UserControl
 
         if ((e.KeyModifiers & KeyModifiers.Control) != 0)
         {
-            ContextMenu?.Open(this);
+            _animToContextMenu.Open(this);
             e.Handled = true;
             return;
         }
