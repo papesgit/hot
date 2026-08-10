@@ -198,6 +198,7 @@ public class AppSettingsData
     public double VmixReplayPreSeconds { get; set; } = 2.0;
     public double VmixReplayPostSeconds { get; set; } = 2.0;
     public double VmixReplayExtendWindowSeconds { get; set; } = 3.0;
+    public double VmixReplayFramesPerSecond { get; set; } = 60.0;
     public string VmixReplayChannel { get; set; } = "A";
     public int VmixReplayCamera { get; set; } = 1;
     public string ReplayDirectorRole { get; set; } = "Off";
@@ -207,7 +208,6 @@ public class AppSettingsData
     // Retained solely to migrate configurations written by older versions.
     public string ReplayDirectorFollowerEndpoint { get; set; } = "";
     public double ReplayDirectorPreSwitchSeconds { get; set; } = 2.0;
-    public double ReplayDirectorMergeWindowSeconds { get; set; } = 3.0;
     public double ReplayDirectorSwitchLockSeconds { get; set; } = 0.75;
     public bool ReplayDirectorOnlyFollowMissedKills { get; set; }
     public bool ReplayDirectorDelayedVmixEnabled { get; set; } = true;

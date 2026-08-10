@@ -136,6 +136,7 @@ public class MainDockFactory : Factory, IDisposable
             PreSeconds = _storedSettings.VmixReplayPreSeconds,
             PostSeconds = _storedSettings.VmixReplayPostSeconds,
             ExtendWindowSeconds = _storedSettings.VmixReplayExtendWindowSeconds,
+            FramesPerSecond = _storedSettings.VmixReplayFramesPerSecond,
             Channel = _storedSettings.VmixReplayChannel,
             Camera = _storedSettings.VmixReplayCamera
         };
@@ -146,7 +147,6 @@ public class MainDockFactory : Factory, IDisposable
             PublisherIp = GetReplayDirectorPublisherHost(_storedSettings),
             ManualHost = _storedSettings.ReplayDirectorManualHost,
             PreSwitchSeconds = _storedSettings.ReplayDirectorPreSwitchSeconds,
-            MergeWindowSeconds = _storedSettings.ReplayDirectorMergeWindowSeconds,
             SwitchLockSeconds = _storedSettings.ReplayDirectorSwitchLockSeconds,
             OnlyFollowMissedKills = _storedSettings.ReplayDirectorOnlyFollowMissedKills,
             DelayedVmixEnabled = _storedSettings.ReplayDirectorDelayedVmixEnabled,
@@ -161,7 +161,7 @@ public class MainDockFactory : Factory, IDisposable
         _delayedReplayMarker = new VmixReplayMarker(_vmixApiClient, _vmixReplayCoordinator);
         _replayDirectorServiceDiscovery = new ReplayDirectorServiceDiscovery();
         _replayDirectorPublisher = new ReplayDirectorPublisher(_webSocketClient, _gsiServer, _replayDirectorSettings, _vmixReplaySettings, _delayedReplayMarker, _replayDirectorServiceDiscovery);
-        _replayDirectorFollower = new ReplayDirectorFollower(_webSocketClient, _gsiServer, _replayDirectorSettings);
+        _replayDirectorFollower = new ReplayDirectorFollower(_webSocketClient, _gsiServer, _replayDirectorSettings, _vmixReplaySettings);
 
         _graphicsProfileStorage = new GraphicsProfileStorage();
         _producerClient = new GraphicsProducerClient(_storedSettings.WebSocketHost, _storedSettings.GraphicsProducerPort);

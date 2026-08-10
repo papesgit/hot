@@ -18,6 +18,7 @@ public sealed class ReplayDirectorFollower : IDisposable
     private readonly HlaeWebSocketClient _webSocketClient;
     private readonly GsiServer _gsiServer;
     private readonly ReplayDirectorSettings _settings;
+    private readonly VmixReplaySettings _vmixReplaySettings;
     private readonly HttpClient _httpClient = new();
     private readonly object _sync = new();
     private readonly List<ReplayDirectorKillEvent> _pending = new();
@@ -44,11 +45,13 @@ public sealed class ReplayDirectorFollower : IDisposable
     public ReplayDirectorFollower(
         HlaeWebSocketClient webSocketClient,
         GsiServer gsiServer,
-        ReplayDirectorSettings settings)
+        ReplayDirectorSettings settings,
+        VmixReplaySettings vmixReplaySettings)
     {
         _webSocketClient = webSocketClient;
         _gsiServer = gsiServer;
         _settings = settings;
+        _vmixReplaySettings = vmixReplaySettings;
         _webSocketClient.MessageReceived += OnWebSocketMessage;
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
         _settings.PropertyChanged += (_, e) =>
@@ -204,7 +207,7 @@ public sealed class ReplayDirectorFollower : IDisposable
             return null;
 
         var earliest = dueCandidates.Min(EventOrderTime);
-        var contenderWindow = Math.Max(0.25, _settings.MergeWindowSeconds);
+        var contenderWindow = Math.Max(0.25, _vmixReplaySettings.ExtendWindowSeconds);
         return dueCandidates
             .Where(e => EventOrderTime(e) <= earliest + contenderWindow)
             .OrderByDescending(e => ScoreCandidate(e))
@@ -255,7 +258,7 @@ public sealed class ReplayDirectorFollower : IDisposable
                 if (ReferenceEquals(other, kill))
                     continue;
                 if (other.AttackerSlot == kill.AttackerSlot && other.GameTime.HasValue &&
-                    Math.Abs(other.GameTime.Value - kill.GameTime.Value) <= _settings.MergeWindowSeconds)
+                    Math.Abs(other.GameTime.Value - kill.GameTime.Value) <= _vmixReplaySettings.ExtendWindowSeconds)
                 {
                     score += 100;
                 }
@@ -290,7 +293,7 @@ public sealed class ReplayDirectorFollower : IDisposable
     {
         var nowGameTime = EstimateLocalGameTime();
         if (kill.GameTime.HasValue && nowGameTime.HasValue)
-            return nowGameTime.Value > kill.GameTime.Value + Math.Max(3.0, _settings.MergeWindowSeconds);
+            return nowGameTime.Value > kill.GameTime.Value + Math.Max(3.0, _vmixReplaySettings.ExtendWindowSeconds);
 
         return (DateTimeOffset.UtcNow - kill.ReceivedUtc).TotalSeconds > 10.0;
     }

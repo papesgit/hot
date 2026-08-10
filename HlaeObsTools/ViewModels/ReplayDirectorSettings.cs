@@ -18,7 +18,6 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     private bool _manualHost;
     private bool _followerConnectionEnabled;
     private double _preSwitchSeconds = 2.0;
-    private double _mergeWindowSeconds = 3.0;
     private double _switchLockSeconds = 0.75;
     private bool _onlyFollowMissedKills;
     private string _delayedVmixChannel = "B";
@@ -84,12 +83,6 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     {
         get => _preSwitchSeconds;
         set => SetProperty(ref _preSwitchSeconds, Math.Max(0, value));
-    }
-
-    public double MergeWindowSeconds
-    {
-        get => _mergeWindowSeconds;
-        set => SetProperty(ref _mergeWindowSeconds, Math.Max(0, value));
     }
 
     public double SwitchLockSeconds

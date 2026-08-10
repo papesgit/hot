@@ -8,6 +8,7 @@ public sealed class VmixReplaySettings : ViewModelBase
     private double _preSeconds = 2.0;
     private double _postSeconds = 2.0;
     private double _extendWindowSeconds = 3.0;
+    private double _framesPerSecond = 60.0;
     private string _channel = "A";
     private int _camera = 1;
 
@@ -42,6 +43,15 @@ public sealed class VmixReplaySettings : ViewModelBase
     {
         get => _extendWindowSeconds;
         set => SetProperty(ref _extendWindowSeconds, Math.Max(0, value));
+    }
+
+    /// <summary>
+    /// Frame rate used by the vMix replay engine when moving replay event points.
+    /// </summary>
+    public double FramesPerSecond
+    {
+        get => _framesPerSecond;
+        set => SetProperty(ref _framesPerSecond, Math.Clamp(value, 1.0, 240.0));
     }
 
     /// <summary>

@@ -31,6 +31,7 @@ public sealed class VmixReplayService : IDisposable
     private int? _eventRoundNumber;
     private DateTimeOffset? _firstKillTime;
     private DateTimeOffset? _lastKillTime;
+    private DateTimeOffset? _lastAppliedKillTime;
     private bool _markCreated;
     private long? _activeReplayRecordId;
     private CancellationTokenSource? _markCts;
@@ -39,15 +40,14 @@ public sealed class VmixReplayService : IDisposable
 
     private const string FunctionMark = "ReplayMarkInOutLive";
     private const string FunctionSelectLast = "ReplaySelectLastEvent";
-    private const string FunctionJumpToNow = "ReplayJumpToNow";
-    private const string FunctionUpdateOut = "ReplayUpdateSelectedOutPoint";
+    private const string FunctionMoveOut = "ReplayMoveSelectedOutPoint";
     private const string FunctionSetText = "ReplaySetLastEventText";
     private const string FunctionLastEventSingleCameraOn = "ReplayLastEventSingleCameraOn";
     private const string FunctionSelectChannelA = "ReplaySelectChannelA";
     private const string FunctionSelectChannelAB = "ReplaySelectChannelAB";
     private const string FunctionSelectChannelB = "ReplaySelectChannelB";
 
-    private readonly record struct VmixConfig(bool Enabled, double PreSeconds, double PostSeconds, double ExtendWindowSeconds, string Channel, int Camera);
+    private readonly record struct VmixConfig(bool Enabled, double PreSeconds, double PostSeconds, double ExtendWindowSeconds, double FramesPerSecond, string Channel, int Camera);
     private readonly record struct EventKill(string PlayerName, int RoundKillNumber);
 
     public VmixReplayService(HlaeWebSocketClient webSocketClient, GsiServer gsiServer, VmixApiClient vmixApiClient, VmixReplayCoordinator replayCoordinator, VmixReplaySettings settings)
@@ -304,6 +304,7 @@ public sealed class VmixReplayService : IDisposable
             {
                 _markCreated = true;
                 _markCts = null;
+                _lastAppliedKillTime = lastKill;
             }
 
             return new VmixReplayCommandResult(true, label, "Marked");
@@ -331,17 +332,20 @@ public sealed class VmixReplayService : IDisposable
                     Console.WriteLine("[VMIX] Selecting last replay event for extension");
                     if (!await SafeExecuteAsync(FunctionSelectLast, null, lockedToken, "ReplaySelectLastEvent").ConfigureAwait(false))
                         return new VmixReplayCommandResult(false, null, "vMix API command failed");
-                    Console.WriteLine("[VMIX] Jumping replay to live before extending");
-                    if (!await SafeExecuteAsync(FunctionJumpToNow, null, lockedToken, "ReplayJumpToNow").ConfigureAwait(false))
-                        return new VmixReplayCommandResult(false, null, "vMix API command failed");
-                    // Give vMix a brief moment to apply the jump before updating out point
-                    await Task.Delay(200, lockedToken).ConfigureAwait(false);
-                    Console.WriteLine($"[VMIX] Extending last replay out point (new out at {DateTimeOffset.UtcNow:O})");
-                    if (!await SafeExecuteAsync(FunctionUpdateOut, null, lockedToken, "ReplayUpdateSelectedOutPoint").ConfigureAwait(false) ||
+                    var extension = GetFrameExtension(config.FramesPerSecond);
+                    if (extension.Frames <= 0)
+                        return new VmixReplayCommandResult(true, BuildLabel(), "No extension needed");
+
+                    Console.WriteLine($"[VMIX] Moving selected replay out point by {extension.Frames} frames.");
+                    if (!await ExecuteReplayChannelAsync(FunctionMoveOut, extension.Frames.ToString(CultureInfo.InvariantCulture), config, lockedToken, "ReplayMoveSelectedOutPoint").ConfigureAwait(false) ||
                         !await SafeExecuteAsync(FunctionLastEventSingleCameraOn, config.Camera.ToString(CultureInfo.InvariantCulture), lockedToken, "ReplayLastEventSingleCameraOn (main extend)").ConfigureAwait(false) ||
                         !await ApplyLabelCoreAsync(config, lockedToken).ConfigureAwait(false))
                     {
                         return new VmixReplayCommandResult(false, null, "vMix API command failed");
+                    }
+                    lock (_sync)
+                    {
+                        _lastAppliedKillTime = extension.AppliedThrough;
                     }
                     UpdateRegistryRecord("Updated");
                     return new VmixReplayCommandResult(true, BuildLabel(), "Updated");
@@ -360,6 +364,7 @@ public sealed class VmixReplayService : IDisposable
         _extendCts?.Cancel();
         _firstKillTime = killTime;
         _lastKillTime = killTime;
+        _lastAppliedKillTime = null;
         _eventRoundNumber = roundNumber;
         _eventKills.Clear();
         _markCreated = false;
@@ -425,9 +430,10 @@ public sealed class VmixReplayService : IDisposable
         var pre = Math.Max(0, _settings.PreSeconds);
         var post = Math.Max(0, _settings.PostSeconds);
         var extend = Math.Max(0, _settings.ExtendWindowSeconds);
+        var framesPerSecond = Math.Clamp(_settings.FramesPerSecond, 1.0, 240.0);
 
         var channel = string.IsNullOrWhiteSpace(_settings.Channel) ? "A" : _settings.Channel.Trim().ToUpperInvariant();
-        return new VmixConfig(_settings.Enabled, pre, post, extend, channel, Math.Clamp(_settings.Camera, 1, 8));
+        return new VmixConfig(_settings.Enabled, pre, post, extend, framesPerSecond, channel, Math.Clamp(_settings.Camera, 1, 8));
     }
 
     private async Task<bool> ApplyLabelCoreAsync(VmixConfig config, CancellationToken token)
@@ -491,6 +497,33 @@ public sealed class VmixReplayService : IDisposable
     private Task<bool> SafeExecuteAsync(string function, string? value, CancellationToken token, string? label = null)
     {
         return _vmixApiClient.ExecuteFunctionAsync(function, value, token, label);
+    }
+
+    private (int Frames, DateTimeOffset AppliedThrough) GetFrameExtension(double framesPerSecond)
+    {
+        lock (_sync)
+        {
+            if (!_lastAppliedKillTime.HasValue || !_lastKillTime.HasValue)
+                return (0, default);
+
+            var secondsToExtend = (_lastKillTime.Value - _lastAppliedKillTime.Value).TotalSeconds;
+            if (secondsToExtend <= 0)
+                return (0, _lastKillTime.Value);
+
+            var frames = Math.Round(secondsToExtend * framesPerSecond, MidpointRounding.AwayFromZero);
+            var frameCount = frames >= int.MaxValue ? int.MaxValue : Math.Max(1, (int)frames);
+            return (frameCount, _lastKillTime.Value);
+        }
+    }
+
+    private Task<bool> ExecuteReplayChannelAsync(string function, string value, VmixConfig config, CancellationToken token, string label)
+    {
+        return _vmixApiClient.ExecuteFunctionAsync(new VmixFunctionCall
+        {
+            Function = function,
+            Value = value,
+            Channel = config.Channel
+        }, token, label);
     }
 
     public void Dispose()

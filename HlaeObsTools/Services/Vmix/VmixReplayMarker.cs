@@ -12,8 +12,7 @@ public sealed class VmixReplayMarker : IDisposable
 {
     private const string FunctionMark = "ReplayMarkInOutLive";
     private const string FunctionSelectLast = "ReplaySelectLastEvent";
-    private const string FunctionJumpToNow = "ReplayJumpToNow";
-    private const string FunctionUpdateOut = "ReplayUpdateSelectedOutPoint";
+    private const string FunctionMoveOut = "ReplayMoveSelectedOutPoint";
     private const string FunctionSetTextCamera = "ReplaySetLastEventTextCamera";
     private const string FunctionLastEventSingleCameraOn = "ReplayLastEventSingleCameraOn";
     private const string FunctionSelectChannelA = "ReplaySelectChannelA";
@@ -27,6 +26,7 @@ public sealed class VmixReplayMarker : IDisposable
     private readonly List<EventKill> _eventKills = new();
     private DateTimeOffset? _firstKillTime;
     private DateTimeOffset? _lastKillTime;
+    private DateTimeOffset? _lastAppliedKillTime;
     private bool _markCreated;
     private long? _activeReplayRecordId;
     private int _roundNumber;
@@ -53,7 +53,8 @@ public sealed class VmixReplayMarker : IDisposable
         var config = new MarkerConfig(
             Math.Max(0, replaySettings.PreSeconds),
             Math.Max(0, replaySettings.PostSeconds),
-            Math.Max(0, directorSettings.MergeWindowSeconds),
+            Math.Max(0, replaySettings.ExtendWindowSeconds),
+            Math.Clamp(replaySettings.FramesPerSecond, 1.0, 240.0),
             string.IsNullOrWhiteSpace(directorSettings.DelayedVmixChannel) ? null : directorSettings.DelayedVmixChannel.Trim(),
             Math.Clamp(directorSettings.DelayedVmixCamera, 1, 8));
 
@@ -133,6 +134,7 @@ public sealed class VmixReplayMarker : IDisposable
         _extendCts?.Cancel();
         _firstKillTime = time;
         _lastKillTime = time;
+        _lastAppliedKillTime = null;
         _roundNumber = roundNumber;
         _eventKills.Clear();
         _markCreated = false;
@@ -244,6 +246,7 @@ public sealed class VmixReplayMarker : IDisposable
             {
                 _markCreated = true;
                 _markCts = null;
+                _lastAppliedKillTime = lastKill;
             }
 
             StatusChanged?.Invoke(this, $"Delayed replay marked: {BuildLabel() ?? "unlabeled"}");
@@ -267,14 +270,21 @@ public sealed class VmixReplayMarker : IDisposable
                 await _replayCoordinator.RunAsync(async lockedToken =>
                 {
                     if (!await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false) ||
-                        !await ExecuteAsync(FunctionSelectLast, null, config, lockedToken).ConfigureAwait(false) ||
-                        !await ExecuteAsync(FunctionJumpToNow, null, config, lockedToken).ConfigureAwait(false))
+                        !await ExecuteAsync(FunctionSelectLast, null, config, lockedToken).ConfigureAwait(false))
                         return new VmixReplayCommandResult(false, null, "vMix API command failed");
-                    await Task.Delay(200, lockedToken).ConfigureAwait(false);
-                    if (!await ExecuteAsync(FunctionUpdateOut, null, config, lockedToken).ConfigureAwait(false) ||
+
+                    var extension = GetFrameExtension(config.FramesPerSecond);
+                    if (extension.Frames <= 0)
+                        return new VmixReplayCommandResult(true, BuildLabel(), "No extension needed");
+
+                    if (!await ExecuteReplayChannelAsync(FunctionMoveOut, extension.Frames, config, lockedToken).ConfigureAwait(false) ||
                         !await ApplyEventCameraAsync(config, lockedToken).ConfigureAwait(false) ||
                         !await ApplyLabelCoreAsync(config, lockedToken).ConfigureAwait(false))
                         return new VmixReplayCommandResult(false, null, "vMix API command failed");
+                    lock (_sync)
+                    {
+                        _lastAppliedKillTime = extension.AppliedThrough;
+                    }
                     UpdateRegistryRecord("Updated");
                     StatusChanged?.Invoke(this, $"Delayed replay extended: {BuildLabel() ?? "unlabeled"}");
                     return new VmixReplayCommandResult(true, BuildLabel(), "Updated");
@@ -371,6 +381,34 @@ public sealed class VmixReplayMarker : IDisposable
         }, token, function);
     }
 
+    private Task<bool> ExecuteReplayChannelAsync(string function, int framesToMove, MarkerConfig config, CancellationToken token)
+    {
+        var channel = string.IsNullOrWhiteSpace(config.Channel) ? "B" : config.Channel.Trim().ToUpperInvariant();
+        return _vmixApiClient.ExecuteFunctionAsync(new VmixFunctionCall
+        {
+            Function = function,
+            Value = framesToMove.ToString(CultureInfo.InvariantCulture),
+            Channel = channel
+        }, token, function);
+    }
+
+    private (int Frames, DateTimeOffset AppliedThrough) GetFrameExtension(double framesPerSecond)
+    {
+        lock (_sync)
+        {
+            if (!_lastAppliedKillTime.HasValue || !_lastKillTime.HasValue)
+                return (0, default);
+
+            var secondsToExtend = (_lastKillTime.Value - _lastAppliedKillTime.Value).TotalSeconds;
+            if (secondsToExtend <= 0)
+                return (0, _lastKillTime.Value);
+
+            var frames = Math.Round(secondsToExtend * framesPerSecond, MidpointRounding.AwayFromZero);
+            var frameCount = frames >= int.MaxValue ? int.MaxValue : Math.Max(1, (int)frames);
+            return (frameCount, _lastKillTime.Value);
+        }
+    }
+
     private Task<bool> ApplyEventCameraAsync(MarkerConfig config, CancellationToken token)
     {
         return ExecuteAsync(FunctionLastEventSingleCameraOn, config.Camera.ToString(CultureInfo.InvariantCulture), config, token);
@@ -412,5 +450,5 @@ public sealed class VmixReplayMarker : IDisposable
         _extendCts?.Cancel();
     }
 
-    private readonly record struct MarkerConfig(double PreSeconds, double PostSeconds, double ExtendWindowSeconds, string? Channel, int Camera);
+    private readonly record struct MarkerConfig(double PreSeconds, double PostSeconds, double ExtendWindowSeconds, double FramesPerSecond, string? Channel, int Camera);
 }

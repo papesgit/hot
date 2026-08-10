@@ -109,9 +109,13 @@
                                         <TextBlock Text="Post-roll (s)" Foreground="#AAAAAA" />
                                         <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.PostSeconds, Mode=TwoWay}" />
                                     </StackPanel>
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Merge window (s)" Foreground="#AAAAAA" />
+                                    <StackPanel Spacing="4" ToolTip.Tip="Time between kills to extend event to cover both">
+                                        <TextBlock Text="Extend window (s)" Foreground="#AAAAAA" />
                                         <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4" ToolTip.Tip="Set to replay inputs fps for accurate event extension">
+                                        <TextBlock Text="Replay FPS" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.FramesPerSecond, Mode=TwoWay}" />
                                     </StackPanel>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Channel / camera" Foreground="#AAAAAA" />
@@ -158,10 +162,6 @@
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Pre-switch (s)" Foreground="#AAAAAA" />
                                         <TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplayDirectorSettings.PreSwitchSeconds, Mode=TwoWay}" />
-                                    </StackPanel>
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Merge window (s)" Foreground="#AAAAAA" />
-                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplayDirectorSettings.MergeWindowSeconds, Mode=TwoWay}" />
                                     </StackPanel>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Switch lock (s)" Foreground="#AAAAAA" />
