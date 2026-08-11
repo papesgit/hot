@@ -49,8 +49,7 @@
             <DataTemplate x:DataType="controls:IRootDock">
                 <Panel Margin="{Binding $parent[local:DockHostWindow].OffScreenMargin}">
                     <Panel Margin="{Binding $parent[local:DockHostWindow].WindowDecorationMargin}">
-                        <OverlayHost VisualTreeLifecycleBehavior.IsEnabled="True">
-                            <Grid>
+                        <Grid>
                                 <dock:DockControl Layout="{Binding}" />
                                 <Grid IsHitTestVisible="False"
                                       Panel.ZIndex="9999">
@@ -77,8 +76,7 @@
                                                    Text="Hotkey mode" />
                                     </Border>
                                 </Grid>
-                            </Grid>
-                        </OverlayHost>
+                        </Grid>
                     </Panel>
                 </Panel>
             </DataTemplate>
@@ -123,8 +121,7 @@
             <Setter Property="ContentTemplate">
                 <DataTemplate x:DataType="controls:IRootDock">
                     <Panel Margin="{Binding $parent[local:DockHostWindow].OffScreenMargin}">
-                        <OverlayHost VisualTreeLifecycleBehavior.IsEnabled="True">
-                            <Grid>
+                        <Grid>
                                 <dock:DockControl Layout="{Binding}" />
                                 <Grid IsHitTestVisible="False"
                                       Panel.ZIndex="9999">
@@ -151,8 +148,7 @@
                                                    Text="Hotkey mode" />
                                     </Border>
                                 </Grid>
-                            </Grid>
-                        </OverlayHost>
+                        </Grid>
                     </Panel>
                 </DataTemplate>
             </Setter>
