@@ -1014,13 +1014,14 @@ public class MainDockFactory : Factory, IDisposable
         _storedSettings.ActiveDockLayout = name;
         _settingsStorage.Save(_storedSettings);
 
+        InitLayout(root);
+
         if (_context is MainWindowViewModel viewModel)
         {
             viewModel.Layout = root;
             viewModel.SetActiveLayout(name);
         }
 
-        InitLayout(root);
         SyncDockVisibility(root);
     }
 
