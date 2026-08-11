@@ -1,7 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        xmlns:dock="using:Dock.Avalonia.Controls">
+        xmlns:dock="using:Dock.Avalonia.Controls"
+        xmlns:controls="using:HlaeObsTools.Controls">
   <Styles.Resources>
     <SolidColorBrush x:Key="HotWindowTitleBarBrush" Color="#FF1F1F21" />
     <SolidColorBrush x:Key="HotWindowTitleBarHoverBrush" Color="#FF3A3A3A" />
@@ -78,6 +79,15 @@
 
   <Style Selector="dock|ToolChromeControl /template/ Grid#PART_Grip">
     <Setter Property="Background" Value="{DynamicResource DockSurfaceHeaderBrush}" />
+  </Style>
+
+  <Style Selector="dock|ToolChromeControl">
+    <Setter Property="controls:DockMenuSuppression.IsEnabled" Value="True" />
+    <Setter Property="MenuButtonTheme">
+      <ControlTheme TargetType="Button">
+        <Setter Property="IsVisible" Value="False" />
+      </ControlTheme>
+    </Setter>
   </Style>
 
   <Style Selector="dock|ToolChromeControl:active /template/ Grid#PART_Grip">

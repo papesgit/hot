@@ -782,6 +782,7 @@ public class MainDockFactory : Factory, IDisposable
             return;
 
         dockable.CanClose = true;
+        dockable.CanDockAsDocument = false;
         _viewDockables[dockable.Id] = dockable;
         NotifyDockVisibility(dockable, true);
     }
