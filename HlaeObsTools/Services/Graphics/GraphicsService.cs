@@ -30,6 +30,7 @@ public sealed class GraphicsService : IDisposable
     private readonly GsiExtrasTracker _gsiExtrasTracker = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<IReadOnlyList<string>>> _pendingImageListRequests = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, TaskCompletionSource<GraphicsCameraTransform?>> _pendingCameraRequests = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, byte> _pendingStatsRequests = new(StringComparer.Ordinal);
 
     public event EventHandler? ProfileChanged;
     public event EventHandler? DirtyStateChanged;
@@ -654,9 +655,19 @@ public sealed class GraphicsService : IDisposable
 
     private void OnGameStateUpdated(object? sender, GsiGameState e)
     {
-        if (_producerClient.IsConnected && !string.IsNullOrWhiteSpace(e.RawJson))
+        if (string.IsNullOrWhiteSpace(e.RawJson))
+            return;
+
+        var extras = _gsiExtrasTracker.Update(e.RawJson);
+        if (extras.EnteredFreezeTime && _webSocket.IsConnected)
         {
-            var extras = _gsiExtrasTracker.Update(e.RawJson);
+            var requestId = Guid.NewGuid().ToString("N");
+            _pendingStatsRequests[requestId] = 0;
+            _ = _webSocket.SendCommandAsync("stats.get", new { requestId });
+        }
+
+        if (_producerClient.IsConnected)
+        {
             _ = _producerClient.SendGsiAsync(e.RawJson, e.Heartbeat, extras);
         }
 
@@ -696,6 +707,22 @@ public sealed class GraphicsService : IDisposable
             if (!root.TryGetProperty("type", out var typeProp))
                 return;
             var type = typeProp.GetString();
+
+            if (string.Equals(type, "stats.get", StringComparison.Ordinal))
+            {
+                if (!root.TryGetProperty("requestId", out var statsRequestIdProp) ||
+                    string.IsNullOrWhiteSpace(statsRequestIdProp.GetString()) ||
+                    !_pendingStatsRequests.TryRemove(statsRequestIdProp.GetString()!, out _) ||
+                    !root.TryGetProperty("ok", out var okProp) || !okProp.GetBoolean() ||
+                    !root.TryGetProperty("players", out var playersProp))
+                {
+                    return;
+                }
+
+                _gsiExtrasTracker.ApplyAuthoritativeStats(playersProp);
+                return;
+            }
+
             if (!root.TryGetProperty("requestId", out var requestIdProp))
                 return;
 

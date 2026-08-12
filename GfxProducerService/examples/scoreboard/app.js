@@ -79,6 +79,9 @@ function createPlayerRowCT() {
     <div class="cell stat" data-ref="a">-</div>
     <div class="cell stat" data-ref="d">-</div>
     <div class="cell stat" data-ref="adr">-</div>
+    <div class="cell stat" data-ref="hs">-</div>
+    <div class="cell stat" data-ref="ud">-</div>
+    <div class="cell stat" data-ref="ef">-</div>
     <div class="cell stat" data-ref="okd">-</div>
     <div class="cell stat" data-ref="dmg">-</div>
   `;
@@ -95,6 +98,9 @@ function createPlayerRowT() {
   row.innerHTML = `
     <div class="cell stat" data-ref="dmg">-</div>
     <div class="cell stat" data-ref="okd">-</div>
+    <div class="cell stat" data-ref="ef">-</div>
+    <div class="cell stat" data-ref="ud">-</div>
+    <div class="cell stat" data-ref="hs">-</div>
     <div class="cell stat" data-ref="adr">-</div>
     <div class="cell stat" data-ref="k">-</div>
     <div class="cell stat" data-ref="a">-</div>
@@ -121,14 +127,27 @@ for (let i = 0; i < 5; i++) {
   tRows.push(t);
 }
 
-function calcAdr(extras, steamId) {
-  const adr = extras?.playerDamageStats?.[steamId]?.adr;
-  return typeof adr === "number" ? Math.round(adr) : null;
+function calcAdr(gsi, extras, steamId) {
+  const totalDamage = calcTotalDamage(extras, steamId);
+  const completedRounds = getEffectiveRoundNumber(gsi);
+  if (totalDamage == null || completedRounds <= 0) return null;
+  return Math.round(totalDamage / completedRounds);
 }
 
 function calcTotalDamage(extras, steamId) {
   const totalDamage = extras?.playerDamageStats?.[steamId]?.totalDamage;
   return typeof totalDamage === "number" ? totalDamage : null;
+}
+
+function getAuthoritativeStat(extras, steamId, name) {
+  const value = extras?.playerDamageStats?.[steamId]?.[name];
+  return typeof value === "number" ? value : null;
+}
+
+function calcHeadshotPercentage(extras, steamId, kills) {
+  const headshotKills = getAuthoritativeStat(extras, steamId, "headshotKills");
+  if (headshotKills == null || kills <= 0) return null;
+  return Math.round((headshotKills / kills) * 100);
 }
 
 // Track opening kills/deaths from GSI round_kills
@@ -191,7 +210,7 @@ function getOpeningDeaths(steamId) {
   return openingStats[steamId]?.deaths ?? 0;
 }
 
-function updatePlayerRow(rowData, player, steamId, extras) {
+function updatePlayerRow(rowData, player, steamId, gsi, extras, leaders) {
   const { cellRefs } = rowData;
 
   if (!player) {
@@ -200,17 +219,24 @@ function updatePlayerRow(rowData, player, steamId, extras) {
     cellRefs.a.textContent = "-";
     cellRefs.d.textContent = "-";
     cellRefs.adr.textContent = "-";
+    cellRefs.hs.textContent = "-";
+    cellRefs.ud.textContent = "-";
+    cellRefs.ef.textContent = "-";
     cellRefs.okd.textContent = "-";
     cellRefs.dmg.textContent = "-";
     cellRefs.okd.className = "cell stat";
+    ["k", "a", "adr", "hs", "ud", "ef"].forEach(stat => cellRefs[stat].classList.remove("highlight"));
     return;
   }
 
   const k = player.match_stats?.kills ?? 0;
   const a = player.match_stats?.assists ?? 0;
   const d = player.match_stats?.deaths ?? 0;
-  const adr = calcAdr(extras, steamId);
+  const adr = calcAdr(gsi, extras, steamId);
   const dmg = calcTotalDamage(extras, steamId);
+  const hs = calcHeadshotPercentage(extras, steamId, k);
+  const ud = getAuthoritativeStat(extras, steamId, "utilityDamage");
+  const ef = getAuthoritativeStat(extras, steamId, "enemiesFlashed");
   const ok = getOpeningKills(steamId);
   const od = getOpeningDeaths(steamId);
 
@@ -219,6 +245,9 @@ function updatePlayerRow(rowData, player, steamId, extras) {
   cellRefs.a.textContent = String(a);
   cellRefs.d.textContent = String(d);
   cellRefs.adr.textContent = adr == null ? "-" : String(adr);
+  cellRefs.hs.textContent = hs == null ? "-" : `${hs}%`;
+  cellRefs.ud.textContent = ud == null ? "-" : String(ud);
+  cellRefs.ef.textContent = ef == null ? "-" : String(ef);
   cellRefs.dmg.textContent = dmg == null ? "-" : String(dmg);
   cellRefs.okd.textContent = `${ok}/${od}`;
 
@@ -232,9 +261,30 @@ function updatePlayerRow(rowData, player, steamId, extras) {
     cellRefs.okd.classList.add("okd-neutral");
   }
 
-  // Highlight high K/ADR
-  cellRefs.k.classList.toggle("highlight", k >= 10);
-  cellRefs.adr.classList.toggle("highlight", adr != null && adr >= 80);
+  ["k", "a", "adr", "hs", "ud", "ef"].forEach(stat => {
+    cellRefs[stat].classList.toggle("highlight", leaders?.[stat]?.has(steamId) ?? false);
+  });
+}
+
+function getTeamStatLeaders(entries, gsi, extras) {
+  const statValues = {
+    k: entry => entry.player.match_stats?.kills ?? 0,
+    a: entry => entry.player.match_stats?.assists ?? 0,
+    adr: entry => calcAdr(gsi, extras, entry.steamId),
+    hs: entry => calcHeadshotPercentage(extras, entry.steamId, entry.player.match_stats?.kills ?? 0),
+    ud: entry => getAuthoritativeStat(extras, entry.steamId, "utilityDamage"),
+    ef: entry => getAuthoritativeStat(extras, entry.steamId, "enemiesFlashed")
+  };
+
+  const leaders = {};
+  for (const [stat, getValue] of Object.entries(statValues)) {
+    const values = entries
+      .map(entry => ({ steamId: entry.steamId, value: getValue(entry) }))
+      .filter(entry => entry.value != null && entry.value > 0);
+    const highest = values.reduce((max, entry) => Math.max(max, entry.value), 0);
+    leaders[stat] = new Set(values.filter(entry => entry.value === highest).map(entry => entry.steamId));
+  }
+  return leaders;
 }
 
 function updateScoreboard(gsi, extras) {
@@ -267,6 +317,9 @@ function updateScoreboard(gsi, extras) {
   ctPlayers.sort(sortByDamage);
   tPlayers.sort(sortByDamage);
 
+  const ctLeaders = getTeamStatLeaders(ctPlayers, gsi, extras);
+  const tLeaders = getTeamStatLeaders(tPlayers, gsi, extras);
+
   // Update team names from map info if available
   if (gsi.map && gsi.map.team_ct && gsi.map.team_ct.name) {
     refs.ctName.textContent = gsi.map.team_ct.name;
@@ -280,8 +333,8 @@ function updateScoreboard(gsi, extras) {
     const ctEntry = ctPlayers[i];
     const tEntry = tPlayers[i];
 
-    updatePlayerRow(ctRows[i], ctEntry?.player, ctEntry?.steamId, extras);
-    updatePlayerRow(tRows[i], tEntry?.player, tEntry?.steamId, extras);
+    updatePlayerRow(ctRows[i], ctEntry?.player, ctEntry?.steamId, gsi, extras, ctLeaders);
+    updatePlayerRow(tRows[i], tEntry?.player, tEntry?.steamId, gsi, extras, tLeaders);
   }
 }
 

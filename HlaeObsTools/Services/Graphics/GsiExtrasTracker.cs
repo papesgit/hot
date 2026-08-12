@@ -1,219 +1,123 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace HlaeObsTools.Services.Graphics;
 
 public sealed class GsiExtrasTracker
 {
+    private readonly object _sync = new();
+    private readonly Dictionary<string, GsiPlayerDamageStats> _playerDamageStats = new(StringComparer.OrdinalIgnoreCase);
     private string? _currentMapName;
-    private readonly Dictionary<string, Dictionary<int, int>> _roundDamages = new(StringComparer.OrdinalIgnoreCase);
-    private int? _lastCtScore;
-    private int? _lastTScore;
+    private bool _wasFreezeTime;
 
     public GsiExtrasSnapshot Update(string rawJson)
     {
-        if (string.IsNullOrWhiteSpace(rawJson))
-            return BuildSnapshot();
-
-        try
+        var enteredFreezeTime = false;
+        if (!string.IsNullOrWhiteSpace(rawJson))
         {
-            using var doc = JsonDocument.Parse(rawJson);
-            var root = doc.RootElement;
+            try
+            {
+                using var doc = JsonDocument.Parse(rawJson);
+                var root = doc.RootElement;
+                var mapName = GetString(root, "map", "name");
+                var mapChanged = !string.IsNullOrWhiteSpace(mapName) &&
+                                 !string.Equals(mapName, _currentMapName, StringComparison.OrdinalIgnoreCase);
+                if (mapChanged)
+                {
+                    lock (_sync)
+                    {
+                        _playerDamageStats.Clear();
+                    }
+                    _currentMapName = mapName;
+                }
 
-            var playerActivity = GetPlayerActivity(root);
-            var mapChanged = UpdateCurrentMapName(root);
-            var matchRestarted = DetectMatchRestart(root);
-            if (mapChanged ||
-                matchRestarted ||
-                string.Equals(playerActivity, "menu", StringComparison.OrdinalIgnoreCase))
-            {
-                _roundDamages.Clear();
+                var phase = GetString(root, "phase_countdowns", "phase");
+                var isFreezeTime = string.Equals(phase, "freezetime", StringComparison.OrdinalIgnoreCase);
+                enteredFreezeTime = isFreezeTime && !_wasFreezeTime;
+                _wasFreezeTime = isFreezeTime;
             }
-            else
+            catch
             {
-                UpdateRoundDamages(root);
+                // Keep the last authoritative snapshot on malformed GSI payloads.
             }
         }
-        catch
+
+        lock (_sync)
         {
-            // Keep last known state on parse errors.
+            return new GsiExtrasSnapshot
+            {
+                PlayerDamageStats = new Dictionary<string, GsiPlayerDamageStats>(_playerDamageStats, StringComparer.OrdinalIgnoreCase),
+                EnteredFreezeTime = enteredFreezeTime
+            };
         }
-
-        return BuildSnapshot();
     }
 
-    private bool UpdateCurrentMapName(JsonElement root)
+    public void ApplyAuthoritativeStats(JsonElement players)
     {
-        var mapName = GetString(root, "map", "name");
-        if (string.IsNullOrWhiteSpace(mapName))
-            return false;
-
-        var changed = !string.Equals(mapName, _currentMapName, StringComparison.OrdinalIgnoreCase);
-        _currentMapName = mapName;
-        return changed;
-    }
-
-    private bool DetectMatchRestart(JsonElement root)
-    {
-        if (!TryGetObject(root, "map", out var map))
-            return false;
-
-        var hasCtScore = TryGetNestedInt(map, "team_ct", "score", out var ctScore);
-        var hasTScore = TryGetNestedInt(map, "team_t", "score", out var tScore);
-
-        var scoreResetToZero = hasCtScore && hasTScore &&
-                               ctScore == 0 && tScore == 0 &&
-                               ((_lastCtScore ?? 0) != 0 || (_lastTScore ?? 0) != 0);
-
-        var stillZeroZeroAfterRound = hasCtScore && hasTScore &&
-                                      ctScore == 0 && tScore == 0 &&
-                                      _roundDamages.Count > 0 &&
-                                      TryGetInt(map, "round", out var rawRound) &&
-                                      rawRound > 0;
-
-        if (hasCtScore)
-            _lastCtScore = ctScore;
-        if (hasTScore)
-            _lastTScore = tScore;
-
-        return scoreResetToZero || stillZeroZeroAfterRound;
-    }
-
-    private void UpdateRoundDamages(JsonElement root)
-    {
-        var roundNumber = GetRoundNumber(root);
-        if (!roundNumber.HasValue)
-            return;
-        var isRoundOver = IsRoundOver(root);
-
-        if (!TryGetObject(root, "allplayers", out var players))
+        if (players.ValueKind != JsonValueKind.Object)
             return;
 
-        foreach (var playerProp in players.EnumerateObject())
+        var updated = new Dictionary<string, GsiPlayerDamageStats>(StringComparer.OrdinalIgnoreCase);
+        foreach (var player in players.EnumerateObject())
         {
-            if (!TryGetObject(playerProp.Value, "state", out var state))
-                continue;
-            if (!TryGetInt(state, "round_totaldmg", out var dmg))
-                continue;
-
-            if (!_roundDamages.TryGetValue(playerProp.Name, out var perRound))
+            if (player.Value.ValueKind != JsonValueKind.Object ||
+                !TryGetInt(player.Value, "damage", out var totalDamage) ||
+                !TryGetInt(player.Value, "utilityDamage", out var utilityDamage) ||
+                !TryGetInt(player.Value, "enemiesFlashed", out var enemiesFlashed) ||
+                !TryGetInt(player.Value, "headshotKills", out var headshotKills))
             {
-                perRound = new Dictionary<int, int>();
-                _roundDamages[playerProp.Name] = perRound;
+                continue;
             }
 
-            if (dmg != 0 || isRoundOver || perRound.ContainsKey(roundNumber.Value))
-            {
-                perRound[roundNumber.Value] = dmg;
-            }
-        }
-    }
-
-    private static int? GetRoundNumber(JsonElement root)
-    {
-        if (!TryGetObject(root, "map", out var map))
-            return null;
-        if (!TryGetInt(map, "round", out var roundZeroBased))
-            return null;
-
-        var roundNumber = roundZeroBased + 1;
-        var phase = GetString(root, "phase_countdowns", "phase");
-        if (string.Equals(phase, "over", StringComparison.OrdinalIgnoreCase))
-            roundNumber -= 1;
-        return roundNumber;
-    }
-
-    private static bool IsRoundOver(JsonElement root)
-    {
-        var phase = GetString(root, "phase_countdowns", "phase");
-        return string.Equals(phase, "over", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string? GetPlayerActivity(JsonElement root)
-    {
-        return GetString(root, "player", "activity");
-    }
-
-    private GsiExtrasSnapshot BuildSnapshot()
-    {
-        var playerDamageStats = new Dictionary<string, GsiPlayerDamageStats>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (steamId, perRound) in _roundDamages)
-        {
-            if (perRound.Count == 0)
-                continue;
-
-            var totalDamage = 0;
-            foreach (var damage in perRound.Values)
-            {
-                totalDamage += damage;
-            }
-
-            playerDamageStats[steamId] = new GsiPlayerDamageStats
+            updated[player.Name] = new GsiPlayerDamageStats
             {
                 TotalDamage = totalDamage,
-                Adr = (double)totalDamage / perRound.Count
+                UtilityDamage = utilityDamage,
+                EnemiesFlashed = enemiesFlashed,
+                HeadshotKills = headshotKills
             };
         }
 
-        return new GsiExtrasSnapshot
+        lock (_sync)
         {
-            PlayerDamageStats = playerDamageStats
-        };
-    }
-
-    private static bool TryGetObject(JsonElement root, string name, out JsonElement obj)
-    {
-        if (root.TryGetProperty(name, out obj) && obj.ValueKind == JsonValueKind.Object)
-            return true;
-        obj = default;
-        return false;
-    }
-
-    private static string? GetString(JsonElement root, string name)
-    {
-        if (root.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String)
-            return prop.GetString();
-        return null;
+            _playerDamageStats.Clear();
+            foreach (var (steamId, stats) in updated)
+                _playerDamageStats[steamId] = stats;
+        }
     }
 
     private static string? GetString(JsonElement root, string parent, string child)
     {
-        if (!TryGetObject(root, parent, out var obj))
+        if (!root.TryGetProperty(parent, out var parentProp) || parentProp.ValueKind != JsonValueKind.Object ||
+            !parentProp.TryGetProperty(child, out var childProp) || childProp.ValueKind != JsonValueKind.String)
+        {
             return null;
-        return GetString(obj, child);
+        }
+        return childProp.GetString();
     }
 
     private static bool TryGetInt(JsonElement root, string name, out int value)
     {
         value = 0;
-        if (!root.TryGetProperty(name, out var prop))
-            return false;
-        if (prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out value))
-            return true;
-        if (prop.ValueKind == JsonValueKind.String &&
-            int.TryParse(prop.GetString(), System.Globalization.NumberStyles.Integer,
-                System.Globalization.CultureInfo.InvariantCulture, out value))
-        {
-            return true;
-        }
-        return false;
+        return root.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out value);
     }
 
-    private static bool TryGetNestedInt(JsonElement root, string parent, string child, out int value)
-    {
-        value = 0;
-        return TryGetObject(root, parent, out var obj) && TryGetInt(obj, child, out value);
-    }
 }
 
 public sealed class GsiExtrasSnapshot
 {
     public Dictionary<string, GsiPlayerDamageStats> PlayerDamageStats { get; init; } = new();
+
+    [JsonIgnore]
+    public bool EnteredFreezeTime { get; init; }
 }
 
 public sealed class GsiPlayerDamageStats
 {
-    public double Adr { get; init; }
     public int TotalDamage { get; init; }
+    public int UtilityDamage { get; init; }
+    public int EnemiesFlashed { get; init; }
+    public int HeadshotKills { get; init; }
 }
