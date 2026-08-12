@@ -145,14 +145,14 @@ public sealed class HtmlAtlasRenderer : IDisposable
         return Task.CompletedTask;
     }
 
-    public Task UpdateGsiAsync(string gsiJson, long? heartbeat, string? extrasJson)
+    public Task UpdateGsiAsync(string gsiJson, long? heartbeat)
     {
         if (_browser == null)
             return Task.CompletedTask;
         if (string.IsNullOrWhiteSpace(gsiJson))
             return Task.CompletedTask;
 
-        var script = BuildGsiScript(gsiJson, heartbeat, extrasJson);
+        var script = BuildGsiScript(gsiJson, heartbeat);
         _browser.GetMainFrame().ExecuteJavaScriptAsync(script);
         return Task.CompletedTask;
     }
@@ -340,13 +340,12 @@ public sealed class HtmlAtlasRenderer : IDisposable
         }
     }
 
-    private static string BuildGsiScript(string gsiJson, long? heartbeat, string? extrasJson)
+    private static string BuildGsiScript(string gsiJson, long? heartbeat)
     {
         var jsonLiteral = JsonSerializer.Serialize(gsiJson);
         var heartbeatLiteral = heartbeat.HasValue
             ? heartbeat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
             : "null";
-        var extrasLiteral = string.IsNullOrWhiteSpace(extrasJson) ? "null" : extrasJson;
         return $@"(function() {{
   const gsiJson = {jsonLiteral};
   let gsi = null;
@@ -357,12 +356,10 @@ public sealed class HtmlAtlasRenderer : IDisposable
   }}
   window.gsi = gsi;
   window.gsiHeartbeat = {heartbeatLiteral};
-  const gsiExtras = {extrasLiteral};
-  window.gsiExtras = gsiExtras;
   if (window.gsiUpdate) {{
-    window.gsiUpdate(gsi, window.gsiHeartbeat, gsiExtras);
+    window.gsiUpdate(gsi, window.gsiHeartbeat);
   }}
-  const evt = new CustomEvent('gsi:update', {{ detail: {{ gsi, heartbeat: window.gsiHeartbeat, extras: gsiExtras }} }});
+  const evt = new CustomEvent('gsi:update', {{ detail: {{ gsi, heartbeat: window.gsiHeartbeat }} }});
   window.dispatchEvent(evt);
 }})();";
     }

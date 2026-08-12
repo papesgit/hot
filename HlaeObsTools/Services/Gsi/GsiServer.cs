@@ -97,6 +97,13 @@ public sealed class GsiServer : IDisposable
 
     public event EventHandler<GsiGameState>? GameStateUpdated;
 
+    /// <summary>
+    /// Optionally enriches a GSI document before it is forwarded to relay endpoints.
+    /// The callback runs after <see cref="GameStateUpdated"/> so subscribers can
+    /// derive data from the current payload first.
+    /// </summary>
+    public Func<string, string>? RelayPayloadTransformer { get; set; }
+
     public bool IsRunning
     {
         get
@@ -365,12 +372,6 @@ public sealed class GsiServer : IDisposable
             var body = Encoding.UTF8.GetString(rawBody);
             Interlocked.Exchange(ref _lastRequestUtcTicks, DateTime.UtcNow.Ticks);
 
-            RelayPayload(new RelayEnvelope
-            {
-                RawBody = rawBody,
-                Headers = headers
-            });
-
             var currentHeartbeat = Interlocked.Increment(ref _heartbeat);
             var state = ParseState(body, currentHeartbeat);
             if (state != null)
@@ -378,6 +379,13 @@ public sealed class GsiServer : IDisposable
                 state = ApplyDroppedDefuserTracking(state);
                 GameStateUpdated?.Invoke(this, state);
             }
+
+            var relayBody = RelayPayloadTransformer?.Invoke(body) ?? body;
+            RelayPayload(new RelayEnvelope
+            {
+                RawBody = Encoding.UTF8.GetBytes(relayBody),
+                Headers = headers
+            });
 
             ctx.Response.StatusCode = StatusCodes.Status200OK;
         }

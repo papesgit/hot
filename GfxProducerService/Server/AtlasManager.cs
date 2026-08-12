@@ -123,14 +123,14 @@ public sealed class AtlasManager : IDisposable
         return renderer;
     }
 
-    public async Task BroadcastGsiAsync(string gsiJson, long? heartbeat, string? extrasJson)
+    public async Task BroadcastGsiAsync(string gsiJson, long? heartbeat)
     {
         if (string.IsNullOrWhiteSpace(gsiJson))
             return;
         var tasks = new List<Task>();
         foreach (var renderer in _renderers.Values)
         {
-            tasks.Add(renderer.UpdateGsiAsync(gsiJson, heartbeat, extrasJson));
+            tasks.Add(renderer.UpdateGsiAsync(gsiJson, heartbeat));
         }
         await Task.WhenAll(tasks);
     }

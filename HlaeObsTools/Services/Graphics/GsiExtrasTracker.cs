@@ -8,13 +8,12 @@ namespace HlaeObsTools.Services.Graphics;
 public sealed class GsiExtrasTracker
 {
     private readonly object _sync = new();
-    private readonly Dictionary<string, GsiPlayerDamageStats> _playerDamageStats = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, GsiPlayerStats> _playerStats = new(StringComparer.OrdinalIgnoreCase);
     private string? _currentMapName;
-    private bool _wasFreezeTime;
 
     public GsiExtrasSnapshot Update(string rawJson)
     {
-        var enteredFreezeTime = false;
+        var shouldRefreshPlayerStats = false;
         if (!string.IsNullOrWhiteSpace(rawJson))
         {
             try
@@ -28,15 +27,15 @@ public sealed class GsiExtrasTracker
                 {
                     lock (_sync)
                     {
-                        _playerDamageStats.Clear();
+                        _playerStats.Clear();
                     }
                     _currentMapName = mapName;
                 }
 
-                var phase = GetString(root, "phase_countdowns", "phase");
-                var isFreezeTime = string.Equals(phase, "freezetime", StringComparison.OrdinalIgnoreCase);
-                enteredFreezeTime = isFreezeTime && !_wasFreezeTime;
-                _wasFreezeTime = isFreezeTime;
+                shouldRefreshPlayerStats = string.Equals(
+                    GetString(root, "previously", "round", "phase"),
+                    "over",
+                    StringComparison.OrdinalIgnoreCase);
             }
             catch
             {
@@ -46,11 +45,15 @@ public sealed class GsiExtrasTracker
 
         lock (_sync)
         {
-            return new GsiExtrasSnapshot
-            {
-                PlayerDamageStats = new Dictionary<string, GsiPlayerDamageStats>(_playerDamageStats, StringComparer.OrdinalIgnoreCase),
-                EnteredFreezeTime = enteredFreezeTime
-            };
+            return CreateSnapshot(shouldRefreshPlayerStats);
+        }
+    }
+
+    public GsiExtrasSnapshot GetSnapshot()
+    {
+        lock (_sync)
+        {
+            return CreateSnapshot(false);
         }
     }
 
@@ -59,7 +62,7 @@ public sealed class GsiExtrasTracker
         if (players.ValueKind != JsonValueKind.Object)
             return;
 
-        var updated = new Dictionary<string, GsiPlayerDamageStats>(StringComparer.OrdinalIgnoreCase);
+        var updated = new Dictionary<string, GsiPlayerStats>(StringComparer.OrdinalIgnoreCase);
         foreach (var player in players.EnumerateObject())
         {
             if (player.Value.ValueKind != JsonValueKind.Object ||
@@ -71,7 +74,7 @@ public sealed class GsiExtrasTracker
                 continue;
             }
 
-            updated[player.Name] = new GsiPlayerDamageStats
+            updated[player.Name] = new GsiPlayerStats
             {
                 TotalDamage = totalDamage,
                 UtilityDamage = utilityDamage,
@@ -82,20 +85,30 @@ public sealed class GsiExtrasTracker
 
         lock (_sync)
         {
-            _playerDamageStats.Clear();
+            _playerStats.Clear();
             foreach (var (steamId, stats) in updated)
-                _playerDamageStats[steamId] = stats;
+                _playerStats[steamId] = stats;
         }
     }
 
-    private static string? GetString(JsonElement root, string parent, string child)
+    private static string? GetString(JsonElement root, params string[] path)
     {
-        if (!root.TryGetProperty(parent, out var parentProp) || parentProp.ValueKind != JsonValueKind.Object ||
-            !parentProp.TryGetProperty(child, out var childProp) || childProp.ValueKind != JsonValueKind.String)
+        var current = root;
+        foreach (var segment in path)
         {
-            return null;
+            if (!current.TryGetProperty(segment, out current) || current.ValueKind == JsonValueKind.Undefined)
+                return null;
         }
-        return childProp.GetString();
+        return current.ValueKind == JsonValueKind.String ? current.GetString() : null;
+    }
+
+    private GsiExtrasSnapshot CreateSnapshot(bool shouldRefreshPlayerStats)
+    {
+        return new GsiExtrasSnapshot
+        {
+            PlayerStats = new Dictionary<string, GsiPlayerStats>(_playerStats, StringComparer.OrdinalIgnoreCase),
+            ShouldRefreshPlayerStats = shouldRefreshPlayerStats
+        };
     }
 
     private static bool TryGetInt(JsonElement root, string name, out int value)
@@ -108,13 +121,13 @@ public sealed class GsiExtrasTracker
 
 public sealed class GsiExtrasSnapshot
 {
-    public Dictionary<string, GsiPlayerDamageStats> PlayerDamageStats { get; init; } = new();
+    public Dictionary<string, GsiPlayerStats> PlayerStats { get; init; } = new();
 
     [JsonIgnore]
-    public bool EnteredFreezeTime { get; init; }
+    public bool ShouldRefreshPlayerStats { get; init; }
 }
 
-public sealed class GsiPlayerDamageStats
+public sealed class GsiPlayerStats
 {
     public int TotalDamage { get; init; }
     public int UtilityDamage { get; init; }

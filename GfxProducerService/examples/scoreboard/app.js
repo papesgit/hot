@@ -127,25 +127,25 @@ for (let i = 0; i < 5; i++) {
   tRows.push(t);
 }
 
-function calcAdr(gsi, extras, steamId) {
-  const totalDamage = calcTotalDamage(extras, steamId);
+function calcAdr(gsi, steamId) {
+  const totalDamage = calcTotalDamage(gsi, steamId);
   const completedRounds = getEffectiveRoundNumber(gsi);
   if (totalDamage == null || completedRounds <= 0) return null;
   return Math.round(totalDamage / completedRounds);
 }
 
-function calcTotalDamage(extras, steamId) {
-  const totalDamage = extras?.playerDamageStats?.[steamId]?.totalDamage;
+function calcTotalDamage(gsi, steamId) {
+  const totalDamage = gsi?.hot_extras?.player_stats?.[steamId]?.total_damage;
   return typeof totalDamage === "number" ? totalDamage : null;
 }
 
-function getAuthoritativeStat(extras, steamId, name) {
-  const value = extras?.playerDamageStats?.[steamId]?.[name];
+function getAuthoritativeStat(gsi, steamId, name) {
+  const value = gsi?.hot_extras?.player_stats?.[steamId]?.[name];
   return typeof value === "number" ? value : null;
 }
 
-function calcHeadshotPercentage(extras, steamId, kills) {
-  const headshotKills = getAuthoritativeStat(extras, steamId, "headshotKills");
+function calcHeadshotPercentage(gsi, steamId, kills) {
+  const headshotKills = getAuthoritativeStat(gsi, steamId, "headshot_kills");
   if (headshotKills == null || kills <= 0) return null;
   return Math.round((headshotKills / kills) * 100);
 }
@@ -210,7 +210,7 @@ function getOpeningDeaths(steamId) {
   return openingStats[steamId]?.deaths ?? 0;
 }
 
-function updatePlayerRow(rowData, player, steamId, gsi, extras, leaders) {
+function updatePlayerRow(rowData, player, steamId, gsi, leaders) {
   const { cellRefs } = rowData;
 
   if (!player) {
@@ -232,11 +232,11 @@ function updatePlayerRow(rowData, player, steamId, gsi, extras, leaders) {
   const k = player.match_stats?.kills ?? 0;
   const a = player.match_stats?.assists ?? 0;
   const d = player.match_stats?.deaths ?? 0;
-  const adr = calcAdr(gsi, extras, steamId);
-  const dmg = calcTotalDamage(extras, steamId);
-  const hs = calcHeadshotPercentage(extras, steamId, k);
-  const ud = getAuthoritativeStat(extras, steamId, "utilityDamage");
-  const ef = getAuthoritativeStat(extras, steamId, "enemiesFlashed");
+  const adr = calcAdr(gsi, steamId);
+  const dmg = calcTotalDamage(gsi, steamId);
+  const hs = calcHeadshotPercentage(gsi, steamId, k);
+  const ud = getAuthoritativeStat(gsi, steamId, "utility_damage");
+  const ef = getAuthoritativeStat(gsi, steamId, "enemies_flashed");
   const ok = getOpeningKills(steamId);
   const od = getOpeningDeaths(steamId);
 
@@ -266,14 +266,14 @@ function updatePlayerRow(rowData, player, steamId, gsi, extras, leaders) {
   });
 }
 
-function getTeamStatLeaders(entries, gsi, extras) {
+function getTeamStatLeaders(entries, gsi) {
   const statValues = {
     k: entry => entry.player.match_stats?.kills ?? 0,
     a: entry => entry.player.match_stats?.assists ?? 0,
-    adr: entry => calcAdr(gsi, extras, entry.steamId),
-    hs: entry => calcHeadshotPercentage(extras, entry.steamId, entry.player.match_stats?.kills ?? 0),
-    ud: entry => getAuthoritativeStat(extras, entry.steamId, "utilityDamage"),
-    ef: entry => getAuthoritativeStat(extras, entry.steamId, "enemiesFlashed")
+    adr: entry => calcAdr(gsi, entry.steamId),
+    hs: entry => calcHeadshotPercentage(gsi, entry.steamId, entry.player.match_stats?.kills ?? 0),
+    ud: entry => getAuthoritativeStat(gsi, entry.steamId, "utility_damage"),
+    ef: entry => getAuthoritativeStat(gsi, entry.steamId, "enemies_flashed")
   };
 
   const leaders = {};
@@ -287,7 +287,7 @@ function getTeamStatLeaders(entries, gsi, extras) {
   return leaders;
 }
 
-function updateScoreboard(gsi, extras) {
+function updateScoreboard(gsi) {
   if (!gsi || !gsi.allplayers) return;
 
   // Track opening kills
@@ -310,15 +310,15 @@ function updateScoreboard(gsi, extras) {
 
   // Sort by total damage descending
   const sortByDamage = (a, b) => {
-    const damageDiff = (calcTotalDamage(extras, b.steamId) ?? 0) - (calcTotalDamage(extras, a.steamId) ?? 0);
+    const damageDiff = (calcTotalDamage(gsi, b.steamId) ?? 0) - (calcTotalDamage(gsi, a.steamId) ?? 0);
     if (damageDiff !== 0) return damageDiff;
     return (b.player.match_stats?.kills ?? 0) - (a.player.match_stats?.kills ?? 0);
   };
   ctPlayers.sort(sortByDamage);
   tPlayers.sort(sortByDamage);
 
-  const ctLeaders = getTeamStatLeaders(ctPlayers, gsi, extras);
-  const tLeaders = getTeamStatLeaders(tPlayers, gsi, extras);
+  const ctLeaders = getTeamStatLeaders(ctPlayers, gsi);
+  const tLeaders = getTeamStatLeaders(tPlayers, gsi);
 
   // Update team names from map info if available
   if (gsi.map && gsi.map.team_ct && gsi.map.team_ct.name) {
@@ -333,15 +333,15 @@ function updateScoreboard(gsi, extras) {
     const ctEntry = ctPlayers[i];
     const tEntry = tPlayers[i];
 
-    updatePlayerRow(ctRows[i], ctEntry?.player, ctEntry?.steamId, gsi, extras, ctLeaders);
-    updatePlayerRow(tRows[i], tEntry?.player, tEntry?.steamId, gsi, extras, tLeaders);
+    updatePlayerRow(ctRows[i], ctEntry?.player, ctEntry?.steamId, gsi, ctLeaders);
+    updatePlayerRow(tRows[i], tEntry?.player, tEntry?.steamId, gsi, tLeaders);
   }
 }
 
 // GSI event listener
 window.addEventListener("gsi:update", (e) => {
-  const { gsi, extras } = e.detail || {};
-  updateScoreboard(gsi, extras);
+  const { gsi } = e.detail || {};
+  updateScoreboard(gsi);
 });
 
 // HLAE trigger for animIn/animOut

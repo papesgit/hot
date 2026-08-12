@@ -12,6 +12,11 @@ namespace HlaeObsTools.Services.Graphics;
 
 public sealed class GraphicsService : IDisposable
 {
+    private static readonly JsonSerializerOptions HotExtrasJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+    };
+
     private readonly HlaeWebSocketClient _webSocket;
     private readonly GraphicsProducerClient _producerClient;
     private readonly GsiServer _gsiServer;
@@ -45,6 +50,7 @@ public sealed class GraphicsService : IDisposable
         _targetFps = targetFps;
         _cleanProfileSnapshot = SerializeProfile(_profile);
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
+        _gsiServer.RelayPayloadTransformer = EnrichGsiJson;
         _webSocket.MessageReceived += OnWebSocketMessageReceived;
         _producerClient.TriggerCompleted += OnProducerTriggerCompleted;
     }
@@ -659,7 +665,7 @@ public sealed class GraphicsService : IDisposable
             return;
 
         var extras = _gsiExtrasTracker.Update(e.RawJson);
-        if (extras.EnteredFreezeTime && _webSocket.IsConnected)
+        if (extras.ShouldRefreshPlayerStats && _webSocket.IsConnected)
         {
             var requestId = Guid.NewGuid().ToString("N");
             _pendingStatsRequests[requestId] = 0;
@@ -668,7 +674,7 @@ public sealed class GraphicsService : IDisposable
 
         if (_producerClient.IsConnected)
         {
-            _ = _producerClient.SendGsiAsync(e.RawJson, e.Heartbeat, extras);
+            _ = _producerClient.SendGsiAsync(EnrichGsiJson(e.RawJson, extras), e.Heartbeat);
         }
 
         // Profiles are now user-selected (not tied to map).
@@ -780,9 +786,45 @@ public sealed class GraphicsService : IDisposable
         }
     }
 
+    private string EnrichGsiJson(string rawJson)
+    {
+        return EnrichGsiJson(rawJson, _gsiExtrasTracker.GetSnapshot());
+    }
+
+    private static string EnrichGsiJson(string rawJson, GsiExtrasSnapshot extras)
+    {
+        try
+        {
+            using var source = JsonDocument.Parse(rawJson);
+            if (source.RootElement.ValueKind != JsonValueKind.Object || extras.PlayerStats.Count == 0)
+                return rawJson;
+
+            using var stream = new System.IO.MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject();
+            foreach (var property in source.RootElement.EnumerateObject())
+            {
+                if (string.Equals(property.Name, "hot_extras", StringComparison.Ordinal))
+                    continue;
+                property.WriteTo(writer);
+            }
+            writer.WritePropertyName("hot_extras");
+            JsonSerializer.Serialize(writer, extras, HotExtrasJsonOptions);
+            writer.WriteEndObject();
+            writer.Flush();
+            return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        }
+        catch (JsonException)
+        {
+            return rawJson;
+        }
+    }
+
     public void Dispose()
     {
         _gsiServer.GameStateUpdated -= OnGameStateUpdated;
+        if (_gsiServer.RelayPayloadTransformer == EnrichGsiJson)
+            _gsiServer.RelayPayloadTransformer = null;
         _webSocket.MessageReceived -= OnWebSocketMessageReceived;
         _producerClient.TriggerCompleted -= OnProducerTriggerCompleted;
     }

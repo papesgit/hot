@@ -349,11 +349,7 @@ public sealed class ProducerServer : IDisposable
         if (root.TryGetProperty("heartbeat", out var hbProp) && hbProp.TryGetInt64(out var hb))
             heartbeat = hb;
 
-        string? extrasJson = null;
-        if (root.TryGetProperty("extras", out var extrasProp))
-            extrasJson = extrasProp.GetRawText();
-
-        await _atlasManager.BroadcastGsiAsync(gsiJson, heartbeat, extrasJson);
+        await _atlasManager.BroadcastGsiAsync(gsiJson, heartbeat);
         await SendResponseAsync(socket, id, new { heartbeat });
     }
 

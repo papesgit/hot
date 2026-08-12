@@ -54,9 +54,14 @@ function setCardValues(cardEl, refs, { name, k, a, d, adr, meta, teamClass }) {
   refs.meta.textContent = meta || "";
 }
 
-function calcAdr(extras, steamId) {
-  const adr = extras?.playerDamageStats?.[steamId]?.adr;
-  return typeof adr === "number" ? Math.round(adr) : null;
+function calcAdr(gsi, steamId) {
+  const totalDamage = gsi?.hot_extras?.player_stats?.[steamId]?.total_damage;
+  const rawRound = gsi?.map?.round;
+  if (typeof totalDamage !== "number" || typeof rawRound !== "number") return null;
+
+  const completedRounds = gsi?.phase_countdowns?.phase === "over" ? rawRound - 1 : rawRound;
+  if (completedRounds <= 0) return null;
+  return Math.round(totalDamage / completedRounds);
 }
 
 function mapObserverSlot(rawSlot) {
@@ -80,7 +85,7 @@ document.querySelectorAll(".card").forEach(cardEl => {
   });
 });
 
-function updateCards(gsi, extras) {
+function updateCards(gsi) {
   if (!gsi || !gsi.allplayers) return;
 
   const players = Object.entries(gsi.allplayers).map(([steamId, player]) => ({
@@ -120,7 +125,7 @@ function updateCards(gsi, extras) {
     const k = p.match_stats?.kills ?? 0;
     const d = p.match_stats?.deaths ?? 0;
     const a = p.match_stats?.assists ?? 0;
-    const adr = calcAdr(extras, entry.steamId);
+    const adr = calcAdr(gsi, entry.steamId);
 
     setCardValues(el, refs, {
       name: p.name || `Slot ${slot}`,
@@ -135,8 +140,8 @@ function updateCards(gsi, extras) {
 }
 
 window.addEventListener("gsi:update", (e) => {
-  const { gsi, extras } = e.detail || {};
-  updateCards(gsi, extras);
+  const { gsi } = e.detail || {};
+  updateCards(gsi);
 });
 
 function notifyDone(action, target) {
