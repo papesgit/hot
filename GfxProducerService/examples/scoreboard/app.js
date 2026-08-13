@@ -1,4 +1,12 @@
 const scoreboard = document.getElementById("scoreboard");
+
+// Set false when previewing the scoreboard directly in a browser to ignore HOTs animIn/animOut triggers.
+const USE_ANIMATIONS = true;
+
+if (!USE_ANIMATIONS) {
+  scoreboard.classList.add("visible", "animations-disabled");
+}
+
 const refs = {
   ctName: document.querySelector('[data-ref="ctName"]'),
   tName: document.querySelector('[data-ref="tName"]'),
@@ -355,6 +363,11 @@ function notifyDone(action, target) {
 
 window.hotTrigger = (action, target) => {
   if (target !== "scoreboard") return;
+
+  if (!USE_ANIMATIONS) {
+    scoreboard.classList.add("visible");
+    return;
+  }
 
   if (action === "animIn") {
     const timer = animOutTimers.get(target);
