@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Media;
@@ -840,6 +841,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private const double HeightScaleMax = 1.15;
     private const double HeightBucketSize = 64.0;
     private const double HeightBucketHysteresisRatio = 0.6;
+    private const int CampathOverlayRefreshDelayMs = 150;
+    private const int MaxCampathPolylinePoints = 1024;
 
     public ObservableCollection<RadarPlayerViewModel> Players { get; } = new();
     public ObservableCollection<RadarDeadPlayerViewModel> DeadPlayers { get; } = new();
@@ -848,7 +851,15 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     public ObservableCollection<RadarDetonationViewModel> Detonations { get; } = new();
     public ObservableCollection<FlameViewModel> Flames { get; } = new();
     public ObservableCollection<RadarBombViewModel> Bombs { get; } = new();
-    public ObservableCollection<CampathPathViewModel> CampathPaths { get; } = new();
+    private IReadOnlyList<CampathPathViewModel> _campathPaths = Array.Empty<CampathPathViewModel>();
+    private DispatcherTimer? _campathOverlayRefreshTimer;
+    private int _campathOverlayRefreshVersion;
+
+    public IReadOnlyList<CampathPathViewModel> CampathPaths
+    {
+        get => _campathPaths;
+        private set => SetProperty(ref _campathPaths, value);
+    }
 
     public string? HoveredCampathName
     {
@@ -947,7 +958,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             DroppedDefusers.Clear();
             Grenades.Clear();
             Detonations.Clear();
-            CampathPaths.Clear();
+            CampathPaths = Array.Empty<CampathPathViewModel>();
             ClearCampathHover();
             _deadPlayerMarkers.Clear();
             _droppedDefuserMarkers.Clear();
@@ -1667,6 +1678,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         }
         _animationTimer?.Stop();
         _animationTimer = null;
+        _campathOverlayRefreshTimer?.Stop();
+        _campathOverlayRefreshTimer = null;
         RadarImage?.Dispose();
     }
 
@@ -1690,6 +1703,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         else if (e.PropertyName == nameof(RadarSettings.RadarStyle) && !string.IsNullOrWhiteSpace(_currentMap))
         {
             LoadRadarResources(_currentMap);
+            RefreshCampathOverlay();
         }
         else if (e.PropertyName == nameof(RadarSettings.UseAltPlayerBinds))
         {
@@ -1832,22 +1846,55 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
     private void RefreshCampathOverlay()
     {
-        CampathPaths.Clear();
-        ClearCampathHover();
+        _campathOverlayRefreshVersion++;
+        _campathOverlayRefreshTimer ??= new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(CampathOverlayRefreshDelayMs)
+        };
+        _campathOverlayRefreshTimer.Tick -= OnCampathOverlayRefreshTimerTick;
+        _campathOverlayRefreshTimer.Tick += OnCampathOverlayRefreshTimerTick;
+        _campathOverlayRefreshTimer.Stop();
+        _campathOverlayRefreshTimer.Start();
+    }
 
-        if (_campathsVm?.SelectedProfile == null || string.IsNullOrWhiteSpace(_currentMap) || !HasRadar)
+    private async void OnCampathOverlayRefreshTimerTick(object? sender, EventArgs e)
+    {
+        _campathOverlayRefreshTimer?.Stop();
+
+        var refreshVersion = _campathOverlayRefreshVersion;
+        var profile = _campathsVm?.SelectedProfile;
+        var mapName = _currentMap;
+        if (profile == null || string.IsNullOrWhiteSpace(mapName) || !HasRadar)
+        {
+            CampathPaths = Array.Empty<CampathPathViewModel>();
+            ClearCampathHover();
             return;
+        }
 
-        var hiddenCampathIds = _campathsVm.SelectedProfile.Groups
+        var hiddenCampathIds = profile.Groups
             .Where(group => group.HideInRadar)
             .SelectMany(group => group.CampathIds)
             .ToHashSet();
+        var campaths = profile.Campaths
+            .Where(campath => !hiddenCampathIds.Contains(campath.Id))
+            .Select(campath => new CampathOverlaySource(
+                campath.Id, campath.Name, campath.FilePath, campath.Thumbnail))
+            .ToArray();
 
-        foreach (var campath in _campathsVm.SelectedProfile.Campaths)
+        var paths = await Task.Run(() => BuildCampathOverlay(campaths, mapName));
+        if (refreshVersion != _campathOverlayRefreshVersion)
+            return;
+
+        CampathPaths = paths;
+        ClearCampathHover();
+    }
+
+    private IReadOnlyList<CampathPathViewModel> BuildCampathOverlay(
+        IReadOnlyList<CampathOverlaySource> campaths, string mapName)
+    {
+        var paths = new List<CampathPathViewModel>();
+        foreach (var campath in campaths)
         {
-            if (hiddenCampathIds.Contains(campath.Id))
-                continue;
-
             if (string.IsNullOrWhiteSpace(campath.FilePath) || !File.Exists(campath.FilePath))
                 continue;
 
@@ -1859,7 +1906,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
             {
                 if (track.Campath.Points.Count == 0)
                     continue;
-                var points = BuildCampathPolyline(track.Campath);
+                var points = BuildCampathPolyline(track.Campath, mapName);
                 if (points.Count == 0)
                     continue;
 
@@ -1871,11 +1918,13 @@ public sealed class RadarDockViewModel : Tool, IDisposable
                     ? $"{campath.Name} — {track.Name}"
                     : campath.Name;
 
-                CampathPaths.Add(new CampathPathViewModel(
+                paths.Add(new CampathPathViewModel(
                     campath.Id, displayName, campath.FilePath, points,
                     iconX, iconY, angle, campath.Thumbnail));
             }
         }
+
+        return paths;
     }
 
     public async void PlayCampath(CampathPathViewModel? path)
@@ -1935,18 +1984,18 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         HoveredCampathThumbnail = null;
     }
 
-    private AvaloniaList<Point> BuildCampathPolyline(CampathFile parsed)
+    private AvaloniaList<Point> BuildCampathPolyline(CampathFile parsed, string mapName)
     {
         var result = new AvaloniaList<Point>();
-        if (parsed.Points.Count == 0 || string.IsNullOrWhiteSpace(_currentMap))
+        if (parsed.Points.Count == 0)
             return result;
 
-        var forcedLevel = GetCampathForcedLevel(parsed);
+        var forcedLevel = GetCampathForcedLevel(parsed, mapName);
         bool useLinear = parsed.IsLinearPosition || parsed.Points.Count < 3;
 
         void AddProjected(Vec3 pos)
         {
-            if (_projector.TryProject(_currentMap!, pos, forcedLevel, out var px, out var py, out _))
+            if (_projector.TryProject(mapName, pos, forcedLevel, out var px, out var py, out _))
             {
                 var pt = new Point(px * 1024.0, py * 1024.0);
                 if (result.Count == 0 || result[^1] != pt)
@@ -1958,15 +2007,18 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
         if (useLinear)
         {
-            foreach (var p in parsed.Points)
+            var step = Math.Max(1, (parsed.Points.Count + MaxCampathPolylinePoints - 1) / MaxCampathPolylinePoints);
+            for (var i = 0; i < parsed.Points.Count; i += step)
             {
-                AddProjected(p.Position);
+                AddProjected(parsed.Points[i].Position);
             }
+            if ((parsed.Points.Count - 1) % step != 0)
+                AddProjected(parsed.Points[^1].Position);
             return result;
         }
 
         int count = parsed.Points.Count;
-        int stepsPerSegment = 16;
+        int stepsPerSegment = Math.Max(1, Math.Min(16, MaxCampathPolylinePoints / Math.Max(1, count - 1)));
 
         for (int i = 0; i < count - 1; i++)
         {
@@ -1986,12 +2038,9 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         return result;
     }
 
-    private string? GetCampathForcedLevel(CampathFile parsed)
+    private string? GetCampathForcedLevel(CampathFile parsed, string mapName)
     {
-        if (string.IsNullOrWhiteSpace(_currentMap))
-            return null;
-
-        if (!_configProvider.TryGet(_currentMap, out var config) || config.Levels.Count == 0)
+        if (!_configProvider.TryGet(mapName, out var config) || config.Levels.Count == 0)
             return null;
 
         RadarLevel? lowest = null;
@@ -2280,4 +2329,6 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
         return new Vec3(x, y, z);
     }
+
+    private sealed record CampathOverlaySource(Guid Id, string Name, string? FilePath, Bitmap? Thumbnail);
 }
