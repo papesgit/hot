@@ -512,10 +512,12 @@
               Background="#B0000000"
               CornerRadius="4"
               Padding="2"
+              IsHitTestVisible="False"
               IsVisible="{Binding HasHoveredCampathThumbnail}">
         <Image Source="{Binding HoveredCampathThumbnail}"
                Width="200"
                Height="120"
+               IsHitTestVisible="False"
                Stretch="UniformToFill" />
       </Border>
 
