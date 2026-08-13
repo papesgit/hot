@@ -186,6 +186,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
             {
                 _suppressInstanceSelectionApply = false;
             }
+            ApplySingleAvailableImageSelection();
         }
     }
 
@@ -204,6 +205,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
                 {
                     UpdateAtlasInstancesVisibilityState(atlas);
                 }
+                ApplySingleAvailableImageSelection();
             }
             OnPropertyChanged(nameof(IsAtlasSourceSelected));
             OnPropertyChanged(nameof(IsImageSourceSelected));
@@ -1115,6 +1117,27 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         return AvailableImages.FirstOrDefault(image => string.Equals(image, imageFile, StringComparison.OrdinalIgnoreCase)) ?? imageFile;
     }
 
+    private void ApplySingleAvailableImageSelection()
+    {
+        if (SelectedInstance?.SourceType != GraphicsInstanceSourceType.Image
+            || AvailableImages.Count != 1
+            || HasMixedInstanceValue(instance => instance.ImageFile))
+            return;
+
+        var imageFile = AvailableImages[0];
+        if (!string.Equals(_selectedInstanceImageFile, imageFile, StringComparison.OrdinalIgnoreCase))
+        {
+            _selectedInstanceImageFile = imageFile;
+            OnPropertyChanged(nameof(SelectedInstanceImageFile));
+        }
+
+        foreach (var instance in GetSelectedInstances())
+        {
+            if (!string.Equals(instance.ImageFile, imageFile, StringComparison.OrdinalIgnoreCase))
+                instance.ImageFile = imageFile;
+        }
+    }
+
     private AttachSlotOption? ResolveAttachSlot(int slot)
     {
         if (HasMixedInstanceValue(instance => instance.AttachSlot))
@@ -1159,6 +1182,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
 
         _selectedInstanceImageFile = ResolveImageFile(currentSelection);
         OnPropertyChanged(nameof(SelectedInstanceImageFile));
+        ApplySingleAvailableImageSelection();
     }
 
     private async Task GetCurrentCameraTransformAsync(bool copyPosition, bool copyRotation)
