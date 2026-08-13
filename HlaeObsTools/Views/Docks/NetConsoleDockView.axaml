@@ -30,10 +30,12 @@
               BorderBrush="#2E2E2E"
               BorderThickness="1"
               Padding="6">
-        <ListBox x:Name="LogListBox"
-                 ItemsSource="{Binding LogLines}"
-                 SelectionMode="Multiple"
-                 KeyDown="OnLogKeyDown"
+        <Grid>
+          <ListBox x:Name="LogListBox"
+                   ItemsSource="{Binding LogLines}"
+                   SelectionMode="Multiple"
+                   AutoScrollToSelectedItem="False"
+                   KeyDown="OnLogKeyDown"
                  BorderThickness="0"
                  Background="Transparent"
                  Foreground="#E0E0E0"
@@ -64,7 +66,27 @@
                          TextWrapping="Wrap" />
             </DataTemplate>
           </ListBox.ItemTemplate>
-        </ListBox>
+          </ListBox>
+          <Button x:Name="ScrollToBottomButton"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="0,0,20,8"
+                  Width="32"
+                  Height="32"
+                  Padding="0"
+                  IsVisible="False"
+                  Click="OnScrollToBottomClick"
+                  Background="#3C6DD2"
+                  Foreground="White"
+                  BorderBrush="#6F96E6"
+                  CornerRadius="16"
+                  ToolTip.Tip="Scroll to latest">
+            <TextBlock Text="↓"
+                       FontSize="20"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+          </Button>
+        </Grid>
       </Border>
 
       <Grid Grid.Row="2" RowDefinitions="Auto,Auto" RowSpacing="4">
@@ -112,6 +134,7 @@
           <Button Grid.Column="1"
                   Content="Send"
                   Command="{Binding SendCommand}"
+                  Click="OnSendClick"
                   Background="#3C6DD2"
                   Foreground="White" />
           <Button x:Name="SettingsButton"

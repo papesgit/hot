@@ -27,6 +27,8 @@ public class NetConsoleDockViewModel : Tool, IDisposable
     private const int MaxSuggestions = 50;
 
     private readonly ObservableCollection<NetConsoleLogLineViewModel> _logLines = new();
+
+    public event EventHandler<int>? LogLinesTrimming;
     private readonly ObservableCollection<ConsoleCommandInfo> _suggestions = new();
     private readonly ObservableCollection<string> _userFilters = new();
     private readonly Lazy<IReadOnlyList<ConsoleCommandInfo>> _allCommands = new(LoadCommands);
@@ -852,9 +854,12 @@ public class NetConsoleDockViewModel : Tool, IDisposable
             added++;
         }
 
-        while (_logLines.Count > MaxLogLines)
+        var linesToTrim = Math.Max(0, _logLines.Count - MaxLogLines);
+        if (linesToTrim > 0)
         {
-            _logLines.RemoveAt(0);
+            LogLinesTrimming?.Invoke(this, linesToTrim);
+            for (var i = 0; i < linesToTrim; i++)
+                _logLines.RemoveAt(0);
         }
 
         if (_pendingLogLines.IsEmpty)
