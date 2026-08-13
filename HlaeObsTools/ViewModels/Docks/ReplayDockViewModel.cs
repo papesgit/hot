@@ -28,6 +28,7 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
 
         PlaySelectedCommand = new AsyncRelay(PlaySelectionAsync);
         PlayLastRoundCommand = new AsyncRelay(PlayLastRoundAsync);
+        StopReplayCommand = new AsyncRelay(StopReplayAsync);
         ClearCommand = new Relay(_ => ClearTrackedEvents());
 
         _coordinator.Registry.Changed += OnRegistryChanged;
@@ -62,6 +63,7 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
 
     public ICommand PlaySelectedCommand { get; }
     public ICommand PlayLastRoundCommand { get; }
+    public ICommand StopReplayCommand { get; }
     public ICommand ClearCommand { get; }
 
     private void ClearTrackedEvents()
@@ -157,6 +159,14 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
         Status = ok
             ? $"Playing {roundEvents.Length} replay event{(roundEvents.Length == 1 ? string.Empty : "s")} from round {latestRound}."
             : $"Failed to play round {latestRound}.";
+    }
+
+    private async Task StopReplayAsync()
+    {
+        var ok = await _coordinator.StopReplayAsync(CancellationToken.None);
+        Status = ok
+            ? "Stopped replay on channels A and B."
+            : "Failed to stop replay on one or more channels.";
     }
 
     private static int GetReplayIdSortKey(ReplayEventRecord record)

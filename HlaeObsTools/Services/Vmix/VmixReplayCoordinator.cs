@@ -9,6 +9,7 @@ namespace HlaeObsTools.Services.Vmix;
 public sealed class VmixReplayCoordinator
 {
     private const string FunctionPlayEventsByIdToOutput = "ReplayPlayEventsByIDToOutput";
+    private const string FunctionStopEvents = "ReplayStopEvents";
     private readonly VmixApiClient _vmixApiClient;
     private readonly ReplayEventRegistry _registry;
     private readonly SemaphoreSlim _vmixLock = new(1, 1);
@@ -108,6 +109,23 @@ public sealed class VmixReplayCoordinator
                 Value = string.Join(",", ids),
                 Channel = NormalizeChannel(channel ?? records.FirstOrDefault()?.Channel)
             }, token, "ReplayPlayEventsByIDToOutput").ConfigureAwait(false);
+        }
+        finally
+        {
+            _vmixLock.Release();
+        }
+    }
+
+    public async Task<bool> StopReplayAsync(CancellationToken token)
+    {
+        await _vmixLock.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            var channelAStopped = await _vmixApiClient.ExecuteFunctionAsync(
+                FunctionStopEvents, "A", token, "ReplayStopEvents (A)").ConfigureAwait(false);
+            var channelBStopped = await _vmixApiClient.ExecuteFunctionAsync(
+                FunctionStopEvents, "B", token, "ReplayStopEvents (B)").ConfigureAwait(false);
+            return channelAStopped && channelBStopped;
         }
         finally
         {

@@ -6,17 +6,16 @@
              x:DataType="vm:ReplayDockViewModel">
     <Border Background="#202020" Padding="8">
         <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                 <Button Content="Play Selection"
-                        Command="{Binding PlaySelectedCommand}"
-                        MinWidth="116"/>
+                        Command="{Binding PlaySelectedCommand}"/>
                 <Button Content="Last Round"
-                        Command="{Binding PlayLastRoundCommand}"
-                        MinWidth="96"/>
+                        Command="{Binding PlayLastRoundCommand}"/>
+                <Button Content="Stop Replay"
+                        Command="{Binding StopReplayCommand}"/>
                 <Button Content="Clear"
-                        Command="{Binding ClearCommand}"
-                        MinWidth="70"/>
-            </StackPanel>
+                        Command="{Binding ClearCommand}"/>
+            </WrapPanel>
 
             <TextBlock Grid.Row="1"
                        Text="{Binding Status}"
