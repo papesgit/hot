@@ -218,7 +218,7 @@ function getOpeningDeaths(steamId) {
   return openingStats[steamId]?.deaths ?? 0;
 }
 
-function updatePlayerRow(rowData, player, steamId, gsi, leaders) {
+function updatePlayerRow(rowData, player, steamId, gsi, teamLeaders, overallLeaders) {
   const { cellRefs } = rowData;
 
   if (!player) {
@@ -233,7 +233,9 @@ function updatePlayerRow(rowData, player, steamId, gsi, leaders) {
     cellRefs.okd.textContent = "-";
     cellRefs.dmg.textContent = "-";
     cellRefs.okd.className = "cell stat";
-    ["k", "a", "adr", "hs", "ud", "ef"].forEach(stat => cellRefs[stat].classList.remove("highlight"));
+    ["k", "a", "adr", "hs", "ud", "ef"].forEach(stat =>
+      cellRefs[stat].classList.remove("highlight", "overall-highlight")
+    );
     return;
   }
 
@@ -270,11 +272,14 @@ function updatePlayerRow(rowData, player, steamId, gsi, leaders) {
   }
 
   ["k", "a", "adr", "hs", "ud", "ef"].forEach(stat => {
-    cellRefs[stat].classList.toggle("highlight", leaders?.[stat]?.has(steamId) ?? false);
+    const isOverallLeader = overallLeaders?.[stat]?.has(steamId) ?? false;
+    const isTeamLeader = teamLeaders?.[stat]?.has(steamId) ?? false;
+    cellRefs[stat].classList.toggle("overall-highlight", isOverallLeader);
+    cellRefs[stat].classList.toggle("highlight", !isOverallLeader && isTeamLeader);
   });
 }
 
-function getTeamStatLeaders(entries, gsi) {
+function getStatLeaders(entries, gsi) {
   const statValues = {
     k: entry => entry.player.match_stats?.kills ?? 0,
     a: entry => entry.player.match_stats?.assists ?? 0,
@@ -325,8 +330,9 @@ function updateScoreboard(gsi) {
   ctPlayers.sort(sortByDamage);
   tPlayers.sort(sortByDamage);
 
-  const ctLeaders = getTeamStatLeaders(ctPlayers, gsi);
-  const tLeaders = getTeamStatLeaders(tPlayers, gsi);
+  const ctLeaders = getStatLeaders(ctPlayers, gsi);
+  const tLeaders = getStatLeaders(tPlayers, gsi);
+  const overallLeaders = getStatLeaders([...ctPlayers, ...tPlayers], gsi);
 
   // Update team names from map info if available
   if (gsi.map && gsi.map.team_ct && gsi.map.team_ct.name) {
@@ -341,8 +347,8 @@ function updateScoreboard(gsi) {
     const ctEntry = ctPlayers[i];
     const tEntry = tPlayers[i];
 
-    updatePlayerRow(ctRows[i], ctEntry?.player, ctEntry?.steamId, gsi, ctLeaders);
-    updatePlayerRow(tRows[i], tEntry?.player, tEntry?.steamId, gsi, tLeaders);
+    updatePlayerRow(ctRows[i], ctEntry?.player, ctEntry?.steamId, gsi, ctLeaders, overallLeaders);
+    updatePlayerRow(tRows[i], tEntry?.player, tEntry?.steamId, gsi, tLeaders, overallLeaders);
   }
 }
 

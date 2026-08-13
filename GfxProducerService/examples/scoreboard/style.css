@@ -365,6 +365,15 @@ body {
     0 0 calc(var(--u) * 1.05) rgba(125, 176, 255, 0.3);
 }
 
+/* Best across both teams for this stat. */
+.player-row .cell.stat.overall-highlight {
+  color: rgb(255, 248, 149);
+  font-weight: 700;
+  text-shadow:
+    0 0 calc(var(--u) * 0.45) rgba(180, 215, 255, 0.6),
+    0 0 calc(var(--u) * 1.05) rgba(125, 176, 255, 0.4);
+}
+
 /* T side - name on right */
 .team-players.t .player-row .cell.name {
   text-align: right;
