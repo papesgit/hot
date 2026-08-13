@@ -534,7 +534,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         _graphicsService.Profile.Atlases.Add(atlas);
         var vm = CreateAtlasViewModel(atlas);
         Atlases.Add(vm);
-        SelectedAtlas = vm;
+        SelectedAtlasNavigation = vm;
         NotifyProfileEdited();
     }
 
@@ -808,7 +808,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         SelectedAtlas.Model.Regions.Add(region);
         var vm = CreateRegionViewModel(region);
         SelectedAtlas.Regions.Add(vm);
-        SelectedRegion = vm;
+        SetSelectedRegions([vm]);
         NotifyProfileEdited();
     }
 
@@ -828,7 +828,7 @@ public sealed class GraphicsDockViewModel : Tool, IDisposable
         _graphicsService.Profile.Instances.Add(instance);
         var vm = CreateInstanceViewModel(instance);
         Instances.Add(vm);
-        SelectedInstance = vm;
+        SetSelectedInstances([vm]);
         NotifyProfileEdited();
     }
 
