@@ -1121,6 +1121,20 @@ public class CampathsDockViewModel : Tool
     }
 }
 
+internal static class CampathHotkeyDisplayFormatter
+{
+    public static string? FormatBadge(string? hotkey)
+    {
+        if (string.IsNullOrWhiteSpace(hotkey))
+            return hotkey;
+
+        var modifierSeparator = hotkey.LastIndexOf('+');
+        return modifierSeparator >= 0 && modifierSeparator < hotkey.Length - 1
+            ? $"{hotkey[..(modifierSeparator + 1)]}\n{hotkey[(modifierSeparator + 1)..]}"
+            : hotkey;
+    }
+}
+
 public class CampathProfileViewModel : ViewModelBase
 {
     private readonly ObservableCollection<CampathItemViewModel> _campaths;
@@ -1272,11 +1286,16 @@ public class CampathItemViewModel : ViewModelBase
         set
         {
             if (SetProperty(ref _hotkeyDisplay, value))
+            {
                 OnPropertyChanged(nameof(HasHotkey));
+                OnPropertyChanged(nameof(HotkeyBadgeDisplay));
+            }
         }
     }
 
     public bool HasHotkey => !string.IsNullOrWhiteSpace(HotkeyDisplay);
+
+    public string? HotkeyBadgeDisplay => CampathHotkeyDisplayFormatter.FormatBadge(HotkeyDisplay);
 
     public double PlaybackProgress
     {
@@ -1432,11 +1451,16 @@ public class CampathGroupViewModel : ViewModelBase
         set
         {
             if (SetProperty(ref _hotkeyDisplay, value))
+            {
                 OnPropertyChanged(nameof(HasHotkey));
+                OnPropertyChanged(nameof(HotkeyBadgeDisplay));
+            }
         }
     }
 
     public bool HasHotkey => !string.IsNullOrWhiteSpace(HotkeyDisplay);
+
+    public string? HotkeyBadgeDisplay => CampathHotkeyDisplayFormatter.FormatBadge(HotkeyDisplay);
 
     public double PlaybackProgress
     {
