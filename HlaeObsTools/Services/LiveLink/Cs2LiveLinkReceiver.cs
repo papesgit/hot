@@ -12,13 +12,11 @@ namespace HlaeObsTools.Services.LiveLink;
 
 public sealed class Cs2LiveLinkReceiver : IDisposable
 {
-    private const ushort ProtocolVersion = 12;
+    private const ushort ProtocolVersion = 13;
     private const ushort PacketTypeFrame = 1;
-    private const ushort PacketTypeSkeleton = 2;
     private const ushort FrameChunkFlagFinal = 1;
 
     private readonly object _lock = new();
-    private readonly Dictionary<int, Cs2LiveLinkSkeleton> _skeletons = new();
     private readonly Dictionary<uint, PendingFrame> _pendingFrames = new();
     private UdpClient? _udp;
     private CancellationTokenSource? _cts;
@@ -28,7 +26,6 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
     private int _port = 31237;
     private long _packetCount;
     private long _framePacketCount;
-    private long _skeletonPacketCount;
     private long _malformedPacketCount;
     private DateTimeOffset? _lastPacketUtc;
     private string _lastError = string.Empty;
@@ -84,21 +81,11 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
                 _port,
                 _packetCount,
                 _framePacketCount,
-                _skeletonPacketCount,
                 _malformedPacketCount,
-                _skeletons.Count,
                 _latestFrame?.FrameId,
                 _latestFrame?.Entities.Count ?? 0,
                 _lastPacketUtc,
                 _lastError);
-        }
-    }
-
-    public Cs2LiveLinkSkeleton? GetSkeleton(int entityId)
-    {
-        lock (_lock)
-        {
-            return _skeletons.TryGetValue(entityId, out var skeleton) ? skeleton : null;
         }
     }
 
@@ -202,9 +189,7 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
                 _lastPacketUtc = DateTimeOffset.UtcNow;
             }
 
-            if (packetType == PacketTypeSkeleton)
-                ParseSkeleton(reader);
-            else if (packetType == PacketTypeFrame)
+            if (packetType == PacketTypeFrame)
                 ParseFrame(reader);
         }
         catch (Exception ex)
@@ -214,27 +199,6 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
                 _malformedPacketCount++;
                 _lastError = $"Malformed packet type={packetType} seq={sequence} bytes={packet.Length}: {ex.Message}";
             }
-        }
-    }
-
-    private void ParseSkeleton(PacketReader reader)
-    {
-        var entityId = reader.ReadInt32();
-        var modelName = reader.ReadString();
-        var boneCount = checked((int)reader.ReadUInt32());
-        var boneNames = new string[boneCount];
-        var boneParents = new int[boneCount];
-
-        for (var i = 0; i < boneCount; i++)
-        {
-            boneNames[i] = reader.ReadString();
-            boneParents[i] = reader.ReadInt32();
-        }
-
-        lock (_lock)
-        {
-            _skeletonPacketCount++;
-            _skeletons[entityId] = new Cs2LiveLinkSkeleton(entityId, modelName, boneNames, boneParents);
         }
     }
 
@@ -366,6 +330,8 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
         var viewModel = reader.ReadByte() != 0;
         reader.Stage = $"{entityStage}.clientClassName";
         var clientClassName = reader.ReadString();
+        reader.Stage = $"{entityStage}.modelName";
+        var modelName = reader.ReadString();
         reader.Stage = $"{entityStage}.transform";
         var transform = reader.ReadMatrix3x4();
         reader.Stage = $"{entityStage}.hasBones";
@@ -382,7 +348,7 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
             localBones[i] = reader.ReadMatrix3x4();
         }
 
-        return new Cs2LiveLinkEntity(id, ownerId, observerSlot, clientClassName, projectile, visible, viewModel, transform, hasBones, localBones);
+        return new Cs2LiveLinkEntity(id, ownerId, observerSlot, clientClassName, modelName, projectile, visible, viewModel, transform, hasBones, localBones);
     }
 
     private static int[] ReadHiddenIds(ref PacketReader reader)
@@ -552,16 +518,12 @@ public sealed class Cs2LiveLinkReceiver : IDisposable
     }
 }
 
-public sealed record Cs2LiveLinkSkeleton(int EntityId, string ModelName, IReadOnlyList<string> BoneNames, IReadOnlyList<int> BoneParents);
-
 public sealed record Cs2LiveLinkReceiverStats(
     bool Enabled,
     int Port,
     long PacketCount,
     long FramePacketCount,
-    long SkeletonPacketCount,
     long MalformedPacketCount,
-    int SkeletonCount,
     uint? LatestFrameId,
     int LatestFrameEntityCount,
     DateTimeOffset? LastPacketUtc,
@@ -583,6 +545,7 @@ public sealed record Cs2LiveLinkEntity(
     int OwnerId,
     int ObserverSlot,
     string ClientClassName,
+    string ModelName,
     bool Projectile,
     bool Visible,
     bool ViewModel,

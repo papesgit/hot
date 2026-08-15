@@ -41,6 +41,7 @@ using ValveResourceFormat.Renderer.SceneNodes;
 using ValveResourceFormat.Renderer.Utils;
 using ValveResourceFormat.Renderer.World;
 using ValveResourceFormat.ResourceTypes;
+using ValveResourceFormat.ResourceTypes.ModelAnimation;
 
 namespace HlaeObsTools.Controls;
 
@@ -173,7 +174,6 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private bool _liveLinkObjectiveIconsEnabledCached = true;
     private bool _liveLinkDeadPlayerIconsEnabledCached = true;
     private int _liveLinkPortCached = 31237;
-    private readonly HashSet<int> _liveLinkLoggedMissingSkeletons = new();
     private readonly HashSet<string> _liveLinkLoggedModelFailures = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<LiveLinkIconBillboard> _liveLinkIconBillboards = new();
     private readonly object _liveLinkIconHitLock = new();
@@ -4690,12 +4690,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             }
 
             activeEntityIds.Add(entity.Id);
-            var skeleton = receiver.GetSkeleton(entity.Id);
-            var modelName = skeleton?.ModelName;
-            if (skeleton == null || string.IsNullOrWhiteSpace(modelName))
+            var modelName = entity.ModelName;
+            if (string.IsNullOrWhiteSpace(modelName))
             {
-                if (_liveLinkLoggedMissingSkeletons.Add(entity.Id))
-                    LogMessage($"LiveLink skipped entity {entity.Id}: missing skeleton metadata.");
+                LogMessage($"LiveLink skipped entity {entity.Id}: missing model name.");
                 continue;
             }
 
@@ -4724,7 +4722,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 && playerStatusesBySlot.TryGetValue(observerSlot, out var playerStatus)
                 && !playerStatus.IsAlive)
             {
-                var deadIconWorld = TryGetLiveLinkBoneWorldPosition(entity, skeleton, out var pelvisWorld)
+                var deadIconWorld = TryGetLiveLinkBoneWorldPosition(entity, node.Node.AnimationController.Skeleton, out var pelvisWorld)
                     ? pelvisWorld + new Vector3(0f, 0f, 20f)
                     : new Vector3(entity.Transform.M41, entity.Transform.M42, entity.Transform.M43 + 64f);
                 _liveLinkIconBillboards.Add(new LiveLinkIconBillboard(
@@ -4829,7 +4827,6 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         _liveLinkIconBillboards.Clear();
         _lastLiveLinkFrameId = uint.MaxValue;
-        _liveLinkLoggedMissingSkeletons.Clear();
         _liveLinkLoggedModelFailures.Clear();
     }
 
@@ -5529,10 +5526,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             or "bumpmine";
     }
 
-    private static bool TryGetLiveLinkBoneWorldPosition(Cs2LiveLinkEntity entity, Cs2LiveLinkSkeleton skeleton, out Vector3 world)
+    private static bool TryGetLiveLinkBoneWorldPosition(Cs2LiveLinkEntity entity, Skeleton skeleton, out Vector3 world)
     {
         world = default;
-        if (!entity.HasBones || entity.LocalBoneTransforms.Count == 0 || skeleton.BoneNames.Count == 0)
+        if (!entity.HasBones || entity.LocalBoneTransforms.Count == 0 || skeleton.Bones.Length == 0)
             return false;
 
         var boneIndex = FindLiveLinkAnchorBoneIndex(skeleton);
@@ -5549,7 +5546,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private static Matrix4x4 ResolveLiveLinkBoneWorldTransform(
         int boneIndex,
         Cs2LiveLinkEntity entity,
-        Cs2LiveLinkSkeleton skeleton,
+        Skeleton skeleton,
         Matrix4x4[] worldTransforms,
         bool[] resolved)
     {
@@ -5560,7 +5557,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return worldTransforms[boneIndex];
 
         var local = entity.LocalBoneTransforms[boneIndex];
-        var parentIndex = boneIndex < skeleton.BoneParents.Count ? skeleton.BoneParents[boneIndex] : -1;
+        var parentIndex = boneIndex < skeleton.Bones.Length ? skeleton.Bones[boneIndex].Parent?.Index ?? -1 : -1;
         var parentWorld = parentIndex >= 0 && parentIndex < entity.LocalBoneTransforms.Count
             ? ResolveLiveLinkBoneWorldTransform(parentIndex, entity, skeleton, worldTransforms, resolved)
             : entity.Transform;
@@ -5571,7 +5568,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         return boneWorld;
     }
 
-    private static int FindLiveLinkAnchorBoneIndex(Cs2LiveLinkSkeleton skeleton)
+    private static int FindLiveLinkAnchorBoneIndex(Skeleton skeleton)
     {
         var exactCandidates = new[]
         {
@@ -5582,25 +5579,25 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         foreach (var candidate in exactCandidates)
         {
-            for (var i = 0; i < skeleton.BoneNames.Count; ++i)
+            for (var i = 0; i < skeleton.Bones.Length; ++i)
             {
-                if (string.Equals(skeleton.BoneNames[i], candidate, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(skeleton.Bones[i].Name, candidate, StringComparison.OrdinalIgnoreCase))
                     return i;
             }
         }
 
-        for (var i = 0; i < skeleton.BoneNames.Count; ++i)
+        for (var i = 0; i < skeleton.Bones.Length; ++i)
         {
-            if (skeleton.BoneNames[i].Contains("pelvis", StringComparison.OrdinalIgnoreCase))
+            if (skeleton.Bones[i].Name.Contains("pelvis", StringComparison.OrdinalIgnoreCase))
                 return i;
         }
 
         var fallbackCandidates = new[] { "spine_0", "spine", "root" };
         foreach (var candidate in fallbackCandidates)
         {
-            for (var i = 0; i < skeleton.BoneNames.Count; ++i)
+            for (var i = 0; i < skeleton.Bones.Length; ++i)
             {
-                if (string.Equals(skeleton.BoneNames[i], candidate, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(skeleton.Bones[i].Name, candidate, StringComparison.OrdinalIgnoreCase))
                     return i;
             }
         }
