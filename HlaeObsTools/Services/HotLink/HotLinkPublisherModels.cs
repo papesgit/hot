@@ -1,9 +1,9 @@
 using System;
 using System.Text.Json;
 
-namespace HlaeObsTools.Services.ReplayDirector;
+namespace HlaeObsTools.Services.HotLink;
 
-public sealed class ReplayDirectorPlayer
+public sealed class HotLinkPublisherPlayer
 {
     public int ObserverSlot { get; init; } = -1;
     public string Name { get; init; } = string.Empty;
@@ -11,7 +11,7 @@ public sealed class ReplayDirectorPlayer
     public int RoundKills { get; set; }
 }
 
-public sealed class ReplayDirectorKillEvent
+public sealed class HotLinkPublisherKillEvent
 {
     public long Id { get; set; }
     public DateTimeOffset ReceivedUtc { get; init; } = DateTimeOffset.UtcNow;
@@ -21,9 +21,9 @@ public sealed class ReplayDirectorKillEvent
     public int RoundKillNumber { get; set; }
     public string RoundPhase { get; init; } = string.Empty;
     public bool MainCaught { get; init; }
-    public ReplayDirectorPlayer? Attacker { get; init; }
-    public ReplayDirectorPlayer? Victim { get; init; }
-    public ReplayDirectorPlayer? Assister { get; init; }
+    public HotLinkPublisherPlayer? Attacker { get; init; }
+    public HotLinkPublisherPlayer? Victim { get; init; }
+    public HotLinkPublisherPlayer? Assister { get; init; }
     public string Weapon { get; init; } = string.Empty;
     public bool Headshot { get; init; }
     public bool Wallbang { get; init; }
@@ -36,7 +36,7 @@ public sealed class ReplayDirectorKillEvent
     public int AttackerSlot => Attacker?.ObserverSlot ?? -1;
     public string AttackerName => string.IsNullOrWhiteSpace(Attacker?.Name) ? $"slot{AttackerSlot + 1}" : Attacker!.Name;
 
-    public static bool TryParseHlaeKillfeed(string json, Func<int, bool> isFocusedSlot, int roundNumber, string roundPhase, out ReplayDirectorKillEvent? kill)
+    public static bool TryParseHlaeKillfeed(string json, Func<int, bool> isFocusedSlot, int roundNumber, string roundPhase, out HotLinkPublisherKillEvent? kill)
     {
         kill = null;
         try
@@ -51,7 +51,7 @@ public sealed class ReplayDirectorKillEvent
 
             var attacker = ReadPlayer(root, "attacker");
             var slot = attacker?.ObserverSlot ?? -1;
-            kill = new ReplayDirectorKillEvent
+            kill = new HotLinkPublisherKillEvent
             {
                 GameTime = ReadDouble(root, "game_time"),
                 RoundNumber = roundNumber,
@@ -77,12 +77,12 @@ public sealed class ReplayDirectorKillEvent
         }
     }
 
-    private static ReplayDirectorPlayer? ReadPlayer(JsonElement root, string propertyName)
+    private static HotLinkPublisherPlayer? ReadPlayer(JsonElement root, string propertyName)
     {
         if (!root.TryGetProperty(propertyName, out var elem) || elem.ValueKind != JsonValueKind.Object)
             return null;
 
-        return new ReplayDirectorPlayer
+        return new HotLinkPublisherPlayer
         {
             ObserverSlot = NormalizeHlaeObserverSlot(ReadInt(elem, "observer_slot")),
             Name = ReadString(elem, "name"),
@@ -138,9 +138,4 @@ public sealed class ReplayDirectorKillEvent
 
         return null;
     }
-}
-
-public sealed class ReplayDirectorReplayMarkRequest
-{
-    public ReplayDirectorKillEvent? Kill { get; init; }
 }

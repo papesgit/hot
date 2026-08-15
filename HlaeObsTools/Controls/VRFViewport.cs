@@ -29,6 +29,7 @@ using HlaeObsTools.Services.LiveLink;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.Services.Viewport3D;
 using HlaeObsTools.ViewModels;
+using HlaeObsTools.ViewModels.Cues;
 using SkiaSharp;
 using Svg.Skia;
 using ValveResourceFormat;
@@ -182,8 +183,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private int _liveLinkIconShaderProgram;
     private int _liveLinkIconSamplerLocation = -1;
     private int _liveLinkIconTintLocation = -1;
+    private int _liveLinkIconOpacityLocation = -1;
     private int _liveLinkIconVao;
     private int _liveLinkIconVbo;
+    private readonly object _cueLock = new();
+    private List<ViewportCueBillboard> _cueBillboards = new();
+    private readonly object _cueHitLock = new();
+    private List<CueHit> _cueHitCache = new();
+    private readonly Dictionary<string, CueTextureEntry> _cueTextures = new(StringComparer.Ordinal);
+    private RenderTexture? _cueLineTexture;
 
     private int _pinShaderProgram;
     private int _pinMvpLocation = -1;
@@ -758,6 +766,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
         }
 
+        if (leftPressed && TryHandleCueClick(point.Position))
+            return;
         if (leftPressed && TryHandleLiveLinkIconClick(point.Position))
         {
             Focus();
@@ -1009,6 +1019,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
         }
 
+        if (leftPressed && TryHandleCueClick(position))
+            return;
         if (leftPressed && TryHandleLiveLinkIconClick(position))
         {
             Focus();
@@ -3511,6 +3523,31 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         RequestNextFrame();
     }
 
+    public void SetCueEvents(IReadOnlyList<CueEventViewModel> cues)
+    {
+        var snapshot = cues.Select(cue => new ViewportCueBillboard(
+            cue.Id,
+            new Vector3((float)cue.AttackerPosition.X, (float)cue.AttackerPosition.Y, (float)cue.AttackerPosition.Z + 55f),
+            new Vector3((float)cue.VictimPosition.X, (float)cue.VictimPosition.Y, (float)cue.VictimPosition.Z + 55f),
+            cue.AttackerSlotLabel,
+            cue.VictimSlotLabel,
+            cue.AttackerTeam,
+            cue.VictimTeam,
+            NormalizeCueWeapon(cue.Weapon),
+            (float)cue.RingProgress,
+            (float)cue.SpatialOpacity,
+            (float)cue.SecondsUntil)).ToList();
+        lock (_cueLock) _cueBillboards = snapshot;
+        RequestNextFrame();
+    }
+
+    private static string NormalizeCueWeapon(string weapon)
+    {
+        var value = weapon ?? string.Empty;
+        if (value.StartsWith("weapon_", StringComparison.OrdinalIgnoreCase)) value = value[7..];
+        return string.IsNullOrWhiteSpace(value) ? "knife" : value.ToLowerInvariant();
+    }
+
     public void SetCampathOverlay(CampathOverlayData? data)
     {
         lock (_campathOverlayLock)
@@ -3730,7 +3767,31 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         return true;
     }
 
-    private void ActivateFreecamAtPosition(Vector3 position)
+    private bool TryHandleCueClick(Point position)
+    {
+        List<CueHit> hits;
+        lock (_cueHitLock) hits = new List<CueHit>(_cueHitCache);
+        var hit = hits.LastOrDefault(item => position.X >= item.X0 && position.X <= item.X1 && position.Y >= item.Y0 && position.Y <= item.Y1);
+        if (hit == default) return false;
+        ActivateFreecamAtCue(hit.World, hit.LookAt);
+        return true;
+    }
+
+    private void ActivateFreecamAtCue(Vector3 position, Vector3 lookAt)
+    {
+        var direction = lookAt - position;
+        if (direction.LengthSquared() < 1e-6f)
+        {
+            ActivateFreecamAtPosition(position);
+            return;
+        }
+
+        direction = Vector3.Normalize(direction);
+        var cameraPosition = position - direction * 40f;
+        ActivateFreecamAtPosition(cameraPosition, lookAt);
+    }
+
+    private void ActivateFreecamAtPosition(Vector3 position, Vector3? lookAt = null)
     {
         var keepInputEnabled = _freecamInputEnabled;
         if (!_freecamActive)
@@ -3748,6 +3809,18 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
 
         _freecamTransform.Position = position;
+        if (lookAt.HasValue)
+        {
+            var forward = lookAt.Value - position;
+            if (forward.LengthSquared() >= 1e-6f)
+            {
+                GetYawPitchFromForward(forward, out var yaw, out var pitch);
+                _freecamTransform.Yaw = yaw;
+                _freecamTransform.Pitch = pitch;
+                _freecamTransform.Roll = 0f;
+                _freecamTransform.Orientation = BuildQuat(pitch, yaw, 0f);
+            }
+        }
         _freecamSmoothed = _freecamTransform;
         _freecamOutput = _freecamTransform;
         _freecamSmoothedQuat = _freecamSmoothed.Orientation;
@@ -4186,6 +4259,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 _renderer.PostprocessRender(_mainFramebuffer, _defaultFramebuffer);
             }
             DrawLiveLinkIcons(width, height);
+            DrawCueBillboards(width, height);
             AddPinLabels(width, height);
             AddFpsOverlay(width);
             _textRenderer?.Render(_renderer.Camera);
@@ -5040,6 +5114,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         GL.UseProgram(_liveLinkIconShaderProgram);
         GL.Uniform1(_liveLinkIconSamplerLocation, 0);
+        if (_liveLinkIconOpacityLocation >= 0) GL.Uniform1(_liveLinkIconOpacityLocation, 1f);
         GL.ActiveTexture(TextureUnit.Texture0);
         GL.BindVertexArray(_liveLinkIconVao);
 
@@ -5112,6 +5187,215 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
     }
 
+    private void DrawCueBillboards(int width, int height)
+    {
+        if (_renderer == null || !EnsureLiveLinkIconResources()) return;
+        List<ViewportCueBillboard> cues;
+        lock (_cueLock) cues = new List<ViewportCueBillboard>(_cueBillboards);
+        cues.Sort((left, right) =>
+        {
+            var leftUpcoming = left.SecondsUntil >= 0;
+            var rightUpcoming = right.SecondsUntil >= 0;
+            if (leftUpcoming != rightUpcoming) return leftUpcoming ? 1 : -1;
+            return leftUpcoming
+                ? right.SecondsUntil.CompareTo(left.SecondsUntil)
+                : left.SecondsUntil.CompareTo(right.SecondsUntil);
+        });
+        var activeTextureKeys = cues.SelectMany(cue => new[]
+        {
+            $"{cue.Id}:a", $"{cue.Id}:v", $"{cue.Id}:al", $"{cue.Id}:vl"
+        }).ToHashSet(StringComparer.Ordinal);
+        foreach (var staleKey in _cueTextures.Keys.Where(key => !activeTextureKeys.Contains(key)).ToArray())
+        {
+            _cueTextures[staleKey].Texture?.Delete();
+            _cueTextures.Remove(staleKey);
+        }
+        if (cues.Count == 0)
+        {
+            lock (_cueHitLock) _cueHitCache.Clear();
+            return;
+        }
+
+        var camera = _renderer.Camera;
+        var hits = new List<CueHit>(cues.Count * 2);
+        var blendEnabled = GL.IsEnabled(EnableCap.Blend);
+        var depthEnabled = GL.IsEnabled(EnableCap.DepthTest);
+        var cullEnabled = GL.IsEnabled(EnableCap.CullFace);
+        var previousProgram = GL.GetInteger(GetPName.CurrentProgram);
+        var previousVertexArray = GL.GetInteger(GetPName.VertexArrayBinding);
+        var previousTexture = GL.GetInteger(GetPName.TextureBinding2D);
+        GL.Enable(EnableCap.Blend);
+        GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        GL.Disable(EnableCap.DepthTest);
+        if (cullEnabled) GL.Disable(EnableCap.CullFace);
+        GL.UseProgram(_liveLinkIconShaderProgram);
+        GL.Uniform1(_liveLinkIconSamplerLocation, 0);
+        GL.BindVertexArray(_liveLinkIconVao);
+
+        foreach (var cue in cues)
+        {
+            if (!TryProjectToScreen(cue.AttackerWorld, camera, width, height, out var attackerScreen) ||
+                !TryProjectToScreen(cue.VictimWorld, camera, width, height, out var victimScreen)) continue;
+            if (_liveLinkIconOpacityLocation >= 0) GL.Uniform1(_liveLinkIconOpacityLocation, cue.Opacity);
+
+            var lineTexture = GetCueLineTexture();
+            if (lineTexture != null)
+            {
+                GL.Uniform3(_liveLinkIconTintLocation, 0.9f, 0.12f, 0.12f);
+                DrawCueLineQuad(lineTexture, attackerScreen, victimScreen, width, height, 3f);
+            }
+
+            GL.Uniform3(_liveLinkIconTintLocation, 1f, 1f, 1f);
+            const float size = 68f;
+            var step = Math.Clamp((int)Math.Round(cue.Progress * 50), 0, 50);
+            var attackerTexture = GetCueMarkerTexture(cue, true, step);
+            var victimTexture = GetCueMarkerTexture(cue, false, step);
+            if (attackerTexture != null)
+            {
+                DrawCueQuad(attackerTexture, (float)attackerScreen.X - size / 2, (float)attackerScreen.Y - size / 2, size, size, width, height);
+                hits.Add(new CueHit(cue.AttackerWorld, cue.VictimWorld, attackerScreen.X - size / 2, attackerScreen.Y - size / 2, attackerScreen.X + size / 2, attackerScreen.Y + size / 2));
+            }
+            if (victimTexture != null)
+            {
+                DrawCueQuad(victimTexture, (float)victimScreen.X - size / 2, (float)victimScreen.Y - size / 2, size, size, width, height);
+                hits.Add(new CueHit(cue.VictimWorld, cue.AttackerWorld, victimScreen.X - size / 2, victimScreen.Y - size / 2, victimScreen.X + size / 2, victimScreen.Y + size / 2));
+            }
+        }
+
+        // Draw all slot labels in a final pass so another cue's ring cannot cover them.
+        foreach (var cue in cues)
+        {
+            if (!TryProjectToScreen(cue.AttackerWorld, camera, width, height, out var attackerScreen) ||
+                !TryProjectToScreen(cue.VictimWorld, camera, width, height, out var victimScreen)) continue;
+            if (_liveLinkIconOpacityLocation >= 0) GL.Uniform1(_liveLinkIconOpacityLocation, cue.Opacity);
+            GL.Uniform3(_liveLinkIconTintLocation, 1f, 1f, 1f);
+            const float size = 68f;
+            var attackerLabelTexture = GetCueLabelTexture(cue, true);
+            var victimLabelTexture = GetCueLabelTexture(cue, false);
+            if (attackerLabelTexture != null)
+                DrawCueQuad(attackerLabelTexture, (float)attackerScreen.X - size / 2, (float)attackerScreen.Y - size / 2, size, size, width, height);
+            if (victimLabelTexture != null)
+                DrawCueQuad(victimLabelTexture, (float)victimScreen.X - size / 2, (float)victimScreen.Y - size / 2, size, size, width, height);
+        }
+
+        GL.BindTexture(TextureTarget.Texture2D, previousTexture);
+        GL.BindVertexArray(previousVertexArray);
+        GL.UseProgram(previousProgram);
+        if (depthEnabled) GL.Enable(EnableCap.DepthTest); else GL.Disable(EnableCap.DepthTest);
+        if (cullEnabled) GL.Enable(EnableCap.CullFace);
+        if (!blendEnabled) GL.Disable(EnableCap.Blend);
+        lock (_cueHitLock) _cueHitCache = hits;
+    }
+
+    private void DrawCueLineQuad(RenderTexture texture, Point start, Point end, int width, int height, float thickness)
+    {
+        var dx = (float)(end.X - start.X);
+        var dy = (float)(end.Y - start.Y);
+        var length = MathF.Sqrt(dx * dx + dy * dy);
+        if (length < 1) return;
+        var px = -dy / length * thickness / 2;
+        var py = dx / length * thickness / 2;
+        var x0 = (float)start.X + px; var y0 = (float)start.Y + py;
+        var x1 = (float)end.X + px; var y1 = (float)end.Y + py;
+        var x2 = (float)end.X - px; var y2 = (float)end.Y - py;
+        var x3 = (float)start.X - px; var y3 = (float)start.Y - py;
+        DrawCueQuadVertices(texture, [x0,y0,0,0, x1,y1,1,0, x2,y2,1,1, x0,y0,0,0, x2,y2,1,1, x3,y3,0,1], width, height);
+    }
+
+    private void DrawCueQuad(RenderTexture texture, float x, float y, float w, float h, int width, int height) =>
+        DrawCueQuadVertices(texture, [x,y,0,0, x+w,y,1,0, x+w,y+h,1,1, x,y,0,0, x+w,y+h,1,1, x,y+h,0,1], width, height);
+
+    private void DrawCueQuadVertices(RenderTexture texture, float[] values, int width, int height)
+    {
+        for (var i = 0; i < values.Length; i += 4)
+        {
+            values[i] = 2f * values[i] / Math.Max(1, width) - 1f;
+            values[i + 1] = 1f - 2f * values[i + 1] / Math.Max(1, height);
+        }
+        GL.BindTexture(TextureTarget.Texture2D, texture.Handle);
+        GL.BindBuffer(BufferTarget.ArrayBuffer, _liveLinkIconVbo);
+        GL.BufferData(BufferTarget.ArrayBuffer, values.Length * sizeof(float), values, BufferUsageHint.StreamDraw);
+        GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+    }
+
+    private RenderTexture? GetCueLineTexture()
+    {
+        if (_cueLineTexture != null) return _cueLineTexture;
+        using var bitmap = new SKBitmap(new SKImageInfo(4, 4, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.White);
+        _cueLineTexture = MaterialLoader.LoadBitmapTexture(bitmap);
+        return _cueLineTexture;
+    }
+
+    private RenderTexture? GetCueMarkerTexture(ViewportCueBillboard cue, bool attacker, int step)
+    {
+        var key = $"{cue.Id}:{(attacker ? 'a' : 'v')}";
+        var signature = attacker
+            ? $"{cue.AttackerTeam}|{cue.Weapon}"
+            : $"{cue.VictimTeam}|dead_player";
+        if (_cueTextures.TryGetValue(key, out var cached) && cached.Step == step && cached.Signature == signature) return cached.Texture;
+        cached.Texture?.Delete();
+        using var bitmap = new SKBitmap(new SKImageInfo(128, 128, SKColorType.Rgba8888, SKAlphaType.Premul));
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        var team = attacker ? cue.AttackerTeam : cue.VictimTeam;
+        var teamColor = string.Equals(team, "CT", StringComparison.OrdinalIgnoreCase) ? new SKColor(77,179,255) :
+            string.Equals(team, "T", StringComparison.OrdinalIgnoreCase) ? new SKColor(255,147,64) : new SKColor(200,205,213);
+        using var background = new SKPaint { Color = new SKColor(18,22,28,225), IsAntialias = true };
+        using var ring = new SKPaint { Color = teamColor, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 7, StrokeCap = SKStrokeCap.Round };
+        canvas.DrawCircle(64, 64, 34, background);
+        if (step > 0) canvas.DrawArc(new SKRect(30,30,98,98), -90, 360f * step / 50f, false, ring);
+        DrawCueSvg(canvas, attacker ? cue.Weapon : "dead_player", new SKRect(76, 82, 110, 116));
+        canvas.Flush();
+        var texture = MaterialLoader.LoadBitmapTexture(bitmap);
+        texture.SetWrapMode(TextureWrapMode.ClampToEdge);
+        texture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
+        _cueTextures[key] = new CueTextureEntry(step, signature, texture);
+        return texture;
+    }
+
+    private RenderTexture? GetCueLabelTexture(ViewportCueBillboard cue, bool attacker)
+    {
+        var key = $"{cue.Id}:{(attacker ? "al" : "vl")}";
+        var label = attacker ? cue.AttackerLabel : cue.VictimLabel;
+        if (_cueTextures.TryGetValue(key, out var cached) && cached.Signature == label)
+            return cached.Texture;
+
+        cached.Texture?.Delete();
+        using var bitmap = new SKBitmap(new SKImageInfo(128, 128, SKColorType.Rgba8888, SKAlphaType.Premul));
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        using var typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
+        using var font = new SKFont(typeface, 38);
+        using var textPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        canvas.DrawText(label, 64, 77, SKTextAlign.Center, font, textPaint);
+        canvas.Flush();
+        var texture = MaterialLoader.LoadBitmapTexture(bitmap);
+        texture.SetWrapMode(TextureWrapMode.ClampToEdge);
+        texture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
+        _cueTextures[key] = new CueTextureEntry(-1, label, texture);
+        return texture;
+    }
+
+    private static void DrawCueSvg(SKCanvas canvas, string iconKey, SKRect target)
+    {
+        try
+        {
+            using var stream = AssetLoader.Open(GetLiveLinkIconUri(iconKey));
+            using var svg = new SKSvg();
+            svg.Load(stream);
+            if (svg.Picture == null) return;
+            var bounds = svg.Picture.CullRect;
+            var scale = Math.Min(target.Width / Math.Max(1, bounds.Width), target.Height / Math.Max(1, bounds.Height));
+            canvas.Save();
+            canvas.Translate(target.MidX - bounds.MidX * scale, target.MidY - bounds.MidY * scale);
+            canvas.Scale(scale);
+            canvas.DrawPicture(svg.Picture);
+            canvas.Restore();
+        }
+        catch { }
+    }
+
     private bool EnsureLiveLinkIconResources()
     {
         if (_liveLinkIconShaderProgram == 0)
@@ -5122,6 +5406,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
             _liveLinkIconSamplerLocation = GL.GetUniformLocation(_liveLinkIconShaderProgram, "uTexture");
             _liveLinkIconTintLocation = GL.GetUniformLocation(_liveLinkIconShaderProgram, "uTint");
+            _liveLinkIconOpacityLocation = GL.GetUniformLocation(_liveLinkIconShaderProgram, "uOpacity");
         }
 
         if (_liveLinkIconVao == 0)
@@ -5395,10 +5680,11 @@ in vec2 vTex;
 out vec4 FragColor;
 uniform sampler2D uTexture;
 uniform vec3 uTint;
+uniform float uOpacity;
 void main()
 {
     vec4 tex = texture(uTexture, vTex);
-    FragColor = vec4(tex.rgb * uTint, tex.a);
+    FragColor = vec4(tex.rgb * uTint, tex.a * uOpacity);
 }";
         const string Vertex120 = @"#version 120
 attribute vec2 aPos;
@@ -5413,10 +5699,11 @@ void main()
 varying vec2 vTex;
 uniform sampler2D uTexture;
 uniform vec3 uTint;
+uniform float uOpacity;
 void main()
 {
     vec4 tex = texture2D(uTexture, vTex);
-    gl_FragColor = vec4(tex.rgb * uTint, tex.a);
+    gl_FragColor = vec4(tex.rgb * uTint, tex.a * uOpacity);
 }";
         const string VertexEs300 = @"#version 300 es
 precision mediump float;
@@ -5434,10 +5721,11 @@ in vec2 vTex;
 out vec4 FragColor;
 uniform sampler2D uTexture;
 uniform vec3 uTint;
+uniform float uOpacity;
 void main()
 {
     vec4 tex = texture(uTexture, vTex);
-    FragColor = vec4(tex.rgb * uTint, tex.a);
+    FragColor = vec4(tex.rgb * uTint, tex.a * uOpacity);
 }";
         const string VertexEs100 = @"#version 100
 precision mediump float;
@@ -5454,10 +5742,11 @@ precision mediump float;
 varying vec2 vTex;
 uniform sampler2D uTexture;
 uniform vec3 uTint;
+uniform float uOpacity;
 void main()
 {
     vec4 tex = texture2D(uTexture, vTex);
-    gl_FragColor = vec4(tex.rgb * uTint, tex.a);
+    gl_FragColor = vec4(tex.rgb * uTint, tex.a * uOpacity);
 }";
 
         var version = GL.GetString(StringName.Version) ?? "unknown";
@@ -5613,8 +5902,14 @@ void main()
             texture?.Delete();
         }
         _liveLinkIconTextures.Clear();
+        foreach (var texture in _cueTextures.Values) texture.Texture?.Delete();
+        _cueTextures.Clear();
+        _cueLineTexture?.Delete();
+        _cueLineTexture = null;
         _liveLinkIconBillboards.Clear();
         _liveLinkIconSamplerLocation = -1;
+        _liveLinkIconTintLocation = -1;
+        _liveLinkIconOpacityLocation = -1;
     }
 
     private bool EnsureCampathOverlayResources()
@@ -6672,6 +6967,11 @@ private static bool TryProjectToScreen(Vector3 world, ValveResourceFormat.Render
 
     private readonly record struct LiveLinkIconBillboard(Vector3 World, string IconKey, bool Projectile, Vector3 Tint);
     private readonly record struct LiveLinkIconHit(Vector3 World, double X0, double Y0, double X1, double Y1);
+    private readonly record struct CueHit(Vector3 World, Vector3 LookAt, double X0, double Y0, double X1, double Y1);
+    private readonly record struct ViewportCueBillboard(long Id, Vector3 AttackerWorld, Vector3 VictimWorld,
+        string AttackerLabel, string VictimLabel, string AttackerTeam, string VictimTeam,
+        string Weapon, float Progress, float Opacity, float SecondsUntil);
+    private readonly record struct CueTextureEntry(int Step, string Signature, RenderTexture? Texture);
 
     private enum GizmoMode
     {

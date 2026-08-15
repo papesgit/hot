@@ -16,6 +16,8 @@ using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.Services.WebSocket;
+using HlaeObsTools.Services.HotLink;
+using HlaeObsTools.ViewModels.Cues;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -801,6 +803,61 @@ public sealed class RadarBombViewModel : ViewModelBase
 /// <summary>
 /// Radar dock view model showing CS2 positions from GSI.
 /// </summary>
+public sealed class RadarCueEventViewModel : ViewModelBase
+{
+    public required CueEventViewModel Cue { get; init; }
+    private double _attackerX;
+    private double _attackerY;
+    private double _victimX;
+    private double _victimY;
+    private int _zIndex;
+    public double AttackerX => _attackerX;
+    public double AttackerY => _attackerY;
+    public double VictimX => _victimX;
+    public double VictimY => _victimY;
+    public double AttackerCanvasX => AttackerX - 24;
+    public double AttackerCanvasY => AttackerY - 24;
+    public double VictimCanvasX => VictimX - 24;
+    public double VictimCanvasY => VictimY - 24;
+    public double AttackerLabelCanvasX => AttackerX - 12;
+    public double AttackerLabelCanvasY => AttackerY - 10;
+    public double VictimLabelCanvasX => VictimX - 12;
+    public double VictimLabelCanvasY => VictimY - 10;
+    public Point AttackerPoint => new(AttackerX, AttackerY);
+    public Point VictimPoint => new(VictimX, VictimY);
+    public int ZIndex => _zIndex;
+
+    public void Update(double attackerX, double attackerY, double victimX, double victimY)
+    {
+        if (SetProperty(ref _attackerX, attackerX, nameof(AttackerX)))
+        {
+            OnPropertyChanged(nameof(AttackerCanvasX));
+            OnPropertyChanged(nameof(AttackerLabelCanvasX));
+            OnPropertyChanged(nameof(AttackerPoint));
+        }
+        if (SetProperty(ref _attackerY, attackerY, nameof(AttackerY)))
+        {
+            OnPropertyChanged(nameof(AttackerCanvasY));
+            OnPropertyChanged(nameof(AttackerLabelCanvasY));
+            OnPropertyChanged(nameof(AttackerPoint));
+        }
+        if (SetProperty(ref _victimX, victimX, nameof(VictimX)))
+        {
+            OnPropertyChanged(nameof(VictimCanvasX));
+            OnPropertyChanged(nameof(VictimLabelCanvasX));
+            OnPropertyChanged(nameof(VictimPoint));
+        }
+        if (SetProperty(ref _victimY, victimY, nameof(VictimY)))
+        {
+            OnPropertyChanged(nameof(VictimCanvasY));
+            OnPropertyChanged(nameof(VictimLabelCanvasY));
+            OnPropertyChanged(nameof(VictimPoint));
+        }
+    }
+
+    public void SetZIndex(int value) => SetProperty(ref _zIndex, value, nameof(ZIndex));
+}
+
 public sealed class RadarDockViewModel : Tool, IDisposable
 {
     private const double InterpolationTimerIntervalMs = 16.0;
@@ -822,6 +879,8 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private readonly CampathsDockViewModel? _campathsVm;
     private readonly HlaeWebSocketClient? _webSocketClient;
     private readonly RadarSettings _settings;
+    private readonly DelayedObserverCueService? _cueService;
+    private readonly Dictionary<long, RadarCueEventViewModel> _cueEventMarkers = new();
     private CampathProfileViewModel? _attachedProfile;
     private DispatcherTimer? _animationTimer;
     private CampathPathViewModel? _hoveredCampath;
@@ -851,6 +910,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     public ObservableCollection<RadarDetonationViewModel> Detonations { get; } = new();
     public ObservableCollection<FlameViewModel> Flames { get; } = new();
     public ObservableCollection<RadarBombViewModel> Bombs { get; } = new();
+    public ObservableCollection<RadarCueEventViewModel> CueEvents { get; } = new();
     private IReadOnlyList<CampathPathViewModel> _campathPaths = Array.Empty<CampathPathViewModel>();
     private DispatcherTimer? _campathOverlayRefreshTimer;
     private int _campathOverlayRefreshVersion;
@@ -895,13 +955,14 @@ public sealed class RadarDockViewModel : Tool, IDisposable
 
     public RadarSettings RadarSettings => _settings;
 
-    public RadarDockViewModel(GsiServer gsiServer, RadarConfigProvider configProvider, RadarSettings settings, CampathsDockViewModel? campathsVm, HlaeWebSocketClient? webSocketClient)
+    public RadarDockViewModel(GsiServer gsiServer, RadarConfigProvider configProvider, RadarSettings settings, CampathsDockViewModel? campathsVm, HlaeWebSocketClient? webSocketClient, DelayedObserverCueService? cueService = null)
     {
         _gsiServer = gsiServer;
         _configProvider = configProvider;
         _settings = settings;
         _campathsVm = campathsVm;
         _webSocketClient = webSocketClient;
+        _cueService = cueService;
         _projector = new RadarProjector(configProvider);
 
         Title = "Radar";
@@ -910,6 +971,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
         CanPin = true;
 
         _gsiServer.GameStateUpdated += OnGameStateUpdated;
+        if (_cueService != null) _cueService.Updated += OnCueServiceUpdated;
 
         _settings.PropertyChanged += OnSettingsChanged;
 
@@ -930,6 +992,47 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     private void OnGameStateUpdated(object? sender, GsiGameState state)
     {
         Dispatcher.UIThread.Post(() => ApplyState(state));
+    }
+
+    private void OnCueServiceUpdated(object? sender, EventArgs e)
+    {
+        if (_cueService == null || !_cueService.Settings.CueRadarEnabled || string.IsNullOrWhiteSpace(_currentMap))
+        {
+            CueEvents.Clear();
+            _cueEventMarkers.Clear();
+            return;
+        }
+        var presentIds = new HashSet<long>();
+        foreach (var cue in _cueService.Events)
+        {
+            cue.UseAltBindings = _settings.UseAltPlayerBinds;
+            if (!cue.IsSpatialVisible ||
+                !_projector.TryProject(_currentMap, cue.AttackerPosition, out var ax, out var ay, out _) ||
+                !_projector.TryProject(_currentMap, cue.VictimPosition, out var vx, out var vy, out _)) continue;
+            presentIds.Add(cue.Id);
+            if (!_cueEventMarkers.TryGetValue(cue.Id, out var marker))
+            {
+                marker = new RadarCueEventViewModel { Cue = cue };
+                _cueEventMarkers[cue.Id] = marker;
+                CueEvents.Add(marker);
+            }
+            marker.Update(ax * 1024, ay * 1024, vx * 1024, vy * 1024);
+        }
+        foreach (var staleId in _cueEventMarkers.Keys.Where(id => !presentIds.Contains(id)).ToArray())
+        {
+            var marker = _cueEventMarkers[staleId];
+            _cueEventMarkers.Remove(staleId);
+            CueEvents.Remove(marker);
+        }
+
+        var drawOrder = CueEvents
+            .OrderBy(marker => marker.Cue.SecondsUntil >= 0 ? 1 : 0)
+            .ThenBy(marker => marker.Cue.SecondsUntil >= 0
+                ? -marker.Cue.SecondsUntil
+                : marker.Cue.SecondsUntil)
+            .ToArray();
+        for (var i = 0; i < drawOrder.Length; i++)
+            drawOrder[i].SetZIndex(i);
     }
 
     private void ApplyState(GsiGameState state)
@@ -1670,6 +1773,7 @@ public sealed class RadarDockViewModel : Tool, IDisposable
     public void Dispose()
     {
         _gsiServer.GameStateUpdated -= OnGameStateUpdated;
+        if (_cueService != null) _cueService.Updated -= OnCueServiceUpdated;
         _settings.PropertyChanged -= OnSettingsChanged;
         if (_campathsVm != null)
         {

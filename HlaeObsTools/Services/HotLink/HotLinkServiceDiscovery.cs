@@ -8,19 +8,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using Makaretu.Dns;
 
-namespace HlaeObsTools.Services.ReplayDirector;
+namespace HlaeObsTools.Services.HotLink;
 
-public sealed record ReplayDirectorHost(string MachineName, IPAddress Address, int Port)
+public sealed record HotLinkPublisherEndpoint(string MachineName, IPAddress Address, int Port)
 {
     public string DisplayName => $"{MachineName} - {Address}:{Port}";
 }
 
 /// <summary>
-/// Advertises and browses the local-link DNS-SD service used by replay directors.
+/// Advertises and browses HOT Link publishers on the local network.
 /// </summary>
-public sealed class ReplayDirectorServiceDiscovery : IDisposable
+public sealed class HotLinkServiceDiscovery : IDisposable
 {
-    public const string ServiceType = "_hlae-replay-director._tcp";
+    public const string ServiceType = HotLinkProtocol.ServiceType;
 
     private readonly ServiceDiscovery _advertiser = new();
     private readonly object _sync = new();
@@ -59,10 +59,10 @@ public sealed class ReplayDirectorServiceDiscovery : IDisposable
         }
     }
 
-    public async Task<IReadOnlyList<ReplayDirectorHost>> BrowseAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<HotLinkPublisherEndpoint>> BrowseAsync(CancellationToken cancellationToken = default)
     {
         using var browser = new ServiceDiscovery();
-        var hosts = new Dictionary<string, ReplayDirectorHost>(StringComparer.OrdinalIgnoreCase);
+        var hosts = new Dictionary<string, HotLinkPublisherEndpoint>(StringComparer.OrdinalIgnoreCase);
         var sync = new object();
 
         browser.ServiceInstanceDiscovered += (_, e) =>
@@ -81,7 +81,7 @@ public sealed class ReplayDirectorServiceDiscovery : IDisposable
                 return;
 
             var machineName = GetDisplayInstanceName(e.ServiceInstanceName.ToString());
-            var host = new ReplayDirectorHost(machineName, address, serviceRecord.Port);
+            var host = new HotLinkPublisherEndpoint(machineName, address, serviceRecord.Port);
             lock (sync)
                 hosts[$"{address}:{serviceRecord.Port}"] = host;
         };
@@ -108,7 +108,6 @@ public sealed class ReplayDirectorServiceDiscovery : IDisposable
         var instanceName = fullyQualifiedName.Split('.', 2)[0];
         instanceName = Regex.Replace(instanceName, @"\\(\d{3})", match => ((char)int.Parse(match.Groups[1].Value)).ToString());
 
-        // Older HlaeObsTools advertisements included the service port in the instance name.
-        return Regex.Replace(instanceName, @"\s+\(\d+\)$", string.Empty);
+        return instanceName;
     }
 }

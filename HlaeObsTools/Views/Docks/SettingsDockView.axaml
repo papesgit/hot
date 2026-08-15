@@ -99,7 +99,7 @@
                                     <TextBlock VerticalAlignment="Center" Text="Port" Foreground="#AAAAAA" />
                                     <TextBox MaxWidth="80" Text="{Binding VmixSettings.Port, Mode=TwoWay}" />
                                 </WrapPanel>
-                                <ToggleSwitch IsChecked="{Binding VmixReplaySettings.Enabled, Mode=TwoWay}" Content="Enable vMix replay markers" hotkeys:HotkeyTarget.Path="VmixReplaySettings.Enabled" Foreground="#E6E6E6" />
+                                <ToggleSwitch IsChecked="{Binding VmixReplaySettings.Enabled, Mode=TwoWay}" Content="Enable local vMix replay markers" hotkeys:HotkeyTarget.Path="VmixReplaySettings.Enabled" Foreground="#E6E6E6" />
                                 <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Pre-roll (s)" Foreground="#AAAAAA" />
@@ -127,20 +127,24 @@
                                 </WrapPanel>
                             </StackPanel>
                             <Separator Margin="0,10,0,6" />
-                            <TextBlock Text="Replay Director" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                            <TextBlock Text="HOT Link" Foreground="#CCCCCC" FontWeight="SemiBold" />
                             <StackPanel Spacing="6" Margin="0,0,0,12">
                                 <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
                                     <TextBlock VerticalAlignment="Center" Text="Role" Foreground="#AAAAAA" />
-                                    <ComboBox MinWidth="150" ItemsSource="{Binding ReplayDirectorRoleOptions}" SelectedItem="{Binding ReplayDirectorSettings.Role, Mode=TwoWay}" />
+                                    <ComboBox ItemsSource="{Binding HotLinkRoleOptions}" SelectedItem="{Binding HotLinkSettings.Role, Mode=TwoWay}" />
                                 </WrapPanel>
                                 <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
                                     <TextBlock VerticalAlignment="Center" Text="Publisher port" Foreground="#AAAAAA" />
-                                    <TextBox MaxWidth="80" Text="{Binding ReplayDirectorSettings.PublisherPort, Mode=TwoWay}" />
+                                    <TextBox MinWidth="80" Text="{Binding HotLinkSettings.PublisherPort, Mode=TwoWay}" />
                                 </WrapPanel>
-                                <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsFollower}" Spacing="6">
-                                    <WrapPanel IsVisible="{Binding ReplayDirectorSettings.IsDiscoveryHostEnabled}" Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
-                                        <Button Content="Refresh hosts" Command="{Binding RefreshReplayDirectorHostsCommand}" />
-                                        <ComboBox MinWidth="260" ItemsSource="{Binding ReplayDirectorHosts}" SelectedItem="{Binding SelectedReplayDirectorHost, Mode=TwoWay}">
+                                <StackPanel IsVisible="{Binding HotLinkSettings.IsClient}" Spacing="6">
+                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                        <TextBlock VerticalAlignment="Center" Text="Client mode" Foreground="#AAAAAA" />
+                                        <ComboBox MinWidth="190" ItemsSource="{Binding HotLinkClientModeOptions}" SelectedItem="{Binding HotLinkSettings.ClientMode, Mode=TwoWay}" />
+                                    </WrapPanel>
+                                    <WrapPanel IsVisible="{Binding HotLinkSettings.IsDiscoveryHostEnabled}" Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                        <Button Content="Refresh hosts" Command="{Binding RefreshHotLinkPublishersCommand}" />
+                                        <ComboBox MinWidth="260" ItemsSource="{Binding HotLinkPublishers}" SelectedItem="{Binding SelectedHotLinkPublisher, Mode=TwoWay}">
                                             <ComboBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding DisplayName}" />
@@ -149,46 +153,64 @@
                                         </ComboBox>
                                     </WrapPanel>
                                     <WrapPanel ItemSpacing="8" LineSpacing="8">
-                                        <ToggleSwitch IsChecked="{Binding ReplayDirectorSettings.ManualHost, Mode=TwoWay}" Content="Manual Host" Foreground="#E6E6E6" />
-                                        <StackPanel IsVisible="{Binding ReplayDirectorSettings.ManualHost}" Orientation="Horizontal" Spacing="8">
+                                        <ToggleSwitch IsChecked="{Binding HotLinkSettings.ManualHost, Mode=TwoWay}" Content="Manual Host" Foreground="#E6E6E6" />
+                                        <StackPanel IsVisible="{Binding HotLinkSettings.ManualHost}" Orientation="Horizontal" Spacing="8">
                                             <TextBlock VerticalAlignment="Center" Text="Publisher IP" Foreground="#AAAAAA" />
-                                            <TextBox MinWidth="80" MaxLines="1" VerticalAlignment="Center" Text="{Binding ReplayDirectorSettings.PublisherIp, Mode=TwoWay}" />
+                                            <TextBox MinWidth="80" MaxLines="1" VerticalAlignment="Center" Text="{Binding HotLinkSettings.PublisherIp, Mode=TwoWay}" />
                                         </StackPanel>
                                     </WrapPanel>
-                                    <Button IsVisible="{Binding ReplayDirectorSettings.IsFollowerDisconnected}" IsEnabled="{Binding CanConnectReplayDirectorFollower}" Content="Connect" Command="{Binding ConnectReplayDirectorFollowerCommand}" />
-                                    <Button IsVisible="{Binding ReplayDirectorSettings.FollowerConnectionEnabled}" Content="Disconnect" Command="{Binding DisconnectReplayDirectorFollowerCommand}" />
+                                    <Button IsVisible="{Binding HotLinkSettings.IsClientDisconnected}" IsEnabled="{Binding CanConnectHotLinkClient}" Content="Connect" Command="{Binding ConnectHotLinkClientCommand}" />
+                                    <Button IsVisible="{Binding HotLinkSettings.ClientConnectionEnabled}" Content="Disconnect" Command="{Binding DisconnectHotLinkClientCommand}" />
                                 </StackPanel>
-                                <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
+                                <WrapPanel IsVisible="{Binding HotLinkSettings.IsReplayDirectorMode}" Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Pre-switch (s)" Foreground="#AAAAAA" />
-                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplayDirectorSettings.PreSwitchSeconds, Mode=TwoWay}" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding HotLinkSettings.PreSwitchSeconds, Mode=TwoWay}" />
                                     </StackPanel>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Switch lock (s)" Foreground="#AAAAAA" />
-                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplayDirectorSettings.SwitchLockSeconds, Mode=TwoWay}" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding HotLinkSettings.SwitchLockSeconds, Mode=TwoWay}" />
                                     </StackPanel>
                                 </WrapPanel>
-                                <StackPanel Spacing="6">
+                                <StackPanel IsVisible="{Binding HotLinkSettings.IsPublisher}" Spacing="6">
                                     <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
                                         <TextBlock VerticalAlignment="Center" Text="Delayed channel / camera" Foreground="#AAAAAA" />
-                                        <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixChannel, Mode=TwoWay}" />
-                                        <TextBox MaxWidth="55" Text="{Binding ReplayDirectorSettings.DelayedVmixCamera, Mode=TwoWay}" />
+                                        <TextBox MaxWidth="55" Text="{Binding HotLinkSettings.DelayedVmixChannel, Mode=TwoWay}" />
+                                        <TextBox MaxWidth="55" Text="{Binding HotLinkSettings.DelayedVmixCamera, Mode=TwoWay}" />
                                     </WrapPanel>
-                                    <CheckBox IsChecked="{Binding ReplayDirectorSettings.OnlyFollowMissedKills, Mode=TwoWay}" Content="Only follow missed kills" Foreground="#E6E6E6" />
-                                    <ToggleSwitch IsChecked="{Binding ReplayDirectorSettings.DelayedVmixEnabled, Mode=TwoWay}" Content="Enable delayed vMix replay marking" Foreground="#E6E6E6" />
+                                    <ToggleSwitch IsChecked="{Binding HotLinkSettings.AcceptReplayMarkRequests, Mode=TwoWay}" Content="Accept delayed vMix replay marks" Foreground="#E6E6E6" />
                                 </StackPanel>
-                                <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsPublisher}" Spacing="6">
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                <StackPanel IsVisible="{Binding HotLinkSettings.IsReplayDirectorMode}" Spacing="6">
+                                    <CheckBox IsChecked="{Binding HotLinkSettings.OnlyFollowMissedKills, Mode=TwoWay}" Content="Only follow missed kills" Foreground="#E6E6E6" />
                                 </StackPanel>
-                                <StackPanel IsVisible="{Binding ReplayDirectorSettings.IsFollower}" Spacing="6">
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.LocalGameTime}" Foreground="#AAAAAA" TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.ScheduledTarget}" Foreground="#AAAAAA" TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastSwitch}" Foreground="#AAAAAA" TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding ReplayDirectorSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                <WrapPanel IsVisible="{Binding HotLinkSettings.IsCueMode}" ItemSpacing="8" LineSpacing="8">
+                                    <ToggleSwitch IsChecked="{Binding HotLinkSettings.CueTimelineEnabled, Mode=TwoWay}" Content="Show cue timeline" Foreground="#E6E6E6" />
+                                    <ToggleSwitch IsChecked="{Binding HotLinkSettings.CueRadarEnabled, Mode=TwoWay}" Content="Show radar cues" Foreground="#E6E6E6" />
+                                    <ToggleSwitch IsChecked="{Binding HotLinkSettings.CueViewportEnabled, Mode=TwoWay}" Content="Show 3D viewport cues" Foreground="#E6E6E6" />
+                                    <CheckBox IsChecked="{Binding HotLinkSettings.CueTimelineAutoRange, Mode=TwoWay}" Content="Automatic timeline range" Foreground="#E6E6E6" />
+                                    <WrapPanel IsVisible="{Binding !HotLinkSettings.CueTimelineAutoRange}" Orientation="Horizontal" ItemSpacing="8">
+                                        <TextBlock VerticalAlignment="Center" Text="Upcoming range (s)" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="55" MaxWidth="80" Text="{Binding HotLinkSettings.CueTimelineFixedUpcomingSeconds, Mode=TwoWay}" />
+                                    </WrapPanel>
+                                </WrapPanel>
+                                <StackPanel IsVisible="{Binding HotLinkSettings.IsPublisher}" Spacing="6">
+                                    <TextBlock Text="{Binding HotLinkSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding HotLinkSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding HotLinkSettings.LastVmixMark}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel IsVisible="{Binding HotLinkSettings.IsClient}" Spacing="6">
+                                    <TextBlock Text="{Binding HotLinkSettings.Status}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding HotLinkSettings.LocalGameTime}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding HotLinkSettings.LastKill}" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding HotLinkSettings.ScheduledTarget}"
+                                               IsVisible="{Binding HotLinkSettings.IsReplayDirectorMode}"
+                                               Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding HotLinkSettings.LastSwitch}"
+                                               IsVisible="{Binding HotLinkSettings.IsReplayDirectorMode}"
+                                               Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding HotLinkSettings.LastVmixMark}"
+                                               IsVisible="{Binding HotLinkSettings.IsReplayDirectorMode}"
+                                               Foreground="#AAAAAA" TextWrapping="Wrap" />
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
@@ -484,23 +506,28 @@
                         <TextBlock Text="{Binding Viewport3DSettings.MapObjPath}" TextWrapping="Wrap"
                                 Foreground="#888888"
                                 FontSize="12"/>
-                        <TextBlock Text="Viewport mouse scale"
-                                Foreground="#CCCCCC"
-                                FontWeight="SemiBold"
-                                Margin="0,10,0,0"/>
-                        <TextBox MinWidth="80" MaxWidth="120"
-                                Text="{Binding Viewport3DSettings.ViewportMouseScale, Mode=TwoWay}"
-                                PlaceholderText="1.0"
-                                HorizontalAlignment="Left" />
-
-                        <TextBlock Text="Viewport FPS cap (0 = uncapped)"
-                                Foreground="#CCCCCC"
-                                FontWeight="SemiBold"
-                                Margin="0,10,0,0"/>
-                        <TextBox MinWidth="80" MaxWidth="120"
-                                Text="{Binding Viewport3DSettings.ViewportFpsCap, Mode=TwoWay}"
-                                PlaceholderText="60"
-                                HorizontalAlignment="Left" />
+                        <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
+                            <StackPanel>
+                                <TextBlock Text="Mouse scale"
+                                        Foreground="#CCCCCC"
+                                        FontWeight="SemiBold"
+                                        Margin="0,10,0,0"/>
+                                <TextBox MinWidth="80" MaxWidth="120"
+                                        Text="{Binding Viewport3DSettings.ViewportMouseScale, Mode=TwoWay}"
+                                        PlaceholderText="1.0"
+                                        HorizontalAlignment="Left" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="FPS cap"
+                                        Foreground="#CCCCCC"
+                                        FontWeight="SemiBold"
+                                        Margin="0,10,0,0"/>
+                                <TextBox MinWidth="80" MaxWidth="120"
+                                        Text="{Binding Viewport3DSettings.ViewportFpsCap, Mode=TwoWay}"
+                                        PlaceholderText="60"
+                                        HorizontalAlignment="Left" />
+                            </StackPanel>
+                        </WrapPanel>
 
                         <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
                             <ToggleSwitch IsChecked="{Binding Viewport3DSettings.ShowFps, Mode=TwoWay}"
@@ -513,58 +540,32 @@
                                         Foreground="#E6E6E6"
                                 hotkeys:HotkeyTarget.Path="Viewport3DSettings.ShowPlayerPins"
                                         Margin="0,6,0,0"/>
-                            <ToggleSwitch IsChecked="{Binding Viewport3DSettings.LiveLinkItemIconsEnabled, Mode=TwoWay}"
-                                        Content="Show viewport icons"
-                                        Foreground="#E6E6E6"
-                                hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkItemIconsEnabled"
-                                        Margin="0,6,0,0"/>
                         </WrapPanel>
 
-                        <WrapPanel Orientation="Horizontal"
-                                    ItemSpacing="10" LineSpacing="10"
-                                    IsEnabled="{Binding Viewport3DSettings.LiveLinkItemIconsEnabled}">
-                            <TextBlock Text="Viewport icons:"
-                                       Foreground="#CCCCCC"
-                                       VerticalAlignment="Center"/>
-                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkWeaponIconsEnabled, Mode=TwoWay}"
-                                      Content="Weapons"
-                                      Foreground="#E6E6E6"
-                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkWeaponIconsEnabled"/>
-                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkGrenadeIconsEnabled, Mode=TwoWay}"
-                                      Content="Grenades"
-                                      Foreground="#E6E6E6"
-                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkGrenadeIconsEnabled"/>
-                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkProjectileIconsEnabled, Mode=TwoWay}"
-                                      Content="Projectiles"
-                                      Foreground="#E6E6E6"
-                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkProjectileIconsEnabled"/>
-                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkObjectiveIconsEnabled, Mode=TwoWay}"
-                                      Content="Defusers &amp; C4"
-                                      Foreground="#E6E6E6"
-                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkObjectiveIconsEnabled"/>
-                            <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkDeadPlayerIconsEnabled, Mode=TwoWay}"
-                                      Content="Dead players"
-                                      Foreground="#E6E6E6"
-                                      hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkDeadPlayerIconsEnabled"/>
+
+
+                        <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
+                            <StackPanel>
+                                <TextBlock Text="Pin scale"
+                                        Foreground="#CCCCCC"
+                                        FontWeight="SemiBold"
+                                        Margin="0,10,0,0"/>
+                                <TextBox MinWidth="80" MaxWidth="120"
+                                        Text="{Binding Viewport3DSettings.PinScale, Mode=TwoWay}"
+                                        PlaceholderText="1.0"
+                                        HorizontalAlignment="Left" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Pin Z offset"
+                                        Foreground="#CCCCCC"
+                                        FontWeight="SemiBold"
+                                        Margin="0,10,0,0"/>
+                                <TextBox MinWidth="80" MaxWidth="120"
+                                        Text="{Binding Viewport3DSettings.PinOffsetZ, Mode=TwoWay}"
+                                        PlaceholderText="Z"
+                                        HorizontalAlignment="Left" />
+                            </StackPanel>
                         </WrapPanel>
-
-                        <TextBlock Text="Player pin scale"
-                                Foreground="#CCCCCC"
-                                FontWeight="SemiBold"
-                                Margin="0,10,0,0"/>
-                        <TextBox MinWidth="80" MaxWidth="120"
-                                Text="{Binding Viewport3DSettings.PinScale, Mode=TwoWay}"
-                                PlaceholderText="1.0"
-                                HorizontalAlignment="Left" />
-
-                        <TextBlock Text="Player pin Z offset"
-                                Foreground="#CCCCCC"
-                                FontWeight="SemiBold"
-                                Margin="0,10,0,0"/>
-                        <TextBox MinWidth="80" MaxWidth="120"
-                                Text="{Binding Viewport3DSettings.PinOffsetZ, Mode=TwoWay}"
-                                PlaceholderText="Z"
-                                HorizontalAlignment="Left" />
 
                         <StackPanel>
                             <TextBlock Text="Camera"
@@ -578,8 +579,9 @@
 
                             <TextBlock Text="Rendering"
                                     Foreground="#CCCCCC"
-                                    FontWeight="SemiBold"
-                                    Margin="0,10,0,0"/>
+                                    FontWeight="Bold"
+                                    FontSize="18"
+                                    Margin="0,10,0,10"/>
                             <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.PostprocessEnabled, Mode=TwoWay}"
                                             Content="Postprocess"
@@ -635,11 +637,12 @@
                                             SelectedItem="{Binding Viewport3DSettings.MaxTextureSize, Mode=TwoWay}"/>
                                 </StackPanel>
                             </WrapPanel>
-
+                            <Separator Margin="0,10,0,6" />
                             <TextBlock Text="LiveLink"
                                     Foreground="#CCCCCC"
-                                    FontWeight="SemiBold"
-                                    Margin="0,10,0,0"/>
+                                    FontWeight="Bold"
+                                    FontSize="18"
+                                    Margin="0,5,0,10"/>
                             <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="12">
                                 <ToggleSwitch IsChecked="{Binding Viewport3DSettings.LiveLinkEnabled, Mode=TwoWay}"
                                             Content="Receive CS2 entities"
@@ -652,6 +655,38 @@
                                             Text="{Binding Viewport3DSettings.LiveLinkPort, Mode=TwoWay}"
                                             PlaceholderText="31237"/>
                                 </StackPanel>
+                            </WrapPanel>
+                            <ToggleSwitch IsChecked="{Binding Viewport3DSettings.LiveLinkItemIconsEnabled, Mode=TwoWay}"
+                                        Content="Show viewport icons"
+                                        Foreground="#E6E6E6"
+                                hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkItemIconsEnabled"
+                                        Margin="0,6,0,0"/>
+                            <WrapPanel Orientation="Horizontal"
+                                        ItemSpacing="10" LineSpacing="10"
+                                        IsEnabled="{Binding Viewport3DSettings.LiveLinkItemIconsEnabled}">
+                                <TextBlock Text="Viewport icons:"
+                                        Foreground="#CCCCCC"
+                                        VerticalAlignment="Center"/>
+                                <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkWeaponIconsEnabled, Mode=TwoWay}"
+                                        Content="Weapons"
+                                        Foreground="#E6E6E6"
+                                        hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkWeaponIconsEnabled"/>
+                                <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkGrenadeIconsEnabled, Mode=TwoWay}"
+                                        Content="Grenades"
+                                        Foreground="#E6E6E6"
+                                        hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkGrenadeIconsEnabled"/>
+                                <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkProjectileIconsEnabled, Mode=TwoWay}"
+                                        Content="Projectiles"
+                                        Foreground="#E6E6E6"
+                                        hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkProjectileIconsEnabled"/>
+                                <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkObjectiveIconsEnabled, Mode=TwoWay}"
+                                        Content="Defusers &amp; C4"
+                                        Foreground="#E6E6E6"
+                                        hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkObjectiveIconsEnabled"/>
+                                <CheckBox IsChecked="{Binding Viewport3DSettings.LiveLinkDeadPlayerIconsEnabled, Mode=TwoWay}"
+                                        Content="Dead players"
+                                        Foreground="#E6E6E6"
+                                        hotkeys:HotkeyTarget.Path="Viewport3DSettings.LiveLinkDeadPlayerIconsEnabled"/>
                             </WrapPanel>
                             <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="12">
                                 <Button Content="Start LiveLink Stream"

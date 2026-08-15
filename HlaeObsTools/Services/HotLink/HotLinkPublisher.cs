@@ -13,18 +13,20 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 
-namespace HlaeObsTools.Services.ReplayDirector;
+namespace HlaeObsTools.Services.HotLink;
 
-public sealed class ReplayDirectorPublisher : IDisposable
+public sealed class HotLinkPublisher : IDisposable
 {
     private readonly HlaeWebSocketClient _webSocketClient;
     private readonly GsiServer _gsiServer;
-    private readonly ReplayDirectorSettings _settings;
+    private readonly HotLinkSettings _settings;
     private readonly VmixReplaySettings _replaySettings;
     private readonly VmixReplayMarker _delayedReplayMarker;
-    private readonly ReplayDirectorServiceDiscovery _serviceDiscovery;
+    private readonly HotLinkServiceDiscovery _serviceDiscovery;
     private readonly object _sync = new();
-    private readonly List<ReplayDirectorKillEvent> _events = new();
+    private readonly List<HotLinkPublisherKillEvent> _events = new();
+    private readonly List<HotLinkKillEvent> _linkEvents = new();
+    private readonly Guid _publisherSessionId = Guid.NewGuid();
     private IHost? _host;
     private CancellationTokenSource? _cts;
     private long _nextId;
@@ -34,18 +36,19 @@ public sealed class ReplayDirectorPublisher : IDisposable
     private string _mapName = string.Empty;
     private string _roundPhase = string.Empty;
     private Dictionary<int, int> _roundKillsBySlot = new();
+    private Dictionary<int, GsiPlayer> _playersBySlot = new();
     private readonly Dictionary<(int Round, string Player), int> _roundKillCounts = new();
     private bool _disposed;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public ReplayDirectorPublisher(
+    public HotLinkPublisher(
         HlaeWebSocketClient webSocketClient,
         GsiServer gsiServer,
-        ReplayDirectorSettings settings,
+        HotLinkSettings settings,
         VmixReplaySettings replaySettings,
         VmixReplayMarker delayedReplayMarker,
-        ReplayDirectorServiceDiscovery serviceDiscovery)
+        HotLinkServiceDiscovery serviceDiscovery)
     {
         _webSocketClient = webSocketClient;
         _gsiServer = gsiServer;
@@ -58,8 +61,8 @@ public sealed class ReplayDirectorPublisher : IDisposable
         _delayedReplayMarker.StatusChanged += OnDelayedReplayMarkerStatusChanged;
         _settings.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(ReplayDirectorSettings.Role) ||
-                e.PropertyName == nameof(ReplayDirectorSettings.PublisherPort))
+            if (e.PropertyName == nameof(HotLinkSettings.Role) ||
+                e.PropertyName == nameof(HotLinkSettings.PublisherPort))
             {
                 ApplyRole();
             }
@@ -69,7 +72,7 @@ public sealed class ReplayDirectorPublisher : IDisposable
 
     private void ApplyRole()
     {
-        if (string.Equals(_settings.Role, "Main Publisher", StringComparison.Ordinal))
+        if (_settings.IsPublisher)
             Start();
         else
             Stop();
@@ -100,27 +103,33 @@ public sealed class ReplayDirectorPublisher : IDisposable
             _roundKillsBySlot = state.Players
                 .Where(p => p.Slot >= 0)
                 .ToDictionary(p => p.Slot, p => p.RoundKills);
+            _playersBySlot = state.Players
+                .Where(p => p.Slot >= 0)
+                .GroupBy(p => p.Slot)
+                .ToDictionary(group => group.Key, group => group.First());
         }
     }
 
     private void OnWebSocketMessage(object? sender, string message)
     {
-        if (!string.Equals(_settings.Role, "Main Publisher", StringComparison.Ordinal))
+        if (!_settings.IsPublisher)
             return;
 
         int focusedSlot;
         int roundNumber;
         string roundPhase;
         Dictionary<int, int> roundKillsBySlot;
+        Dictionary<int, GsiPlayer> playersBySlot;
         lock (_sync)
         {
             focusedSlot = _focusedSlot;
             roundNumber = _roundNumber;
             roundPhase = _roundPhase;
             roundKillsBySlot = new Dictionary<int, int>(_roundKillsBySlot);
+            playersBySlot = new Dictionary<int, GsiPlayer>(_playersBySlot);
         }
 
-        if (!ReplayDirectorKillEvent.TryParseHlaeKillfeed(message, slot => slot == focusedSlot, roundNumber, roundPhase, out var kill) || kill == null)
+        if (!HotLinkPublisherKillEvent.TryParseHlaeKillfeed(message, slot => slot == focusedSlot, roundNumber, roundPhase, out var kill) || kill == null)
             return;
 
         lock (_sync)
@@ -135,8 +144,27 @@ public sealed class ReplayDirectorPublisher : IDisposable
 
             kill.Id = ++_nextId;
             _events.Add(kill);
+            playersBySlot.TryGetValue(kill.AttackerSlot, out var attackerState);
+            playersBySlot.TryGetValue(kill.Victim?.ObserverSlot ?? -1, out var victimState);
+            _linkEvents.Add(new HotLinkKillEvent
+            {
+                Id = kill.Id,
+                GameTime = kill.GameTime,
+                Attacker = new HotLinkKillParticipant { ObserverSlot = kill.AttackerSlot, Position = attackerState?.Position ?? default },
+                Victim = new HotLinkKillParticipant { ObserverSlot = kill.Victim?.ObserverSlot ?? -1, Position = victimState?.Position ?? default },
+                Weapon = kill.Weapon,
+                MainCaught = kill.MainCaught,
+                Headshot = kill.Headshot,
+                Wallbang = kill.Wallbang,
+                Noscope = kill.Noscope,
+                ThroughSmoke = kill.ThroughSmoke,
+                InAir = kill.InAir,
+                Blind = kill.Blind
+            });
             if (_events.Count > 256)
                 _events.RemoveRange(0, _events.Count - 256);
+            if (_linkEvents.Count > 256)
+                _linkEvents.RemoveRange(0, _linkEvents.Count - 256);
         }
 
         _settings.LastKill = $"{kill.AttackerName} kill at {(kill.GameTime.HasValue ? kill.GameTime.Value.ToString("F2") : "no time")} ({(kill.MainCaught ? "main caught" : "uncaught")})";
@@ -213,9 +241,9 @@ public sealed class ReplayDirectorPublisher : IDisposable
                         webHost.UseKestrel(options => options.ListenAnyIP(port));
                         webHost.Configure(app =>
                         {
-                            app.Map("/replay-director/events", builder => builder.Run(HandleEventsAsync));
-                            app.Map("/replay-director/replay/mark", builder => builder.Run(HandleReplayMarkAsync));
-                            app.Map("/replay-director/health", builder => builder.Run(HandleHealthAsync));
+                            app.Map(HotLinkProtocol.EventsPath, builder => builder.Run(HandleEventsAsync));
+                            app.Map(HotLinkProtocol.ReplayMarkPath, builder => builder.Run(HandleReplayMarkAsync));
+                            app.Map(HotLinkProtocol.HealthPath, builder => builder.Run(HandleHealthAsync));
                         });
                     })
                     .Build();
@@ -228,7 +256,7 @@ public sealed class ReplayDirectorPublisher : IDisposable
 
                 await host.StartAsync(cts.Token).ConfigureAwait(false);
                 _serviceDiscovery.Advertise(port);
-                _settings.Status = $"Publisher running on port {port}.";
+                _settings.Status = $"HOT Link publisher running on port {port}.";
                 await Task.Delay(Timeout.Infinite, cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
@@ -269,8 +297,8 @@ public sealed class ReplayDirectorPublisher : IDisposable
         }
 
         try { cts?.Cancel(); } catch { }
-        if (!string.Equals(_settings.Role, "Main Publisher", StringComparison.Ordinal))
-            _settings.Status = "Replay director disabled.";
+        if (!_settings.IsPublisher)
+            _settings.Status = "HOT Link disabled.";
     }
 
     private Task HandleHealthAsync(HttpContext ctx)
@@ -283,7 +311,7 @@ public sealed class ReplayDirectorPublisher : IDisposable
             lastId = _nextId;
             count = _events.Count;
         }
-        return ctx.Response.WriteAsync(JsonSerializer.Serialize(new { ok = true, lastId, count }, JsonOptions));
+        return ctx.Response.WriteAsync(JsonSerializer.Serialize(new { ok = true, protocolVersion = HotLinkProtocol.Version, publisherSessionId = _publisherSessionId, lastId, count }, JsonOptions));
     }
 
     private Task HandleEventsAsync(HttpContext ctx)
@@ -292,14 +320,26 @@ public sealed class ReplayDirectorPublisher : IDisposable
         if (ctx.Request.Query.TryGetValue("after", out var rawAfter))
             long.TryParse(rawAfter.ToString(), out after);
 
-        ReplayDirectorKillEvent[] events;
+        HotLinkKillEvent[] events;
+        long firstAvailable;
+        long latest;
         lock (_sync)
         {
-            events = _events.Where(e => e.Id > after).ToArray();
+            firstAvailable = _linkEvents.Count > 0 ? _linkEvents[0].Id : _nextId + 1;
+            latest = _nextId;
+            events = _linkEvents.Where(e => e.Id > after).ToArray();
         }
 
         ctx.Response.ContentType = "application/json";
-        return ctx.Response.WriteAsync(JsonSerializer.Serialize(new { events }, JsonOptions));
+        var envelope = new HotLinkEventEnvelope
+        {
+            PublisherSessionId = _publisherSessionId,
+            FirstAvailableEventId = firstAvailable,
+            LatestEventId = latest,
+            HasGap = after > 0 && after < firstAvailable - 1,
+            Events = events
+        };
+        return ctx.Response.WriteAsync(JsonSerializer.Serialize(envelope, JsonOptions));
     }
 
     private async Task HandleReplayMarkAsync(HttpContext ctx)
@@ -310,10 +350,10 @@ public sealed class ReplayDirectorPublisher : IDisposable
             return;
         }
 
-        ReplayDirectorReplayMarkRequest? request;
+        HotLinkReplayMarkRequest? request;
         try
         {
-            request = await JsonSerializer.DeserializeAsync<ReplayDirectorReplayMarkRequest>(ctx.Request.Body, JsonOptions, ctx.RequestAborted).ConfigureAwait(false);
+            request = await JsonSerializer.DeserializeAsync<HotLinkReplayMarkRequest>(ctx.Request.Body, JsonOptions, ctx.RequestAborted).ConfigureAwait(false);
         }
         catch
         {
@@ -322,17 +362,29 @@ public sealed class ReplayDirectorPublisher : IDisposable
             return;
         }
 
-        if (request?.Kill == null)
+        HotLinkPublisherKillEvent? kill;
+        lock (_sync)
+            kill = request == null || request.PublisherSessionId != _publisherSessionId ? null : _events.FirstOrDefault(e => e.Id == request.EventId);
+        if (kill == null)
         {
-            ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { ok = false, error = "Missing kill" }, JsonOptions)).ConfigureAwait(false);
+            ctx.Response.StatusCode = StatusCodes.Status404NotFound;
+            await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { ok = false, error = "Unknown publisher session or event" }, JsonOptions)).ConfigureAwait(false);
             return;
         }
 
-        _settings.LastVmixMark = $"Remote delayed mark: {request.Kill.AttackerName}";
-        _delayedReplayMarker.RecordKill(request.Kill, _replaySettings, _settings);
         ctx.Response.ContentType = "application/json";
-        await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { ok = true }, JsonOptions)).ConfigureAwait(false);
+        if (!_settings.AcceptReplayMarkRequests)
+        {
+            _settings.LastVmixMark = $"Ignored remote mark for {kill.AttackerName}: replay marking disabled.";
+            await ctx.Response.WriteAsync(JsonSerializer.Serialize(
+                new HotLinkReplayMarkResponse { Ok = true, Scheduled = false, Reason = "disabled" }, JsonOptions)).ConfigureAwait(false);
+            return;
+        }
+
+        _settings.LastVmixMark = $"Remote delayed mark scheduled: {kill.AttackerName}";
+        _delayedReplayMarker.RecordKill(kill, _replaySettings, _settings);
+        await ctx.Response.WriteAsync(JsonSerializer.Serialize(
+            new HotLinkReplayMarkResponse { Ok = true, Scheduled = true }, JsonOptions)).ConfigureAwait(false);
     }
 
     public void Dispose()

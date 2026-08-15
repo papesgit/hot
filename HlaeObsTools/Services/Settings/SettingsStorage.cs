@@ -201,18 +201,22 @@ public class AppSettingsData
     public double VmixReplayFramesPerSecond { get; set; } = 60.0;
     public string VmixReplayChannel { get; set; } = "A";
     public int VmixReplayCamera { get; set; } = 1;
-    public string ReplayDirectorRole { get; set; } = "Off";
-    public int ReplayDirectorPublisherPort { get; set; } = 31341;
-    public string ReplayDirectorPublisherIp { get; set; } = "";
-    public bool ReplayDirectorManualHost { get; set; }
-    // Retained solely to migrate configurations written by older versions.
-    public string ReplayDirectorFollowerEndpoint { get; set; } = "";
+    public string HotLinkRole { get; set; } = "Off";
+    public int HotLinkPublisherPort { get; set; } = 31341;
+    public string HotLinkPublisherIp { get; set; } = "127.0.0.1";
+    public bool HotLinkManualHost { get; set; }
     public double ReplayDirectorPreSwitchSeconds { get; set; } = 2.0;
     public double ReplayDirectorSwitchLockSeconds { get; set; } = 0.75;
     public bool ReplayDirectorOnlyFollowMissedKills { get; set; }
-    public bool ReplayDirectorDelayedVmixEnabled { get; set; } = true;
+    public bool HotLinkAcceptReplayMarkRequests { get; set; } = true;
     public string ReplayDirectorDelayedVmixChannel { get; set; } = "B";
     public int ReplayDirectorDelayedVmixCamera { get; set; } = 2;
+    public string HotLinkClientMode { get; set; } = "Delayed Observer Cues";
+    public bool HotLinkCueTimelineEnabled { get; set; } = true;
+    public bool HotLinkCueRadarEnabled { get; set; } = true;
+    public bool HotLinkCueViewportEnabled { get; set; } = true;
+    public bool HotLinkCueTimelineAutoRange { get; set; } = true;
+    public double HotLinkCueTimelineFixedUpcomingSeconds { get; set; } = 15;
     public bool DisableFocusInputGate { get; set; }
     public int GraphicsTargetFps { get; set; } = 30;
     public List<HotkeyBindingData> Hotkeys { get; set; } = new();

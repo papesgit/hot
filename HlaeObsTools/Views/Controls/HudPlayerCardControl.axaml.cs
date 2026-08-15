@@ -9,6 +9,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using HlaeObsTools.ViewModels.Hud;
 
@@ -27,6 +28,7 @@ public partial class HudPlayerCardControl : UserControl
     private bool _pointerCaptured;
     private HudPlayerCardViewModel? _currentViewModel;
     private bool _viewModelAttached;
+    private bool _equipmentMeasurePending;
     private readonly ContextMenu _animToContextMenu;
     private Popup? RadialPopupControl => this.FindControl<Popup>("RadialPopup");
 
@@ -87,13 +89,23 @@ public partial class HudPlayerCardControl : UserControl
         if (e.PropertyName == nameof(HudPlayerCardViewModel.HasWeaponsAndGrenades) ||
             e.PropertyName == nameof(HudPlayerCardViewModel.HasDefuseKit))
         {
-            CardBorder?.InvalidateMeasure();
-            InvalidateMeasure();
-
-            if (Parent is Control parent)
+            if (_equipmentMeasurePending)
             {
-                parent.InvalidateMeasure();
+                return;
             }
+
+            _equipmentMeasurePending = true;
+            Dispatcher.UIThread.Post(() =>
+            {
+                _equipmentMeasurePending = false;
+                CardBorder?.InvalidateMeasure();
+                InvalidateMeasure();
+
+                foreach (var ancestor in this.GetVisualAncestors().OfType<Control>())
+                {
+                    ancestor.InvalidateMeasure();
+                }
+            }, DispatcherPriority.Render);
         }
     }
 

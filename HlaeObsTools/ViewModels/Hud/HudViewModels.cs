@@ -166,7 +166,6 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     private IBrush _cardBackground = Brushes.Black;
     private bool _isFocused;
     private bool _isRadialMenuOpen;
-    private bool _hasWeaponsAndGrenades;
     private HudPlayerActionOption? _hoveredRadialAction;
     private bool _isRadialCenterHighlighted;
     private IBrush _radialCenterBrush = new SolidColorBrush(Color.FromArgb(150, 25, 25, 30));
@@ -187,7 +186,6 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         RadialActions.CollectionChanged += OnRadialActionsChanged;
         _attachSubMenuOptions.CollectionChanged += OnAttachSubMenuChanged;
         WeaponsAndGrenades.CollectionChanged += OnWeaponsAndGrenadesChanged;
-        UpdateHasWeaponsAndGrenades();
     }
 
     public string SteamId
@@ -247,7 +245,13 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     public bool HasDefuseKit
     {
         get => _hasDefuseKit;
-        private set => SetProperty(ref _hasDefuseKit, value);
+        private set
+        {
+            if (SetProperty(ref _hasDefuseKit, value))
+            {
+                OnPropertyChanged(nameof(HasWeaponsAndGrenades));
+            }
+        }
     }
 
     public bool IsAlive
@@ -277,7 +281,13 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     public bool HasBomb
     {
         get => _hasBomb;
-        private set => SetProperty(ref _hasBomb, value);
+        private set
+        {
+            if (SetProperty(ref _hasBomb, value))
+            {
+                OnPropertyChanged(nameof(HasWeaponsAndGrenades));
+            }
+        }
     }
 
     public bool IsBombActive
@@ -306,11 +316,7 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
     public ReadOnlyObservableCollection<HudPlayerActionOption> AttachSubMenuOptions { get; }
     public IEnumerable<HudPlayerActionOption> CurrentRadialItems => IsInAttachSubMenu ? AttachSubMenuOptions : RadialActions;
 
-    public bool HasWeaponsAndGrenades
-    {
-        get => _hasWeaponsAndGrenades;
-        private set => SetProperty(ref _hasWeaponsAndGrenades, value);
-    }
+    public bool HasWeaponsAndGrenades => WeaponsAndGrenades.Count > 0 || HasBomb || HasDefuseKit;
 
     public IBrush AccentBrush
     {
@@ -599,7 +605,6 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
         SyncCollection(WeaponsRow, row);
         SyncCollection(Grenades, grenadesList);
         SyncCollection(WeaponsAndGrenades, row.Concat(grenadesList));
-        UpdateHasWeaponsAndGrenades();
     }
 
     private void ApplyAccentToRadialActions(IBrush accent)
@@ -672,12 +677,7 @@ public sealed class HudPlayerCardViewModel : ViewModelBase
 
     private void OnWeaponsAndGrenadesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        UpdateHasWeaponsAndGrenades();
-    }
-
-    private void UpdateHasWeaponsAndGrenades()
-    {
-        HasWeaponsAndGrenades = WeaponsAndGrenades.Count > 0 || HasBomb || HasDefuseKit;
+        OnPropertyChanged(nameof(HasWeaponsAndGrenades));
     }
 }
 

@@ -15,6 +15,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using HlaeObsTools.Controls;
+using HlaeObsTools.Services.HotLink;
+using HlaeObsTools.ViewModels.Cues;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
@@ -27,6 +29,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     private readonly VideoDisplayDockViewModel? _videoDisplay;
     private readonly GsiServer? _gsiServer;
     private readonly Cs2LiveLinkReceiver? _liveLinkReceiver;
+    private readonly DelayedObserverCueService? _cueService;
     private long _lastHeartbeat;
     private bool _awaitFreecamRelease;
     private bool _gizmoDragActive;
@@ -48,13 +51,14 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
 
     public event Action<IReadOnlyList<ViewportPin>>? PinsUpdated;
     public event Action<IReadOnlyList<ViewportPlayerStatus>>? PlayerStatusesUpdated;
+    public event Action<IReadOnlyList<CueEventViewModel>>? CueEventsUpdated;
     public event Action<CampathSample?>? SequencerPreviewChanged;
     public event Action<CampathEditorViewModel?>? SelectedCampathEditorChanged;
     public event Action? SequencerGizmoChanged;
     public bool IsSequencerPiloting => _sequence?.IsPiloting == true;
     public bool IsSequencerPlaying => _sequence?.IsPlaying == true;
 
-    public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, CampathEditorViewModel? campathEditor = null, HlaeWebSocketClient? webSocketClient = null, VideoDisplayDockViewModel? videoDisplay = null, GsiServer? gsiServer = null, Cs2LiveLinkReceiver? liveLinkReceiver = null)
+    public Viewport3DDockViewModel(Viewport3DSettings settings, FreecamSettings freecamSettings, CampathEditorViewModel? campathEditor = null, HlaeWebSocketClient? webSocketClient = null, VideoDisplayDockViewModel? videoDisplay = null, GsiServer? gsiServer = null, Cs2LiveLinkReceiver? liveLinkReceiver = null, DelayedObserverCueService? cueService = null)
     {
         _settings = settings;
         _freecamSettings = freecamSettings;
@@ -62,6 +66,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         _videoDisplay = videoDisplay;
         _gsiServer = gsiServer;
         _liveLinkReceiver = liveLinkReceiver;
+        _cueService = cueService;
+        if (_cueService != null) _cueService.Updated += OnCueServiceUpdated;
         if (_gsiServer != null)
             _gsiServer.GameStateUpdated += OnGameStateUpdated;
         _settings.PropertyChanged += OnViewportSettingsChanged;
@@ -230,6 +236,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         _campathSyncTimer.Tick -= OnCampathSyncTimerTick;
         if (_gsiServer != null)
             _gsiServer.GameStateUpdated -= OnGameStateUpdated;
+        if (_cueService != null) _cueService.Updated -= OnCueServiceUpdated;
         _settings.PropertyChanged -= OnViewportSettingsChanged;
         CampathEditor.PropertyChanged -= OnCampathEditorChanged;
         CampathEditor.Keyframes.CollectionChanged -= OnCampathKeyframesChanged;
@@ -429,6 +436,17 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         _releaseSequencerPlaybackTickSubscription = releasePreviousSubscription;
         if (_sequence != null)
             _sequence.UseExternalPlaybackTicks = true;
+    }
+
+    private void OnCueServiceUpdated(object? sender, EventArgs e)
+    {
+        if (_cueService == null || !_cueService.Settings.CueViewportEnabled)
+            CueEventsUpdated?.Invoke(Array.Empty<CueEventViewModel>());
+        else
+        {
+            foreach (var cue in _cueService.Events) cue.UseAltBindings = _settings.UseAltPlayerBinds;
+            CueEventsUpdated?.Invoke(_cueService.Events.Where(cue => cue.IsSpatialVisible).ToArray());
+        }
     }
 
     public void ReleaseSequencerPlaybackTicks(object owner)

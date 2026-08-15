@@ -14,6 +14,7 @@ using HlaeObsTools.Controls;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.Services.Viewport3D;
 using HlaeObsTools.ViewModels;
+using HlaeObsTools.ViewModels.Cues;
 using HlaeObsTools.ViewModels.Docks;
 namespace HlaeObsTools.Views.Docks;
 
@@ -24,6 +25,7 @@ public partial class Viewport3DDockView : UserControl
     private Control? _viewportControl;
     private IReadOnlyList<ViewportPin>? _lastPins;
     private IReadOnlyList<ViewportPlayerStatus>? _lastPlayerStatuses;
+    private IReadOnlyList<CueEventViewModel>? _lastCueEvents;
     private CampathEditorViewModel? _campathEditor;
     private bool _frameTickSubscribed;
     private bool _gizmoSubscribed;
@@ -72,6 +74,7 @@ public partial class Viewport3DDockView : UserControl
 
         _viewModel.PinsUpdated += OnPinsUpdated;
         _viewModel.PlayerStatusesUpdated += OnPlayerStatusesUpdated;
+        _viewModel.CueEventsUpdated += OnCueEventsUpdated;
         _viewModel.Viewport3DSettings.PropertyChanged += OnViewportSettingsChanged;
         _viewModel.SelectedCampathEditorChanged += OnSelectedCampathEditorChanged;
         _viewModel.SequencerGizmoChanged += OnSequencerGizmoChanged;
@@ -88,6 +91,7 @@ public partial class Viewport3DDockView : UserControl
 
         _viewModel.PinsUpdated -= OnPinsUpdated;
         _viewModel.PlayerStatusesUpdated -= OnPlayerStatusesUpdated;
+        _viewModel.CueEventsUpdated -= OnCueEventsUpdated;
         _viewModel.Viewport3DSettings.PropertyChanged -= OnViewportSettingsChanged;
         _viewModel.SelectedCampathEditorChanged -= OnSelectedCampathEditorChanged;
         _viewModel.SequencerGizmoChanged -= OnSequencerGizmoChanged;
@@ -190,6 +194,7 @@ public partial class Viewport3DDockView : UserControl
         {
             _viewport.SetPlayerStatuses(_lastPlayerStatuses);
         }
+        if (_lastCueEvents != null) _viewport.SetCueEvents(_lastCueEvents);
 
         UpdateDepthOfField();
         UpdateCampathOverlay();
@@ -338,6 +343,12 @@ public partial class Viewport3DDockView : UserControl
     {
         _lastPlayerStatuses = statuses;
         _viewport?.SetPlayerStatuses(statuses);
+    }
+
+    private void OnCueEventsUpdated(IReadOnlyList<CueEventViewModel> cues)
+    {
+        _lastCueEvents = cues;
+        _viewport?.SetCueEvents(cues);
     }
 
     private void OnCampathEditorChanged(object? sender, PropertyChangedEventArgs e)

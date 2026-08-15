@@ -3,27 +3,39 @@ using System.Collections.ObjectModel;
 
 namespace HlaeObsTools.ViewModels;
 
-public sealed class ReplayDirectorSettings : ViewModelBase
+public sealed class HotLinkSettings : ViewModelBase
 {
     public static ObservableCollection<string> RoleOptions { get; } = new()
     {
         "Off",
-        "Main Publisher",
-        "Delayed Follower"
+        "Publisher",
+        "Client"
+    };
+
+    public static ObservableCollection<string> ClientModeOptions { get; } = new()
+    {
+        "Delayed Observer Cues",
+        "Replay Director"
     };
 
     private string _role = "Off";
     private int _publisherPort = 31341;
     private string _publisherIp = "127.0.0.1";
     private bool _manualHost;
-    private bool _followerConnectionEnabled;
+    private bool _clientConnectionEnabled;
     private double _preSwitchSeconds = 2.0;
     private double _switchLockSeconds = 0.75;
     private bool _onlyFollowMissedKills;
     private string _delayedVmixChannel = "B";
     private int _delayedVmixCamera = 2;
-    private bool _delayedVmixEnabled = true;
-    private string _status = "Replay director disabled.";
+    private bool _acceptReplayMarkRequests = true;
+    private string _clientMode = "Delayed Observer Cues";
+    private bool _cueTimelineEnabled = true;
+    private bool _cueRadarEnabled = true;
+    private bool _cueViewportEnabled = true;
+    private bool _cueTimelineAutoRange = true;
+    private double _cueTimelineFixedUpcomingSeconds = 15;
+    private string _status = "HOT Link disabled.";
     private string _lastKill = "No kill event received.";
     private string _localGameTime = "Local game time unknown.";
     private string _scheduledTarget = "No scheduled target.";
@@ -39,10 +51,12 @@ public sealed class ReplayDirectorSettings : ViewModelBase
                 return;
 
             OnPropertyChanged(nameof(IsPublisher));
-            OnPropertyChanged(nameof(IsFollower));
+            OnPropertyChanged(nameof(IsClient));
+            OnPropertyChanged(nameof(IsReplayDirectorMode));
+            OnPropertyChanged(nameof(IsCueMode));
             OnPropertyChanged(nameof(IsActive));
-            if (!IsFollower)
-                FollowerConnectionEnabled = false;
+            if (!IsClient)
+                ClientConnectionEnabled = false;
         }
     }
 
@@ -68,14 +82,14 @@ public sealed class ReplayDirectorSettings : ViewModelBase
         }
     }
 
-    /// <summary>Whether the follower should actively poll and schedule replay events.</summary>
-    public bool FollowerConnectionEnabled
+    /// <summary>Whether this client should actively poll the selected HOT Link publisher.</summary>
+    public bool ClientConnectionEnabled
     {
-        get => _followerConnectionEnabled;
+        get => _clientConnectionEnabled;
         set
         {
-            if (SetProperty(ref _followerConnectionEnabled, value))
-                OnPropertyChanged(nameof(IsFollowerDisconnected));
+            if (SetProperty(ref _clientConnectionEnabled, value))
+                OnPropertyChanged(nameof(IsClientDisconnected));
         }
     }
 
@@ -92,7 +106,7 @@ public sealed class ReplayDirectorSettings : ViewModelBase
     }
 
     /// <summary>
-    /// When enabled, the delayed follower only covers kills the main observer did not catch.
+    /// When enabled, the Replay Director client only covers kills the main observer did not catch.
     /// </summary>
     public bool OnlyFollowMissedKills
     {
@@ -112,10 +126,32 @@ public sealed class ReplayDirectorSettings : ViewModelBase
         set => SetProperty(ref _delayedVmixCamera, Math.Clamp(value, 1, 8));
     }
 
-    public bool DelayedVmixEnabled
+    public bool AcceptReplayMarkRequests
     {
-        get => _delayedVmixEnabled;
-        set => SetProperty(ref _delayedVmixEnabled, value);
+        get => _acceptReplayMarkRequests;
+        set => SetProperty(ref _acceptReplayMarkRequests, value);
+    }
+
+    public string ClientMode
+    {
+        get => _clientMode;
+        set
+        {
+            if (!SetProperty(ref _clientMode, string.Equals(value, "Replay Director", StringComparison.Ordinal) ? "Replay Director" : "Delayed Observer Cues"))
+                return;
+            OnPropertyChanged(nameof(IsReplayDirectorMode));
+            OnPropertyChanged(nameof(IsCueMode));
+        }
+    }
+
+    public bool CueTimelineEnabled { get => _cueTimelineEnabled; set => SetProperty(ref _cueTimelineEnabled, value); }
+    public bool CueRadarEnabled { get => _cueRadarEnabled; set => SetProperty(ref _cueRadarEnabled, value); }
+    public bool CueViewportEnabled { get => _cueViewportEnabled; set => SetProperty(ref _cueViewportEnabled, value); }
+    public bool CueTimelineAutoRange { get => _cueTimelineAutoRange; set => SetProperty(ref _cueTimelineAutoRange, value); }
+    public double CueTimelineFixedUpcomingSeconds
+    {
+        get => _cueTimelineFixedUpcomingSeconds;
+        set => SetProperty(ref _cueTimelineFixedUpcomingSeconds, Math.Clamp(value, 1, 300));
     }
 
     public string Status
@@ -154,13 +190,17 @@ public sealed class ReplayDirectorSettings : ViewModelBase
         set => SetProperty(ref _lastVmixMark, value ?? string.Empty);
     }
 
-    public bool IsPublisher => string.Equals(Role, "Main Publisher", StringComparison.Ordinal);
+    public bool IsPublisher => string.Equals(Role, "Publisher", StringComparison.Ordinal);
 
-    public bool IsFollower => string.Equals(Role, "Delayed Follower", StringComparison.Ordinal);
+    public bool IsClient => string.Equals(Role, "Client", StringComparison.Ordinal);
+
+    public bool IsReplayDirectorMode => IsClient && string.Equals(ClientMode, "Replay Director", StringComparison.Ordinal);
+
+    public bool IsCueMode => IsClient && string.Equals(ClientMode, "Delayed Observer Cues", StringComparison.Ordinal);
 
     public bool IsDiscoveryHostEnabled => !ManualHost;
 
-    public bool IsFollowerDisconnected => !FollowerConnectionEnabled;
+    public bool IsClientDisconnected => !ClientConnectionEnabled;
 
-    public bool IsActive => IsPublisher || IsFollower;
+    public bool IsActive => IsPublisher || IsClient;
 }

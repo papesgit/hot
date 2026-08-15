@@ -27,6 +27,7 @@ using HlaeObsTools.Services.Hotkeys;
 using HlaeObsTools.Services.LiveLink;
 using HlaeObsTools.Services.Video;
 using HlaeObsTools.Services.Updates;
+using HlaeObsTools.Services.HotLink;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -55,11 +56,14 @@ public class MainDockFactory : Factory, IDisposable
     private readonly VmixReplayService _vmixReplayService;
     private readonly VmixSettings _vmixSettings;
     private readonly VmixReplaySettings _vmixReplaySettings;
-    private readonly ReplayDirectorSettings _replayDirectorSettings;
+    private readonly HotLinkSettings _hotLinkSettings;
     private readonly VmixReplayMarker _delayedReplayMarker;
-    private readonly ReplayDirectorPublisher _replayDirectorPublisher;
-    private readonly ReplayDirectorFollower _replayDirectorFollower;
-    private readonly ReplayDirectorServiceDiscovery _replayDirectorServiceDiscovery;
+    private readonly HotLinkPublisher _hotLinkPublisher;
+    private readonly ReplayDirectorClient _replayDirectorClient;
+    private readonly HotLinkServiceDiscovery _hotLinkServiceDiscovery;
+    private readonly HotLinkClient _hotLinkClient;
+    private readonly HotLinkGameClock _hotLinkGameClock;
+    private readonly DelayedObserverCueService _cueService;
     private readonly GraphicsProfileStorage _graphicsProfileStorage;
     private readonly GraphicsService _graphicsService;
     private readonly GraphicsProducerClient _producerClient;
@@ -140,18 +144,24 @@ public class MainDockFactory : Factory, IDisposable
             Channel = _storedSettings.VmixReplayChannel,
             Camera = _storedSettings.VmixReplayCamera
         };
-        _replayDirectorSettings = new ReplayDirectorSettings
+        _hotLinkSettings = new HotLinkSettings
         {
-            Role = _storedSettings.ReplayDirectorRole,
-            PublisherPort = _storedSettings.ReplayDirectorPublisherPort,
-            PublisherIp = GetReplayDirectorPublisherHost(_storedSettings),
-            ManualHost = _storedSettings.ReplayDirectorManualHost,
+            Role = _storedSettings.HotLinkRole,
+            PublisherPort = _storedSettings.HotLinkPublisherPort,
+            PublisherIp = _storedSettings.HotLinkPublisherIp,
+            ManualHost = _storedSettings.HotLinkManualHost,
             PreSwitchSeconds = _storedSettings.ReplayDirectorPreSwitchSeconds,
             SwitchLockSeconds = _storedSettings.ReplayDirectorSwitchLockSeconds,
             OnlyFollowMissedKills = _storedSettings.ReplayDirectorOnlyFollowMissedKills,
-            DelayedVmixEnabled = _storedSettings.ReplayDirectorDelayedVmixEnabled,
+            AcceptReplayMarkRequests = _storedSettings.HotLinkAcceptReplayMarkRequests,
             DelayedVmixChannel = _storedSettings.ReplayDirectorDelayedVmixChannel,
-            DelayedVmixCamera = _storedSettings.ReplayDirectorDelayedVmixCamera
+            DelayedVmixCamera = _storedSettings.ReplayDirectorDelayedVmixCamera,
+            ClientMode = _storedSettings.HotLinkClientMode,
+            CueTimelineEnabled = _storedSettings.HotLinkCueTimelineEnabled,
+            CueRadarEnabled = _storedSettings.HotLinkCueRadarEnabled,
+            CueViewportEnabled = _storedSettings.HotLinkCueViewportEnabled,
+            CueTimelineAutoRange = _storedSettings.HotLinkCueTimelineAutoRange,
+            CueTimelineFixedUpcomingSeconds = _storedSettings.HotLinkCueTimelineFixedUpcomingSeconds
         };
         _vmixApiClient = new VmixApiClient(_vmixSettings);
         _replayEventRegistry = new ReplayEventRegistry();
@@ -159,9 +169,12 @@ public class MainDockFactory : Factory, IDisposable
         _hotkeyService.SetVmixApiClient(_vmixApiClient);
         _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixApiClient, _vmixReplayCoordinator, _vmixReplaySettings);
         _delayedReplayMarker = new VmixReplayMarker(_vmixApiClient, _vmixReplayCoordinator);
-        _replayDirectorServiceDiscovery = new ReplayDirectorServiceDiscovery();
-        _replayDirectorPublisher = new ReplayDirectorPublisher(_webSocketClient, _gsiServer, _replayDirectorSettings, _vmixReplaySettings, _delayedReplayMarker, _replayDirectorServiceDiscovery);
-        _replayDirectorFollower = new ReplayDirectorFollower(_webSocketClient, _gsiServer, _replayDirectorSettings, _vmixReplaySettings);
+        _hotLinkServiceDiscovery = new HotLinkServiceDiscovery();
+        _hotLinkPublisher = new HotLinkPublisher(_webSocketClient, _gsiServer, _hotLinkSettings, _vmixReplaySettings, _delayedReplayMarker, _hotLinkServiceDiscovery);
+        _hotLinkGameClock = new HotLinkGameClock(_webSocketClient, _hotLinkSettings);
+        _hotLinkClient = new HotLinkClient(_hotLinkSettings);
+        _cueService = new DelayedObserverCueService(_hotLinkClient, _hotLinkGameClock, _gsiServer, _hotLinkSettings);
+        _replayDirectorClient = new ReplayDirectorClient(_webSocketClient, _gsiServer, _hotLinkSettings, _vmixReplaySettings, _hotLinkClient, _hotLinkGameClock);
 
         _graphicsProfileStorage = new GraphicsProfileStorage();
         _producerClient = new GraphicsProducerClient(_storedSettings.WebSocketHost, _storedSettings.GraphicsProducerPort);
@@ -185,17 +198,6 @@ public class MainDockFactory : Factory, IDisposable
         _inputFlushTimer = new Timer(_ => _rawInputHandler.FlushToSender(), null, 0, 4);
 
         Console.WriteLine("Observer tools initialized: WebSocket (127.0.0.1:31338), UDP (127.0.0.1:31339)");
-    }
-
-    private static string GetReplayDirectorPublisherHost(AppSettingsData settings)
-    {
-        if (!string.IsNullOrWhiteSpace(settings.ReplayDirectorPublisherIp))
-            return settings.ReplayDirectorPublisherIp;
-
-        if (Uri.TryCreate(settings.ReplayDirectorFollowerEndpoint, UriKind.Absolute, out var endpoint) && !string.IsNullOrWhiteSpace(endpoint.Host))
-            return endpoint.Host;
-
-        return "127.0.0.1";
     }
 
     private void OnHlaeMessage(object? sender, string json)
@@ -413,7 +415,7 @@ public class MainDockFactory : Factory, IDisposable
             await reportProgressAsync("Creating radar dock...", "Initializing radar state and player tracking models.", 5);
         }
 
-        var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings, bottomRight, _webSocketClient) { Id = "TopLeft", Title = "Radar" };
+        var topLeft = new RadarDockViewModel(_gsiServer, _radarConfigProvider, radarSettings, bottomRight, _webSocketClient, _cueService) { Id = "TopLeft", Title = "Radar" };
 
         if (reportProgressAsync != null)
         {
@@ -458,9 +460,9 @@ public class MainDockFactory : Factory, IDisposable
             _storedSettings,
             _vmixSettings,
             _vmixReplaySettings,
-            _replayDirectorSettings,
+            _hotLinkSettings,
             _vmixApiClient,
-            replayDirectorServiceDiscovery: _replayDirectorServiceDiscovery,
+            hotLinkServiceDiscovery: _hotLinkServiceDiscovery,
             setFocusInputGateDisabled: disable => _rawInputHandler.CaptureOnlyWhenAppFocused = !disable,
             campathEditor: campathEditor,
             gsiServer: _gsiServer,
@@ -474,7 +476,7 @@ public class MainDockFactory : Factory, IDisposable
             await reportProgressAsync("Creating 3D viewport dock...", "Preparing viewport state, freecam integration, and campath editing.", 9);
         }
 
-        var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer, _liveLinkReceiver) { Id = "BottomCenter", Title = "3D Viewport" };
+        var bottomCenter = new Viewport3DDockViewModel(viewport3DSettings, freecamSettings, campathEditor, _webSocketClient, _videoDisplayVm, _gsiServer, _liveLinkReceiver, _cueService) { Id = "BottomCenter", Title = "3D Viewport" };
         var sequence = new CampathSequenceViewModel(
             campathEditor, bottomLeft.DefaultCampathInterpMode);
         var sequencer = new CampathSequencerDockViewModel(sequence);
@@ -494,7 +496,7 @@ public class MainDockFactory : Factory, IDisposable
         _videoDisplayVm.SetWebSocketClient(_webSocketClient);
         _videoDisplayVm.SetInputSender(_inputSender);
         _videoDisplayVm.SetFreecamSettings(freecamSettings);
-        var hudOverlayVm = new HudOverlayViewModel(_gsiServer, hudSettings, _webSocketClient, bottomRight);
+        var hudOverlayVm = new HudOverlayViewModel(_gsiServer, hudSettings, _webSocketClient, bottomRight, _cueService);
         _videoDisplayVm.SetHudOverlay(hudOverlayVm);
         _hotkeyService.RegisterCommandContext(topLeft);
         _hotkeyService.RegisterCommandContext(topRight);
@@ -1491,6 +1493,12 @@ public class MainDockFactory : Factory, IDisposable
         }
         _xinputHandler?.Dispose();
 
+        _replayDirectorClient.Dispose();
+        _cueService.Dispose();
+        _hotLinkClient.Dispose();
+        _hotLinkGameClock.Dispose();
+        _hotLinkPublisher.Dispose();
+        _hotLinkServiceDiscovery.Dispose();
         _spectatorBindingsRefreshCoordinator.Dispose();
         _gsiServer.Dispose();
         _webSocketClient.MessageReceived -= OnHlaeMessage;
@@ -1499,9 +1507,6 @@ public class MainDockFactory : Factory, IDisposable
         _producerClient.Dispose();
         _liveLinkReceiver.Dispose();
         _vmixReplayService.Dispose();
-        _replayDirectorFollower.Dispose();
-        _replayDirectorPublisher.Dispose();
-        _replayDirectorServiceDiscovery.Dispose();
         _delayedReplayMarker.Dispose();
         _vmixApiClient.Dispose();
         _replayDockVm?.Dispose();

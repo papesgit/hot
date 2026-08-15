@@ -5,6 +5,7 @@ using Avalonia.Input;
 using HlaeObsTools.Services.Campaths;
 using HlaeObsTools.Services.Viewport3D;
 using HlaeObsTools.ViewModels;
+using HlaeObsTools.ViewModels.Cues;
 
 namespace HlaeObsTools.Controls;
 
@@ -29,6 +30,7 @@ public interface IViewport3DControl
     void SetDepthOfField(CampathDofSettings settings);
     void SetPins(IReadOnlyList<ViewportPin> pins);
     void SetPlayerStatuses(IReadOnlyList<ViewportPlayerStatus> statuses);
+    void SetCueEvents(IReadOnlyList<CueEventViewModel> cues);
     void SetCampathOverlay(CampathOverlayData? data);
     void SetCampathPlayheadFrustum(CampathOverlayData? data);
     void SetCampathGizmo(CampathGizmoState? state);

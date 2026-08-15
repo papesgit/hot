@@ -9,6 +9,7 @@
   <UserControl.Resources>
     <conv:RelativeToCanvasConverter x:Key="RelativeToCanvasConverter" />
     <conv:ProgressToPieGeometryConverter x:Key="ProgressToPieGeometryConverter" />
+    <conv:CueTeamBrushConverter x:Key="CueTeamBrushConverter" />
     <conv:BooleanToOpacityConverter x:Key="HideWhenTrueOpacityConverter"
                                     TrueOpacity="0"
                                     FalseOpacity="1" />
@@ -170,6 +171,70 @@
                   <svg:Svg Path="avares://HlaeObsTools/Assets/hud/weapons/defuser.svg"
                            Width="16"
                            Height="16" />
+                </Canvas>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Delayed observer kill cues -->
+          <ItemsControl ItemsSource="{Binding CueEvents}" Width="1024" Height="1024" ClipToBounds="False"
+                        ZIndex="100" x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="ZIndex" Value="{Binding ZIndex}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RadarCueEventViewModel">
+                <Canvas Width="1024" Height="1024" Opacity="{Binding Cue.SpatialOpacity}">
+                  <Line StartPoint="{Binding AttackerPoint}" EndPoint="{Binding VictimPoint}"
+                        Stroke="#E8E43D3D" StrokeThickness="3" />
+                  <Canvas Width="48" Height="48" Canvas.Left="{Binding AttackerCanvasX}" Canvas.Top="{Binding AttackerCanvasY}">
+                    <Ellipse Width="40" Height="40" Canvas.Left="4" Canvas.Top="4" Fill="#B0181C22" />
+                    <Path Data="{Binding Cue.RingProgress, Converter={StaticResource ProgressToPieGeometryConverter}, ConverterParameter=20}"
+                          Fill="{Binding Cue.AttackerTeam, Converter={StaticResource CueTeamBrushConverter}}"
+                          Width="40" Height="40" Canvas.Left="4" Canvas.Top="4" />
+                    <Ellipse Width="28" Height="28" Canvas.Left="10" Canvas.Top="10" Fill="#EB181C22" />
+                    <Ellipse Width="40" Height="40" Canvas.Left="4" Canvas.Top="4"
+                             Stroke="{Binding Cue.AttackerTeam, Converter={StaticResource CueTeamBrushConverter}}" StrokeThickness="2" />
+                    <svg:Svg Path="{Binding Cue.WeaponIconPath}" Width="20" Height="14" Canvas.Left="38" Canvas.Top="17" />
+                  </Canvas>
+                  <Canvas Width="48" Height="48" Canvas.Left="{Binding VictimCanvasX}" Canvas.Top="{Binding VictimCanvasY}">
+                    <Ellipse Width="40" Height="40" Canvas.Left="4" Canvas.Top="4" Fill="#B0181C22" />
+                    <Path Data="{Binding Cue.RingProgress, Converter={StaticResource ProgressToPieGeometryConverter}, ConverterParameter=20}"
+                          Fill="{Binding Cue.VictimTeam, Converter={StaticResource CueTeamBrushConverter}}"
+                          Width="40" Height="40" Canvas.Left="4" Canvas.Top="4" />
+                    <Ellipse Width="28" Height="28" Canvas.Left="10" Canvas.Top="10" Fill="#EB181C22" />
+                    <Ellipse Width="40" Height="40" Canvas.Left="4" Canvas.Top="4"
+                             Stroke="{Binding Cue.VictimTeam, Converter={StaticResource CueTeamBrushConverter}}" StrokeThickness="2" />
+                    <svg:Svg Path="avares://HlaeObsTools/Assets/hud/icons/dead.svg" Width="18" Height="18" Canvas.Left="39" Canvas.Top="15" />
+                  </Canvas>
+                </Canvas>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Cue observer slots stay above every cue ring, icon, and connecting line. -->
+          <ItemsControl ItemsSource="{Binding CueEvents}" Width="1024" Height="1024"
+                        IsHitTestVisible="False" ClipToBounds="False" ZIndex="200" x:CompileBindings="False">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="ZIndex" Value="{Binding ZIndex}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RadarCueEventViewModel">
+                <Canvas Width="1024" Height="1024" Opacity="{Binding Cue.SpatialOpacity}">
+                  <TextBlock Text="{Binding Cue.AttackerSlotLabel}" Foreground="White"
+                             FontWeight="Bold" FontSize="14" Width="24" Height="20"
+                             TextAlignment="Center" VerticalAlignment="Center"
+                             Canvas.Left="{Binding AttackerLabelCanvasX}" Canvas.Top="{Binding AttackerLabelCanvasY}" />
+                  <TextBlock Text="{Binding Cue.VictimSlotLabel}" Foreground="White"
+                             FontWeight="Bold" FontSize="14" Width="24" Height="20"
+                             TextAlignment="Center" VerticalAlignment="Center"
+                             Canvas.Left="{Binding VictimLabelCanvasX}" Canvas.Top="{Binding VictimLabelCanvasY}" />
                 </Canvas>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

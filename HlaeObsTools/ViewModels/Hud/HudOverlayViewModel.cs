@@ -6,11 +6,14 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
 using Avalonia.Media;
+using Avalonia;
 using Avalonia.Threading;
 using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.ViewModels.Docks;
+using HlaeObsTools.Services.HotLink;
+using HlaeObsTools.ViewModels.Cues;
 
 namespace HlaeObsTools.ViewModels.Hud;
 
@@ -24,6 +27,7 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
     private readonly ObservableCollection<HudKillfeedEntryViewModel> _killfeedEntries = new();
     private readonly DispatcherTimer _killfeedTimer;
     private readonly CampathsDockViewModel? _campathsVm;
+    private readonly DelayedObserverCueService? _cueService;
     private readonly HudTeamViewModel _teamCt = new("CT");
     private readonly HudTeamViewModel _teamT = new("T");
     private HudPlayerCardViewModel? _focusedHudPlayer;
@@ -75,12 +79,19 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         GsiServer gsiServer,
         HudSettings hudSettings,
         HlaeWebSocketClient webSocketClient,
-        CampathsDockViewModel? campathsVm = null)
+        CampathsDockViewModel? campathsVm = null,
+        DelayedObserverCueService? cueService = null)
     {
         _gsiServer = gsiServer;
         _hudSettings = hudSettings;
         _webSocketClient = webSocketClient;
         _campathsVm = campathsVm;
+        _cueService = cueService;
+        if (_cueService != null)
+        {
+            _cueService.Updated += OnCueServiceUpdated;
+            _cueService.Settings.PropertyChanged += OnCueSettingsChanged;
+        }
 
         CancelHudPromptCommand = new Relay(_ => CancelPendingAttachTargetSelection());
 
@@ -111,6 +122,11 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
     public HudTeamViewModel TeamCt => _teamCt;
     public HudTeamViewModel TeamT => _teamT;
     public ObservableCollection<HudKillfeedEntryViewModel> KillfeedEntries => _killfeedEntries;
+    public ObservableCollection<CueEventViewModel>? CueEvents => _cueService?.Events;
+    public HotLinkSettings? CueSettings => _cueService?.Settings;
+    public bool ShowCueTimeline => _cueService?.IsCueModeActive == true && _cueService.Settings.CueTimelineEnabled;
+    public double PlayerContentOffsetY => ShowCueTimeline ? -66 : 0;
+    public Thickness CampathProgressMargin => new(0, 0, 0, ShowCueTimeline ? 66 : 0);
 
     public HudPlayerCardViewModel? FocusedHudPlayer
     {
@@ -211,6 +227,24 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         {
             _campathsVm.PropertyChanged -= OnCampathsPropertyChanged;
         }
+        if (_cueService != null)
+        {
+            _cueService.Updated -= OnCueServiceUpdated;
+            _cueService.Settings.PropertyChanged -= OnCueSettingsChanged;
+        }
+    }
+
+    private void OnCueServiceUpdated(object? sender, EventArgs e)
+    {
+        if (_cueService != null)
+            foreach (var cue in _cueService.Events) cue.UseAltBindings = _hudSettings.UseAltPlayerBinds;
+        OnPropertyChanged(nameof(CueEvents));
+    }
+    private void OnCueSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(ShowCueTimeline));
+        OnPropertyChanged(nameof(PlayerContentOffsetY));
+        OnPropertyChanged(nameof(CampathProgressMargin));
     }
 
     private void OnHudSettingsChanged(object? sender, PropertyChangedEventArgs e)
@@ -232,6 +266,8 @@ public sealed class HudOverlayViewModel : ViewModelBase, IDisposable
         else if (e.PropertyName == nameof(HudSettings.UseAltPlayerBinds))
         {
             var useAlt = _hudSettings.UseAltPlayerBinds;
+            if (_cueService != null)
+                foreach (var cue in _cueService.Events) cue.UseAltBindings = useAlt;
             foreach (var vm in _hudPlayerCache.Values)
             {
                 vm.UseAltBindings = useAlt;

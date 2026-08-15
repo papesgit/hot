@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using HlaeObsTools.Services.ReplayDirector;
+using HlaeObsTools.Services.HotLink;
 using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.Services.Vmix;
@@ -45,18 +45,15 @@ public sealed class VmixReplayMarker : IDisposable
 
     public event EventHandler<string>? StatusChanged;
 
-    public void RecordKill(ReplayDirectorKillEvent kill, VmixReplaySettings replaySettings, ReplayDirectorSettings directorSettings)
+    public void RecordKill(HotLinkPublisherKillEvent kill, VmixReplaySettings replaySettings, HotLinkSettings hotLinkSettings)
     {
-        if (!directorSettings.DelayedVmixEnabled)
-            return;
-
         var config = new MarkerConfig(
             Math.Max(0, replaySettings.PreSeconds),
             Math.Max(0, replaySettings.PostSeconds),
             Math.Max(0, replaySettings.ExtendWindowSeconds),
             Math.Clamp(replaySettings.FramesPerSecond, 1.0, 240.0),
-            string.IsNullOrWhiteSpace(directorSettings.DelayedVmixChannel) ? null : directorSettings.DelayedVmixChannel.Trim(),
-            Math.Clamp(directorSettings.DelayedVmixCamera, 1, 8));
+            string.IsNullOrWhiteSpace(hotLinkSettings.DelayedVmixChannel) ? null : hotLinkSettings.DelayedVmixChannel.Trim(),
+            Math.Clamp(hotLinkSettings.DelayedVmixCamera, 1, 8));
 
         lock (_sync)
         {
@@ -87,7 +84,7 @@ public sealed class VmixReplayMarker : IDisposable
         }
     }
 
-    private int GetLabelRound(ReplayDirectorKillEvent kill)
+    private int GetLabelRound(HotLinkPublisherKillEvent kill)
     {
         if (kill.LabelRoundNumber > 0)
             return kill.LabelRoundNumber;
@@ -141,7 +138,7 @@ public sealed class VmixReplayMarker : IDisposable
         _activeReplayRecordId = null;
     }
 
-    private void AddKill(ReplayDirectorKillEvent kill, int roundKillNumber)
+    private void AddKill(HotLinkPublisherKillEvent kill, int roundKillNumber)
     {
         _eventKills.Add(new EventKill(kill.AttackerName, roundKillNumber));
         _lastKillTime = DateTimeOffset.UtcNow;
@@ -156,7 +153,7 @@ public sealed class VmixReplayMarker : IDisposable
         return count;
     }
 
-    private int GetRoundKillNumber(ReplayDirectorKillEvent kill, int roundNumber)
+    private int GetRoundKillNumber(HotLinkPublisherKillEvent kill, int roundNumber)
     {
         if (kill.RoundKillNumber > 0)
             return kill.RoundKillNumber;

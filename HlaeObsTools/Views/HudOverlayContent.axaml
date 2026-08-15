@@ -3,6 +3,7 @@
              xmlns:vm="using:HlaeObsTools.ViewModels.Hud"
              xmlns:svg="using:Avalonia.Svg.Skia"
              xmlns:hud="using:HlaeObsTools.ViewModels.Hud"
+             xmlns:cues="using:HlaeObsTools.ViewModels.Cues"
              xmlns:conv="using:HlaeObsTools.Converters"
              xmlns:controls="using:HlaeObsTools.Views.Controls"
              xmlns:ac="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
@@ -20,6 +21,8 @@
                                         FalseOpacity="0" />
         <conv:NullToBoolConverter x:Key="NullToBoolConverter" />
         <conv:ProgressBarWidthConverter x:Key="ProgressBarWidthConverter" />
+        <conv:RelativeToCanvasConverter x:Key="RelativeToCanvasConverter" />
+        <conv:CueTeamBrushConverter x:Key="CueTeamBrushConverter" />
         <conv:HudScaleConverter x:Key="HudScaleConverter"
                                 BaseWidth="1600"
                                 BaseHeight="900"
@@ -461,6 +464,9 @@
                             VerticalAlignment="Bottom"
                             Margin="12,0,18,12"
                             ClipToBounds="False">
+                    <StackPanel.RenderTransform>
+                        <TranslateTransform Y="{Binding PlayerContentOffsetY}" />
+                    </StackPanel.RenderTransform>
                     <ContentControl Content="{Binding TeamCt.Slot1}"
                                     ContentTemplate="{StaticResource PlayerCardTemplate}"
                                     IsVisible="{Binding TeamCt.Slot1, Converter={StaticResource NullToBoolConverter}}"
@@ -489,6 +495,9 @@
                             VerticalAlignment="Bottom"
                             Margin="18,0,12,12"
                             ClipToBounds="False">
+                    <StackPanel.RenderTransform>
+                        <TranslateTransform Y="{Binding PlayerContentOffsetY}" />
+                    </StackPanel.RenderTransform>
                     <ContentControl Content="{Binding TeamT.Slot1}"
                                     ContentTemplate="{StaticResource PlayerCardTemplate}"
                                     IsVisible="{Binding TeamT.Slot1, Converter={StaticResource NullToBoolConverter}}"
@@ -528,13 +537,18 @@
                                 Width="520"
                                 IsVisible="{Binding HasFocusedHudPlayer}"
                                 Content="{Binding FocusedHudPlayer}"
-                                ContentTemplate="{StaticResource FocusedPlayerCardTemplate}" />
+                                ContentTemplate="{StaticResource FocusedPlayerCardTemplate}">
+                    <ContentControl.RenderTransform>
+                        <TranslateTransform Y="{Binding PlayerContentOffsetY}" />
+                    </ContentControl.RenderTransform>
+                </ContentControl>
 
                 <!-- Campath playback progress -->
                 <Grid Grid.Row="1"
                       Grid.ColumnSpan="3"
                       VerticalAlignment="Bottom"
                       Height="4"
+                      Margin="{Binding CampathProgressMargin}"
                       IsVisible="{Binding IsCampathPlaying}"
                       IsHitTestVisible="False">
                     <Rectangle Fill="#FF0000"
@@ -548,6 +562,53 @@
                         </Rectangle.Width>
                     </Rectangle>
                 </Grid>
+
+                <!-- Delayed observer cue timeline. Now is fixed at 25% width. -->
+                <Border Grid.Row="1" Grid.ColumnSpan="3"
+                        Height="64" VerticalAlignment="Bottom"
+                        Background="#B0101318" BorderBrush="#704E5968" BorderThickness="1,1,1,0"
+                        CornerRadius="5,5,0,0" IsVisible="{Binding ShowCueTimeline}"
+                        IsHitTestVisible="False" ZIndex="20">
+                    <Grid x:Name="CueTimelineCanvas" ColumnDefinitions="*,3*">
+                        <Rectangle Grid.Column="0" Width="2" Fill="#FFF2C14E" HorizontalAlignment="Right" Margin="0,5,-1,5" />
+                        <TextBlock Grid.Column="1" Text="NOW" FontSize="9" Foreground="#FFF2C14E"
+                                   HorizontalAlignment="Left" Margin="7,3,0,0" VerticalAlignment="Top" />
+                        <ItemsControl x:Name="CueTimelineItems" Grid.ColumnSpan="2" ItemsSource="{Binding CueEvents}"
+                                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:CompileBindings="False">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><Canvas /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.Styles>
+                                <!-- Canvas lays out the generated ContentPresenter, not the template root. -->
+                                <Style Selector="ItemsControl#CueTimelineItems > ContentPresenter">
+                                    <Setter Property="Canvas.Top" Value="5" />
+                                    <Setter Property="Canvas.Left">
+                                        <Setter.Value>
+                                            <MultiBinding Converter="{StaticResource RelativeToCanvasConverter}" ConverterParameter="30">
+                                                <Binding Path="TimelinePosition" />
+                                                <Binding Path="Bounds.Width" ElementName="CueTimelineItems" />
+                                            </MultiBinding>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ItemsControl.Styles>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="cues:CueEventViewModel">
+                                    <StackPanel Width="30" Spacing="1" IsVisible="{Binding IsTimelineVisible}">
+                                        <Border Width="28" Height="25" CornerRadius="3" Background="#D0181C22"
+                                                BorderBrush="{Binding AttackerTeam, Converter={StaticResource CueTeamBrushConverter}}" BorderThickness="2">
+                                            <TextBlock Text="{Binding AttackerSlotLabel}" FontSize="14" FontWeight="Bold" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <Border Width="28" Height="25" CornerRadius="3" Background="#D0181C22"
+                                                BorderBrush="{Binding VictimTeam, Converter={StaticResource CueTeamBrushConverter}}" BorderThickness="2">
+                                            <TextBlock Text="{Binding VictimSlotLabel}" FontSize="14" FontWeight="Bold" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
 
                 <!-- Killfeed overlay -->
                 <Canvas Grid.RowSpan="2"

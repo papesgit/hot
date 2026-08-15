@@ -27,7 +27,7 @@ using HlaeObsTools.Services.Campaths;
 using System.Text.Json;
 using HlaeObsTools.Services.Hotkeys;
 using HlaeObsTools.Services.Vmix;
-using HlaeObsTools.Services.ReplayDirector;
+using HlaeObsTools.Services.HotLink;
 using HlaeObsTools.ViewModels.Hotkeys;
 using ValveKeyValue;
 
@@ -91,8 +91,8 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly Func<NetworkSettingsData, Task>? _applyNetworkSettingsAsync;
         private readonly VmixSettings _vmixSettings;
         private readonly VmixReplaySettings _vmixReplaySettings;
-        private readonly ReplayDirectorSettings _replayDirectorSettings;
-        private readonly ReplayDirectorServiceDiscovery? _replayDirectorServiceDiscovery;
+        private readonly HotLinkSettings _hotLinkSettings;
+        private readonly HotLinkServiceDiscovery? _hotLinkServiceDiscovery;
         private readonly VmixApiClient _vmixApiClient;
         private readonly VmixShortcutCatalog _vmixShortcutCatalog;
         private readonly Dictionary<string, List<VmixFunctionDefinition>> _vmixFunctionsByCategory = new(StringComparer.Ordinal);
@@ -151,16 +151,16 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _refreshVmixStateCommand;
         private readonly ICommand _addVmixHotkeyCommand;
         private readonly ICommand _addCommandHotkeyCommand;
-        private readonly ICommand _refreshReplayDirectorHostsCommand;
-        private readonly ICommand _connectReplayDirectorFollowerCommand;
-        private readonly ICommand _disconnectReplayDirectorFollowerCommand;
+        private readonly ICommand _refreshHotLinkPublishersCommand;
+        private readonly ICommand _connectHotLinkClientCommand;
+        private readonly ICommand _disconnectHotLinkClientCommand;
         private readonly ICommand _startLiveLinkStreamCommand;
         private readonly ICommand _stopLiveLinkStreamCommand;
-        private ReplayDirectorHost? _selectedReplayDirectorHost;
+        private HotLinkPublisherEndpoint? _selectedHotLinkPublisher;
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort, IReadOnlyList<string> GsiRelayUris);
 
-        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixSettings? vmixSettings = null, VmixReplaySettings? vmixReplaySettings = null, ReplayDirectorSettings? replayDirectorSettings = null, VmixApiClient? vmixApiClient = null, ReplayDirectorServiceDiscovery? replayDirectorServiceDiscovery = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
+        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixSettings? vmixSettings = null, VmixReplaySettings? vmixReplaySettings = null, HotLinkSettings? hotLinkSettings = null, VmixApiClient? vmixApiClient = null, HotLinkServiceDiscovery? hotLinkServiceDiscovery = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
         {
             _radarSettings = radarSettings;
             _hudSettings = hudSettings;
@@ -171,8 +171,8 @@ namespace HlaeObsTools.ViewModels.Docks
             _applyNetworkSettingsAsync = applyNetworkSettingsAsync;
             _vmixSettings = vmixSettings ?? new VmixSettings();
             _vmixReplaySettings = vmixReplaySettings ?? new VmixReplaySettings();
-            _replayDirectorSettings = replayDirectorSettings ?? new ReplayDirectorSettings();
-            _replayDirectorServiceDiscovery = replayDirectorServiceDiscovery;
+            _hotLinkSettings = hotLinkSettings ?? new HotLinkSettings();
+            _hotLinkServiceDiscovery = hotLinkServiceDiscovery;
             _vmixApiClient = vmixApiClient ?? new VmixApiClient(_vmixSettings);
             _vmixShortcutCatalog = VmixShortcutCatalogLoader.LoadFromAssets();
             _setFocusInputGateDisabled = setFocusInputGateDisabled;
@@ -219,9 +219,9 @@ namespace HlaeObsTools.ViewModels.Docks
             _refreshVmixStateCommand = new AsyncRelay(RefreshVmixStateAsync);
             _addVmixHotkeyCommand = new Relay(AddVmixHotkey);
             _addCommandHotkeyCommand = new Relay(AddCommandHotkey);
-            _refreshReplayDirectorHostsCommand = new AsyncRelay(RefreshReplayDirectorHostsAsync);
-            _connectReplayDirectorFollowerCommand = new Relay(ConnectReplayDirectorFollower);
-            _disconnectReplayDirectorFollowerCommand = new Relay(DisconnectReplayDirectorFollower);
+            _refreshHotLinkPublishersCommand = new AsyncRelay(RefreshHotLinkPublishersAsync);
+            _connectHotLinkClientCommand = new Relay(ConnectHotLinkClient);
+            _disconnectHotLinkClientCommand = new Relay(DisconnectHotLinkClient);
             _startLiveLinkStreamCommand = new AsyncRelay(StartLiveLinkStreamAsync);
             _stopLiveLinkStreamCommand = new AsyncRelay(StopLiveLinkStreamAsync);
             _browseMapObjCommand = new AsyncRelay(BrowseCs2GameFolderAsync);
@@ -381,7 +381,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _freecamSettings.PropertyChanged += OnFreecamSettingsChanged;
             _vmixSettings.PropertyChanged += OnVmixSettingsChanged;
             _vmixReplaySettings.PropertyChanged += OnVmixSettingsChanged;
-            _replayDirectorSettings.PropertyChanged += OnVmixSettingsChanged;
+            _hotLinkSettings.PropertyChanged += OnVmixSettingsChanged;
 
             _networkHealthTimer.Tick += (_, _) => RefreshNetworkHealth();
             _networkHealthTimer.Start();
@@ -397,30 +397,31 @@ namespace HlaeObsTools.ViewModels.Docks
         public Viewport3DSettings Viewport3DSettings => _viewport3DSettings;
         public VmixSettings VmixSettings => _vmixSettings;
         public VmixReplaySettings VmixReplaySettings => _vmixReplaySettings;
-        public ReplayDirectorSettings ReplayDirectorSettings => _replayDirectorSettings;
-        public ObservableCollection<string> ReplayDirectorRoleOptions => HlaeObsTools.ViewModels.ReplayDirectorSettings.RoleOptions;
-        public ObservableCollection<ReplayDirectorHost> ReplayDirectorHosts { get; } = new();
-        public ICommand RefreshReplayDirectorHostsCommand => _refreshReplayDirectorHostsCommand;
-        public ICommand ConnectReplayDirectorFollowerCommand => _connectReplayDirectorFollowerCommand;
-        public ICommand DisconnectReplayDirectorFollowerCommand => _disconnectReplayDirectorFollowerCommand;
+        public HotLinkSettings HotLinkSettings => _hotLinkSettings;
+        public ObservableCollection<string> HotLinkRoleOptions => HlaeObsTools.ViewModels.HotLinkSettings.RoleOptions;
+        public ObservableCollection<string> HotLinkClientModeOptions => HlaeObsTools.ViewModels.HotLinkSettings.ClientModeOptions;
+        public ObservableCollection<HotLinkPublisherEndpoint> HotLinkPublishers { get; } = new();
+        public ICommand RefreshHotLinkPublishersCommand => _refreshHotLinkPublishersCommand;
+        public ICommand ConnectHotLinkClientCommand => _connectHotLinkClientCommand;
+        public ICommand DisconnectHotLinkClientCommand => _disconnectHotLinkClientCommand;
 
-        public bool CanConnectReplayDirectorFollower => _replayDirectorSettings.IsFollower
-            && (_replayDirectorSettings.ManualHost
-                ? !string.IsNullOrWhiteSpace(_replayDirectorSettings.PublisherIp)
-                : SelectedReplayDirectorHost != null);
+        public bool CanConnectHotLinkClient => _hotLinkSettings.IsClient
+            && (_hotLinkSettings.ManualHost
+                ? !string.IsNullOrWhiteSpace(_hotLinkSettings.PublisherIp)
+                : SelectedHotLinkPublisher != null);
 
-        public ReplayDirectorHost? SelectedReplayDirectorHost
+        public HotLinkPublisherEndpoint? SelectedHotLinkPublisher
         {
-            get => _selectedReplayDirectorHost;
+            get => _selectedHotLinkPublisher;
             set
             {
-                if (!SetProperty(ref _selectedReplayDirectorHost, value) || value == null)
+                if (!SetProperty(ref _selectedHotLinkPublisher, value) || value == null)
                     return;
 
-                _replayDirectorSettings.PublisherIp = value.Address.ToString();
-                _replayDirectorSettings.PublisherPort = value.Port;
-                _replayDirectorSettings.ManualHost = false;
-                OnPropertyChanged(nameof(CanConnectReplayDirectorFollower));
+                _hotLinkSettings.PublisherIp = value.Address.ToString();
+                _hotLinkSettings.PublisherPort = value.Port;
+                _hotLinkSettings.ManualHost = false;
+                OnPropertyChanged(nameof(CanConnectHotLinkClient));
             }
         }
         public CampathEditorViewModel CampathEditor =>
@@ -2072,16 +2073,22 @@ namespace HlaeObsTools.ViewModels.Docks
                 VmixReplayFramesPerSecond = _vmixReplaySettings.FramesPerSecond,
                 VmixReplayChannel = _vmixReplaySettings.Channel,
                 VmixReplayCamera = _vmixReplaySettings.Camera,
-                ReplayDirectorRole = _replayDirectorSettings.Role,
-                ReplayDirectorPublisherPort = _replayDirectorSettings.PublisherPort,
-                ReplayDirectorPublisherIp = _replayDirectorSettings.PublisherIp,
-                ReplayDirectorManualHost = _replayDirectorSettings.ManualHost,
-                ReplayDirectorPreSwitchSeconds = _replayDirectorSettings.PreSwitchSeconds,
-                ReplayDirectorSwitchLockSeconds = _replayDirectorSettings.SwitchLockSeconds,
-                ReplayDirectorOnlyFollowMissedKills = _replayDirectorSettings.OnlyFollowMissedKills,
-                ReplayDirectorDelayedVmixEnabled = _replayDirectorSettings.DelayedVmixEnabled,
-                ReplayDirectorDelayedVmixChannel = _replayDirectorSettings.DelayedVmixChannel,
-                ReplayDirectorDelayedVmixCamera = _replayDirectorSettings.DelayedVmixCamera,
+                HotLinkRole = _hotLinkSettings.Role,
+                HotLinkPublisherPort = _hotLinkSettings.PublisherPort,
+                HotLinkPublisherIp = _hotLinkSettings.PublisherIp,
+                HotLinkManualHost = _hotLinkSettings.ManualHost,
+                ReplayDirectorPreSwitchSeconds = _hotLinkSettings.PreSwitchSeconds,
+                ReplayDirectorSwitchLockSeconds = _hotLinkSettings.SwitchLockSeconds,
+                ReplayDirectorOnlyFollowMissedKills = _hotLinkSettings.OnlyFollowMissedKills,
+                HotLinkAcceptReplayMarkRequests = _hotLinkSettings.AcceptReplayMarkRequests,
+                ReplayDirectorDelayedVmixChannel = _hotLinkSettings.DelayedVmixChannel,
+                ReplayDirectorDelayedVmixCamera = _hotLinkSettings.DelayedVmixCamera,
+                HotLinkClientMode = _hotLinkSettings.ClientMode,
+                HotLinkCueTimelineEnabled = _hotLinkSettings.CueTimelineEnabled,
+                HotLinkCueRadarEnabled = _hotLinkSettings.CueRadarEnabled,
+                HotLinkCueViewportEnabled = _hotLinkSettings.CueViewportEnabled,
+                HotLinkCueTimelineAutoRange = _hotLinkSettings.CueTimelineAutoRange,
+                HotLinkCueTimelineFixedUpcomingSeconds = _hotLinkSettings.CueTimelineFixedUpcomingSeconds,
                 DisableFocusInputGate = _disableFocusInputGate,
                 Hotkeys = HotkeyBindings.Select(binding => binding.ToData()).ToList()
             };
@@ -2092,7 +2099,6 @@ namespace HlaeObsTools.ViewModels.Docks
             data.NetConsoleFilterGameEvents = _storedSettings.NetConsoleFilterGameEvents;
             data.NetConsoleFilterUnknownNetMessages = _storedSettings.NetConsoleFilterUnknownNetMessages;
             data.NetConsoleUserFilters = _storedSettings.NetConsoleUserFilters;
-            data.ReplayDirectorFollowerEndpoint = _storedSettings.ReplayDirectorFollowerEndpoint;
             data.GraphicsTargetFps = _storedSettings.GraphicsTargetFps;
             data.ActiveDockLayout = _storedSettings.ActiveDockLayout;
             data.UserDockLayouts = _storedSettings.UserDockLayouts;
@@ -2109,40 +2115,40 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
-        private async Task RefreshReplayDirectorHostsAsync()
+        private async Task RefreshHotLinkPublishersAsync()
         {
-            if (_replayDirectorServiceDiscovery == null)
+            if (_hotLinkServiceDiscovery == null)
                 return;
 
-            _replayDirectorSettings.Status = "Searching the local network for replay directors...";
+            _hotLinkSettings.Status = "Searching the local network for HOT Link publishers...";
             try
             {
-                var hosts = await _replayDirectorServiceDiscovery.BrowseAsync();
-                ReplayDirectorHosts.Clear();
+                var hosts = await _hotLinkServiceDiscovery.BrowseAsync();
+                HotLinkPublishers.Clear();
                 foreach (var host in hosts)
-                    ReplayDirectorHosts.Add(host);
+                    HotLinkPublishers.Add(host);
 
-                _replayDirectorSettings.Status = hosts.Count == 0
-                    ? "No replay directors found. Try Manual Host if discovery is unavailable on this network."
-                    : $"Found {hosts.Count} replay director{(hosts.Count == 1 ? string.Empty : "s")}.";
+                _hotLinkSettings.Status = hosts.Count == 0
+                    ? "No HOT Link publishers found. Try Manual Host if discovery is unavailable on this network."
+                    : $"Found {hosts.Count} HOT Link publisher{(hosts.Count == 1 ? string.Empty : "s")}.";
             }
             catch (Exception ex)
             {
-                _replayDirectorSettings.Status = $"Replay director discovery error: {ex.Message}";
+                _hotLinkSettings.Status = $"HOT Link discovery error: {ex.Message}";
             }
         }
 
-        private void ConnectReplayDirectorFollower()
+        private void ConnectHotLinkClient()
         {
-            if (!CanConnectReplayDirectorFollower)
+            if (!CanConnectHotLinkClient)
                 return;
 
-            _replayDirectorSettings.FollowerConnectionEnabled = true;
+            _hotLinkSettings.ClientConnectionEnabled = true;
         }
 
-        private void DisconnectReplayDirectorFollower()
+        private void DisconnectHotLinkClient()
         {
-            _replayDirectorSettings.FollowerConnectionEnabled = false;
+            _hotLinkSettings.ClientConnectionEnabled = false;
         }
 
         private List<string> GetSanitizedGsiRelayUris()
@@ -2571,28 +2577,28 @@ namespace HlaeObsTools.ViewModels.Docks
             if (_suppressSettingsSave)
                 return;
 
-            if (ReferenceEquals(sender, _replayDirectorSettings))
+            if (ReferenceEquals(sender, _hotLinkSettings))
             {
-                if (IsReplayDirectorStatusProperty(e.PropertyName))
+                if (IsHotLinkStatusProperty(e.PropertyName))
                     return;
 
-                if (e.PropertyName == nameof(ReplayDirectorSettings.Role) ||
-                    e.PropertyName == nameof(ReplayDirectorSettings.ManualHost) ||
-                    e.PropertyName == nameof(ReplayDirectorSettings.PublisherIp))
-                    OnPropertyChanged(nameof(CanConnectReplayDirectorFollower));
+                if (e.PropertyName == nameof(HotLinkSettings.Role) ||
+                    e.PropertyName == nameof(HotLinkSettings.ManualHost) ||
+                    e.PropertyName == nameof(HotLinkSettings.PublisherIp))
+                    OnPropertyChanged(nameof(CanConnectHotLinkClient));
             }
 
             SaveSettings();
         }
 
-        private static bool IsReplayDirectorStatusProperty(string? propertyName)
+        private static bool IsHotLinkStatusProperty(string? propertyName)
         {
-            return propertyName == nameof(ReplayDirectorSettings.Status)
-                || propertyName == nameof(ReplayDirectorSettings.LastKill)
-                || propertyName == nameof(ReplayDirectorSettings.LocalGameTime)
-                || propertyName == nameof(ReplayDirectorSettings.ScheduledTarget)
-                || propertyName == nameof(ReplayDirectorSettings.LastSwitch)
-                || propertyName == nameof(ReplayDirectorSettings.LastVmixMark);
+            return propertyName == nameof(HotLinkSettings.Status)
+                || propertyName == nameof(HotLinkSettings.LastKill)
+                || propertyName == nameof(HotLinkSettings.LocalGameTime)
+                || propertyName == nameof(HotLinkSettings.ScheduledTarget)
+                || propertyName == nameof(HotLinkSettings.LastSwitch)
+                || propertyName == nameof(HotLinkSettings.LastVmixMark);
         }
 
         #endregion
