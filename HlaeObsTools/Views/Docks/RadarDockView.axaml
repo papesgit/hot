@@ -198,7 +198,12 @@
                     <Ellipse Width="28" Height="28" Canvas.Left="10" Canvas.Top="10" Fill="#EB181C22" />
                     <Ellipse Width="40" Height="40" Canvas.Left="4" Canvas.Top="4"
                              Stroke="{Binding Cue.AttackerTeam, Converter={StaticResource CueTeamBrushConverter}}" StrokeThickness="2" />
-                    <svg:Svg Path="{Binding Cue.WeaponIconPath}" Width="20" Height="14" Canvas.Left="38" Canvas.Top="17" />
+                    <Grid Width="56" Height="14" Canvas.Left="11" Canvas.Top="35">
+                      <svg:Svg Path="{Binding Cue.WeaponIconPath}"
+                               Height="14"
+                               Stretch="Uniform"
+                               HorizontalAlignment="Center" />
+                    </Grid>
                   </Canvas>
                   <Canvas Width="48" Height="48" Canvas.Left="{Binding VictimCanvasX}" Canvas.Top="{Binding VictimCanvasY}">
                     <Ellipse Width="40" Height="40" Canvas.Left="4" Canvas.Top="4" Fill="#B0181C22" />
@@ -208,7 +213,12 @@
                     <Ellipse Width="28" Height="28" Canvas.Left="10" Canvas.Top="10" Fill="#EB181C22" />
                     <Ellipse Width="40" Height="40" Canvas.Left="4" Canvas.Top="4"
                              Stroke="{Binding Cue.VictimTeam, Converter={StaticResource CueTeamBrushConverter}}" StrokeThickness="2" />
-                    <svg:Svg Path="avares://HlaeObsTools/Assets/hud/icons/dead.svg" Width="18" Height="18" Canvas.Left="39" Canvas.Top="15" />
+                    <Grid Width="18" Height="18" Canvas.Left="31" Canvas.Top="34">
+                      <svg:Svg Path="avares://HlaeObsTools/Assets/hud/icons/dead.svg"
+                               Height="18"
+                               Stretch="Uniform"
+                               HorizontalAlignment="Center" />
+                    </Grid>
                   </Canvas>
                 </Canvas>
               </DataTemplate>

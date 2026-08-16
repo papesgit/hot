@@ -5342,7 +5342,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         using var ring = new SKPaint { Color = teamColor, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 7, StrokeCap = SKStrokeCap.Round };
         canvas.DrawCircle(64, 64, 34, background);
         if (step > 0) canvas.DrawArc(new SKRect(30,30,98,98), -90, 360f * step / 50f, false, ring);
-        DrawCueSvg(canvas, attacker ? cue.Weapon : "dead_player", new SKRect(76, 82, 110, 116));
+        DrawCueSvg(canvas, attacker ? cue.Weapon : "dead_player",
+            attacker ? new SKRect(62, 89, 124, 107) : new SKRect(76, 82, 110, 116));
         canvas.Flush();
         var texture = MaterialLoader.LoadBitmapTexture(bitmap);
         texture.SetWrapMode(TextureWrapMode.ClampToEdge);
