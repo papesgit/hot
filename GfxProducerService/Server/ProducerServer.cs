@@ -30,10 +30,11 @@ public sealed class ProducerServer : IDisposable
     private readonly HashSet<WebSocket> _sockets = new();
     private int _stopRequested;
 
-    public ProducerServer(string host, int port)
+    public ProducerServer(string host, int port, bool enableAudio)
     {
         _port = port;
         _host = NormalizeHost(host);
+        _atlasManager.EnableAudio = enableAudio;
         _atlasManager.TriggerCompleted += OnTriggerCompleted;
     }
 

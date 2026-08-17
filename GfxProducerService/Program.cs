@@ -11,6 +11,7 @@ public static class Program
     {
         var host = "*";
         var port = 31340;
+        var enableAudio = false;
         for (var i = 0; i < args.Length - 1; i++)
         {
             if (string.Equals(args[i], "--port", StringComparison.OrdinalIgnoreCase) &&
@@ -23,9 +24,10 @@ public static class Program
                 host = args[i + 1];
             }
         }
+        enableAudio = args.Any(arg => string.Equals(arg, "--enable-audio", StringComparison.OrdinalIgnoreCase));
 
         var exitTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var staThread = new Thread(() => RunServerSta(host, port, exitTcs))
+        var staThread = new Thread(() => RunServerSta(host, port, enableAudio, exitTcs))
         {
             IsBackground = false
         };
@@ -35,7 +37,7 @@ public static class Program
         await exitTcs.Task;
     }
 
-    private static void RunServerSta(string host, int port, TaskCompletionSource<bool> exitTcs)
+    private static void RunServerSta(string host, int port, bool enableAudio, TaskCompletionSource<bool> exitTcs)
     {
         using var cts = new CancellationTokenSource();
         ProducerServer? server = null;
@@ -55,7 +57,7 @@ public static class Program
 
         try
         {
-            using var localServer = new ProducerServer(host, port);
+            using var localServer = new ProducerServer(host, port, enableAudio);
             server = localServer;
             localServer.Initialize();
             Console.WriteLine($"GfxProducerService listening on ws://{host}:{port}/gfxp/");

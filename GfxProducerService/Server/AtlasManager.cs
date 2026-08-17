@@ -19,6 +19,7 @@ public sealed class AtlasManager : IDisposable
     private readonly Dictionary<string, HtmlAtlasRenderer> _renderers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AtlasInfo> _info = new(StringComparer.OrdinalIgnoreCase);
     private bool _cefInitialized;
+    public bool EnableAudio { get; set; }
     public event Action<string, string, string>? TriggerCompleted;
 
     public void EnsureInitialized()
@@ -60,8 +61,12 @@ public sealed class AtlasManager : IDisposable
                 RootCachePath = cacheDir,
                 BrowserSubprocessPath = subprocessPath
             };
+            if (EnableAudio)
+                settings.EnableAudio();
+
             settings.CefCommandLineArgs.Add("no-sandbox", "1");
             settings.CefCommandLineArgs.Add("allow-file-access-from-files", "1");
+            settings.CefCommandLineArgs.Add("autoplay-policy", "no-user-gesture-required");
             CefInitAttempted = true;
             CefInitSucceeded = Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null);
             if (!CefInitSucceeded && Cef.IsInitialized != true)
