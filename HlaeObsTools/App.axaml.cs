@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using HlaeObsTools.Services.Graphics;
+using HlaeObsTools.Services.Survey;
 using HlaeObsTools.Services.Updates;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.Views;
@@ -94,6 +95,10 @@ public partial class App : Application
                 mainWindow.ShowInTaskbar = true;
                 mainWindow.WindowState = WindowState.Normal;
                 mainWindow.Activate();
+                splashScreen.Close();
+
+                var surveyPromptService = new SurveyPromptService();
+                await surveyPromptService.ShowIfNeededAsync(mainWindow);
 
                 _ = updateCheckService.CheckForUpdatesAsync(mainWindow);
             }

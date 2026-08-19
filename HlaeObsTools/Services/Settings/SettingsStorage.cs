@@ -127,6 +127,11 @@ public class SettingsStorage
 
 public class AppSettingsData
 {
+    /// <summary>
+    /// The latest survey the user chose not to be reminded about. Increasing the
+    /// survey ID makes a future survey visible again without resetting settings.
+    /// </summary>
+    public int DismissedSurveyNumber { get; set; }
     public DateTimeOffset? LastUpdateCheckUtc { get; set; }
     public string? SkippedUpdateVersion { get; set; }
     public string? LastConnectedHlaeVersion { get; set; }
