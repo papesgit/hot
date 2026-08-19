@@ -22,7 +22,7 @@ public sealed class UpdateCheckService
     private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
     private static readonly Regex HlaeAssetNamePattern = new(
-        @"^HLAEv(?<hlae>\d+\.\d+\.\d+)(?:-r(?<revision>[1-9]\d*))?-HOTv(?<hot>\d+\.\d+\.\d+)\.zip$",
+        @"^HOT-HLAE-v(?<hlae>\d+\.\d+\.\d+)(?:-r(?<revision>[1-9]\d*))?(?:\.zip)?$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     private readonly SettingsStorage _settingsStorage = new();
@@ -101,18 +101,18 @@ public sealed class UpdateCheckService
                 await ShowHotUpdateAsync(currentHotVersion, latestHotVersion);
             }
 
-            // A HOT release contains its matching HLAE package; HLAE-only checks apply only
+            // The release contains its matching HLAE package; HLAE-only checks apply only
             // once this HOT version is already current.
             return;
         }
 
-        var latestHlaeAsset = FindLatestHlaeAsset(_latestRelease, currentHotVersion);
+        var latestHlaeAsset = FindLatestHlaeAsset(_latestRelease);
         if (latestHlaeAsset is null)
             return;
 
         var storedSettings = _settingsStorage.Load();
-        if (!TryGetStoredHlaeVersion(storedSettings, out var installedHlaeVersion, out var installedHotVersion, out var installedRevision)
-            || !IsHlaeUpdateAvailable(installedHlaeVersion, installedHotVersion, installedRevision, latestHlaeAsset, currentHotVersion)
+        if (!TryGetStoredHlaeVersion(storedSettings, out var installedHlaeVersion, out var installedRevision)
+            || !IsHlaeUpdateAvailable(installedHlaeVersion, installedRevision, latestHlaeAsset)
             || string.Equals(storedSettings.SkippedHlaeUpdateVersion, latestHlaeAsset.Identity, StringComparison.OrdinalIgnoreCase))
         {
             return;
@@ -150,15 +150,13 @@ public sealed class UpdateCheckService
         {
             var response = await UpdateAvailableDialog.ShowAsync(
                 _owner!,
-                latestAsset.Revision == 1
-                    ? $"HLAE (compatible with HOT {latestAsset.HotVersion})"
-                    : $"HLAE revision {latestAsset.Revision} (compatible with HOT {latestAsset.HotVersion})",
+                latestAsset.Revision == 1 ? "HLAE" : $"HLAE revision {latestAsset.Revision}",
                 currentHlaeVersion,
                 latestAsset.HlaeVersion,
                 latestAsset.DownloadUrl,
                 _latestRelease!.Body,
                 "Download HLAE",
-                $"HLAE {FormatHlaePackageVersion(latestAsset.HlaeVersion, latestAsset.Revision)} is available for your HOT version.\n"
+                $"HLAE {FormatHlaePackageVersion(latestAsset.HlaeVersion, latestAsset.Revision)} is available.\n"
                 + $"You are currently using HLAE {FormatHlaePackageVersion(currentHlaeVersion, currentRevision)}.",
                 showReleaseNotes: false);
 
@@ -173,13 +171,10 @@ public sealed class UpdateCheckService
 
     private static bool IsHlaeUpdateAvailable(
         Version installedHlaeVersion,
-        Version installedHotVersion,
         int installedRevision,
-        HlaeAsset latestAsset,
-        Version currentHotVersion)
+        HlaeAsset latestAsset)
     {
-        return installedHotVersion < currentHotVersion
-            || installedHlaeVersion < latestAsset.HlaeVersion
+        return installedHlaeVersion < latestAsset.HlaeVersion
             || (installedHlaeVersion == latestAsset.HlaeVersion && installedRevision < latestAsset.Revision);
     }
 
@@ -188,19 +183,26 @@ public sealed class UpdateCheckService
         return revision > 1 ? $"{hlaeVersion}-r{revision}" : hlaeVersion.ToString();
     }
 
-    private static bool TryGetStoredHlaeVersion(AppSettingsData settings, out Version hlaeVersion, out Version hotVersion, out int revision)
+    private static bool TryGetStoredHlaeVersion(AppSettingsData settings, out Version hlaeVersion, out int revision)
     {
-        var hasHlaeVersion = Version.TryParse(settings.LastConnectedHlaeVersion, out hlaeVersion!);
-        var hasHotVersion = Version.TryParse(settings.LastConnectedHlaeHotVersion, out hotVersion!);
         revision = settings.LastConnectedHlaeRevision ?? 1;
-        return hasHlaeVersion && hasHotVersion && revision >= 1;
+        if (revision < 1
+            || !Version.TryParse(settings.LastConnectedHlaeVersion, out var parsedHlaeVersion)
+            || parsedHlaeVersion is null)
+        {
+            hlaeVersion = null!;
+            return false;
+        }
+
+        hlaeVersion = parsedHlaeVersion;
+        return true;
     }
 
-    private static HlaeAsset? FindLatestHlaeAsset(GitHubRelease release, Version currentHotVersion)
+    private static HlaeAsset? FindLatestHlaeAsset(GitHubRelease release)
     {
         return release.Assets
             .Select(TryParseHlaeAsset)
-            .Where(asset => asset is not null && asset.HotVersion == currentHotVersion)
+            .Where(asset => asset is not null)
             .Cast<HlaeAsset>()
             .OrderByDescending(asset => asset.HlaeVersion)
             .ThenByDescending(asset => asset.Revision)
@@ -212,7 +214,6 @@ public sealed class UpdateCheckService
         var match = HlaeAssetNamePattern.Match(asset.Name ?? string.Empty);
         if (!match.Success
             || !Version.TryParse(match.Groups["hlae"].Value, out var hlaeVersion)
-            || !Version.TryParse(match.Groups["hot"].Value, out var hotVersion)
             || string.IsNullOrWhiteSpace(asset.BrowserDownloadUrl))
         {
             return null;
@@ -221,7 +222,7 @@ public sealed class UpdateCheckService
         var revision = match.Groups["revision"].Success
             ? int.Parse(match.Groups["revision"].Value)
             : 1;
-        return new HlaeAsset(hlaeVersion, hotVersion, revision, asset.BrowserDownloadUrl);
+        return new HlaeAsset(hlaeVersion, revision, asset.Name!, asset.BrowserDownloadUrl);
     }
 
     private static async Task<GitHubRelease?> GetLatestReleaseAsync()
@@ -288,8 +289,5 @@ public sealed class UpdateCheckService
         public string? BrowserDownloadUrl { get; init; }
     }
 
-    private sealed record HlaeAsset(Version HlaeVersion, Version HotVersion, int Revision, string DownloadUrl)
-    {
-        public string Identity => $"{HlaeVersion}-r{Revision}-HOT{HotVersion}";
-    }
+    private sealed record HlaeAsset(Version HlaeVersion, int Revision, string Identity, string DownloadUrl);
 }

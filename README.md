@@ -6,7 +6,7 @@ HLAE Observer Tools is a observing control system for Counter-Strike 2 observing
 ## Getting Started
 
 1. Install .NET Desktop Runtime 10 https://dotnet.microsoft.com/en-us/download/dotnet/10.0
-2. Download the latest **custom** HOT-HLAE (official HLAE will **NOT** work) and HOT build from  https://github.com/papesgit/hot/releases/latest (e.g. `HLAEvx.x.x-HOTvx.x.x.zip` and `HOTvx.x.x.zip`)
+2. Download the latest **custom** HOT-HLAE (official HLAE will **NOT** work) and HOT build from  https://github.com/papesgit/hot/releases/latest (e.g. `HOT-HLAE-vX.X.X.zip` and `HOT-vX.X.X.zip`)
 3. Launch CS2 with HOT-HLAE (File>Launch CS2, Example launch parameters: `-steam -insecure +sv_lan 1 -novid -console -afxDisableSteamStorage -allow_third_party_software -netconport 54545`)
 4. Launch HlaeObsTools.exe
    
@@ -24,13 +24,13 @@ Visit the [Wiki](https://github.com/papesgit/hot/wiki) for more information abou
   - Launch HLAE with `-lanserver` (optionally `-lanserver <HLAE_PC_LAN_IP>` if it doesn't bind automatically) so WS/UDP bind to LAN
   and `-targetip <HOT_PC_LAN_IP>` (GSI posts to the HOT machine).
   - In HOT: set WS/UDP to the HLAE PC's LAN IP, then **Apply / Reconnect**.
-  - RTP on HLAE: `mirv_nvenc stream enable <HOT_PC_LAN_IP> 5000`.
+  - RTP on HLAE: `mirv_nvenc stream enable <HOT_PC_LAN_IP> 5000; mirv_nvenc start`.
 
 - **Remote / Internet WIP**
   - Forward ports on the routers: WS TCP 31338 and UDP input 31339 to the HLAE PC; GSI TCP 31337 and RTP UDP 5000 to the HOT PC (or your chosen ports).
   - Launch HLAE with `-lanserver` (optionally `-lanserver <HLAE_PC_LAN_IP>`) and `-targetip <HOT_public_or_forwarded_IP>` so the GSI config posts to the HOT machine.
   - In HOT: set WS/UDP host to the HLAE PC's public/WAN IP, then **Apply / Reconnect**.
-  - RTP on HLAE: `mirv_nvenc stream enable <HOT_public_or_forwarded_IP> 5000`.
+  - RTP on HLAE: `mirv_nvenc stream enable <HOT_public_or_forwarded_IP> 5000; mirv_nvenc start`.
 
 > _**Note:** For campaths to properly work in LAN/remote setup they have to be present on BOTH PC's in the SAME path_
 
