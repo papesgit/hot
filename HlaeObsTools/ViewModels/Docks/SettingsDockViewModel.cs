@@ -2007,112 +2007,95 @@ namespace HlaeObsTools.ViewModels.Docks
         private void SaveSettings()
         {
             var gsiRelayUris = GetSanitizedGsiRelayUris();
-            var data = new AppSettingsData
+            // Apply only fields owned by this dock. Other docks and background services
+            // may have saved newer values since our shared startup snapshot was loaded.
+            void ApplySettings(AppSettingsData data)
             {
-                AttachPresetPages = _hudSettings.ToAttachPresetPageData().ToList(),
-                ActiveAttachPresetPage = _hudSettings.ActiveAttachPresetPage,
-                RadarScale = _radarSettings.RadarScale,
-                MarkerScale = _radarSettings.MarkerScale,
-                HeightScaleMultiplier = _radarSettings.HeightScaleMultiplier,
-                HudSize = _hudSettings.HudSize,
-                UseAltPlayerBinds = _radarSettings.UseAltPlayerBinds,
-                DisplayNumbersTopmost = _radarSettings.DisplayNumbersTopmost,
-                ShowPlayerNames = _radarSettings.ShowPlayerNames,
-                RadarStyle = _radarSettings.RadarStyle,
-                WebSocketHost = WebSocketHost,
-                WebSocketPort = WebSocketPort,
-                GraphicsProducerHost = WebSocketHost,
-                GraphicsProducerPort = GraphicsProducerPort,
-                UdpPort = UdpPort,
-                RtpPort = RtpPort,
-                GsiPort = GsiPort,
-                NetConsoleHostPort = _storedSettings.NetConsoleHostPort,
-                GsiRelayUris = gsiRelayUris,
-                MapObjPath = _viewport3DSettings.MapObjPath,
-                Cs2GameFolder = _viewport3DSettings.Cs2GameFolder,
-                ViewportSelectedMapName = _viewport3DSettings.SelectedMapName,
-                ViewportActiveDutyMapsOnly = _viewport3DSettings.ActiveDutyMapsOnly,
-                ViewportShowWorkshopMaps = _viewport3DSettings.ShowWorkshopMaps,
-                ViewportShowPlayerPins = _viewport3DSettings.ShowPlayerPins,
-                PinScale = _viewport3DSettings.PinScale,
-                PinOffsetZ = _viewport3DSettings.PinOffsetZ,
-                ViewportMouseScale = _viewport3DSettings.ViewportMouseScale,
-                ViewportFpsCap = _viewport3DSettings.ViewportFpsCap,
-                ViewportPostprocessEnabled = _viewport3DSettings.PostprocessEnabled,
-                ViewportColorCorrectionEnabled = _viewport3DSettings.ColorCorrectionEnabled,
-                ViewportDynamicShadowsEnabled = _viewport3DSettings.DynamicShadowsEnabled,
-                ViewportWireframeEnabled = _viewport3DSettings.WireframeEnabled,
-                ViewportSkipWaterEnabled = _viewport3DSettings.SkipWaterEnabled,
-                ViewportSkipTranslucentEnabled = _viewport3DSettings.SkipTranslucentEnabled,
-                ViewportShowFps = _viewport3DSettings.ShowFps,
-                ShowHlaeCampathControls = ShowHlaeCampathControls,
-                DefaultCampathInterp = _defaultCampathInterp.ToString(),
-                ViewportCampathOverlayEnabled = _viewport3DSettings.ViewportCampathOverlayEnabled,
-                ViewportCampathGizmoEnabled = _viewport3DSettings.ViewportCampathGizmoEnabled,
-                HlaeSyncTimeSkipMode = _viewport3DSettings.HlaeSyncTimeSkipMode.ToString(),
-                CampathGizmoLocalSpace = _viewport3DSettings.CampathGizmoLocalSpace,
-                ViewportLiveLinkEnabled = _viewport3DSettings.LiveLinkEnabled,
-                ViewportLiveLinkItemIconsEnabled = _viewport3DSettings.LiveLinkItemIconsEnabled,
-                ViewportLiveLinkWeaponIconsEnabled = _viewport3DSettings.LiveLinkWeaponIconsEnabled,
-                ViewportLiveLinkGrenadeIconsEnabled = _viewport3DSettings.LiveLinkGrenadeIconsEnabled,
-                ViewportLiveLinkProjectileIconsEnabled = _viewport3DSettings.LiveLinkProjectileIconsEnabled,
-                ViewportLiveLinkObjectiveIconsEnabled = _viewport3DSettings.LiveLinkObjectiveIconsEnabled,
-                ViewportLiveLinkDeadPlayerIconsEnabled = _viewport3DSettings.LiveLinkDeadPlayerIconsEnabled,
-                ViewportLiveLinkPort = _viewport3DSettings.LiveLinkPort,
-                ViewportLiveLinkFps = _viewport3DSettings.LiveLinkFps,
-                ViewportShadowTextureSize = _viewport3DSettings.ShadowTextureSize,
-                ViewportMaxTextureSize = _viewport3DSettings.MaxTextureSize,
-                ViewportRenderMode = _viewport3DSettings.RenderMode,
-                FreecamSettings = _freecamSettings.ToData(),
-                VmixReplayEnabled = _vmixReplaySettings.Enabled,
-                VmixReplayHost = _vmixSettings.Host,
-                VmixReplayPort = _vmixSettings.Port,
-                VmixReplayPreSeconds = _vmixReplaySettings.PreSeconds,
-                VmixReplayPostSeconds = _vmixReplaySettings.PostSeconds,
-                VmixReplayExtendWindowSeconds = _vmixReplaySettings.ExtendWindowSeconds,
-                VmixReplayFramesPerSecond = _vmixReplaySettings.FramesPerSecond,
-                VmixReplayChannel = _vmixReplaySettings.Channel,
-                VmixReplayCamera = _vmixReplaySettings.Camera,
-                HotLinkRole = _hotLinkSettings.Role,
-                HotLinkPublisherPort = _hotLinkSettings.PublisherPort,
-                HotLinkPublisherIp = _hotLinkSettings.PublisherIp,
-                HotLinkManualHost = _hotLinkSettings.ManualHost,
-                ReplayDirectorPreSwitchSeconds = _hotLinkSettings.PreSwitchSeconds,
-                ReplayDirectorSwitchLockSeconds = _hotLinkSettings.SwitchLockSeconds,
-                ReplayDirectorOnlyFollowMissedKills = _hotLinkSettings.OnlyFollowMissedKills,
-                HotLinkAcceptReplayMarkRequests = _hotLinkSettings.AcceptReplayMarkRequests,
-                ReplayDirectorDelayedVmixChannel = _hotLinkSettings.DelayedVmixChannel,
-                ReplayDirectorDelayedVmixCamera = _hotLinkSettings.DelayedVmixCamera,
-                HotLinkClientMode = _hotLinkSettings.ClientMode,
-                HotLinkCueTimelineEnabled = _hotLinkSettings.CueTimelineEnabled,
-                HotLinkCueRadarEnabled = _hotLinkSettings.CueRadarEnabled,
-                HotLinkCueViewportEnabled = _hotLinkSettings.CueViewportEnabled,
-                HotLinkCueTimelineAutoRange = _hotLinkSettings.CueTimelineAutoRange,
-                HotLinkCueTimelineFixedUpcomingSeconds = _hotLinkSettings.CueTimelineFixedUpcomingSeconds,
-                DisableFocusInputGate = _disableFocusInputGate,
-                Hotkeys = HotkeyBindings.Select(binding => binding.ToData()).ToList()
-            };
-            // Preserve settings that are owned by other docks or background services.
-            data.LastUpdateCheckUtc = _storedSettings.LastUpdateCheckUtc;
-            data.SkippedUpdateVersion = _storedSettings.SkippedUpdateVersion;
-            data.AttachPresets = _storedSettings.AttachPresets;
-            data.NetConsoleFilterGameEvents = _storedSettings.NetConsoleFilterGameEvents;
-            data.NetConsoleFilterUnknownNetMessages = _storedSettings.NetConsoleFilterUnknownNetMessages;
-            data.NetConsoleUserFilters = _storedSettings.NetConsoleUserFilters;
-            data.GraphicsTargetFps = _storedSettings.GraphicsTargetFps;
-            data.ActiveDockLayout = _storedSettings.ActiveDockLayout;
-            data.UserDockLayouts = _storedSettings.UserDockLayouts;
-            CopySettingsData(data, _storedSettings);
-            _settingsStorage.Save(_storedSettings);
-        }
-
-        private static void CopySettingsData(AppSettingsData source, AppSettingsData destination)
-        {
-            foreach (var property in typeof(AppSettingsData).GetProperties())
-            {
-                if (property.CanRead && property.CanWrite)
-                    property.SetValue(destination, property.GetValue(source));
+                data.AttachPresetPages = _hudSettings.ToAttachPresetPageData().ToList();
+                data.ActiveAttachPresetPage = _hudSettings.ActiveAttachPresetPage;
+                data.RadarScale = _radarSettings.RadarScale;
+                data.MarkerScale = _radarSettings.MarkerScale;
+                data.HeightScaleMultiplier = _radarSettings.HeightScaleMultiplier;
+                data.HudSize = _hudSettings.HudSize;
+                data.UseAltPlayerBinds = _radarSettings.UseAltPlayerBinds;
+                data.DisplayNumbersTopmost = _radarSettings.DisplayNumbersTopmost;
+                data.ShowPlayerNames = _radarSettings.ShowPlayerNames;
+                data.RadarStyle = _radarSettings.RadarStyle;
+                data.WebSocketHost = WebSocketHost;
+                data.WebSocketPort = WebSocketPort;
+                data.GraphicsProducerHost = WebSocketHost;
+                data.GraphicsProducerPort = GraphicsProducerPort;
+                data.UdpPort = UdpPort;
+                data.RtpPort = RtpPort;
+                data.GsiPort = GsiPort;
+                data.GsiRelayUris = gsiRelayUris;
+                data.MapObjPath = _viewport3DSettings.MapObjPath;
+                data.Cs2GameFolder = _viewport3DSettings.Cs2GameFolder;
+                data.ViewportSelectedMapName = _viewport3DSettings.SelectedMapName;
+                data.ViewportActiveDutyMapsOnly = _viewport3DSettings.ActiveDutyMapsOnly;
+                data.ViewportShowWorkshopMaps = _viewport3DSettings.ShowWorkshopMaps;
+                data.ViewportShowPlayerPins = _viewport3DSettings.ShowPlayerPins;
+                data.PinScale = _viewport3DSettings.PinScale;
+                data.PinOffsetZ = _viewport3DSettings.PinOffsetZ;
+                data.ViewportMouseScale = _viewport3DSettings.ViewportMouseScale;
+                data.ViewportFpsCap = _viewport3DSettings.ViewportFpsCap;
+                data.ViewportPostprocessEnabled = _viewport3DSettings.PostprocessEnabled;
+                data.ViewportColorCorrectionEnabled = _viewport3DSettings.ColorCorrectionEnabled;
+                data.ViewportDynamicShadowsEnabled = _viewport3DSettings.DynamicShadowsEnabled;
+                data.ViewportWireframeEnabled = _viewport3DSettings.WireframeEnabled;
+                data.ViewportSkipWaterEnabled = _viewport3DSettings.SkipWaterEnabled;
+                data.ViewportSkipTranslucentEnabled = _viewport3DSettings.SkipTranslucentEnabled;
+                data.ViewportShowFps = _viewport3DSettings.ShowFps;
+                data.ShowHlaeCampathControls = ShowHlaeCampathControls;
+                data.DefaultCampathInterp = _defaultCampathInterp.ToString();
+                data.ViewportCampathOverlayEnabled = _viewport3DSettings.ViewportCampathOverlayEnabled;
+                data.ViewportCampathGizmoEnabled = _viewport3DSettings.ViewportCampathGizmoEnabled;
+                data.HlaeSyncTimeSkipMode = _viewport3DSettings.HlaeSyncTimeSkipMode.ToString();
+                data.CampathGizmoLocalSpace = _viewport3DSettings.CampathGizmoLocalSpace;
+                data.ViewportLiveLinkEnabled = _viewport3DSettings.LiveLinkEnabled;
+                data.ViewportLiveLinkItemIconsEnabled = _viewport3DSettings.LiveLinkItemIconsEnabled;
+                data.ViewportLiveLinkWeaponIconsEnabled = _viewport3DSettings.LiveLinkWeaponIconsEnabled;
+                data.ViewportLiveLinkGrenadeIconsEnabled = _viewport3DSettings.LiveLinkGrenadeIconsEnabled;
+                data.ViewportLiveLinkProjectileIconsEnabled = _viewport3DSettings.LiveLinkProjectileIconsEnabled;
+                data.ViewportLiveLinkObjectiveIconsEnabled = _viewport3DSettings.LiveLinkObjectiveIconsEnabled;
+                data.ViewportLiveLinkDeadPlayerIconsEnabled = _viewport3DSettings.LiveLinkDeadPlayerIconsEnabled;
+                data.ViewportLiveLinkPort = _viewport3DSettings.LiveLinkPort;
+                data.ViewportLiveLinkFps = _viewport3DSettings.LiveLinkFps;
+                data.ViewportShadowTextureSize = _viewport3DSettings.ShadowTextureSize;
+                data.ViewportMaxTextureSize = _viewport3DSettings.MaxTextureSize;
+                data.ViewportRenderMode = _viewport3DSettings.RenderMode;
+                data.FreecamSettings = _freecamSettings.ToData();
+                data.VmixReplayEnabled = _vmixReplaySettings.Enabled;
+                data.VmixReplayHost = _vmixSettings.Host;
+                data.VmixReplayPort = _vmixSettings.Port;
+                data.VmixReplayPreSeconds = _vmixReplaySettings.PreSeconds;
+                data.VmixReplayPostSeconds = _vmixReplaySettings.PostSeconds;
+                data.VmixReplayExtendWindowSeconds = _vmixReplaySettings.ExtendWindowSeconds;
+                data.VmixReplayFramesPerSecond = _vmixReplaySettings.FramesPerSecond;
+                data.VmixReplayChannel = _vmixReplaySettings.Channel;
+                data.VmixReplayCamera = _vmixReplaySettings.Camera;
+                data.HotLinkRole = _hotLinkSettings.Role;
+                data.HotLinkPublisherPort = _hotLinkSettings.PublisherPort;
+                data.HotLinkPublisherIp = _hotLinkSettings.PublisherIp;
+                data.HotLinkManualHost = _hotLinkSettings.ManualHost;
+                data.ReplayDirectorPreSwitchSeconds = _hotLinkSettings.PreSwitchSeconds;
+                data.ReplayDirectorSwitchLockSeconds = _hotLinkSettings.SwitchLockSeconds;
+                data.ReplayDirectorOnlyFollowMissedKills = _hotLinkSettings.OnlyFollowMissedKills;
+                data.HotLinkAcceptReplayMarkRequests = _hotLinkSettings.AcceptReplayMarkRequests;
+                data.ReplayDirectorDelayedVmixChannel = _hotLinkSettings.DelayedVmixChannel;
+                data.ReplayDirectorDelayedVmixCamera = _hotLinkSettings.DelayedVmixCamera;
+                data.HotLinkClientMode = _hotLinkSettings.ClientMode;
+                data.HotLinkCueTimelineEnabled = _hotLinkSettings.CueTimelineEnabled;
+                data.HotLinkCueRadarEnabled = _hotLinkSettings.CueRadarEnabled;
+                data.HotLinkCueViewportEnabled = _hotLinkSettings.CueViewportEnabled;
+                data.HotLinkCueTimelineAutoRange = _hotLinkSettings.CueTimelineAutoRange;
+                data.HotLinkCueTimelineFixedUpcomingSeconds = _hotLinkSettings.CueTimelineFixedUpcomingSeconds;
+                data.DisableFocusInputGate = _disableFocusInputGate;
+                data.Hotkeys = HotkeyBindings.Select(binding => binding.ToData()).ToList();
             }
+
+            ApplySettings(_storedSettings);
+            _settingsStorage.Update(ApplySettings);
         }
 
         private async Task RefreshHotLinkPublishersAsync()

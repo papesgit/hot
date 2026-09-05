@@ -241,7 +241,6 @@ public class MainDockFactory : Factory, IDisposable
             _storedSettings.LastConnectedHlaeVersion = hlaeVersion.ToString();
             _storedSettings.LastConnectedHlaeHotVersion = hotVersion.ToString();
             _storedSettings.LastConnectedHlaeRevision = revision;
-            _settingsStorage.Save(_storedSettings);
             _updateCheckService.ReportConnectedHlaeVersion(hlaeVersion, hotVersion, revision);
         }
         catch (JsonException)
@@ -267,15 +266,20 @@ public class MainDockFactory : Factory, IDisposable
 
     private async Task ApplyNetworkSettingsAsync(SettingsDockViewModel.NetworkSettingsData data)
     {
-        _storedSettings.WebSocketHost = data.WebSocketHost;
-        _storedSettings.WebSocketPort = data.WebSocketPort;
-        _storedSettings.GraphicsProducerHost = data.WebSocketHost;
-        _storedSettings.GraphicsProducerPort = data.GraphicsProducerPort;
-        _storedSettings.UdpPort = data.UdpPort;
-        _storedSettings.RtpPort = data.RtpPort;
-        _storedSettings.GsiPort = data.GsiPort;
-        _storedSettings.GsiRelayUris = data.GsiRelayUris.ToList();
-        _settingsStorage.Save(_storedSettings);
+        void ApplySettings(AppSettingsData settings)
+        {
+            settings.WebSocketHost = data.WebSocketHost;
+            settings.WebSocketPort = data.WebSocketPort;
+            settings.GraphicsProducerHost = data.WebSocketHost;
+            settings.GraphicsProducerPort = data.GraphicsProducerPort;
+            settings.UdpPort = data.UdpPort;
+            settings.RtpPort = data.RtpPort;
+            settings.GsiPort = data.GsiPort;
+            settings.GsiRelayUris = data.GsiRelayUris.ToList();
+        }
+
+        ApplySettings(_storedSettings);
+        _settingsStorage.Update(ApplySettings);
         _gsiServer.ConfigureRelayEndpoints(data.GsiRelayUris);
 
         _webSocketClient.ConfigureEndpoint(data.WebSocketHost, data.WebSocketPort);
@@ -980,7 +984,11 @@ public class MainDockFactory : Factory, IDisposable
         _storedSettings.UserDockLayouts.Add(CaptureLayout(_currentRoot, name));
         _activeLayoutName = name;
         _storedSettings.ActiveDockLayout = name;
-        _settingsStorage.Save(_storedSettings);
+        _settingsStorage.Update(settings =>
+        {
+            settings.UserDockLayouts = _storedSettings.UserDockLayouts;
+            settings.ActiveDockLayout = _storedSettings.ActiveDockLayout;
+        });
         PublishLayoutMenu();
         return null;
     }
@@ -1000,7 +1008,11 @@ public class MainDockFactory : Factory, IDisposable
         // no longer has a persisted layout behind it.
         _activeLayoutName = string.Empty;
         _storedSettings.ActiveDockLayout = ObserverLayoutName;
-        _settingsStorage.Save(_storedSettings);
+        _settingsStorage.Update(settings =>
+        {
+            settings.UserDockLayouts = _storedSettings.UserDockLayouts;
+            settings.ActiveDockLayout = _storedSettings.ActiveDockLayout;
+        });
         PublishLayoutMenu();
     }
 
@@ -1015,7 +1027,7 @@ public class MainDockFactory : Factory, IDisposable
         _currentRoot = root;
         _activeLayoutName = name;
         _storedSettings.ActiveDockLayout = name;
-        _settingsStorage.Save(_storedSettings);
+        _settingsStorage.Update(settings => settings.ActiveDockLayout = name);
 
         InitLayout(root);
 

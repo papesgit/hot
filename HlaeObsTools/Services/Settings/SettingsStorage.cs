@@ -9,7 +9,7 @@ namespace HlaeObsTools.Services.Settings;
 
 public class SettingsStorage
 {
-    // All SettingsStorage instances target the same file. Serializing access prevents
+    // SettingsStorage instances normally target the same file. Serializing access prevents
     // independently-created services from interleaving a read or write in this process.
     private static readonly object StorageLock = new();
     private readonly string _storagePath;
@@ -21,9 +21,12 @@ public class SettingsStorage
     };
 
     public SettingsStorage()
+        : this(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HlaeObsTools"))
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var baseDir = Path.Combine(appData, "HlaeObsTools");
+    }
+
+    internal SettingsStorage(string baseDir)
+    {
         Directory.CreateDirectory(baseDir);
         _storagePath = Path.Combine(baseDir, "settings.json");
         _backupPath = Path.Combine(baseDir, "settings.json.bak");
@@ -37,17 +40,10 @@ public class SettingsStorage
         }
     }
 
-    public void Save(AppSettingsData data)
-    {
-        lock (StorageLock)
-        {
-            SaveUnsafe(data);
-        }
-    }
-
     /// <summary>
-    /// Applies a small change to the latest on-disk settings while holding the storage lock.
-    /// Use this for background services which do not share the application's live settings object.
+    /// Applies a change to the latest on-disk settings while holding the storage lock.
+    /// Assign only fields owned by the caller; never copy a complete cached snapshot here.
+    /// All writers use this method so unrelated settings cannot be reverted by stale data.
     /// </summary>
     public void Update(Action<AppSettingsData> update)
     {

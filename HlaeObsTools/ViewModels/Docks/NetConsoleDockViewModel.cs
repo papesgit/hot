@@ -134,7 +134,7 @@ public class NetConsoleDockViewModel : Tool, IDisposable
             if (_settings != null && _settingsStorage != null)
             {
                 _settings.NetConsoleHostPort = value;
-                _settingsStorage.Save(_settings);
+                _settingsStorage.Update(settings => settings.NetConsoleHostPort = value);
             }
         }
     }
@@ -810,7 +810,12 @@ public class NetConsoleDockViewModel : Tool, IDisposable
         {
             _settings.NetConsoleUserFilters = _userFilters.ToList();
         }
-        _settingsStorage.Save(_settings);
+        _settingsStorage.Update(settings =>
+        {
+            settings.NetConsoleFilterGameEvents = _settings.NetConsoleFilterGameEvents;
+            settings.NetConsoleFilterUnknownNetMessages = _settings.NetConsoleFilterUnknownNetMessages;
+            settings.NetConsoleUserFilters = _settings.NetConsoleUserFilters;
+        });
     }
 
     private void FlushIncomingBuffer()
