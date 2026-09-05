@@ -15,10 +15,11 @@
                                     FalseOpacity="1" />
   </UserControl.Resources>
 
-  <Border Background="#0D1015" Padding="10" Focusable="True">
+  <Border Background="#0D1015" Focusable="True" ClipToBounds="True">
     <Grid>
-      <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Grid Width="1024" Height="1024" RenderTransformOrigin="0,0">
+      <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"
+               ClipToBounds="False">
+        <Grid Width="1024" Height="1024" RenderTransformOrigin="0,0" ClipToBounds="False">
           <Grid.RenderTransform>
             <TransformGroup>
               <TranslateTransform X="-512" Y="-512"/>
