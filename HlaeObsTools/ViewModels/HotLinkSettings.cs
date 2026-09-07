@@ -26,6 +26,15 @@ public sealed class HotLinkSettings : ViewModelBase
     private double _preSwitchSeconds = 2.0;
     private double _switchLockSeconds = 0.75;
     private bool _onlyFollowMissedKills;
+    private bool _grenadeKillsEnabled = true;
+    private string _grenadePov = "Show Victim POV";
+    private bool _showGrenadeTimingSettings;
+    private double _grenadeThrowPreRollSeconds = 0.5;
+    private double _grenadeKillPostRollSeconds = 1.0;
+    public static ObservableCollection<string> GrenadePovOptions { get; } = new()
+    {
+        "Show Victim POV", "Show Killer POV", "Follow grenade"
+    };
     private string _delayedVmixChannel = "B";
     private int _delayedVmixCamera = 2;
     private bool _acceptReplayMarkRequests = true;
@@ -112,6 +121,24 @@ public sealed class HotLinkSettings : ViewModelBase
     {
         get => _onlyFollowMissedKills;
         set => SetProperty(ref _onlyFollowMissedKills, value);
+    }
+
+    public bool GrenadeKillsEnabled { get => _grenadeKillsEnabled; set => SetProperty(ref _grenadeKillsEnabled, value); }
+    public string GrenadePov
+    {
+        get => _grenadePov;
+        set => SetProperty(ref _grenadePov, GrenadePovOptions.Contains(value) ? value : "Show Victim POV");
+    }
+    public bool ShowGrenadeTimingSettings { get => _showGrenadeTimingSettings; set => SetProperty(ref _showGrenadeTimingSettings, value); }
+    public double GrenadeThrowPreRollSeconds
+    {
+        get => _grenadeThrowPreRollSeconds;
+        set => SetProperty(ref _grenadeThrowPreRollSeconds, Math.Clamp(value, 0, 30));
+    }
+    public double GrenadeKillPostRollSeconds
+    {
+        get => _grenadeKillPostRollSeconds;
+        set => SetProperty(ref _grenadeKillPostRollSeconds, Math.Clamp(value, 0, 30));
     }
 
     public string DelayedVmixChannel

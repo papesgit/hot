@@ -26,7 +26,8 @@ public sealed class HotLinkPublisher : IDisposable
     private readonly object _sync = new();
     private readonly List<HotLinkPublisherKillEvent> _events = new();
     private readonly List<HotLinkKillEvent> _linkEvents = new();
-    private readonly Guid _publisherSessionId = Guid.NewGuid();
+    private readonly HotLinkGrenadeHistory _grenadeHistory = new();
+    private Guid _publisherSessionId = Guid.NewGuid();
     private IHost? _host;
     private CancellationTokenSource? _cts;
     private long _nextId;
@@ -73,7 +74,10 @@ public sealed class HotLinkPublisher : IDisposable
     private void ApplyRole()
     {
         if (_settings.IsPublisher)
+        {
+            lock (_sync) ResetEventHistory();
             Start();
+        }
         else
             Stop();
     }
@@ -95,6 +99,13 @@ public sealed class HotLinkPublisher : IDisposable
                 _mapName = mapName;
                 _labelRoundNumber = 0;
                 _roundKillCounts.Clear();
+                ResetEventHistory();
+            }
+            else if (_roundNumber > 0 && state.RoundNumber > 0 && state.RoundNumber != _roundNumber)
+            {
+                // Projectiles cannot legitimately carry into a new round; this also avoids stale
+                // associations after ordinary timeline changes without needing native events.
+                _grenadeHistory.Clear();
             }
 
             _focusedSlot = focusedSlot;
@@ -107,6 +118,7 @@ public sealed class HotLinkPublisher : IDisposable
                 .Where(p => p.Slot >= 0)
                 .GroupBy(p => p.Slot)
                 .ToDictionary(group => group.Key, group => group.First());
+            _grenadeHistory.RecordState(state, DateTimeOffset.UtcNow);
         }
     }
 
@@ -150,8 +162,9 @@ public sealed class HotLinkPublisher : IDisposable
             {
                 Id = kill.Id,
                 GameTime = kill.GameTime,
-                Attacker = new HotLinkKillParticipant { ObserverSlot = kill.AttackerSlot, Position = attackerState?.Position ?? default },
-                Victim = new HotLinkKillParticipant { ObserverSlot = kill.Victim?.ObserverSlot ?? -1, Position = victimState?.Position ?? default },
+                Attacker = new HotLinkKillParticipant { ObserverSlot = kill.AttackerSlot, SteamId = attackerState?.SteamId ?? string.Empty, Position = attackerState?.Position ?? default },
+                Victim = new HotLinkKillParticipant { ObserverSlot = kill.Victim?.ObserverSlot ?? -1, SteamId = victimState?.SteamId ?? string.Empty, Position = victimState?.Position ?? default },
+                GrenadeThrow = _grenadeHistory.AssociateKill(kill, attackerState?.SteamId ?? string.Empty),
                 Weapon = kill.Weapon,
                 MainCaught = kill.MainCaught,
                 Headshot = kill.Headshot,
@@ -173,6 +186,14 @@ public sealed class HotLinkPublisher : IDisposable
     private void OnDelayedReplayMarkerStatusChanged(object? sender, string status)
     {
         _settings.LastVmixMark = status;
+    }
+
+    private void ResetEventHistory()
+    {
+        _grenadeHistory.Clear();
+        _events.Clear();
+        _linkEvents.Clear();
+        _publisherSessionId = Guid.NewGuid();
     }
 
     private int GetLabelRound(int roundNumber, string roundPhase)
@@ -321,6 +342,7 @@ public sealed class HotLinkPublisher : IDisposable
             long.TryParse(rawAfter.ToString(), out after);
 
         HotLinkKillEvent[] events;
+        Guid sessionId;
         long firstAvailable;
         long latest;
         lock (_sync)
@@ -328,12 +350,13 @@ public sealed class HotLinkPublisher : IDisposable
             firstAvailable = _linkEvents.Count > 0 ? _linkEvents[0].Id : _nextId + 1;
             latest = _nextId;
             events = _linkEvents.Where(e => e.Id > after).ToArray();
+            sessionId = _publisherSessionId;
         }
 
         ctx.Response.ContentType = "application/json";
         var envelope = new HotLinkEventEnvelope
         {
-            PublisherSessionId = _publisherSessionId,
+            PublisherSessionId = sessionId,
             FirstAvailableEventId = firstAvailable,
             LatestEventId = latest,
             HasGap = after > 0 && after < firstAvailable - 1,
@@ -382,6 +405,29 @@ public sealed class HotLinkPublisher : IDisposable
         }
 
         _settings.LastVmixMark = $"Remote delayed mark scheduled: {kill.AttackerName}";
+        if (request!.PreSeconds.HasValue || request.PostSeconds.HasValue)
+        {
+            // Explicit windows are sent at the shot's end in delayed game time, not at the kill.
+            if (request.PreSeconds is not double length || !double.IsFinite(length) || length <= 0 || length > 600 ||
+                request.PostSeconds != 0 || !GrenadeWeapons.IsGrenade(kill.Weapon))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+            HotLinkPublisherKillEvent[] coveredKills;
+            lock (_sync)
+            {
+                var grenadeId = _linkEvents.FirstOrDefault(e => e.Id == kill.Id)?.GrenadeThrow?.Id;
+                var validIds = _linkEvents.Where(e => grenadeId.HasValue && e.GrenadeThrow?.Id == grenadeId &&
+                    !GrenadeWeapons.IsFire(e.Weapon) && (request.CoveredEventIds ?? Array.Empty<long>()).Contains(e.Id))
+                    .Select(e => e.Id).Append(kill.Id).ToHashSet();
+                coveredKills = _events.Where(e => validIds.Contains(e.Id)).ToArray();
+            }
+            var marked = await _delayedReplayMarker.RecordWindowAsync(coveredKills, length, _replaySettings, _settings, ctx.RequestAborted).ConfigureAwait(false);
+            await ctx.Response.WriteAsync(JsonSerializer.Serialize(
+                new HotLinkReplayMarkResponse { Ok = marked, Scheduled = marked, Reason = marked ? string.Empty : "mark_failed" }, JsonOptions)).ConfigureAwait(false);
+            return;
+        }
         _delayedReplayMarker.RecordKill(kill, _replaySettings, _settings);
         await ctx.Response.WriteAsync(JsonSerializer.Serialize(
             new HotLinkReplayMarkResponse { Ok = true, Scheduled = true }, JsonOptions)).ConfigureAwait(false);

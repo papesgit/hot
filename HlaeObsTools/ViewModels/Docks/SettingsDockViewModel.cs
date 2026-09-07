@@ -2081,6 +2081,10 @@ namespace HlaeObsTools.ViewModels.Docks
                 data.ReplayDirectorPreSwitchSeconds = _hotLinkSettings.PreSwitchSeconds;
                 data.ReplayDirectorSwitchLockSeconds = _hotLinkSettings.SwitchLockSeconds;
                 data.ReplayDirectorOnlyFollowMissedKills = _hotLinkSettings.OnlyFollowMissedKills;
+                data.ReplayDirectorGrenadeKillsEnabled = _hotLinkSettings.GrenadeKillsEnabled;
+                data.ReplayDirectorGrenadePov = _hotLinkSettings.GrenadePov;
+                data.ReplayDirectorGrenadeThrowPreRollSeconds = _hotLinkSettings.GrenadeThrowPreRollSeconds;
+                data.ReplayDirectorGrenadeKillPostRollSeconds = _hotLinkSettings.GrenadeKillPostRollSeconds;
                 data.HotLinkAcceptReplayMarkRequests = _hotLinkSettings.AcceptReplayMarkRequests;
                 data.ReplayDirectorDelayedVmixChannel = _hotLinkSettings.DelayedVmixChannel;
                 data.ReplayDirectorDelayedVmixCamera = _hotLinkSettings.DelayedVmixCamera;

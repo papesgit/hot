@@ -3,6 +3,7 @@
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:rootvm="using:HlaeObsTools.ViewModels"
              xmlns:conv="using:HlaeObsTools.Converters"
+             xmlns:svg="using:Avalonia.Svg.Skia"
              xmlns:hk="using:HlaeObsTools.ViewModels.Hotkeys"
              xmlns:hotkeys="using:HlaeObsTools.Services.Hotkeys"
              xmlns:docks="using:HlaeObsTools.Views.Docks"
@@ -182,6 +183,27 @@
                                 </StackPanel>
                                 <StackPanel IsVisible="{Binding HotLinkSettings.IsReplayDirectorMode}" Spacing="6">
                                     <CheckBox IsChecked="{Binding HotLinkSettings.OnlyFollowMissedKills, Mode=TwoWay}" Content="Only follow missed kills" Foreground="#E6E6E6" />
+                                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                                        <CheckBox IsChecked="{Binding HotLinkSettings.GrenadeKillsEnabled, Mode=TwoWay}" Content="Grenade kills" Foreground="#E6E6E6" />
+                                        <ComboBox ItemsSource="{Binding HotLinkSettings.GrenadePovOptions}" SelectedItem="{Binding HotLinkSettings.GrenadePov, Mode=TwoWay}" IsEnabled="{Binding HotLinkSettings.GrenadeKillsEnabled}"
+                                                  ToolTip.Tip="HE and direct-impact grenade kills use the selected POV. Fire deaths always use victim POV. Missing throw history or insufficient delay falls back to victim POV." />
+                                        <ToggleButton Width="28" Height="28" Padding="5"
+                                                      IsChecked="{Binding HotLinkSettings.ShowGrenadeTimingSettings, Mode=TwoWay}"
+                                                      IsEnabled="{Binding HotLinkSettings.GrenadeKillsEnabled}"
+                                                      ToolTip.Tip="Grenade replay timing">
+                                            <svg:Svg Path="avares://HlaeObsTools/Assets/icons/settings.svg" Width="16" Height="16" IsHitTestVisible="False" />
+                                        </ToggleButton>
+                                    </WrapPanel>
+                                    <WrapPanel IsVisible="{Binding HotLinkSettings.ShowGrenadeTimingSettings}" IsEnabled="{Binding HotLinkSettings.GrenadeKillsEnabled}" ItemSpacing="12" LineSpacing="6">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Throw-preroll (s)" Foreground="#AAAAAA" />
+                                            <TextBox MinWidth="55" MaxWidth="80" Text="{Binding HotLinkSettings.GrenadeThrowPreRollSeconds, Mode=TwoWay}" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Kill-postroll (s)" Foreground="#AAAAAA" />
+                                            <TextBox MinWidth="55" MaxWidth="80" Text="{Binding HotLinkSettings.GrenadeKillPostRollSeconds, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </WrapPanel>
                                 </StackPanel>
                                 <WrapPanel IsVisible="{Binding HotLinkSettings.IsCueMode}" ItemSpacing="8" LineSpacing="8">
                                     <ToggleSwitch IsChecked="{Binding HotLinkSettings.CueTimelineEnabled, Mode=TwoWay}" Content="Show cue timeline" Foreground="#E6E6E6" />

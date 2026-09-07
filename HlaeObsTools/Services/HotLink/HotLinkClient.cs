@@ -127,9 +127,11 @@ public sealed class HotLinkClient : IDisposable
         }
     }
 
-    public async Task<HotLinkReplayMarkResponse> RequestReplayMarkAsync(long eventId, CancellationToken token)
+    public async Task<HotLinkReplayMarkResponse> RequestReplayMarkAsync(long eventId, CancellationToken token,
+        double? preSeconds = null, double? postSeconds = null, long[]? coveredEventIds = null)
     {
-        var request = new HotLinkReplayMarkRequest { PublisherSessionId = _publisherSessionId, EventId = eventId };
+        var request = new HotLinkReplayMarkRequest { PublisherSessionId = _publisherSessionId, EventId = eventId,
+            PreSeconds = preSeconds, PostSeconds = postSeconds, CoveredEventIds = coveredEventIds ?? Array.Empty<long>() };
         var json = JsonSerializer.Serialize(request, JsonOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         using var response = await _httpClient.PostAsync(BuildUri(HotLinkProtocol.ReplayMarkPath), content, token).ConfigureAwait(false);

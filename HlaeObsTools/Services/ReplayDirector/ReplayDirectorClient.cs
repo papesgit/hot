@@ -14,7 +14,6 @@ namespace HlaeObsTools.Services.ReplayDirector;
 /// <summary>Replay-specific consumer of the shared HOT Link event stream.</summary>
 public sealed class ReplayDirectorClient : IDisposable
 {
-    private const double LateSwitchGraceSeconds = 0.25;
     private readonly HlaeWebSocketClient _webSocketClient;
     private readonly GsiServer _gsiServer;
     private readonly HotLinkSettings _settings;
@@ -22,11 +21,18 @@ public sealed class ReplayDirectorClient : IDisposable
     private readonly HotLinkClient _hotLinkClient;
     private readonly HotLinkGameClock _clock;
     private readonly object _sync = new();
+    private readonly SemaphoreSlim _cameraGate = new(1, 1);
     private readonly List<HotLinkKillEvent> _pending = new();
+    private readonly Dictionary<long, ReplayShotPlan> _coveredGrenades = new();
     private readonly HashSet<int> _aliveSlots = new();
     private CancellationTokenSource? _cts;
+    private ReplayShotPlan? _active;
+    private DateTimeOffset _shotStartedUtc;
+    private bool _markRequested;
+    private bool _nadeStarted;
+    private bool _cleanupPending;
+    private long _cleanupGeneration;
     private int _currentTargetSlot = -1;
-    private double? _currentTargetKillGameTime;
     private bool _disposed;
 
     public ReplayDirectorClient(HlaeWebSocketClient webSocketClient, GsiServer gsiServer,
@@ -43,6 +49,8 @@ public sealed class ReplayDirectorClient : IDisposable
         _hotLinkClient.EventsReceived += OnEventsReceived;
         _hotLinkClient.SessionChanged += OnReset;
         _clock.TimeReset += OnReset;
+        _webSocketClient.Connected += OnConnected;
+        _webSocketClient.Disconnected += OnReset;
         _settings.PropertyChanged += OnSettingsChanged;
         ApplySettings();
     }
@@ -59,123 +67,221 @@ public sealed class ReplayDirectorClient : IDisposable
         else Stop();
     }
 
-    private void Start()
+    private void Start(bool seedRecent = true)
     {
         lock (_sync)
         {
             if (_cts != null) return;
-            _cts = new CancellationTokenSource();
-            foreach (var kill in _hotLinkClient.GetRecentEvents())
-                if (kill.Attacker.ObserverSlot is >= 0 and <= 9 && !IsExpired(kill)) _pending.Add(kill);
-            _ = Task.Run(() => SchedulerLoopAsync(_cts.Token));
+            var cts = _cts = new CancellationTokenSource();
+            if (seedRecent) _pending.AddRange(_hotLinkClient.GetRecentEvents().Where(k => !IsExpired(k)));
+            _ = Task.Run(() => SchedulerLoopAsync(cts.Token));
         }
         _settings.ScheduledTarget = "Replay Director waiting for HOT Link events.";
     }
 
     private void Stop()
     {
-        CancellationTokenSource? cts;
-        lock (_sync) { cts = _cts; _cts = null; _pending.Clear(); _currentTargetSlot = -1; _currentTargetKillGameTime = null; }
-        try { cts?.Cancel(); } catch { }
+        long cleanupGeneration;
+        lock (_sync)
+        {
+            _cts?.Cancel();
+            _cts = null;
+            _pending.Clear();
+            _coveredGrenades.Clear();
+            _active = null;
+            _currentTargetSlot = -1;
+            _cleanupPending = true;
+            cleanupGeneration = ++_cleanupGeneration;
+        }
+        _ = CleanupCameraAsync(cleanupGeneration);
+    }
+
+    private async Task CleanupCameraAsync(long cleanupGeneration)
+    {
+        await _cameraGate.WaitAsync().ConfigureAwait(false);
+        try { await CleanupCameraCoreAsync(cleanupGeneration).ConfigureAwait(false); }
+        catch (Exception ex) { _settings.LastSwitch = $"Grenade camera cleanup failed: {ex.Message}"; }
+        finally { _cameraGate.Release(); }
+    }
+
+    private async Task CleanupCameraCoreAsync(long cleanupGeneration)
+    {
+        lock (_sync)
+        {
+            if (!_cleanupPending || cleanupGeneration != _cleanupGeneration) return;
+            if (_nadeStarted && !_webSocketClient.IsConnected) return;
+            _cleanupPending = false;
+        }
+        if (_nadeStarted)
+        {
+            await _webSocketClient.SendExecCommandAsync("mirv_nadecam stop").ConfigureAwait(false);
+            _nadeStarted = false;
+            _settings.LastSwitch = "mirv_nadecam stop (director reset or disconnect).";
+        }
+    }
+
+    private void OnConnected(object? sender, EventArgs e)
+    {
+        long cleanupGeneration;
+        lock (_sync) cleanupGeneration = _cleanupGeneration;
+        _ = CleanupCameraAsync(cleanupGeneration);
     }
 
     private void OnEventsReceived(object? sender, HotLinkKillEvent[] events)
     {
-        if (!_settings.IsReplayDirectorMode) return;
         lock (_sync)
         {
+            if (_cts == null) return;
             foreach (var kill in events)
-                if (kill.Attacker.ObserverSlot is >= 0 and <= 9)
+                if (_pending.All(k => k.Id != kill.Id) && _active?.Kill.Id != kill.Id &&
+                    (kill.GrenadeThrow == null || !_coveredGrenades.TryGetValue(kill.GrenadeThrow.Id, out var covered) || !covered.Covers(kill)))
                     _pending.Add(kill);
         }
     }
 
     private void OnReset(object? sender, EventArgs e)
     {
-        lock (_sync) { _pending.Clear(); _currentTargetSlot = -1; _currentTargetKillGameTime = null; }
-        _settings.ScheduledTarget = "Cleared Replay Director state after clock/session reset.";
+        Stop();
+        if (!_disposed && _settings.IsReplayDirectorMode && _settings.ClientConnectionEnabled) Start(false);
+        _settings.ScheduledTarget = "Cleared Replay Director state after connection, clock or session reset.";
     }
 
     private async Task SchedulerLoopAsync(CancellationToken token)
     {
-        while (!token.IsCancellationRequested)
+        try
         {
-            HotLinkKillEvent? selected;
-            lock (_sync)
+            while (!token.IsCancellationRequested)
             {
-                _pending.RemoveAll(IsExpired);
-                selected = SelectCandidate();
-                if (selected != null) _pending.Remove(selected);
+                await _cameraGate.WaitAsync(token).ConfigureAwait(false);
+                try
+                {
+                    token.ThrowIfCancellationRequested();
+                    long cleanupGeneration;
+                    lock (_sync) cleanupGeneration = _cleanupGeneration;
+                    await CleanupCameraCoreAsync(cleanupGeneration).ConfigureAwait(false);
+                    await TickAsync(token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
+                catch (Exception ex) { _settings.ScheduledTarget = $"Replay Director error: {ex.Message}"; }
+                finally { _cameraGate.Release(); }
+                await Task.Delay(25, token).ConfigureAwait(false);
             }
-            if (selected != null) await SwitchToKillAsync(selected, token).ConfigureAwait(false);
-            var time = _clock.EstimateGameTime();
-            if (time.HasValue) _settings.LocalGameTime = time.Value.ToString("F2", CultureInfo.InvariantCulture);
-            try { await Task.Delay(50, token).ConfigureAwait(false); }
-            catch (OperationCanceledException) { return; }
         }
+        catch (OperationCanceledException) { }
     }
 
-    private HotLinkKillEvent? SelectCandidate()
+    private async Task TickAsync(CancellationToken token)
     {
-        var now = _clock.EstimateGameTime();
-        if (!now.HasValue) return null;
-        if (_currentTargetKillGameTime.HasValue && now < _currentTargetKillGameTime + Math.Max(0, _settings.SwitchLockSeconds)) return null;
-        var due = _pending.Where(k => k.GameTime.HasValue)
-            .Where(k => _aliveSlots.Contains(k.Attacker.ObserverSlot))
-            .Where(k => !_settings.OnlyFollowMissedKills || !k.MainCaught)
-            .Where(k => now >= k.GameTime!.Value - _settings.PreSwitchSeconds && now <= k.GameTime.Value + LateSwitchGraceSeconds)
-            .ToArray();
+        var time = _clock.EstimateGameTime();
+        if (!time.HasValue || !_webSocketClient.IsConnected) return;
+        var now = time.Value;
+        _settings.LocalGameTime = now.ToString("F2", CultureInfo.InvariantCulture);
+        ReplayShotPlan? active;
+        lock (_sync) active = _active;
+        if (active != null)
+        {
+            var killTime = active.OutcomeGameTime;
+            if (active.FollowGrenade && !_nadeStarted && now >= active.Kill.GrenadeThrow!.GameTime - 0.1 && now < killTime)
+            {
+                // Flush any older reset cleanup before the new camera owns the sequence, then
+                // invalidate queued copies of that cleanup after the start command is sent.
+                long cleanupGeneration;
+                lock (_sync) cleanupGeneration = _cleanupGeneration;
+                await CleanupCameraCoreAsync(cleanupGeneration).ConfigureAwait(false);
+                await _webSocketClient.SendExecCommandAsync("mirv_nadecam start").ConfigureAwait(false);
+                _nadeStarted = true;
+                lock (_sync)
+                {
+                    if (_cleanupGeneration == cleanupGeneration && ReferenceEquals(_active, active))
+                        _cleanupGeneration++;
+                }
+                _settings.LastSwitch = $"mirv_nadecam start at {now:F2}; throw {active.Kill.GrenadeThrow.GameTime:F2}, outcome {killTime:F2}.";
+            }
+            var markTime = active.ThrowBased ? killTime + active.ThrowPostRollSeconds : killTime;
+            if (!_markRequested && now >= markTime)
+            {
+                _markRequested = true;
+                if (_nadeStarted)
+                {
+                    await _webSocketClient.SendExecCommandAsync("mirv_nadecam stop").ConfigureAwait(false);
+                    _nadeStarted = false;
+                    _settings.LastSwitch = $"mirv_nadecam stop after outcome at {now:F2}.";
+                }
+                token.ThrowIfCancellationRequested();
+                try
+                {
+                    // vMix records wall time, including pauses or playback-rate changes.
+                    var length = active.ThrowBased ? (DateTimeOffset.UtcNow - _shotStartedUtc).TotalSeconds : (double?)null;
+                    var response = await _hotLinkClient.RequestReplayMarkAsync(active.Kill.Id, token, length,
+                        active.ThrowBased ? 0 : null, active.CoveredEventIds).ConfigureAwait(false);
+                    _settings.LastVmixMark = response.Scheduled ? $"Publisher marked event {active.Kill.Id}." :
+                        $"Publisher did not mark event {active.Kill.Id}: {response.Reason}.";
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) { _settings.LastVmixMark = $"Delayed mark failed: {ex.Message}"; }
+            }
+            if (now < active.End) return;
+            lock (_sync) if (ReferenceEquals(_active, active)) _active = null;
+        }
+        token.ThrowIfCancellationRequested();
+        // A mark request may have taken time; never select using the pre-request clock sample.
+        now = _clock.EstimateGameTime() ?? now;
+        ReplayShotPlan? selected;
+        lock (_sync)
+        {
+            token.ThrowIfCancellationRequested();
+            _pending.RemoveAll(IsExpired);
+            foreach (var id in _coveredGrenades.Where(p => now - p.Value.OutcomeGameTime > 120).Select(p => p.Key).ToArray()) _coveredGrenades.Remove(id);
+            selected = SelectCandidate(now);
+            if (selected == null) return;
+            _pending.Remove(selected.Kill);
+            if (selected.Kill.GrenadeThrow is { } grenade)
+            {
+                _coveredGrenades[grenade.Id] = selected;
+                _pending.RemoveAll(selected.Covers);
+            }
+            _active = selected;
+            _markRequested = false;
+            _currentTargetSlot = selected.TargetSlot;
+        }
+        token.ThrowIfCancellationRequested();
+        await _webSocketClient.SendCommandAsync("spectate_slot", new { observer_slot = selected.TargetSlot }).ConfigureAwait(false);
+        _shotStartedUtc = DateTimeOffset.UtcNow;
+        _settings.LastSwitch = $"spectate_slot {selected.TargetSlot}";
+        _settings.ScheduledTarget = $"Slot {selected.TargetSlot + 1}: {(selected.FollowGrenade ? "grenade follow" : selected.ThrowBased ? "thrower POV" : "kill POV")}" +
+            (selected.FallbackReason == null ? "." : $" (victim fallback: {selected.FallbackReason}).");
+    }
+
+    private ReplayShotPlan? SelectCandidate(double now)
+    {
+        var due = _pending.Select(k => ReplayShotPlan.Create(k, _settings, now, _aliveSlots)?.IncludeRelatedOutcomes(_pending, _settings.SwitchLockSeconds))
+            .Where(p => p != null && now >= p.Start).Select(p => p!).ToArray();
         if (due.Length == 0) return null;
-        var earliest = due.Min(k => k.GameTime!.Value);
-        return due.Where(k => k.GameTime!.Value <= earliest + Math.Max(0.25, _vmixReplaySettings.ExtendWindowSeconds))
-            .OrderByDescending(Score).ThenBy(k => k.GameTime).ThenBy(k => k.Id).First();
+        var earliest = due.Min(p => p.Kill.GameTime!.Value);
+        return due.Where(p => p.Kill.GameTime!.Value <= earliest + Math.Max(0.25, _vmixReplaySettings.ExtendWindowSeconds))
+            .OrderByDescending(Score).ThenBy(p => p.Kill.GameTime).ThenBy(p => p.Kill.Id).First();
     }
 
-    private int Score(HotLinkKillEvent kill)
+    private int Score(ReplayShotPlan plan)
     {
-        var score = kill.MainCaught ? 0 : 1000;
-        if (kill.Attacker.ObserverSlot == _currentTargetSlot) score += 200;
+        var kill = plan.Kill;
+        var grenade = GrenadeWeapons.IsGrenade(kill.Weapon);
+        var score = grenade || !kill.MainCaught ? 1000 : 0;
+        if (plan.TargetSlot == _currentTargetSlot) score += 200;
         if (kill.Headshot) score += 25;
         if (kill.Wallbang || kill.Noscope || kill.ThroughSmoke) score += 50;
         if (kill.Blind || kill.InAir) score += 25;
-        score += _pending.Count(other => other != kill && other.Attacker.ObserverSlot == kill.Attacker.ObserverSlot &&
-            other.GameTime.HasValue && kill.GameTime.HasValue && Math.Abs(other.GameTime.Value - kill.GameTime.Value) <= _vmixReplaySettings.ExtendWindowSeconds) * 100;
+        score += _pending.Count(other => other != kill && other.GameTime.HasValue && kill.GameTime.HasValue &&
+            (grenade ? kill.GrenadeThrow != null && other.GrenadeThrow?.Id == kill.GrenadeThrow.Id :
+                !GrenadeWeapons.IsGrenade(other.Weapon) && other.Attacker.ObserverSlot == kill.Attacker.ObserverSlot) &&
+            Math.Abs(other.GameTime.Value - kill.GameTime.Value) <= _vmixReplaySettings.ExtendWindowSeconds) * 100;
         return score;
     }
 
     private bool IsExpired(HotLinkKillEvent kill)
     {
         var now = _clock.EstimateGameTime();
-        return kill.GameTime.HasValue && now.HasValue && now > kill.GameTime.Value + Math.Max(3, _vmixReplaySettings.ExtendWindowSeconds);
-    }
-
-    private async Task SwitchToKillAsync(HotLinkKillEvent kill, CancellationToken token)
-    {
-        _currentTargetSlot = kill.Attacker.ObserverSlot;
-        _currentTargetKillGameTime = kill.GameTime;
-        _settings.ScheduledTarget = $"Switched to slot {kill.Attacker.ObserverSlot + 1} for kill at {kill.GameTime?.ToString("F2", CultureInfo.InvariantCulture)}.";
-        await _webSocketClient.SendCommandAsync("spectate_slot", new { observer_slot = kill.Attacker.ObserverSlot }).ConfigureAwait(false);
-        _settings.LastSwitch = $"spectate_slot {kill.Attacker.ObserverSlot}";
-        _ = ScheduleReplayMarkAsync(kill, token);
-    }
-
-    private async Task ScheduleReplayMarkAsync(HotLinkKillEvent kill, CancellationToken token)
-    {
-        try
-        {
-            var now = _clock.EstimateGameTime();
-            var delay = kill.GameTime.HasValue && now.HasValue ? kill.GameTime.Value - now.Value : 0;
-            if (delay > 0) await Task.Delay(TimeSpan.FromSeconds(delay), token).ConfigureAwait(false);
-            _settings.LastVmixMark = $"Requesting publisher mark for event {kill.Id}.";
-            var response = await _hotLinkClient.RequestReplayMarkAsync(kill.Id, token).ConfigureAwait(false);
-            _settings.LastVmixMark = response.Scheduled
-                ? $"Publisher scheduled delayed mark for event {kill.Id}."
-                : string.Equals(response.Reason, "disabled", StringComparison.OrdinalIgnoreCase)
-                    ? "Publisher replay marking is disabled."
-                    : $"Publisher did not schedule delayed mark for event {kill.Id}.";
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) { _settings.LastVmixMark = $"Delayed mark failed: {ex.Message}"; }
+        return !kill.GameTime.HasValue || (now.HasValue && now > kill.GameTime.Value + Math.Max(3, _vmixReplaySettings.ExtendWindowSeconds));
     }
 
     private void OnGameStateUpdated(object? sender, GsiGameState state)
@@ -198,5 +304,7 @@ public sealed class ReplayDirectorClient : IDisposable
         _hotLinkClient.EventsReceived -= OnEventsReceived;
         _hotLinkClient.SessionChanged -= OnReset;
         _clock.TimeReset -= OnReset;
+        _webSocketClient.Connected -= OnConnected;
+        _webSocketClient.Disconnected -= OnReset;
     }
 }

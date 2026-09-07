@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using HlaeObsTools.Services.HotLink;
@@ -34,6 +35,7 @@ public sealed class VmixReplayMarker : IDisposable
     private CancellationTokenSource? _markCts;
     private CancellationTokenSource? _extendCts;
     private bool _disposed;
+    private bool _lastMarkWasWindow;
 
     private readonly record struct EventKill(string PlayerName, int RoundKillNumber);
 
@@ -61,8 +63,9 @@ public sealed class VmixReplayMarker : IDisposable
             var labelRound = GetLabelRound(kill);
             var roundKillNumber = GetRoundKillNumber(kill, labelRound);
 
-            if (_firstKillTime == null || !_markCreated || _roundNumber != labelRound)
+            if (_firstKillTime == null || !_markCreated || _roundNumber != labelRound || _lastMarkWasWindow)
             {
+                _lastMarkWasWindow = false;
                 Reset(now, labelRound);
                 AddKill(kill, roundKillNumber);
                 ScheduleMark(config);
@@ -82,6 +85,50 @@ public sealed class VmixReplayMarker : IDisposable
                 ScheduleMark(config);
             }
         }
+    }
+
+    /// <summary>Marks an already completed camera sequence without merging it into kill-centered clips.</summary>
+    public async Task<bool> RecordWindowAsync(IReadOnlyList<HotLinkPublisherKillEvent> kills, double seconds,
+        VmixReplaySettings replaySettings, HotLinkSettings settings, CancellationToken token)
+    {
+        var config = new MarkerConfig(seconds, 0, 0, Math.Clamp(replaySettings.FramesPerSecond, 1, 240),
+            settings.DelayedVmixChannel, settings.DelayedVmixCamera);
+        if (kills.Count == 0) return false;
+        var kill = kills[0];
+        var round = kill.LabelRoundNumber > 0 ? kill.LabelRoundNumber : kill.RoundNumber;
+        var numbers = kills.Select(k => k.RoundKillNumber).Order().ToArray();
+        var range = numbers.Length == 1 ? $"{numbers[0]}" : $"{numbers[0]}-{numbers[^1]}";
+        var label = $"R{round}_{SanitizeLabelPart(kill.AttackerName)}_K{range}_Grenade";
+        var requestedAt = DateTimeOffset.UtcNow;
+        var result = await _replayCoordinator.RunAsync(async lockedToken =>
+        {
+            // A previously queued extension selects the last vMix event. It must not extend this shot.
+            lock (_sync) { _extendCts?.Cancel(); _lastMarkWasWindow = true; }
+            if (!await SelectReplayChannelAsync(config, lockedToken).ConfigureAwait(false))
+                return new VmixReplayCommandResult(false, label, "vMix API command failed");
+            // Include time spent waiting for other vMix commands, then trim it off the out point.
+            var extra = Math.Max(0, (DateTimeOffset.UtcNow - requestedAt).TotalSeconds);
+            var duration = Math.Ceiling(seconds + extra);
+            if (!await ExecuteAsync(FunctionMark, duration.ToString(CultureInfo.InvariantCulture), config, lockedToken).ConfigureAwait(false) ||
+                !await ExecuteAsync(FunctionSelectLast, null, config, lockedToken).ConfigureAwait(false) ||
+                !await ApplyEventCameraAsync(config, lockedToken).ConfigureAwait(false))
+                return new VmixReplayCommandResult(false, label, "vMix API command failed");
+            var trimOut = (int)Math.Round(extra * config.FramesPerSecond);
+            var trimIn = (int)Math.Round((duration - seconds - extra) * config.FramesPerSecond);
+            if ((trimOut > 0 && !await ExecuteReplayChannelAsync(FunctionMoveOut, -trimOut, config, lockedToken).ConfigureAwait(false)) ||
+                (trimIn > 0 && !await ExecuteReplayChannelAsync("ReplayMoveSelectedInPoint", trimIn, config, lockedToken).ConfigureAwait(false)) ||
+                !await ExecuteAsync(FunctionSetTextCamera, $"{config.Camera},{label}", config, lockedToken).ConfigureAwait(false))
+                return new VmixReplayCommandResult(false, label, "vMix API command failed");
+            lock (_sync) _lastMarkWasWindow = true;
+            await _replayCoordinator.RegisterCreatedEventAsync(new ReplayEventDraft
+            {
+                Source = "Delayed", Label = label, Channel = config.Channel ?? "B", Camera = config.Camera,
+                Round = round, KillCount = kills.Count, Status = "Marked"
+            }, lockedToken).ConfigureAwait(false);
+            return new VmixReplayCommandResult(true, label, "Marked");
+        }, token).ConfigureAwait(false);
+        StatusChanged?.Invoke(this, $"Delayed grenade replay: {result.Status}");
+        return result.Success;
     }
 
     private int GetLabelRound(HotLinkPublisherKillEvent kill)

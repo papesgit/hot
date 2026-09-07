@@ -6,6 +6,7 @@ namespace HlaeObsTools.Services.HotLink;
 public sealed class HotLinkKillParticipant
 {
     public int ObserverSlot { get; init; } = -1;
+    public string SteamId { get; init; } = string.Empty;
     public Vec3 Position { get; init; }
 }
 
@@ -23,6 +24,7 @@ public sealed class HotLinkKillEvent
     public bool ThroughSmoke { get; init; }
     public bool InAir { get; init; }
     public bool Blind { get; init; }
+    public HotLinkGrenadeThrow? GrenadeThrow { get; init; }
 }
 
 public sealed class HotLinkEventEnvelope
@@ -39,6 +41,9 @@ public sealed class HotLinkReplayMarkRequest
 {
     public Guid PublisherSessionId { get; init; }
     public long EventId { get; init; }
+    public double? PreSeconds { get; init; }
+    public double? PostSeconds { get; init; }
+    public long[] CoveredEventIds { get; init; } = Array.Empty<long>();
 }
 
 public sealed class HotLinkReplayMarkResponse

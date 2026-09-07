@@ -209,6 +209,10 @@ public class AppSettingsData
     public double ReplayDirectorPreSwitchSeconds { get; set; } = 2.0;
     public double ReplayDirectorSwitchLockSeconds { get; set; } = 0.75;
     public bool ReplayDirectorOnlyFollowMissedKills { get; set; }
+    public bool ReplayDirectorGrenadeKillsEnabled { get; set; } = true;
+    public string ReplayDirectorGrenadePov { get; set; } = "Show Victim POV";
+    public double ReplayDirectorGrenadeThrowPreRollSeconds { get; set; } = 0.5;
+    public double ReplayDirectorGrenadeKillPostRollSeconds { get; set; } = 1.0;
     public bool HotLinkAcceptReplayMarkRequests { get; set; } = true;
     public string ReplayDirectorDelayedVmixChannel { get; set; } = "B";
     public int ReplayDirectorDelayedVmixCamera { get; set; } = 2;
