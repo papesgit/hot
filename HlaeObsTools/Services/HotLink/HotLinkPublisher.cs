@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using HlaeObsTools.Services.Gsi;
 using HlaeObsTools.Services.Vmix;
+using HlaeObsTools.Services.ObsReplays;
+using HlaeObsTools.Services.Replays;
 using HlaeObsTools.Services.WebSocket;
 using HlaeObsTools.ViewModels;
 using Microsoft.AspNetCore.Builder;
@@ -20,8 +22,7 @@ public sealed class HotLinkPublisher : IDisposable
     private readonly HlaeWebSocketClient _webSocketClient;
     private readonly GsiServer _gsiServer;
     private readonly HotLinkSettings _settings;
-    private readonly VmixReplaySettings _replaySettings;
-    private readonly VmixReplayMarker _delayedReplayMarker;
+    private readonly ReplayMarkerController _delayedReplayMarker;
     private readonly HotLinkServiceDiscovery _serviceDiscovery;
     private readonly object _sync = new();
     private readonly List<HotLinkPublisherKillEvent> _events = new();
@@ -38,7 +39,7 @@ public sealed class HotLinkPublisher : IDisposable
     private string _roundPhase = string.Empty;
     private Dictionary<int, int> _roundKillsBySlot = new();
     private Dictionary<int, GsiPlayer> _playersBySlot = new();
-    private readonly Dictionary<(int Round, string Player), int> _roundKillCounts = new();
+    private readonly ReplayKillCounter _roundKillCounter = new();
     private bool _disposed;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -47,14 +48,12 @@ public sealed class HotLinkPublisher : IDisposable
         HlaeWebSocketClient webSocketClient,
         GsiServer gsiServer,
         HotLinkSettings settings,
-        VmixReplaySettings replaySettings,
-        VmixReplayMarker delayedReplayMarker,
+        ReplayMarkerController delayedReplayMarker,
         HotLinkServiceDiscovery serviceDiscovery)
     {
         _webSocketClient = webSocketClient;
         _gsiServer = gsiServer;
         _settings = settings;
-        _replaySettings = replaySettings;
         _delayedReplayMarker = delayedReplayMarker;
         _serviceDiscovery = serviceDiscovery;
         _webSocketClient.MessageReceived += OnWebSocketMessage;
@@ -98,7 +97,7 @@ public sealed class HotLinkPublisher : IDisposable
             {
                 _mapName = mapName;
                 _labelRoundNumber = 0;
-                _roundKillCounts.Clear();
+                _roundKillCounter.Clear();
                 ResetEventHistory();
             }
             else if (_roundNumber > 0 && state.RoundNumber > 0 && state.RoundNumber != _roundNumber)
@@ -148,7 +147,7 @@ public sealed class HotLinkPublisher : IDisposable
         {
             var labelRound = GetLabelRound(roundNumber, roundPhase);
             kill.LabelRoundNumber = labelRound;
-            kill.RoundKillNumber = GetNextRoundKill(kill.AttackerName, labelRound);
+            kill.RoundKillNumber = _roundKillCounter.Next(labelRound, kill.AttackerName);
             if (kill.Attacker != null && roundKillsBySlot.TryGetValue(kill.AttackerSlot, out var attackerRoundKills))
             {
                 kill.Attacker.RoundKills = Math.Max(0, attackerRoundKills);
@@ -210,35 +209,8 @@ public sealed class HotLinkPublisher : IDisposable
         }
 
         var labelRound = _labelRoundNumber > 0 ? _labelRoundNumber : roundNumber;
-        CleanupOldRoundKillCounts(labelRound);
+        _roundKillCounter.PruneRoundsBefore(labelRound - 2);
         return labelRound > 0 ? labelRound : roundNumber;
-    }
-
-    private void CleanupOldRoundKillCounts(int labelRound)
-    {
-        if (labelRound <= 0)
-            return;
-
-        var keysToRemove = new List<(int Round, string Player)>();
-        foreach (var key in _roundKillCounts.Keys)
-        {
-            if (key.Round < labelRound - 2)
-                keysToRemove.Add(key);
-        }
-
-        foreach (var key in keysToRemove)
-        {
-            _roundKillCounts.Remove(key);
-        }
-    }
-
-    private int GetNextRoundKill(string playerName, int roundNumber)
-    {
-        var key = (roundNumber, playerName);
-        _roundKillCounts.TryGetValue(key, out var count);
-        count++;
-        _roundKillCounts[key] = count;
-        return count;
     }
 
     private void Start()
@@ -263,7 +235,7 @@ public sealed class HotLinkPublisher : IDisposable
                         webHost.Configure(app =>
                         {
                             app.Map(HotLinkProtocol.EventsPath, builder => builder.Run(HandleEventsAsync));
-                            app.Map(HotLinkProtocol.ReplayMarkPath, builder => builder.Run(HandleReplayMarkAsync));
+                            app.Map(HotLinkProtocol.ReplayMarkPath, builder => builder.Run(HandleReplayMarkSafeAsync));
                             app.Map(HotLinkProtocol.HealthPath, builder => builder.Run(HandleHealthAsync));
                         });
                     })
@@ -405,6 +377,12 @@ public sealed class HotLinkPublisher : IDisposable
         }
 
         _settings.LastVmixMark = $"Remote delayed mark scheduled: {kill.AttackerName}";
+        if (!_delayedReplayMarker.IsEnabled)
+        {
+            await ctx.Response.WriteAsync(JsonSerializer.Serialize(
+                new HotLinkReplayMarkResponse { Ok = false, Scheduled = false, Reason = "replay_backend_disabled" }, JsonOptions)).ConfigureAwait(false);
+            return;
+        }
         if (request!.PreSeconds.HasValue || request.PostSeconds.HasValue)
         {
             // Explicit windows are sent at the shot's end in delayed game time, not at the kill.
@@ -423,14 +401,49 @@ public sealed class HotLinkPublisher : IDisposable
                     .Select(e => e.Id).Append(kill.Id).ToHashSet();
                 coveredKills = _events.Where(e => validIds.Contains(e.Id)).ToArray();
             }
-            var marked = await _delayedReplayMarker.RecordWindowAsync(coveredKills, length, _replaySettings, _settings, ctx.RequestAborted).ConfigureAwait(false);
+            bool marked;
+            try
+            {
+                marked = await _delayedReplayMarker.RecordWindowAsync(coveredKills, length, ctx.RequestAborted).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HOT LINK] Delayed replay mark failed: {ex}");
+                _settings.LastVmixMark = $"Delayed replay mark failed: {ex.Message}";
+                marked = false;
+            }
             await ctx.Response.WriteAsync(JsonSerializer.Serialize(
                 new HotLinkReplayMarkResponse { Ok = marked, Scheduled = marked, Reason = marked ? string.Empty : "mark_failed" }, JsonOptions)).ConfigureAwait(false);
             return;
         }
-        _delayedReplayMarker.RecordKill(kill, _replaySettings, _settings);
+        _delayedReplayMarker.RecordKill(kill.LabelRoundNumber > 0 ? kill.LabelRoundNumber : kill.RoundNumber, kill.AttackerName, kill.RoundKillNumber);
         await ctx.Response.WriteAsync(JsonSerializer.Serialize(
             new HotLinkReplayMarkResponse { Ok = true, Scheduled = true }, JsonOptions)).ConfigureAwait(false);
+    }
+
+    private async Task HandleReplayMarkSafeAsync(HttpContext ctx)
+    {
+        try
+        {
+            await HandleReplayMarkAsync(ctx).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ctx.RequestAborted.IsCancellationRequested)
+        {
+            // The caller went away; ASP.NET handles the aborted request.
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[HOT LINK] Replay-mark endpoint failed: {ex}");
+            if (ctx.Response.HasStarted) return;
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            ctx.Response.ContentType = "application/json";
+            await ctx.Response.WriteAsync(JsonSerializer.Serialize(new HotLinkReplayMarkResponse
+            {
+                Ok = false,
+                Scheduled = false,
+                Reason = $"publisher_error: {ex.Message}"
+            }, JsonOptions)).ConfigureAwait(false);
+        }
     }
 
     public void Dispose()

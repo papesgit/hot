@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Collections.Generic;
+using System.Threading;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
@@ -27,6 +28,7 @@ using HlaeObsTools.Services.Campaths;
 using System.Text.Json;
 using HlaeObsTools.Services.Hotkeys;
 using HlaeObsTools.Services.Vmix;
+using HlaeObsTools.Services.ObsReplays;
 using HlaeObsTools.Services.HotLink;
 using HlaeObsTools.ViewModels.Hotkeys;
 using ValveKeyValue;
@@ -90,7 +92,9 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly HlaeWebSocketClient? _ws;
         private readonly Func<NetworkSettingsData, Task>? _applyNetworkSettingsAsync;
         private readonly VmixSettings _vmixSettings;
-        private readonly VmixReplaySettings _vmixReplaySettings;
+        private readonly ReplaySettings _vmixReplaySettings;
+        private readonly ObsWebSocketSettings _obsWebSocketSettings;
+        private readonly ObsWebSocketClient _obsReplaysClient;
         private readonly HotLinkSettings _hotLinkSettings;
         private readonly HotLinkServiceDiscovery? _hotLinkServiceDiscovery;
         private readonly VmixApiClient _vmixApiClient;
@@ -160,7 +164,7 @@ namespace HlaeObsTools.ViewModels.Docks
 
         public record NetworkSettingsData(string WebSocketHost, int WebSocketPort, int GraphicsProducerPort, int UdpPort, int RtpPort, int GsiPort, IReadOnlyList<string> GsiRelayUris);
 
-        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixSettings? vmixSettings = null, VmixReplaySettings? vmixReplaySettings = null, HotLinkSettings? hotLinkSettings = null, VmixApiClient? vmixApiClient = null, HotLinkServiceDiscovery? hotLinkServiceDiscovery = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
+        public SettingsDockViewModel(RadarSettings radarSettings, HudSettings hudSettings, FreecamSettings freecamSettings, Viewport3DSettings viewport3DSettings, SettingsStorage settingsStorage, HlaeWebSocketClient wsClient, HotkeyService hotkeyService, CampathsDockViewModel? campathsDockViewModel = null, GraphicsDockViewModel? graphicsDockViewModel = null, Func<NetworkSettingsData, Task>? applyNetworkSettingsAsync = null, AppSettingsData? storedSettings = null, VmixSettings? vmixSettings = null, ReplaySettings? vmixReplaySettings = null, ObsWebSocketSettings? obsWebSocketSettings = null, ObsWebSocketClient? obsReplaysClient = null, HotLinkSettings? hotLinkSettings = null, VmixApiClient? vmixApiClient = null, HotLinkServiceDiscovery? hotLinkServiceDiscovery = null, Action<bool>? setFocusInputGateDisabled = null, CampathEditorViewModel? campathEditor = null, GsiServer? gsiServer = null, HlaeInputSender? inputSender = null, VideoDisplayDockViewModel? videoDisplayDockViewModel = null, GraphicsProducerClient? graphicsProducerClient = null)
         {
             _radarSettings = radarSettings;
             _hudSettings = hudSettings;
@@ -170,7 +174,9 @@ namespace HlaeObsTools.ViewModels.Docks
             _ws = wsClient;
             _applyNetworkSettingsAsync = applyNetworkSettingsAsync;
             _vmixSettings = vmixSettings ?? new VmixSettings();
-            _vmixReplaySettings = vmixReplaySettings ?? new VmixReplaySettings();
+            _vmixReplaySettings = vmixReplaySettings ?? new ReplaySettings();
+            _obsWebSocketSettings = obsWebSocketSettings ?? new ObsWebSocketSettings();
+            _obsReplaysClient = obsReplaysClient ?? new ObsWebSocketClient(_obsWebSocketSettings);
             _hotLinkSettings = hotLinkSettings ?? new HotLinkSettings();
             _hotLinkServiceDiscovery = hotLinkServiceDiscovery;
             _vmixApiClient = vmixApiClient ?? new VmixApiClient(_vmixSettings);
@@ -218,6 +224,8 @@ namespace HlaeObsTools.ViewModels.Docks
             _removeGsiRelayEndpointCommand = new RelayParam<GsiRelayEndpointViewModel>(RemoveGsiRelayEndpoint, endpoint => endpoint != null);
             _refreshVmixStateCommand = new AsyncRelay(RefreshVmixStateAsync);
             _addVmixHotkeyCommand = new Relay(AddVmixHotkey);
+            _connectObsReplaysCommand = new AsyncRelay(ConnectObsReplaysAsync);
+            _disconnectObsReplaysCommand = new AsyncRelay(DisconnectObsReplaysAsync);
             _addCommandHotkeyCommand = new Relay(AddCommandHotkey);
             _refreshHotLinkPublishersCommand = new AsyncRelay(RefreshHotLinkPublishersAsync);
             _connectHotLinkClientCommand = new Relay(ConnectHotLinkClient);
@@ -381,6 +389,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _freecamSettings.PropertyChanged += OnFreecamSettingsChanged;
             _vmixSettings.PropertyChanged += OnVmixSettingsChanged;
             _vmixReplaySettings.PropertyChanged += OnVmixSettingsChanged;
+            _obsWebSocketSettings.PropertyChanged += OnVmixSettingsChanged;
             _hotLinkSettings.PropertyChanged += OnVmixSettingsChanged;
 
             _networkHealthTimer.Tick += (_, _) => RefreshNetworkHealth();
@@ -396,7 +405,13 @@ namespace HlaeObsTools.ViewModels.Docks
         public FreecamSettings FreecamSettings => _freecamSettings;
         public Viewport3DSettings Viewport3DSettings => _viewport3DSettings;
         public VmixSettings VmixSettings => _vmixSettings;
-        public VmixReplaySettings VmixReplaySettings => _vmixReplaySettings;
+        public ReplaySettings ReplaySettings => _vmixReplaySettings;
+        public ObsWebSocketSettings ObsWebSocketSettings => _obsWebSocketSettings;
+        public ObservableCollection<string> ReplayBackendOptions => ReplaySettings.BackendOptions;
+        private readonly ICommand _connectObsReplaysCommand;
+        private readonly ICommand _disconnectObsReplaysCommand;
+        public ICommand ConnectObsReplaysCommand => _connectObsReplaysCommand;
+        public ICommand DisconnectObsReplaysCommand => _disconnectObsReplaysCommand;
         public HotLinkSettings HotLinkSettings => _hotLinkSettings;
         public ObservableCollection<string> HotLinkRoleOptions => HlaeObsTools.ViewModels.HotLinkSettings.RoleOptions;
         public ObservableCollection<string> HotLinkClientModeOptions => HlaeObsTools.ViewModels.HotLinkSettings.ClientModeOptions;
@@ -2065,7 +2080,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 data.ViewportMaxTextureSize = _viewport3DSettings.MaxTextureSize;
                 data.ViewportRenderMode = _viewport3DSettings.RenderMode;
                 data.FreecamSettings = _freecamSettings.ToData();
-                data.VmixReplayEnabled = _vmixReplaySettings.Enabled;
+                data.ReplayAutoMarkEnabled = _vmixReplaySettings.AutoMarkEnabled;
                 data.VmixReplayHost = _vmixSettings.Host;
                 data.VmixReplayPort = _vmixSettings.Port;
                 data.VmixReplayPreSeconds = _vmixReplaySettings.PreSeconds;
@@ -2074,6 +2089,10 @@ namespace HlaeObsTools.ViewModels.Docks
                 data.VmixReplayFramesPerSecond = _vmixReplaySettings.FramesPerSecond;
                 data.VmixReplayChannel = _vmixReplaySettings.Channel;
                 data.VmixReplayCamera = _vmixReplaySettings.Camera;
+                data.ReplayBackend = _vmixReplaySettings.Backend;
+                data.ObsWebSocketHost = _obsWebSocketSettings.Host;
+                data.ObsWebSocketPort = _obsWebSocketSettings.Port;
+                data.ObsWebSocketPassword = _obsWebSocketSettings.Password;
                 data.HotLinkRole = _hotLinkSettings.Role;
                 data.HotLinkPublisherPort = _hotLinkSettings.PublisherPort;
                 data.HotLinkPublisherIp = _hotLinkSettings.PublisherIp;
@@ -2100,6 +2119,19 @@ namespace HlaeObsTools.ViewModels.Docks
 
             ApplySettings(_storedSettings);
             _settingsStorage.Update(ApplySettings);
+        }
+
+        private async Task ConnectObsReplaysAsync()
+        {
+            await _obsReplaysClient.ConnectAsync(CancellationToken.None).ConfigureAwait(false);
+            SaveSettings();
+            OnPropertyChanged(nameof(ObsWebSocketSettings));
+        }
+
+        private async Task DisconnectObsReplaysAsync()
+        {
+            await _obsReplaysClient.DisconnectAsync().ConfigureAwait(false);
+            OnPropertyChanged(nameof(ObsWebSocketSettings));
         }
 
         private async Task RefreshHotLinkPublishersAsync()

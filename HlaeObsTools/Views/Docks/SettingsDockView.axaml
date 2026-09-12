@@ -92,39 +92,30 @@
                             <Button Content="Add relay endpoint" HorizontalAlignment="Left" Command="{Binding AddGsiRelayEndpointCommand}" />
                             <Button Content="Apply / Reconnect" HorizontalAlignment="Left" Command="{Binding ApplyNetworkSettingsCommand}" Margin="0,6,0,0" />
                             <Separator Margin="0,10,0,6" />
-                            <TextBlock Text="vMix" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                            <TextBlock Text="OBS WebSocket" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                            <StackPanel Spacing="6">
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="Address" Foreground="#AAAAAA" />
+                                    <TextBox MinWidth="120" Text="{Binding ObsWebSocketSettings.Host, Mode=TwoWay}" />
+                                    <TextBlock VerticalAlignment="Center" Text="Port" Foreground="#AAAAAA" />
+                                    <TextBox MaxWidth="80" Text="{Binding ObsWebSocketSettings.Port, Mode=TwoWay}" />
+                                </WrapPanel>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="Password" Foreground="#AAAAAA" />
+                                    <TextBox MinWidth="180" PasswordChar="●" Text="{Binding ObsWebSocketSettings.Password, Mode=TwoWay}" />
+                                    <Button Content="Connect" Command="{Binding ConnectObsReplaysCommand}" />
+                                    <Button Content="Disconnect" Command="{Binding DisconnectObsReplaysCommand}" />
+                                </WrapPanel>
+                                <TextBlock Text="{Binding ObsWebSocketSettings.ConnectionStatus}" Foreground="#AAAAAA" />
+                            </StackPanel>
+                            <Separator Margin="0,10,0,6" />
+                            <TextBlock Text="vMix HTTP API" Foreground="#CCCCCC" FontWeight="SemiBold" />
                             <StackPanel Spacing="6" Margin="0,0,0,12">
                                 <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="12">
                                     <TextBlock VerticalAlignment="Center" Text="Host" Foreground="#AAAAAA" />
                                     <TextBox MaxWidth="120" MinWidth="100" Text="{Binding VmixSettings.Host, Mode=TwoWay}" />
                                     <TextBlock VerticalAlignment="Center" Text="Port" Foreground="#AAAAAA" />
                                     <TextBox MaxWidth="80" Text="{Binding VmixSettings.Port, Mode=TwoWay}" />
-                                </WrapPanel>
-                                <ToggleSwitch IsChecked="{Binding VmixReplaySettings.Enabled, Mode=TwoWay}" Content="Enable local vMix replay markers" hotkeys:HotkeyTarget.Path="VmixReplaySettings.Enabled" Foreground="#E6E6E6" />
-                                <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Pre-roll (s)" Foreground="#AAAAAA" />
-                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.PreSeconds, Mode=TwoWay}" />
-                                    </StackPanel>
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Post-roll (s)" Foreground="#AAAAAA" />
-                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.PostSeconds, Mode=TwoWay}" />
-                                    </StackPanel>
-                                    <StackPanel Spacing="4" ToolTip.Tip="Time between kills to extend event to cover both">
-                                        <TextBlock Text="Extend window (s)" Foreground="#AAAAAA" />
-                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" />
-                                    </StackPanel>
-                                    <StackPanel Spacing="4" ToolTip.Tip="Set to replay inputs fps for accurate event extension">
-                                        <TextBlock Text="Replay FPS" Foreground="#AAAAAA" />
-                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding VmixReplaySettings.FramesPerSecond, Mode=TwoWay}" />
-                                    </StackPanel>
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Channel / camera" Foreground="#AAAAAA" />
-                                        <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
-                                            <TextBox MinWidth="40" MaxWidth="55" Text="{Binding VmixReplaySettings.Channel, Mode=TwoWay}" />
-                                            <TextBox MinWidth="40" MaxWidth="55" Text="{Binding VmixReplaySettings.Camera, Mode=TwoWay}" />
-                                        </WrapPanel>
-                                    </StackPanel>
                                 </WrapPanel>
                             </StackPanel>
                             <Separator Margin="0,10,0,6" />
@@ -174,12 +165,7 @@
                                     </StackPanel>
                                 </WrapPanel>
                                 <StackPanel IsVisible="{Binding HotLinkSettings.IsPublisher}" Spacing="6">
-                                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
-                                        <TextBlock VerticalAlignment="Center" Text="Delayed channel / camera" Foreground="#AAAAAA" />
-                                        <TextBox MaxWidth="55" Text="{Binding HotLinkSettings.DelayedVmixChannel, Mode=TwoWay}" />
-                                        <TextBox MaxWidth="55" Text="{Binding HotLinkSettings.DelayedVmixCamera, Mode=TwoWay}" />
-                                    </WrapPanel>
-                                    <ToggleSwitch IsChecked="{Binding HotLinkSettings.AcceptReplayMarkRequests, Mode=TwoWay}" Content="Accept delayed vMix replay marks" Foreground="#E6E6E6" />
+                                    <ToggleSwitch IsChecked="{Binding HotLinkSettings.AcceptReplayMarkRequests, Mode=TwoWay}" Content="Accept delayed replay marks" Foreground="#E6E6E6" />
                                 </StackPanel>
                                 <StackPanel IsVisible="{Binding HotLinkSettings.IsReplayDirectorMode}" Spacing="6">
                                     <CheckBox IsChecked="{Binding HotLinkSettings.OnlyFollowMissedKills, Mode=TwoWay}" Content="Only follow missed kills" Foreground="#E6E6E6" />
@@ -238,6 +224,34 @@
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
+
+            <TabItem Header="Replays">
+                <ScrollViewer>
+                    <StackPanel Margin="10" Spacing="10">
+                        <TextBlock Text="Replay engine" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                        <ComboBox MinWidth="190" HorizontalAlignment="Left" ItemsSource="{Binding ReplayBackendOptions}" SelectedItem="{Binding ReplaySettings.Backend, Mode=TwoWay}" />
+                        <TextBlock Text="Replay timing" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                        <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
+                            <StackPanel Spacing="4"><TextBlock Text="Pre-roll (s)" Foreground="#AAAAAA" /><TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplaySettings.PreSeconds, Mode=TwoWay}" /></StackPanel>
+                            <StackPanel Spacing="4"><TextBlock Text="Post-roll (s)" Foreground="#AAAAAA" /><TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplaySettings.PostSeconds, Mode=TwoWay}" /></StackPanel>
+                            <StackPanel Spacing="4" ToolTip.Tip="Time between kills to group them into one replay"><TextBlock Text="Extend window (s)" Foreground="#AAAAAA" /><TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" /></StackPanel>
+                        </WrapPanel>
+                        <ToggleSwitch IsChecked="{Binding ReplaySettings.AutoMarkEnabled, Mode=TwoWay}" Content="Create replays for locally caught kills" Foreground="#E6E6E6" />
+                        <StackPanel IsVisible="{Binding ReplaySettings.IsVmixSelected}" Spacing="8">
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
+                                <StackPanel Spacing="4"><TextBlock Text="Replay FPS" Foreground="#AAAAAA" /><TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplaySettings.FramesPerSecond, Mode=TwoWay}" /></StackPanel>
+                                <StackPanel Spacing="4"><TextBlock Text="Channel / camera" Foreground="#AAAAAA" /><WrapPanel ItemSpacing="6"><TextBox MinWidth="40" MaxWidth="55" Text="{Binding ReplaySettings.Channel, Mode=TwoWay}" /><TextBox MinWidth="40" MaxWidth="55" Text="{Binding ReplaySettings.Camera, Mode=TwoWay}" /></WrapPanel></StackPanel>
+                                <StackPanel Spacing="4"><TextBlock Text="Delayed channel / camera" Foreground="#AAAAAA" /><WrapPanel ItemSpacing="6"><TextBox MinWidth="40" MaxWidth="55" Text="{Binding HotLinkSettings.DelayedVmixChannel, Mode=TwoWay}" /><TextBox MinWidth="40" MaxWidth="55" Text="{Binding HotLinkSettings.DelayedVmixCamera, Mode=TwoWay}" /></WrapPanel></StackPanel>
+                            </WrapPanel>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding ReplaySettings.IsObsReplaysSelected}" Spacing="6">
+                            <TextBlock Text="OBS Replays" Foreground="#CCCCCC" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding ObsWebSocketSettings.ConnectionStatus}" Foreground="#AAAAAA" />
+                            <TextBlock Text="OBS Replays creates clips from its active recording take. Configure source, session, and transitions in OBS." Foreground="#AAAAAA" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
             <TabItem Header="Create">
                     <ScrollViewer>

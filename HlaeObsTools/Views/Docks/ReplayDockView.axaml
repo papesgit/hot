@@ -13,6 +13,8 @@
                         Command="{Binding PlayLastRoundCommand}"/>
                 <Button Content="Stop Replay"
                         Command="{Binding StopReplayCommand}"/>
+                <Button Content="Refresh"
+                        Command="{Binding RefreshCommand}"/>
                 <Button Content="Clear"
                         Command="{Binding ClearCommand}"/>
             </WrapPanel>
@@ -27,7 +29,7 @@
                   ColumnDefinitions="64,54,*"
                   Background="#303030"
                   Height="26">
-                <TextBlock Text="ID" Margin="6,0" VerticalAlignment="Center" Foreground="#BDBDBD"/>
+                <TextBlock Text="{Binding EventIdColumnHeader}" Margin="6,0" VerticalAlignment="Center" Foreground="#BDBDBD"/>
                 <TextBlock Grid.Column="1" Text="Kills" Margin="6,0" VerticalAlignment="Center" Foreground="#BDBDBD"/>
                 <TextBlock Grid.Column="2" Text="Label" Margin="6,0" VerticalAlignment="Center" Foreground="#BDBDBD"/>
             </Grid>
@@ -43,7 +45,7 @@
                     <DataTemplate x:DataType="vmix:ReplayEventRecord">
                         <Grid ColumnDefinitions="64,54,*"
                               MinHeight="28">
-                            <TextBlock Text="{Binding VmixEventId}"
+                            <TextBlock Text="{Binding DisplayId}"
                                        Margin="6,0"
                                        VerticalAlignment="Center"
                                        Foreground="#E6E6E6"/>

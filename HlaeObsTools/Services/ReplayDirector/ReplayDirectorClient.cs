@@ -17,7 +17,7 @@ public sealed class ReplayDirectorClient : IDisposable
     private readonly HlaeWebSocketClient _webSocketClient;
     private readonly GsiServer _gsiServer;
     private readonly HotLinkSettings _settings;
-    private readonly VmixReplaySettings _vmixReplaySettings;
+    private readonly ReplaySettings _vmixReplaySettings;
     private readonly HotLinkClient _hotLinkClient;
     private readonly HotLinkGameClock _clock;
     private readonly object _sync = new();
@@ -36,7 +36,7 @@ public sealed class ReplayDirectorClient : IDisposable
     private bool _disposed;
 
     public ReplayDirectorClient(HlaeWebSocketClient webSocketClient, GsiServer gsiServer,
-        HotLinkSettings settings, VmixReplaySettings vmixReplaySettings,
+        HotLinkSettings settings, ReplaySettings vmixReplaySettings,
         HotLinkClient hotLinkClient, HotLinkGameClock clock)
     {
         _webSocketClient = webSocketClient;

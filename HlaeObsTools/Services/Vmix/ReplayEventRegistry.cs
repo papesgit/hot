@@ -63,6 +63,18 @@ public sealed class ReplayEventRegistry
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    public void UpdateByEventId(string eventId, Action<ReplayEventRecord> update)
+    {
+        if (string.IsNullOrWhiteSpace(eventId)) return;
+        lock (_sync)
+        {
+            var record = _records.FirstOrDefault(r => string.Equals(r.VmixEventId, eventId, StringComparison.Ordinal));
+            if (record == null) return;
+            update(record);
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
     public void Clear()
     {
         lock (_sync)
@@ -104,6 +116,8 @@ public sealed class ReplayEventDraft
 public sealed class ReplayEventRecord
 {
     public long LocalId { get; set; }
+    public int EventIndex { get; set; }
+    public string DisplayId => EventIndex > 0 ? EventIndex.ToString() : VmixEventId ?? string.Empty;
     public string? VmixEventId { get; set; }
     public DateTimeOffset CreatedUtc { get; set; }
     public string Source { get; set; } = "Main";
@@ -119,6 +133,7 @@ public sealed class ReplayEventRecord
         return new ReplayEventRecord
         {
             LocalId = LocalId,
+            EventIndex = EventIndex,
             VmixEventId = VmixEventId,
             CreatedUtc = CreatedUtc,
             Source = Source,

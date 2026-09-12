@@ -4,24 +4,33 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
 using HlaeObsTools.Services.Vmix;
+using HlaeObsTools.Services.ObsReplays;
+using HlaeObsTools.ViewModels;
 
 namespace HlaeObsTools.ViewModels.Docks;
 
 public sealed class ReplayDockViewModel : Tool, IDisposable
 {
+    private static readonly Regex RoundLabelPattern = new("^R(?<round>\\d+)_", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex KillLabelPattern = new("_K(?<first>\\d+)(?:-(?<last>\\d+))?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private readonly VmixReplayCoordinator _coordinator;
+    private readonly ObsWebSocketClient _obsClient;
+    private readonly ReplaySettings _replaySettings;
     private readonly List<ReplayEventRecord> _selectedEvents = new();
     private ReplayEventRecord? _selectedEvent;
     private string _status = "No replay event selected.";
     private bool _disposed;
 
-    public ReplayDockViewModel(VmixReplayCoordinator coordinator)
+    public ReplayDockViewModel(VmixReplayCoordinator coordinator, ObsWebSocketClient obsClient, ReplaySettings replaySettings)
     {
         _coordinator = coordinator;
+        _obsClient = obsClient;
+        _replaySettings = replaySettings;
         CanClose = true;
         CanFloat = true;
         CanPin = true;
@@ -29,13 +38,18 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
         PlaySelectedCommand = new AsyncRelay(PlaySelectionAsync);
         PlayLastRoundCommand = new AsyncRelay(PlayLastRoundAsync);
         StopReplayCommand = new AsyncRelay(StopReplayAsync);
+        RefreshCommand = new AsyncRelay(RefreshEventsAsync);
         ClearCommand = new Relay(_ => ClearTrackedEvents());
 
         _coordinator.Registry.Changed += OnRegistryChanged;
+        _obsClient.ReplayStateChanged += OnObsReplayStateChanged;
+        _obsClient.StateChanged += OnObsClientStateChanged;
+        _replaySettings.PropertyChanged += OnObsSettingsChanged;
         RefreshEvents();
     }
 
     public ObservableCollection<ReplayEventRecord> Events { get; } = new();
+    public string EventIdColumnHeader => _replaySettings.IsObsReplaysSelected ? "#" : "ID";
 
     public ReplayEventRecord? SelectedEvent
     {
@@ -64,10 +78,17 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
     public ICommand PlaySelectedCommand { get; }
     public ICommand PlayLastRoundCommand { get; }
     public ICommand StopReplayCommand { get; }
+    public ICommand RefreshCommand { get; }
     public ICommand ClearCommand { get; }
 
     private void ClearTrackedEvents()
     {
+        if (_replaySettings.IsObsReplaysSelected)
+        {
+            _ = RefreshObsEventsAsync();
+            Status = "OBS Replays owns this event library; refreshed its authoritative list.";
+            return;
+        }
         _selectedEvents.Clear();
         SelectedEvent = null;
         _coordinator.ClearTrackedEvents();
@@ -104,6 +125,17 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
             return;
         }
 
+        if (_replaySettings.IsObsReplaysSelected)
+        {
+            try
+            {
+                var result = await _obsClient.StartPlayoutAsync(selected.Select(e => e.VmixEventId!), CancellationToken.None);
+                Status = result.TryGetProperty("success", out var success) && success.ValueKind == System.Text.Json.JsonValueKind.False
+                    ? "OBS Replays failed to start playout." : $"Playing {selected.Length} OBS replay event{(selected.Length == 1 ? string.Empty : "s")}.";
+            }
+            catch (Exception ex) { Status = $"OBS Replays: {ex.Message}"; }
+            return;
+        }
         var channels = selected
             .Select(e => string.IsNullOrWhiteSpace(e.Channel) ? "A" : e.Channel.Trim().ToUpperInvariant())
             .Distinct(StringComparer.Ordinal)
@@ -145,6 +177,18 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
             return;
         }
 
+        if (_replaySettings.IsObsReplaysSelected)
+        {
+            try
+            {
+                var result = await _obsClient.StartPlayoutAsync(roundEvents.Select(e => e.VmixEventId!), CancellationToken.None);
+                Status = result.TryGetProperty("success", out var success) && success.ValueKind == System.Text.Json.JsonValueKind.False
+                    ? $"Failed to play round {latestRound}." : $"Playing {roundEvents.Length} replay event{(roundEvents.Length == 1 ? string.Empty : "s")} from round {latestRound}.";
+            }
+            catch (Exception ex) { Status = $"OBS Replays: {ex.Message}"; }
+            return;
+        }
+
         var channels = roundEvents
             .Select(e => string.IsNullOrWhiteSpace(e.Channel) ? "A" : e.Channel.Trim().ToUpperInvariant())
             .Distinct(StringComparer.Ordinal)
@@ -163,6 +207,13 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
 
     private async Task StopReplayAsync()
     {
+        if (_replaySettings.IsObsReplaysSelected)
+        {
+            try { await _obsClient.StopPlayoutAsync(CancellationToken.None); Status = "Stopping OBS replay playout."; }
+            catch (Exception ex) { Status = $"OBS Replays: {ex.Message}"; }
+            return;
+        }
+
         var ok = await _coordinator.StopReplayAsync(CancellationToken.None);
         Status = ok
             ? "Stopped replay on channels A and B."
@@ -171,12 +222,86 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
 
     private static int GetReplayIdSortKey(ReplayEventRecord record)
     {
+        if (record.EventIndex > 0)
+            return record.EventIndex;
         return int.TryParse(record.VmixEventId, out var value) ? value : int.MaxValue;
     }
 
     private void OnRegistryChanged(object? sender, EventArgs e)
     {
         Dispatcher.UIThread.Post(RefreshEvents, DispatcherPriority.Background);
+    }
+
+    private async Task RefreshEventsAsync()
+    {
+        if (_replaySettings.IsObsReplaysSelected)
+            await RefreshObsEventsAsync();
+        else
+            RefreshEvents();
+    }
+
+    private void OnObsReplayStateChanged(object? sender, EventArgs e)
+    {
+        if (_replaySettings.IsObsReplaysSelected)
+            _ = RefreshObsEventsAsync();
+    }
+
+    private void OnObsClientStateChanged(object? sender, EventArgs e)
+    {
+        if (_replaySettings.IsObsReplaysSelected && _obsClient.IsConnected)
+            _ = RefreshObsEventsAsync();
+    }
+
+    private void OnObsSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ReplaySettings.Backend))
+        {
+            OnPropertyChanged(nameof(EventIdColumnHeader));
+            if (_replaySettings.IsObsReplaysSelected)
+                _ = RefreshObsEventsAsync();
+        }
+    }
+
+    private async Task RefreshObsEventsAsync()
+    {
+        if (!_obsClient.IsConnected) { Status = "OBS Replays is not connected."; return; }
+        try
+        {
+            var response = await _obsClient.ListEventsAsync(CancellationToken.None).ConfigureAwait(false);
+            if (!response.TryGetProperty("events", out var items) || items.ValueKind != System.Text.Json.JsonValueKind.Array) return;
+            var known = _coordinator.Registry.Snapshot()
+                .Where(record => !string.IsNullOrWhiteSpace(record.VmixEventId))
+                .GroupBy(record => record.VmixEventId!, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Last(), StringComparer.Ordinal);
+            var records = new List<ReplayEventRecord>(); long localId = 0;
+            foreach (var item in items.EnumerateArray())
+            {
+                var label = item.TryGetProperty("label", out var labelValue) ? labelValue.GetString() ?? string.Empty : string.Empty;
+                var eventId = item.GetProperty("id").GetString() ?? string.Empty;
+                known.TryGetValue(eventId, out var attached);
+                records.Add(new ReplayEventRecord { LocalId = ++localId, EventIndex = item.TryGetProperty("index", out var index) && index.TryGetInt32(out var value) ? value : 0, VmixEventId = eventId, Label = label, Round = attached?.Round ?? GetRoundFromLabel(label), KillCount = attached?.KillCount ?? GetKillCountFromLabel(label), Status = attached?.Status ?? "Recorded", Source = attached?.Source ?? "OBS Replays", CreatedUtc = item.TryGetProperty("createdAtUtc", out var created) && created.TryGetDateTimeOffset(out var time) ? time : DateTimeOffset.UtcNow });
+            }
+            await Dispatcher.UIThread.InvokeAsync(() => { Events.Clear(); foreach (var record in records) Events.Add(record); Status = $"Loaded {records.Count} OBS replay event{(records.Count == 1 ? string.Empty : "s")}."; });
+        }
+        catch (Exception ex) { Status = $"Failed to load OBS replay events: {ex.Message}"; }
+    }
+
+    private static int GetRoundFromLabel(string label)
+    {
+        var match = RoundLabelPattern.Match(label ?? string.Empty);
+        return match.Success && int.TryParse(match.Groups["round"].Value, out var round) ? round : 0;
+    }
+
+    private static int GetKillCountFromLabel(string label)
+    {
+        var total = 0;
+        foreach (Match match in KillLabelPattern.Matches(label ?? string.Empty))
+        {
+            if (!int.TryParse(match.Groups["first"].Value, out var first)) continue;
+            var last = match.Groups["last"].Success && int.TryParse(match.Groups["last"].Value, out var parsed) ? parsed : first;
+            total += Math.Max(1, last - first + 1);
+        }
+        return total;
     }
 
     private void RefreshEvents()
@@ -207,6 +332,9 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
 
         _disposed = true;
         _coordinator.Registry.Changed -= OnRegistryChanged;
+        _obsClient.ReplayStateChanged -= OnObsReplayStateChanged;
+        _obsClient.StateChanged -= OnObsClientStateChanged;
+        _replaySettings.PropertyChanged -= OnObsSettingsChanged;
     }
 
     private sealed class Relay : ICommand

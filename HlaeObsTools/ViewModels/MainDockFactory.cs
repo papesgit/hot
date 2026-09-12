@@ -28,6 +28,8 @@ using HlaeObsTools.Services.LiveLink;
 using HlaeObsTools.Services.Video;
 using HlaeObsTools.Services.Updates;
 using HlaeObsTools.Services.HotLink;
+using HlaeObsTools.Services.ObsReplays;
+using HlaeObsTools.Services.Replays;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -53,11 +55,15 @@ public class MainDockFactory : Factory, IDisposable
     private readonly VmixApiClient _vmixApiClient;
     private readonly ReplayEventRegistry _replayEventRegistry;
     private readonly VmixReplayCoordinator _vmixReplayCoordinator;
-    private readonly VmixReplayService _vmixReplayService;
     private readonly VmixSettings _vmixSettings;
-    private readonly VmixReplaySettings _vmixReplaySettings;
+    private readonly ReplaySettings _vmixReplaySettings;
     private readonly HotLinkSettings _hotLinkSettings;
-    private readonly VmixReplayMarker _delayedReplayMarker;
+    private readonly ObsWebSocketSettings _obsWebSocketSettings;
+    private readonly ObsWebSocketClient _obsReplaysClient;
+    private readonly ObsReplayEventWriter _obsReplayEventWriter;
+    private readonly ReplayMarkerController _localReplayMarker;
+    private readonly CaughtKillReplayMarker _caughtKillReplayMarker;
+    private readonly ReplayMarkerController _delayedReplayMarker;
     private readonly HotLinkPublisher _hotLinkPublisher;
     private readonly ReplayDirectorClient _replayDirectorClient;
     private readonly HotLinkServiceDiscovery _hotLinkServiceDiscovery;
@@ -134,9 +140,10 @@ public class MainDockFactory : Factory, IDisposable
             Host = _storedSettings.VmixReplayHost,
             Port = _storedSettings.VmixReplayPort
         };
-        _vmixReplaySettings = new VmixReplaySettings
+        _vmixReplaySettings = new ReplaySettings
         {
-            Enabled = _storedSettings.VmixReplayEnabled,
+            AutoMarkEnabled = _storedSettings.ReplayAutoMarkEnabled,
+            Backend = _storedSettings.ReplayBackend,
             PreSeconds = _storedSettings.VmixReplayPreSeconds,
             PostSeconds = _storedSettings.VmixReplayPostSeconds,
             ExtendWindowSeconds = _storedSettings.VmixReplayExtendWindowSeconds,
@@ -144,6 +151,15 @@ public class MainDockFactory : Factory, IDisposable
             Channel = _storedSettings.VmixReplayChannel,
             Camera = _storedSettings.VmixReplayCamera
         };
+        _obsWebSocketSettings = new ObsWebSocketSettings
+        {
+            Host = _storedSettings.ObsWebSocketHost,
+            Port = _storedSettings.ObsWebSocketPort,
+            Password = _storedSettings.ObsWebSocketPassword
+        };
+        _replayEventRegistry = new ReplayEventRegistry();
+        _obsReplaysClient = new ObsWebSocketClient(_obsWebSocketSettings);
+        _obsReplayEventWriter = new ObsReplayEventWriter(_obsReplaysClient, _replayEventRegistry);
         _hotLinkSettings = new HotLinkSettings
         {
             Role = _storedSettings.HotLinkRole,
@@ -168,13 +184,17 @@ public class MainDockFactory : Factory, IDisposable
             CueTimelineFixedUpcomingSeconds = _storedSettings.HotLinkCueTimelineFixedUpcomingSeconds
         };
         _vmixApiClient = new VmixApiClient(_vmixSettings);
-        _replayEventRegistry = new ReplayEventRegistry();
         _vmixReplayCoordinator = new VmixReplayCoordinator(_vmixApiClient, _replayEventRegistry);
         _hotkeyService.SetVmixApiClient(_vmixApiClient);
-        _vmixReplayService = new VmixReplayService(_webSocketClient, _gsiServer, _vmixApiClient, _vmixReplayCoordinator, _vmixReplaySettings);
-        _delayedReplayMarker = new VmixReplayMarker(_vmixApiClient, _vmixReplayCoordinator);
         _hotLinkServiceDiscovery = new HotLinkServiceDiscovery();
-        _hotLinkPublisher = new HotLinkPublisher(_webSocketClient, _gsiServer, _hotLinkSettings, _vmixReplaySettings, _delayedReplayMarker, _hotLinkServiceDiscovery);
+        var replayMarkBackend = new ReplayMarkBackendRouter(_vmixReplaySettings,
+            new VmixReplayBackend(_vmixApiClient, _vmixReplayCoordinator), new ObsReplaysBackend(_obsReplayEventWriter));
+        _localReplayMarker = new ReplayMarkerController(replayMarkBackend, () => new ReplayMarkerSettings(_vmixReplaySettings.PreSeconds, _vmixReplaySettings.PostSeconds,
+            _vmixReplaySettings.ExtendWindowSeconds, new ReplayBackendOptions("Main", _vmixReplaySettings.Channel, _vmixReplaySettings.Camera, _vmixReplaySettings.FramesPerSecond)));
+        _caughtKillReplayMarker = new CaughtKillReplayMarker(_webSocketClient, _gsiServer, _vmixReplaySettings, _localReplayMarker);
+        _delayedReplayMarker = new ReplayMarkerController(replayMarkBackend, () => new ReplayMarkerSettings(_vmixReplaySettings.PreSeconds, _vmixReplaySettings.PostSeconds,
+            _vmixReplaySettings.ExtendWindowSeconds, new ReplayBackendOptions("Delayed", _hotLinkSettings.DelayedVmixChannel, _hotLinkSettings.DelayedVmixCamera, _vmixReplaySettings.FramesPerSecond)));
+        _hotLinkPublisher = new HotLinkPublisher(_webSocketClient, _gsiServer, _hotLinkSettings, _delayedReplayMarker, _hotLinkServiceDiscovery);
         _hotLinkGameClock = new HotLinkGameClock(_webSocketClient, _hotLinkSettings);
         _hotLinkClient = new HotLinkClient(_hotLinkSettings);
         _cueService = new DelayedObserverCueService(_hotLinkClient, _hotLinkGameClock, _gsiServer, _hotLinkSettings);
@@ -443,7 +463,7 @@ public class MainDockFactory : Factory, IDisposable
             Id = "Graphics",
             Title = "Graphics"
         };
-        _replayDockVm = new ReplayDockViewModel(_vmixReplayCoordinator)
+        _replayDockVm = new ReplayDockViewModel(_vmixReplayCoordinator, _obsReplaysClient, _vmixReplaySettings)
         {
             Id = "Replay",
             Title = "Replay"
@@ -468,6 +488,8 @@ public class MainDockFactory : Factory, IDisposable
             _storedSettings,
             _vmixSettings,
             _vmixReplaySettings,
+            _obsWebSocketSettings,
+            _obsReplaysClient,
             _hotLinkSettings,
             _vmixApiClient,
             hotLinkServiceDiscovery: _hotLinkServiceDiscovery,
@@ -1522,9 +1544,11 @@ public class MainDockFactory : Factory, IDisposable
         _webSocketClient.Dispose();
         _producerClient.Dispose();
         _liveLinkReceiver.Dispose();
-        _vmixReplayService.Dispose();
         _delayedReplayMarker.Dispose();
+        _localReplayMarker.Dispose();
         _vmixApiClient.Dispose();
+        _obsReplaysClient.Dispose();
+        _caughtKillReplayMarker.Dispose();
         _replayDockVm?.Dispose();
         _graphicsDockVm?.Dispose();
         _graphicsService.Dispose();

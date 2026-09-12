@@ -193,7 +193,7 @@ public class AppSettingsData
     public int ViewportMaxTextureSize { get; set; } = 1024;
     public string ViewportRenderMode { get; set; } = "Default";
     public FreecamSettingsData FreecamSettings { get; set; } = new();
-    public bool VmixReplayEnabled { get; set; }
+    public bool ReplayAutoMarkEnabled { get; set; }
     public string VmixReplayHost { get; set; } = "127.0.0.1";
     public int VmixReplayPort { get; set; } = 8088;
     public double VmixReplayPreSeconds { get; set; } = 2.0;
@@ -202,6 +202,10 @@ public class AppSettingsData
     public double VmixReplayFramesPerSecond { get; set; } = 60.0;
     public string VmixReplayChannel { get; set; } = "A";
     public int VmixReplayCamera { get; set; } = 1;
+    public string ReplayBackend { get; set; } = "Disabled";
+    public string ObsWebSocketHost { get; set; } = "127.0.0.1";
+    public int ObsWebSocketPort { get; set; } = 4455;
+    public string ObsWebSocketPassword { get; set; } = string.Empty;
     public string HotLinkRole { get; set; } = "Off";
     public int HotLinkPublisherPort { get; set; } = 31341;
     public string HotLinkPublisherIp { get; set; } = "127.0.0.1";
