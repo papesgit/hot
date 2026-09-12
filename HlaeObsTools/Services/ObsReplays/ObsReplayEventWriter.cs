@@ -16,7 +16,7 @@ public sealed class ObsReplayEventWriter
 
     public async Task<ObsReplayEventHandle?> CreateFromLiveAsync(int preRollMs, string label, string source, int round, int killCount, CancellationToken token)
     {
-        var response = await _client.CreateEventFromLiveAsync(preRollMs, label, token).ConfigureAwait(false);
+        var response = UnwrapVendorResult(await _client.CreateEventFromLiveAsync(preRollMs, label, token).ConfigureAwait(false));
         if (Failed(response) || !response.TryGetProperty("event", out var created) || !created.TryGetProperty("id", out var id) || !created.TryGetProperty("inMs", out var input) || !input.TryGetInt32(out var inMs)) return null;
         var eventId = id.GetString();
         if (string.IsNullOrWhiteSpace(eventId)) return null;
@@ -26,7 +26,7 @@ public sealed class ObsReplayEventWriter
 
     public async Task<bool> UpdateAsync(ObsReplayEventHandle handle, int outMs, string label, int killCount, CancellationToken token)
     {
-        var response = await _client.UpdateEventAsync(handle.Id, handle.InMs, outMs, label, token).ConfigureAwait(false);
+        var response = UnwrapVendorResult(await _client.UpdateEventAsync(handle.Id, handle.InMs, outMs, label, token).ConfigureAwait(false));
         if (Failed(response)) return false;
         _registry.UpdateByEventId(handle.Id, record => { record.Label = label; record.KillCount = killCount; record.Status = "Updated"; });
         return true;
@@ -34,10 +34,16 @@ public sealed class ObsReplayEventWriter
 
     public async Task<int?> GetRecordedThroughAsync(CancellationToken token)
     {
-        var response = await _client.GetRecordingStatusAsync(token).ConfigureAwait(false);
+        var response = UnwrapVendorResult(await _client.GetRecordingStatusAsync(token).ConfigureAwait(false));
         return !Failed(response) && response.TryGetProperty("recordedThroughMs", out var through) && through.TryGetInt32(out var value) ? value : null;
     }
     private static bool Failed(JsonElement value) => value.TryGetProperty("success", out var success) && success.ValueKind == JsonValueKind.False;
+    private static JsonElement UnwrapVendorResult(JsonElement value)
+    {
+        while (value.TryGetProperty("responseData", out var nested) && nested.ValueKind == JsonValueKind.Object)
+            value = nested;
+        return value;
+    }
 }
 
 public readonly record struct ObsReplayEventHandle(string Id, int InMs);

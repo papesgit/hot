@@ -68,7 +68,13 @@ public sealed class ReplayMarkerController : IDisposable
         ReplayKillGroupSnapshot group; ReplayEventHandle? active; DateTimeOffset? applied;
         var settings = _settings();
         lock (_sync) { group = _group.Snapshot(); active = _activeEvent; applied = _appliedThrough; }
-        if (group.FirstKillUtc == null || group.LastKillUtc == null || !_backend.IsAvailable) return;
+        if (group.FirstKillUtc == null || group.LastKillUtc == null) return;
+        if (!_backend.IsAvailable)
+        {
+            DiscardFailedGroup(group);
+            StatusChanged?.Invoke(this, "Replay marker failed: replay backend is unavailable.");
+            return;
+        }
         if (!active.HasValue)
         {
             var duration = settings.PreSeconds + settings.PostSeconds + (group.LastKillUtc.Value - group.FirstKillUtc.Value).TotalSeconds;
@@ -79,6 +85,8 @@ public sealed class ReplayMarkerController : IDisposable
                 StatusChanged?.Invoke(this, $"Replay marked: {group.Label}");
             }
             else StatusChanged?.Invoke(this, "Replay marker failed.");
+            if (!created.HasValue)
+                DiscardFailedGroup(group);
             return;
         }
         var extensionMs = applied.HasValue ? Math.Max(0, (int)Math.Round((group.LastKillUtc.Value - applied.Value).TotalMilliseconds)) : 0;
@@ -89,7 +97,24 @@ public sealed class ReplayMarkerController : IDisposable
             lock (_sync) _appliedThrough = group.LastKillUtc;
             StatusChanged?.Invoke(this, $"Replay extended: {group.Label}");
         }
-        else StatusChanged?.Invoke(this, "Replay extension failed.");
+        else
+        {
+            DiscardFailedGroup(group);
+            StatusChanged?.Invoke(this, "Replay extension failed.");
+        }
+    }
+
+    private void DiscardFailedGroup(ReplayKillGroupSnapshot attempted)
+    {
+        lock (_sync)
+        {
+            // Do not erase a newer kill group that arrived while an older request was in flight.
+            if (_group.FirstKillUtc != attempted.FirstKillUtc || _group.LastKillUtc != attempted.LastKillUtc)
+                return;
+            _group.Clear();
+            _activeEvent = null;
+            _appliedThrough = null;
+        }
     }
 
     public void Dispose() { if (_disposed) return; _disposed = true; _pending?.Cancel(); }

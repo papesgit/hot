@@ -107,6 +107,15 @@ public sealed class ReplayKillGroup
         return startsNewGroup;
     }
 
+    /// <summary>Discards an uncommitted clip after its backend rejected the create/update request.</summary>
+    public void Clear()
+    {
+        Round = 0;
+        FirstKillUtc = null;
+        LastKillUtc = null;
+        _kills.Clear();
+    }
+
     public ReplayKillGroupSnapshot Snapshot() => new(Round, FirstKillUtc, LastKillUtc, _kills.ToArray(), BuildLabel());
     private string BuildLabel() => ReplayMarkerPrimitives.BuildKillLabel(Round, _kills);
 }
