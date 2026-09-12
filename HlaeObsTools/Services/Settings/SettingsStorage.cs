@@ -211,6 +211,7 @@ public class AppSettingsData
     public string HotLinkPublisherIp { get; set; } = "127.0.0.1";
     public bool HotLinkManualHost { get; set; }
     public double ReplayDirectorPreSwitchSeconds { get; set; } = 2.0;
+    public double ReplayDirectorMinPreSwitchSeconds { get; set; } = 0.5;
     public double ReplayDirectorSwitchLockSeconds { get; set; } = 0.75;
     public bool ReplayDirectorOnlyFollowMissedKills { get; set; }
     public bool ReplayDirectorGrenadeKillsEnabled { get; set; } = true;

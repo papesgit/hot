@@ -65,8 +65,11 @@ public sealed record ReplayShotPlan(HotLinkKillEvent Kill, int TargetSlot, doubl
         }
         var target = grenade ? kill.Victim.ObserverSlot : kill.Attacker.ObserverSlot;
         if (!aliveSlots.Contains(target)) return null;
-        // A victim must be acquired before the death, not during the normal late-switch grace.
-        if (now > time + (grenade ? -0.1 : 0.25)) return null;
+        // A late event must not cause a token, post-kill spectator switch. Keep the old small
+        // grace only when the operator explicitly disables the minimum lead-time requirement.
+        var minimumLead = Math.Min(Math.Max(0, settings.MinPreSwitchSeconds), Math.Max(0, settings.PreSwitchSeconds));
+        var latestEligibleTime = minimumLead > 0 ? time - minimumLead : time + (grenade ? -0.1 : 0.25);
+        if (now > latestEligibleTime) return null;
         return new(kill, target, time - (grenade ? Math.Max(0.1, settings.PreSwitchSeconds) : settings.PreSwitchSeconds),
             time + Math.Max(0, settings.SwitchLockSeconds), false, false, fallback);
     }

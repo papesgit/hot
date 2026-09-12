@@ -24,6 +24,7 @@ public sealed class HotLinkSettings : ViewModelBase
     private bool _manualHost;
     private bool _clientConnectionEnabled;
     private double _preSwitchSeconds = 2.0;
+    private double _minPreSwitchSeconds = 0.5;
     private double _switchLockSeconds = 0.75;
     private bool _onlyFollowMissedKills;
     private bool _grenadeKillsEnabled = true;
@@ -128,6 +129,13 @@ public sealed class HotLinkSettings : ViewModelBase
     {
         get => _grenadePov;
         set => SetProperty(ref _grenadePov, GrenadePovOptions.Contains(value) ? value : "Show Victim POV");
+    }
+
+    /// <summary>Required lead time before a kill; candidates received later are skipped.</summary>
+    public double MinPreSwitchSeconds
+    {
+        get => _minPreSwitchSeconds;
+        set => SetProperty(ref _minPreSwitchSeconds, Math.Max(0, value));
     }
     public bool ShowGrenadeTimingSettings { get => _showGrenadeTimingSettings; set => SetProperty(ref _showGrenadeTimingSettings, value); }
     public double GrenadeThrowPreRollSeconds

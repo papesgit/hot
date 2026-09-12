@@ -167,6 +167,7 @@ public class MainDockFactory : Factory, IDisposable
             PublisherIp = _storedSettings.HotLinkPublisherIp,
             ManualHost = _storedSettings.HotLinkManualHost,
             PreSwitchSeconds = _storedSettings.ReplayDirectorPreSwitchSeconds,
+            MinPreSwitchSeconds = _storedSettings.ReplayDirectorMinPreSwitchSeconds,
             SwitchLockSeconds = _storedSettings.ReplayDirectorSwitchLockSeconds,
             OnlyFollowMissedKills = _storedSettings.ReplayDirectorOnlyFollowMissedKills,
             GrenadeKillsEnabled = _storedSettings.ReplayDirectorGrenadeKillsEnabled,

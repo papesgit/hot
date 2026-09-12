@@ -2098,6 +2098,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 data.HotLinkPublisherIp = _hotLinkSettings.PublisherIp;
                 data.HotLinkManualHost = _hotLinkSettings.ManualHost;
                 data.ReplayDirectorPreSwitchSeconds = _hotLinkSettings.PreSwitchSeconds;
+                data.ReplayDirectorMinPreSwitchSeconds = _hotLinkSettings.MinPreSwitchSeconds;
                 data.ReplayDirectorSwitchLockSeconds = _hotLinkSettings.SwitchLockSeconds;
                 data.ReplayDirectorOnlyFollowMissedKills = _hotLinkSettings.OnlyFollowMissedKills;
                 data.ReplayDirectorGrenadeKillsEnabled = _hotLinkSettings.GrenadeKillsEnabled;

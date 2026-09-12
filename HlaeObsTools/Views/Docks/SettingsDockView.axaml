@@ -159,6 +159,10 @@
                                         <TextBlock Text="Pre-switch (s)" Foreground="#AAAAAA" />
                                         <TextBox MinWidth="50" MaxWidth="80" Text="{Binding HotLinkSettings.PreSwitchSeconds, Mode=TwoWay}" />
                                     </StackPanel>
+                                    <StackPanel Spacing="4" ToolTip.Tip="Skip a kill if HOT cannot switch to its target at least this long before the kill.">
+                                        <TextBlock Text="Min pre-switch (s)" Foreground="#AAAAAA" />
+                                        <TextBox MinWidth="50" MaxWidth="80" Text="{Binding HotLinkSettings.MinPreSwitchSeconds, Mode=TwoWay}" />
+                                    </StackPanel>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Switch lock (s)" Foreground="#AAAAAA" />
                                         <TextBox MinWidth="50" MaxWidth="80" Text="{Binding HotLinkSettings.SwitchLockSeconds, Mode=TwoWay}" />
