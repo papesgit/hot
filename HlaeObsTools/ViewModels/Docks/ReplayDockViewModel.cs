@@ -66,6 +66,7 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
 
     public ObservableCollection<ReplayEventRecord> Events { get; } = new();
     public string EventIdColumnHeader => _replaySettings.IsObsReplaysSelected ? "#" : "ID";
+    public double EventIdColumnWidth => GetEventIdColumnWidth(Events);
     public double PlaybackSpeed
     {
         get => _playbackSpeed;
@@ -499,6 +500,7 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
         if (e.PropertyName == nameof(ReplaySettings.Backend))
         {
             OnPropertyChanged(nameof(EventIdColumnHeader));
+            OnPropertyChanged(nameof(EventIdColumnWidth));
             if (_replaySettings.IsObsReplaysSelected)
                 _ = RefreshObsEventsAsync();
         }
@@ -523,7 +525,15 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
                 known.TryGetValue(eventId, out var attached);
                 records.Add(new ReplayEventRecord { LocalId = ++localId, EventIndex = item.TryGetProperty("index", out var index) && index.TryGetInt32(out var value) ? value : 0, VmixEventId = eventId, Label = label, Round = attached?.Round ?? GetRoundFromLabel(label), KillCount = attached?.KillCount ?? GetKillCountFromLabel(label), Status = attached?.Status ?? "Recorded", Source = attached?.Source ?? "OBS Replays", CreatedUtc = item.TryGetProperty("createdAtUtc", out var created) && created.TryGetDateTimeOffset(out var time) ? time : DateTimeOffset.UtcNow });
             }
-            await Dispatcher.UIThread.InvokeAsync(() => { Events.Clear(); foreach (var record in records) Events.Add(record); Status = $"Loaded {records.Count} OBS replay event{(records.Count == 1 ? string.Empty : "s")}."; });
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                SetEventIdColumnWidth(records);
+                Events.Clear();
+                foreach (var record in records.OrderByDescending(record => record.CreatedUtc).ThenByDescending(record => record.LocalId))
+                    Events.Add(record);
+                OnPropertyChanged(nameof(EventIdColumnWidth));
+                Status = $"Loaded {records.Count} OBS replay event{(records.Count == 1 ? string.Empty : "s")}.";
+            });
         }
         catch (Exception ex) { Status = $"Failed to load OBS replay events: {ex.Message}"; }
     }
@@ -599,12 +609,34 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
         return total;
     }
 
+    private double GetEventIdColumnWidth(IEnumerable<ReplayEventRecord> records)
+    {
+        var longestText = EventIdColumnHeader.Length;
+        foreach (var record in records)
+            longestText = Math.Max(longestText, record.DisplayId.Length);
+        return 12 + (longestText * 8);
+    }
+
+    private void SetEventIdColumnWidth(IEnumerable<ReplayEventRecord> records)
+    {
+        var snapshot = records as ReplayEventRecord[] ?? records.ToArray();
+        var width = GetEventIdColumnWidth(snapshot);
+        foreach (var record in snapshot)
+            record.IdColumnWidth = width;
+    }
+
     private void RefreshEvents()
     {
         var selectedId = SelectedEvent?.LocalId;
+        var records = _coordinator.Registry.Snapshot()
+            .OrderByDescending(record => record.CreatedUtc)
+            .ThenByDescending(record => record.LocalId)
+            .ToArray();
+        SetEventIdColumnWidth(records);
         Events.Clear();
-        foreach (var record in _coordinator.Registry.Snapshot())
+        foreach (var record in records)
             Events.Add(record);
+        OnPropertyChanged(nameof(EventIdColumnWidth));
 
         SelectedEvent = selectedId.HasValue ? FindRecord(selectedId.Value) : null;
     }

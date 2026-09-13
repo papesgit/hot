@@ -128,6 +128,7 @@ public sealed class ReplayEventRecord
     public long LocalId { get; set; }
     public int EventIndex { get; set; }
     public string DisplayId => EventIndex > 0 ? EventIndex.ToString() : VmixEventId ?? string.Empty;
+    public double IdColumnWidth { get; set; } = 20;
     public string? VmixEventId { get; set; }
     public DateTimeOffset CreatedUtc { get; set; }
     public string Source { get; set; } = "Main";
