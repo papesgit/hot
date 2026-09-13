@@ -155,7 +155,8 @@ public class MainDockFactory : Factory, IDisposable
         {
             Host = _storedSettings.ObsWebSocketHost,
             Port = _storedSettings.ObsWebSocketPort,
-            Password = _storedSettings.ObsWebSocketPassword
+            Password = _storedSettings.ObsWebSocketPassword,
+            SmoothPlayoutRateDurationMs = _storedSettings.ObsReplaySmoothRateDurationMs
         };
         _replayEventRegistry = new ReplayEventRegistry();
         _obsReplaysClient = new ObsWebSocketClient(_obsWebSocketSettings);
@@ -464,7 +465,7 @@ public class MainDockFactory : Factory, IDisposable
             Id = "Graphics",
             Title = "Graphics"
         };
-        _replayDockVm = new ReplayDockViewModel(_vmixReplayCoordinator, _obsReplaysClient, _vmixReplaySettings)
+        _replayDockVm = new ReplayDockViewModel(_vmixReplayCoordinator, _obsReplaysClient, _obsWebSocketSettings, _vmixReplaySettings)
         {
             Id = "Replay",
             Title = "Replay"

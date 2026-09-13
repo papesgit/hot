@@ -2093,6 +2093,7 @@ namespace HlaeObsTools.ViewModels.Docks
                 data.ObsWebSocketHost = _obsWebSocketSettings.Host;
                 data.ObsWebSocketPort = _obsWebSocketSettings.Port;
                 data.ObsWebSocketPassword = _obsWebSocketSettings.Password;
+                data.ObsReplaySmoothRateDurationMs = _obsWebSocketSettings.SmoothPlayoutRateDurationMs;
                 data.HotLinkRole = _hotLinkSettings.Role;
                 data.HotLinkPublisherPort = _hotLinkSettings.PublisherPort;
                 data.HotLinkPublisherIp = _hotLinkSettings.PublisherIp;

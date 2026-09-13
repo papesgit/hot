@@ -133,6 +133,22 @@ public sealed class VmixReplayCoordinator
         }
     }
 
+    public async Task<bool> SetReplaySpeedAsync(int ratePercent, CancellationToken token)
+    {
+        var value = (Math.Clamp(ratePercent, 10, 100) / 100d).ToString(CultureInfo.InvariantCulture);
+        await _vmixLock.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            var channelA = await _vmixApiClient.ExecuteFunctionAsync(new VmixFunctionCall { Function = "ReplaySetSpeed", Value = value, Channel = "A" }, token, "ReplaySetSpeed (A)").ConfigureAwait(false);
+            var channelB = await _vmixApiClient.ExecuteFunctionAsync(new VmixFunctionCall { Function = "ReplaySetSpeed", Value = value, Channel = "B" }, token, "ReplaySetSpeed (B)").ConfigureAwait(false);
+            return channelA && channelB;
+        }
+        finally
+        {
+            _vmixLock.Release();
+        }
+    }
+
     private static string NormalizeChannel(string? channel)
     {
         var value = string.IsNullOrWhiteSpace(channel) ? "A" : channel.Trim().ToUpperInvariant();

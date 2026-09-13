@@ -5,7 +5,7 @@
              x:Class="HlaeObsTools.Views.Docks.ReplayDockView"
              x:DataType="vm:ReplayDockViewModel">
     <Border Background="#202020" Padding="8">
-        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="8">
             <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
                 <Button Content="Play Selection"
                         Command="{Binding PlaySelectedCommand}"/>
@@ -64,6 +64,20 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+
+            <Border Grid.Row="4" Background="#292929" BorderBrush="#3A3A3A" BorderThickness="1" Padding="2" Height="32">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="5" VerticalAlignment="Center" Height="28">
+                    <TextBlock Text="{Binding PlaybackSpeedText}" Width="36" VerticalAlignment="Center" Foreground="#E6E6E6" />
+                    <Slider Grid.Column="1" Minimum="10" Maximum="100" Value="{Binding PlaybackSpeed, Mode=TwoWay}" VerticalAlignment="Center" Height="42" MinHeight="0">
+                        <Slider.RenderTransform>
+                            <TranslateTransform Y="-4" />
+                        </Slider.RenderTransform>
+                    </Slider>
+                    <Button Grid.Column="2" Height="24" MinHeight="0" Padding="5,0" Content="100%" Command="{Binding Set100SpeedCommand}" />
+                    <Button Grid.Column="3" Height="24" MinHeight="0" Padding="5,0" Content="75%" Command="{Binding Set75SpeedCommand}" />
+                    <Button Grid.Column="4" Height="24" MinHeight="0" Padding="5,0" Content="50%" Command="{Binding Set50SpeedCommand}" />
+                </Grid>
+            </Border>
         </Grid>
     </Border>
 </UserControl>

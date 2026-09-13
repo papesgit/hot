@@ -101,6 +101,8 @@ public sealed class ObsWebSocketClient : IDisposable
     public Task<JsonElement> ListEventsAsync(CancellationToken token = default) => CallVendorAsync("ListEvents", new { }, token);
     public Task<JsonElement> StartPlayoutAsync(IEnumerable<string> ids, CancellationToken token = default) => CallVendorAsync("StartPlayout", new { eventIds = BuildEventIds(ids) }, token);
     public Task<JsonElement> StopPlayoutAsync(CancellationToken token = default) => CallVendorAsync("StopPlayout", new { }, token);
+    public Task<JsonElement> SetPlayoutRateAsync(int ratePercent, CancellationToken token = default) => CallVendorAsync("SetPlayoutRate", new { ratePercent }, token);
+    public Task<JsonElement> SetPlayoutRateSmoothAsync(int ratePercent, int durationMs, CancellationToken token = default) => CallVendorAsync("SetPlayoutRateSmooth", new { ratePercent, durationMs }, token);
     public Task<JsonElement> CreateEventFromLiveAsync(int preRollMs, string? label, CancellationToken token = default) => CallVendorAsync("CreateEventFromLive", new { preRollMs, label }, token);
     public Task<JsonElement> DeleteEventAsync(string eventId, CancellationToken token = default) => CallVendorAsync("DeleteEvent", new { eventId }, token);
     public Task<JsonElement> GetRecordingStatusAsync(CancellationToken token = default) => CallVendorAsync("GetRecordingStatus", new { }, token);

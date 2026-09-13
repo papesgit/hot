@@ -206,6 +206,7 @@ public class AppSettingsData
     public string ObsWebSocketHost { get; set; } = "127.0.0.1";
     public int ObsWebSocketPort { get; set; } = 4455;
     public string ObsWebSocketPassword { get; set; } = string.Empty;
+    public int ObsReplaySmoothRateDurationMs { get; set; } = 500;
     public string HotLinkRole { get; set; } = "Off";
     public int HotLinkPublisherPort { get; set; } = 31341;
     public string HotLinkPublisherIp { get; set; } = "127.0.0.1";

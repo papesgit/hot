@@ -16,20 +16,33 @@ namespace HlaeObsTools.ViewModels.Docks;
 
 public sealed class ReplayDockViewModel : Tool, IDisposable
 {
+    private const int PlaybackSpeedRequestIntervalMs = 50;
     private static readonly Regex RoundLabelPattern = new("^R(?<round>\\d+)_", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex KillLabelPattern = new("_K(?<first>\\d+)(?:-(?<last>\\d+))?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private readonly VmixReplayCoordinator _coordinator;
     private readonly ObsWebSocketClient _obsClient;
+    private readonly ObsWebSocketSettings _obsSettings;
     private readonly ReplaySettings _replaySettings;
     private readonly List<ReplayEventRecord> _selectedEvents = new();
     private ReplayEventRecord? _selectedEvent;
     private string _status = "No replay event selected.";
+    private double _playbackSpeed = 100;
+    private bool _suppressSpeedDebounce;
+    private readonly object _speedUpdateGate = new();
+    private readonly object _speedAnimationGate = new();
+    private CancellationTokenSource? _speedUpdateCts;
+    private CancellationTokenSource? _presetSpeedAnimationCts;
+    private bool _speedUpdateRunning;
+    private int _pendingPlaybackSpeed;
+    private long _playbackSpeedUpdateVersion;
+    private DateTimeOffset _lastPlaybackSpeedRequestAt = DateTimeOffset.MinValue;
     private bool _disposed;
 
-    public ReplayDockViewModel(VmixReplayCoordinator coordinator, ObsWebSocketClient obsClient, ReplaySettings replaySettings)
+    public ReplayDockViewModel(VmixReplayCoordinator coordinator, ObsWebSocketClient obsClient, ObsWebSocketSettings obsSettings, ReplaySettings replaySettings)
     {
         _coordinator = coordinator;
         _obsClient = obsClient;
+        _obsSettings = obsSettings;
         _replaySettings = replaySettings;
         CanClose = true;
         CanFloat = true;
@@ -40,6 +53,9 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
         StopReplayCommand = new AsyncRelay(StopReplayAsync);
         RefreshCommand = new AsyncRelay(RefreshEventsAsync);
         ClearCommand = new AsyncRelay(ClearTrackedEventsAsync);
+        Set100SpeedCommand = new AsyncRelay(() => SetPlaybackSpeedPresetAsync(100));
+        Set75SpeedCommand = new AsyncRelay(() => SetPlaybackSpeedPresetAsync(75));
+        Set50SpeedCommand = new AsyncRelay(() => SetPlaybackSpeedPresetAsync(50));
 
         _coordinator.Registry.Changed += OnRegistryChanged;
         _obsClient.ReplayStateChanged += OnObsReplayStateChanged;
@@ -50,6 +66,24 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
 
     public ObservableCollection<ReplayEventRecord> Events { get; } = new();
     public string EventIdColumnHeader => _replaySettings.IsObsReplaysSelected ? "#" : "ID";
+    public double PlaybackSpeed
+    {
+        get => _playbackSpeed;
+        set
+        {
+            var clamped = Math.Clamp(value, 10, 100);
+            if (Math.Abs(_playbackSpeed - clamped) < 0.01) return;
+            _playbackSpeed = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PlaybackSpeedText));
+            if (!_suppressSpeedDebounce)
+            {
+                CancelPresetSpeedAnimation();
+                SchedulePlaybackSpeedApply();
+            }
+        }
+    }
+    public string PlaybackSpeedText => $"{Math.Round(PlaybackSpeed):0}%";
 
     public ReplayEventRecord? SelectedEvent
     {
@@ -80,6 +114,212 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
     public ICommand StopReplayCommand { get; }
     public ICommand RefreshCommand { get; }
     public ICommand ClearCommand { get; }
+    public ICommand Set100SpeedCommand { get; }
+    public ICommand Set75SpeedCommand { get; }
+    public ICommand Set50SpeedCommand { get; }
+
+    private void SchedulePlaybackSpeedApply()
+    {
+        CancellationTokenSource cts;
+        lock (_speedUpdateGate)
+        {
+            _pendingPlaybackSpeed = (int)Math.Round(PlaybackSpeed);
+            _playbackSpeedUpdateVersion++;
+            if (_speedUpdateRunning)
+                return;
+
+            _speedUpdateRunning = true;
+            cts = _speedUpdateCts = new CancellationTokenSource();
+        }
+
+        _ = Task.Run(() => ApplyQueuedPlaybackSpeedUpdatesAsync(cts), cts.Token);
+    }
+
+    private async Task ApplyQueuedPlaybackSpeedUpdatesAsync(CancellationTokenSource cts)
+    {
+        try
+        {
+            while (!cts.IsCancellationRequested)
+            {
+                int rate;
+                long version;
+                DateTimeOffset lastRequestAt;
+                lock (_speedUpdateGate)
+                {
+                    rate = _pendingPlaybackSpeed;
+                    version = _playbackSpeedUpdateVersion;
+                    lastRequestAt = _lastPlaybackSpeedRequestAt;
+                }
+
+                var remaining = TimeSpan.FromMilliseconds(PlaybackSpeedRequestIntervalMs) - (DateTimeOffset.UtcNow - lastRequestAt);
+                if (remaining > TimeSpan.Zero)
+                    await Task.Delay(remaining, cts.Token).ConfigureAwait(false);
+
+                // Throttle from when the request is sent, not when its response arrives.
+                // Requests stay ordered, but OBS round-trip time does not add another rate-limit interval
+                // of avoidable lag while the slider is moving quickly.
+                lock (_speedUpdateGate)
+                    _lastPlaybackSpeedRequestAt = DateTimeOffset.UtcNow;
+                await ApplyPlaybackSpeedAsync(rate, smooth: false, cts.Token).ConfigureAwait(false);
+
+                lock (_speedUpdateGate)
+                {
+                    if (version != _playbackSpeedUpdateVersion)
+                        continue;
+
+                    if (ReferenceEquals(_speedUpdateCts, cts))
+                    {
+                        _speedUpdateCts = null;
+                        _speedUpdateRunning = false;
+                    }
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested) { }
+        finally
+        {
+            lock (_speedUpdateGate)
+            {
+                if (ReferenceEquals(_speedUpdateCts, cts))
+                {
+                    _speedUpdateCts = null;
+                    _speedUpdateRunning = false;
+                }
+            }
+            cts.Dispose();
+        }
+    }
+
+    private void CancelQueuedPlaybackSpeedUpdates()
+    {
+        CancellationTokenSource? cts;
+        lock (_speedUpdateGate)
+        {
+            cts = _speedUpdateCts;
+            _speedUpdateCts = null;
+            _speedUpdateRunning = false;
+        }
+        cts?.Cancel();
+    }
+
+    private async Task SetPlaybackSpeedPresetAsync(int rate)
+    {
+        CancelQueuedPlaybackSpeedUpdates();
+        CancelPresetSpeedAnimation();
+
+        if (!_replaySettings.IsObsReplaysSelected)
+        {
+            if (!await ApplyPlaybackSpeedAsync(rate, smooth: false, CancellationToken.None).ConfigureAwait(false)) return;
+            SetPlaybackSpeedSilently(rate);
+            return;
+        }
+
+        if (!_obsClient.IsConnected) { Status = "OBS Replays is not connected."; return; }
+
+        var animationCts = BeginPresetSpeedAnimation();
+        try
+        {
+            var result = await _obsClient.SetPlayoutRateSmoothAsync(rate, _obsSettings.SmoothPlayoutRateDurationMs, animationCts.Token).ConfigureAwait(false);
+            if (VendorRequestFailed(result)) { Status = "OBS Replays failed to set playback speed."; return; }
+
+            var startingRate = GetRatePercent(result, "startingRatePercent") ?? (int)Math.Round(PlaybackSpeed);
+            var targetRate = GetRatePercent(result, "ratePercent") ?? rate;
+            Status = $"Replay speed set to {targetRate}%";
+            await AnimatePlaybackSpeedAsync(startingRate, targetRate, _obsSettings.SmoothPlayoutRateDurationMs, animationCts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (animationCts.IsCancellationRequested) { }
+        catch (Exception ex) { Status = $"Failed to set replay speed: {ex.Message}"; }
+        finally
+        {
+            EndPresetSpeedAnimation(animationCts);
+        }
+    }
+
+    private CancellationTokenSource BeginPresetSpeedAnimation()
+    {
+        var cts = new CancellationTokenSource();
+        lock (_speedAnimationGate)
+            _presetSpeedAnimationCts = cts;
+        return cts;
+    }
+
+    private void CancelPresetSpeedAnimation()
+    {
+        CancellationTokenSource? cts;
+        lock (_speedAnimationGate)
+        {
+            cts = _presetSpeedAnimationCts;
+            _presetSpeedAnimationCts = null;
+        }
+        cts?.Cancel();
+    }
+
+    private void EndPresetSpeedAnimation(CancellationTokenSource cts)
+    {
+        lock (_speedAnimationGate)
+        {
+            if (ReferenceEquals(_presetSpeedAnimationCts, cts))
+                _presetSpeedAnimationCts = null;
+        }
+        cts.Dispose();
+    }
+
+    private async Task AnimatePlaybackSpeedAsync(int startingRate, int targetRate, int durationMs, CancellationToken token)
+    {
+        startingRate = Math.Clamp(startingRate, 10, 100);
+        targetRate = Math.Clamp(targetRate, 10, 100);
+        durationMs = Math.Clamp(durationMs, 0, 600000);
+        if (durationMs == 0 || startingRate == targetRate)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => SetPlaybackSpeedSilently(targetRate));
+            return;
+        }
+
+        var startedAt = DateTimeOffset.UtcNow;
+        while (true)
+        {
+            token.ThrowIfCancellationRequested();
+            var progress = Math.Min(1.0, (DateTimeOffset.UtcNow - startedAt).TotalMilliseconds / durationMs);
+            var currentRate = startingRate + ((targetRate - startingRate) * progress);
+            await Dispatcher.UIThread.InvokeAsync(() => SetPlaybackSpeedSilently(currentRate));
+            if (progress >= 1.0)
+                return;
+            await Task.Delay(16, token).ConfigureAwait(false);
+        }
+    }
+
+    private void SetPlaybackSpeedSilently(double rate)
+    {
+        _suppressSpeedDebounce = true;
+        try { PlaybackSpeed = rate; }
+        finally { _suppressSpeedDebounce = false; }
+    }
+
+    private async Task<bool> ApplyPlaybackSpeedAsync(int rate, bool smooth, CancellationToken token)
+    {
+        rate = Math.Clamp(rate, 10, 100);
+        try
+        {
+            if (_replaySettings.IsObsReplaysSelected)
+            {
+                if (!_obsClient.IsConnected) { Status = "OBS Replays is not connected."; return false; }
+                var result = smooth
+                    ? await _obsClient.SetPlayoutRateSmoothAsync(rate, _obsSettings.SmoothPlayoutRateDurationMs, token).ConfigureAwait(false)
+                    : await _obsClient.SetPlayoutRateAsync(rate, token).ConfigureAwait(false);
+                if (VendorRequestFailed(result)) { Status = "OBS Replays failed to set playback speed."; return false; }
+            }
+            else if (_replaySettings.IsVmixSelected)
+            {
+                if (!await _coordinator.SetReplaySpeedAsync(rate, token).ConfigureAwait(false)) { Status = "vMix failed to set replay speed."; return false; }
+            }
+            else return false;
+            Status = $"Replay speed set to {rate}%";
+            return true;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+        catch (Exception ex) { Status = $"Failed to set replay speed: {ex.Message}"; return false; }
+    }
 
     private async Task ClearTrackedEventsAsync()
     {
@@ -332,6 +572,15 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
         return response.TryGetProperty("success", out var success) && success.ValueKind == System.Text.Json.JsonValueKind.False;
     }
 
+    private static int? GetRatePercent(System.Text.Json.JsonElement response, string propertyName)
+    {
+        while (response.TryGetProperty("responseData", out var nested) && nested.ValueKind == System.Text.Json.JsonValueKind.Object)
+            response = nested;
+        return response.TryGetProperty(propertyName, out var value) && value.TryGetInt32(out var rate)
+            ? rate
+            : null;
+    }
+
     private static int GetRoundFromLabel(string label)
     {
         var match = RoundLabelPattern.Match(label ?? string.Empty);
@@ -377,6 +626,8 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
             return;
 
         _disposed = true;
+        CancelQueuedPlaybackSpeedUpdates();
+        CancelPresetSpeedAnimation();
         _coordinator.Registry.Changed -= OnRegistryChanged;
         _obsClient.ReplayStateChanged -= OnObsReplayStateChanged;
         _obsClient.StateChanged -= OnObsClientStateChanged;
