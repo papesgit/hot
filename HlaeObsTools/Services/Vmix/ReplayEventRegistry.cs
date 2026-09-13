@@ -75,6 +75,16 @@ public sealed class ReplayEventRegistry
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    public void RemoveByEventIds(IEnumerable<string> eventIds)
+    {
+        var ids = eventIds.Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet(StringComparer.Ordinal);
+        if (ids.Count == 0) return;
+        var changed = false;
+        lock (_sync)
+            changed = _records.RemoveAll(record => record.VmixEventId != null && ids.Contains(record.VmixEventId)) > 0;
+        if (changed) Changed?.Invoke(this, EventArgs.Empty);
+    }
+
     public void Clear()
     {
         lock (_sync)

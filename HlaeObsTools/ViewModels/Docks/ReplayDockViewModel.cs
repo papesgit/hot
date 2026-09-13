@@ -39,7 +39,7 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
         PlayLastRoundCommand = new AsyncRelay(PlayLastRoundAsync);
         StopReplayCommand = new AsyncRelay(StopReplayAsync);
         RefreshCommand = new AsyncRelay(RefreshEventsAsync);
-        ClearCommand = new Relay(_ => ClearTrackedEvents());
+        ClearCommand = new AsyncRelay(ClearTrackedEventsAsync);
 
         _coordinator.Registry.Changed += OnRegistryChanged;
         _obsClient.ReplayStateChanged += OnObsReplayStateChanged;
@@ -81,12 +81,11 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
     public ICommand RefreshCommand { get; }
     public ICommand ClearCommand { get; }
 
-    private void ClearTrackedEvents()
+    private async Task ClearTrackedEventsAsync()
     {
         if (_replaySettings.IsObsReplaysSelected)
         {
-            _ = RefreshObsEventsAsync();
-            Status = "OBS Replays owns this event library; refreshed its authoritative list.";
+            await ClearObsEventsAsync();
             return;
         }
         _selectedEvents.Clear();
@@ -229,7 +228,10 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
 
     private void OnRegistryChanged(object? sender, EventArgs e)
     {
-        Dispatcher.UIThread.Post(RefreshEvents, DispatcherPriority.Background);
+        if (_replaySettings.IsObsReplaysSelected)
+            Dispatcher.UIThread.Post(() => _ = RefreshObsEventsAsync(), DispatcherPriority.Background);
+        else
+            Dispatcher.UIThread.Post(RefreshEvents, DispatcherPriority.Background);
     }
 
     private async Task RefreshEventsAsync()
@@ -284,6 +286,50 @@ public sealed class ReplayDockViewModel : Tool, IDisposable
             await Dispatcher.UIThread.InvokeAsync(() => { Events.Clear(); foreach (var record in records) Events.Add(record); Status = $"Loaded {records.Count} OBS replay event{(records.Count == 1 ? string.Empty : "s")}."; });
         }
         catch (Exception ex) { Status = $"Failed to load OBS replay events: {ex.Message}"; }
+    }
+
+    private async Task ClearObsEventsAsync()
+    {
+        if (!_obsClient.IsConnected) { Status = "OBS Replays is not connected."; return; }
+        _selectedEvents.Clear();
+        SelectedEvent = null;
+        try
+        {
+            var response = await _obsClient.ListEventsAsync(CancellationToken.None).ConfigureAwait(false);
+            if (!response.TryGetProperty("events", out var items) || items.ValueKind != System.Text.Json.JsonValueKind.Array)
+            {
+                Status = "Failed to load OBS replay events for deletion.";
+                return;
+            }
+            var ids = items.EnumerateArray()
+                .Select(item => item.TryGetProperty("id", out var id) ? id.GetString() : null)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Select(id => id!)
+                .ToArray();
+            var deleted = new List<string>();
+            foreach (var id in ids)
+            {
+                var result = await _obsClient.DeleteEventAsync(id, CancellationToken.None).ConfigureAwait(false);
+                if (VendorRequestFailed(result))
+                {
+                    Status = $"Deleted {deleted.Count} of {ids.Length} OBS replay events; deletion failed.";
+                    await RefreshObsEventsAsync().ConfigureAwait(false);
+                    return;
+                }
+                deleted.Add(id);
+            }
+            _coordinator.Registry.RemoveByEventIds(deleted);
+            await RefreshObsEventsAsync().ConfigureAwait(false);
+            Status = ids.Length == 0 ? "No OBS replay events to delete." : $"Deleted {ids.Length} OBS replay event{(ids.Length == 1 ? string.Empty : "s")}.";
+        }
+        catch (Exception ex) { Status = $"Failed to delete OBS replay events: {ex.Message}"; }
+    }
+
+    private static bool VendorRequestFailed(System.Text.Json.JsonElement response)
+    {
+        while (response.TryGetProperty("responseData", out var nested) && nested.ValueKind == System.Text.Json.JsonValueKind.Object)
+            response = nested;
+        return response.TryGetProperty("success", out var success) && success.ValueKind == System.Text.Json.JsonValueKind.False;
     }
 
     private static int GetRoundFromLabel(string label)
