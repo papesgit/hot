@@ -267,14 +267,24 @@ public sealed class ReplayDirectorClient : IDisposable
         var kill = plan.Kill;
         var grenade = GrenadeWeapons.IsGrenade(kill.Weapon);
         var score = grenade || !kill.MainCaught ? 1000 : 0;
-        if (plan.TargetSlot == _currentTargetSlot) score += 200;
-        if (kill.Headshot) score += 25;
-        if (kill.Wallbang || kill.Noscope || kill.ThroughSmoke) score += 50;
-        if (kill.Blind || kill.InAir) score += 25;
+        if (plan.TargetSlot == _currentTargetSlot) score += 10;
+        score += Math.Max(0, kill.RoundKillNumber - 1) * 75;
+        if (kill.Headshot) score += 5;
+        
+        var specialModifiers = 0;
+
+        if (kill.Wallbang)      { score += 20; specialModifiers++; }
+        if (kill.ThroughSmoke)  { score += 20; specialModifiers++; }
+        if (kill.Blind)         { score += 30; specialModifiers++; }
+        if (kill.Noscope)       { score += 100; specialModifiers++; }
+        if (kill.InAir)         { score += 75; specialModifiers++; }
+
+        score += Math.Max(0, specialModifiers - 1) * 25;
+
         score += _pending.Count(other => other != kill && other.GameTime.HasValue && kill.GameTime.HasValue &&
             (grenade ? kill.GrenadeThrow != null && other.GrenadeThrow?.Id == kill.GrenadeThrow.Id :
                 !GrenadeWeapons.IsGrenade(other.Weapon) && other.Attacker.ObserverSlot == kill.Attacker.ObserverSlot) &&
-            Math.Abs(other.GameTime.Value - kill.GameTime.Value) <= _vmixReplaySettings.ExtendWindowSeconds) * 100;
+            Math.Abs(other.GameTime.Value - kill.GameTime.Value) <= _vmixReplaySettings.ExtendWindowSeconds) * 50;
         return score;
     }
 

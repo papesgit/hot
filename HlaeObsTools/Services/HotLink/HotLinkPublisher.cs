@@ -161,6 +161,7 @@ public sealed class HotLinkPublisher : IDisposable
             {
                 Id = kill.Id,
                 GameTime = kill.GameTime,
+                RoundKillNumber = kill.RoundKillNumber,
                 Attacker = new HotLinkKillParticipant { ObserverSlot = kill.AttackerSlot, SteamId = attackerState?.SteamId ?? string.Empty, Position = attackerState?.Position ?? default },
                 Victim = new HotLinkKillParticipant { ObserverSlot = kill.Victim?.ObserverSlot ?? -1, SteamId = victimState?.SteamId ?? string.Empty, Position = victimState?.Position ?? default },
                 GrenadeThrow = _grenadeHistory.AssociateKill(kill, attackerState?.SteamId ?? string.Empty),

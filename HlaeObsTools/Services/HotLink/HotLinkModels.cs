@@ -14,6 +14,7 @@ public sealed class HotLinkKillEvent
 {
     public long Id { get; init; }
     public double? GameTime { get; init; }
+    public int RoundKillNumber { get; init; }
     public HotLinkKillParticipant Attacker { get; init; } = new();
     public HotLinkKillParticipant Victim { get; init; } = new();
     public string Weapon { get; init; } = string.Empty;
