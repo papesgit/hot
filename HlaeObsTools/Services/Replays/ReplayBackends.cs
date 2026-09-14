@@ -59,17 +59,23 @@ public sealed class VmixReplayBackend : IReplayBackend
     {
         var result = await _coordinator.RunAsync(async locked =>
         {
-        if (!await SelectChannelAsync(request.Options.Channel, locked).ConfigureAwait(false) ||
-            !await ExecuteAsync(Mark, Math.Ceiling(request.DurationMs / 1000d).ToString(CultureInfo.InvariantCulture), null, locked).ConfigureAwait(false) ||
-            !await ExecuteAsync(SelectLast, null, null, locked).ConfigureAwait(false) ||
-            !await ApplyEventDetailsAsync(request.Label, request.Options, locked).ConfigureAwait(false))
-            return new VmixReplayCommandResult(false, null);
-        var record = await _coordinator.RegisterCreatedEventAsync(new ReplayEventDraft
-        {
-            Source = request.Options.Source, Label = request.Label, Channel = request.Options.Channel, Camera = request.Options.Camera,
-            Round = request.Round, KillCount = request.KillCount, Status = "Marked"
-        }, locked).ConfigureAwait(false);
-        return new VmixReplayCommandResult(true, record.LocalId.ToString(CultureInfo.InvariantCulture));
+            if (!await SelectChannelAsync(request.Options.Channel, locked).ConfigureAwait(false) ||
+                !await ExecuteAsync(Mark, Math.Ceiling(request.DurationMs / 1000d).ToString(CultureInfo.InvariantCulture), null, locked).ConfigureAwait(false))
+                return new VmixReplayCommandResult(false, null);
+
+            // Register immediately: the mark already created a physical vMix event.
+            var record = await _coordinator.RegisterCreatedEventAsync(new ReplayEventDraft
+            {
+                Source = request.Options.Source, Label = request.Label, Channel = request.Options.Channel, Camera = request.Options.Camera,
+                Round = request.Round, KillCount = request.KillCount, Status = "Marked"
+            }, CancellationToken.None).ConfigureAwait(false);
+            var detailsApplied = await ExecuteAsync(SelectLast, null, null, locked).ConfigureAwait(false) &&
+                await ApplyEventDetailsAsync(request.Label, request.Options, locked).ConfigureAwait(false);
+            if (!detailsApplied)
+            {
+                _coordinator.Registry.Update(record.LocalId, item => item.Status = "Created; vMix label pending");
+            }
+            return new VmixReplayCommandResult(true, record.LocalId.ToString(CultureInfo.InvariantCulture));
         }, token).ConfigureAwait(false);
         return result.Success && !string.IsNullOrWhiteSpace(result.Label) ? new ReplayEventHandle(result.Label) : null;
     }
@@ -78,15 +84,22 @@ public sealed class VmixReplayBackend : IReplayBackend
     {
         var result = await _coordinator.RunAsync(async locked =>
         {
-        var frames = Math.Max(1, (int)Math.Round(request.ExtensionMs / 1000d * request.Options.FramesPerSecond, MidpointRounding.AwayFromZero));
-        if (!await SelectChannelAsync(request.Options.Channel, locked).ConfigureAwait(false) ||
-            !await ExecuteAsync(SelectLast, null, null, locked).ConfigureAwait(false) ||
-            !await ExecuteAsync(MoveOut, frames.ToString(CultureInfo.InvariantCulture), request.Options.Channel, locked).ConfigureAwait(false) ||
-            !await ApplyEventDetailsAsync(request.Label, request.Options, locked).ConfigureAwait(false))
-            return new VmixReplayCommandResult(false, null);
-        if (long.TryParse(handle.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var localId))
-            _coordinator.Registry.Update(localId, record => { record.Label = request.Label; record.KillCount = request.KillCount; record.Status = "Updated"; });
-        return new VmixReplayCommandResult(true, request.Label);
+            var frames = Math.Max(1, (int)Math.Round(request.ExtensionMs / 1000d * request.Options.FramesPerSecond, MidpointRounding.AwayFromZero));
+            if (!await SelectChannelAsync(request.Options.Channel, locked).ConfigureAwait(false) ||
+                !await ExecuteAsync(SelectLast, null, null, locked).ConfigureAwait(false) ||
+                !await ExecuteAsync(MoveOut, frames.ToString(CultureInfo.InvariantCulture), request.Options.Channel, locked).ConfigureAwait(false))
+                return new VmixReplayCommandResult(false, null);
+
+            // The out point has moved even if labelling fails; do not extend it again.
+            var detailsApplied = await ApplyEventDetailsAsync(request.Label, request.Options, locked).ConfigureAwait(false);
+            if (long.TryParse(handle.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var localId))
+                _coordinator.Registry.Update(localId, record =>
+                {
+                    record.Label = request.Label;
+                    record.KillCount = request.KillCount;
+                    record.Status = detailsApplied ? "Updated" : "Updated; vMix label pending";
+                });
+            return new VmixReplayCommandResult(true, request.Label);
         }, token).ConfigureAwait(false);
         return result.Success;
     }

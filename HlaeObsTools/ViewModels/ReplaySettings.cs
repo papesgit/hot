@@ -28,8 +28,22 @@ public sealed class ReplaySettings : ViewModelBase
     public bool IsObsReplaysSelected => string.Equals(Backend, "OBS Replays", StringComparison.Ordinal);
     public bool IsVmixSelected => string.Equals(Backend, "vMix Instant Replay", StringComparison.Ordinal);
     public double PreSeconds { get => _preSeconds; set => SetProperty(ref _preSeconds, Math.Max(0, value)); }
-    public double PostSeconds { get => _postSeconds; set => SetProperty(ref _postSeconds, Math.Max(0, value)); }
-    public double ExtendWindowSeconds { get => _extendWindowSeconds; set => SetProperty(ref _extendWindowSeconds, Math.Max(0, value)); }
+    public double PostSeconds
+    {
+        get => _postSeconds;
+        set
+        {
+            if (!SetProperty(ref _postSeconds, Math.Max(0, value))) return;
+            if (_extendWindowSeconds < _postSeconds)
+                SetProperty(ref _extendWindowSeconds, _postSeconds, nameof(ExtendWindowSeconds));
+        }
+    }
+
+    public double ExtendWindowSeconds
+    {
+        get => _extendWindowSeconds;
+        set => SetProperty(ref _extendWindowSeconds, Math.Max(_postSeconds, Math.Max(0, value)));
+    }
     public double FramesPerSecond { get => _framesPerSecond; set => SetProperty(ref _framesPerSecond, Math.Clamp(value, 1.0, 240.0)); }
     public int Camera { get => _camera; set => SetProperty(ref _camera, Math.Clamp(value, 1, 8)); }
     public string Channel { get => _channel; set => SetProperty(ref _channel, (value ?? string.Empty).Trim()); }

@@ -19,6 +19,8 @@ public sealed class ReplayMarkerController : IDisposable
     private ReplayEventHandle? _activeEvent;
     private DateTimeOffset? _appliedThrough;
     private CancellationTokenSource? _pending;
+    private readonly SemaphoreSlim _applyLock = new(1, 1);
+    private long _generation;
     private bool _disposed;
 
     public ReplayMarkerController(IReplayBackend backend, Func<ReplayMarkerSettings> settings) { _backend = backend; _settings = settings; }
@@ -29,78 +31,116 @@ public sealed class ReplayMarkerController : IDisposable
     {
         lock (_sync)
         {
-            var settings = _settings();
+            var settings = NormalizeSettings(_settings());
             var newGroup = _group.Add(round, playerName, roundKillNumber, DateTimeOffset.UtcNow, settings.ExtendWindowSeconds);
-            if (newGroup) { _pending?.Cancel(); _activeEvent = null; _appliedThrough = null; }
-            ScheduleLocked(settings);
+            if (newGroup)
+            {
+                _generation++;
+                _pending?.Cancel();
+                _activeEvent = null;
+                _appliedThrough = null;
+            }
+            ScheduleLocked(settings, _generation);
         }
     }
 
     public async Task<bool> RecordWindowAsync(IReadOnlyList<HotLinkPublisherKillEvent> kills, double seconds, CancellationToken token)
     {
         if (kills.Count == 0 || !_backend.IsAvailable) return false;
-        var settings = _settings();
+        token.ThrowIfCancellationRequested();
+        var settings = NormalizeSettings(_settings());
         var first = kills[0];
         var round = first.LabelRoundNumber > 0 ? first.LabelRoundNumber : first.RoundNumber;
         var numbers = kills.Select(k => k.RoundKillNumber).Where(n => n > 0).Order().ToArray();
         var range = numbers.Length <= 1 ? numbers.FirstOrDefault(1).ToString() : $"{numbers[0]}-{numbers[^1]}";
         var label = $"R{round}_{ReplayMarkerPrimitives.Sanitize(first.AttackerName)}_K{range}_Grenade";
-        var created = await _backend.CreateAsync(new ReplayCreateRequest(Math.Max(1, (int)Math.Ceiling(seconds * 1000)), label, round, kills.Count, settings.BackendOptions), token).ConfigureAwait(false);
+        var created = await _backend.CreateAsync(new ReplayCreateRequest(Math.Max(1, (int)Math.Ceiling(seconds * 1000)), label, round, kills.Count, settings.BackendOptions), CancellationToken.None).ConfigureAwait(false);
         StatusChanged?.Invoke(this, created.HasValue ? $"Delayed replay marked: {label}" : "Delayed replay marker failed.");
         return created.HasValue;
     }
 
-    private void ScheduleLocked(ReplayMarkerSettings settings)
+    private void ScheduleLocked(ReplayMarkerSettings settings, long generation)
     {
         _pending?.Cancel();
         var cts = _pending = new CancellationTokenSource();
         var due = (_group.LastKillUtc ?? DateTimeOffset.UtcNow).AddSeconds(Math.Max(0, settings.PostSeconds)) - DateTimeOffset.UtcNow;
         _ = Task.Run(async () =>
         {
-            try { await Task.Delay(due > TimeSpan.Zero ? due : TimeSpan.Zero, cts.Token).ConfigureAwait(false); await ApplyAsync(cts.Token).ConfigureAwait(false); }
+            try
+            {
+                await Task.Delay(due > TimeSpan.Zero ? due : TimeSpan.Zero, cts.Token).ConfigureAwait(false);
+                if (!cts.IsCancellationRequested)
+                    await ApplyAsync(generation).ConfigureAwait(false);
+            }
             catch (OperationCanceledException) { }
             catch (Exception ex) { Console.WriteLine($"[REPLAYS] Replay marker failed: {ex}"); StatusChanged?.Invoke(this, $"Replay marker failed: {ex.Message}"); }
         }, cts.Token);
     }
 
-    private async Task ApplyAsync(CancellationToken token)
+    private async Task ApplyAsync(long generation)
     {
         ReplayKillGroupSnapshot group; ReplayEventHandle? active; DateTimeOffset? applied;
-        var settings = _settings();
-        lock (_sync) { group = _group.Snapshot(); active = _activeEvent; applied = _appliedThrough; }
-        if (group.FirstKillUtc == null || group.LastKillUtc == null) return;
-        if (!_backend.IsAvailable)
+        await _applyLock.WaitAsync().ConfigureAwait(false);
+        try
         {
-            DiscardFailedGroup(group);
-            StatusChanged?.Invoke(this, "Replay marker failed: replay backend is unavailable.");
-            return;
-        }
-        if (!active.HasValue)
-        {
-            var duration = settings.PreSeconds + settings.PostSeconds + (group.LastKillUtc.Value - group.FirstKillUtc.Value).TotalSeconds;
-            var created = await _backend.CreateAsync(new ReplayCreateRequest(Math.Max(1, (int)Math.Ceiling(duration * 1000)), group.Label, group.Round, group.KillCount, settings.BackendOptions), token).ConfigureAwait(false);
-            if (created.HasValue)
+            var settings = NormalizeSettings(_settings());
+            lock (_sync)
             {
-                lock (_sync) { _activeEvent = created; _appliedThrough = group.LastKillUtc; }
-                StatusChanged?.Invoke(this, $"Replay marked: {group.Label}");
+                if (generation != _generation)
+                    return;
+                group = _group.Snapshot();
+                active = _activeEvent;
+                applied = _appliedThrough;
             }
-            else StatusChanged?.Invoke(this, "Replay marker failed.");
-            if (!created.HasValue)
+            if (group.FirstKillUtc == null || group.LastKillUtc == null) return;
+            if (!_backend.IsAvailable)
+            {
                 DiscardFailedGroup(group);
-            return;
+                StatusChanged?.Invoke(this, "Replay marker failed: replay backend is unavailable.");
+                return;
+            }
+            if (!active.HasValue)
+            {
+                var duration = settings.PreSeconds + settings.PostSeconds + (group.LastKillUtc.Value - group.FirstKillUtc.Value).TotalSeconds;
+                var created = await _backend.CreateAsync(new ReplayCreateRequest(Math.Max(1, (int)Math.Ceiling(duration * 1000)), group.Label, group.Round, group.KillCount, settings.BackendOptions), CancellationToken.None).ConfigureAwait(false);
+                if (created.HasValue)
+                {
+                    lock (_sync)
+                    {
+                        if (generation == _generation)
+                        {
+                            _activeEvent = created;
+                            _appliedThrough = group.LastKillUtc;
+                        }
+                    }
+                    StatusChanged?.Invoke(this, $"Replay marked: {group.Label}");
+                }
+                else StatusChanged?.Invoke(this, "Replay marker failed.");
+                if (!created.HasValue)
+                    DiscardFailedGroup(group);
+                return;
+            }
+            var extensionMs = applied.HasValue ? Math.Max(0, (int)Math.Round((group.LastKillUtc.Value - applied.Value).TotalMilliseconds)) : 0;
+            if (extensionMs <= 0) return;
+            var updated = await _backend.ExtendAsync(active.Value, new ReplayExtendRequest(extensionMs, group.Label, group.KillCount, settings.BackendOptions), CancellationToken.None).ConfigureAwait(false);
+            if (updated)
+            {
+                lock (_sync)
+                {
+                    if (generation == _generation)
+                        _appliedThrough = group.LastKillUtc;
+                }
+                StatusChanged?.Invoke(this, $"Replay extended: {group.Label}");
+            }
+            else
+            {
+                DiscardFailedGroup(group);
+                StatusChanged?.Invoke(this, "Replay extension failed.");
+            }
         }
-        var extensionMs = applied.HasValue ? Math.Max(0, (int)Math.Round((group.LastKillUtc.Value - applied.Value).TotalMilliseconds)) : 0;
-        if (extensionMs <= 0) return;
-        var updated = await _backend.ExtendAsync(active.Value, new ReplayExtendRequest(extensionMs, group.Label, group.KillCount, settings.BackendOptions), token).ConfigureAwait(false);
-        if (updated)
+        finally
         {
-            lock (_sync) _appliedThrough = group.LastKillUtc;
-            StatusChanged?.Invoke(this, $"Replay extended: {group.Label}");
-        }
-        else
-        {
-            DiscardFailedGroup(group);
-            StatusChanged?.Invoke(this, "Replay extension failed.");
+            _applyLock.Release();
         }
     }
 
@@ -115,6 +155,17 @@ public sealed class ReplayMarkerController : IDisposable
             _activeEvent = null;
             _appliedThrough = null;
         }
+    }
+
+    private static ReplayMarkerSettings NormalizeSettings(ReplayMarkerSettings settings)
+    {
+        var post = Math.Max(0, settings.PostSeconds);
+        return settings with
+        {
+            PreSeconds = Math.Max(0, settings.PreSeconds),
+            PostSeconds = post,
+            ExtendWindowSeconds = Math.Max(post, Math.Max(0, settings.ExtendWindowSeconds))
+        };
     }
 
     public void Dispose() { if (_disposed) return; _disposed = true; _pending?.Cancel(); }

@@ -1709,7 +1709,7 @@
                             <WrapPanel Orientation="Horizontal" ItemSpacing="12" LineSpacing="8">
                                 <StackPanel Spacing="4"><TextBlock Text="Pre-roll (s)" Foreground="#AAAAAA" /><TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplaySettings.PreSeconds, Mode=TwoWay}" /></StackPanel>
                                 <StackPanel Spacing="4"><TextBlock Text="Post-roll (s)" Foreground="#AAAAAA" /><TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplaySettings.PostSeconds, Mode=TwoWay}" /></StackPanel>
-                                <StackPanel Spacing="4" ToolTip.Tip="Time between kills to group them into one replay"><TextBlock Text="Extend window (s)" Foreground="#AAAAAA" /><TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" /></StackPanel>
+                                <StackPanel Spacing="4" ToolTip.Tip="Time between kills to group them into one replay. Must be at least the post-roll duration."><TextBlock Text="Extend window (s)" Foreground="#AAAAAA" /><TextBox MinWidth="50" MaxWidth="80" Text="{Binding ReplaySettings.ExtendWindowSeconds, Mode=TwoWay}" /></StackPanel>
                             </WrapPanel>
                             <ToggleSwitch IsChecked="{Binding ReplaySettings.AutoMarkEnabled, Mode=TwoWay}" Content="Create replays for locally caught kills" Foreground="#E6E6E6" />
                             <StackPanel IsVisible="{Binding ReplaySettings.IsVmixSelected}" Spacing="8">
