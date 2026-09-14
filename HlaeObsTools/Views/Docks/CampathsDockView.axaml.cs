@@ -26,6 +26,8 @@ public partial class CampathsDockView : UserControl
         InitializeComponent();
         _groupScrollViewer = this.FindControl<ScrollViewer>("GroupScrollViewer");
         _campathScrollViewer = this.FindControl<ScrollViewer>("CampathScrollViewer");
+        _campathSurface = this.FindControl<Control>("CampathSurface");
+        _campathMarquee = this.FindControl<Border>("CampathMarquee");
         AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel, true);
         InitializePopulateFlyout();
         DataContextChanged += OnDataContextChanged;
@@ -43,6 +45,9 @@ public partial class CampathsDockView : UserControl
     private bool _campathDragInitiated;
     private IPointer? _campathPointer;
     private PointerPressedEventArgs? _campathPressEvent;
+    private Point? _marqueeStartPoint;
+    private KeyModifiers _marqueeModifiers;
+    private IPointer? _marqueePointer;
     private CampathGroupViewModel? _groupPressed;
     private Point? _groupPressPoint;
     private bool _groupDragInitiated;
@@ -53,6 +58,8 @@ public partial class CampathsDockView : UserControl
     private TaskCompletionSource<CampathPopulateSource?>? _populateSourceTcs;
     private readonly ScrollViewer? _groupScrollViewer;
     private readonly ScrollViewer? _campathScrollViewer;
+    private readonly Control? _campathSurface;
+    private readonly Border? _campathMarquee;
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
@@ -245,6 +252,15 @@ public partial class CampathsDockView : UserControl
 
     private void OnCampathPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed &&
+            sender is Control rightClickedControl &&
+            rightClickedControl.DataContext is CampathItemViewModel rightClickedCampath &&
+            !rightClickedCampath.IsSelected)
+        {
+            _viewModel?.SelectCampaths(new[] { rightClickedCampath }, addToSelection: false);
+            return;
+        }
+
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed &&
             sender is Control control &&
             control.DataContext is CampathItemViewModel campathVm)
@@ -282,7 +298,10 @@ public partial class CampathsDockView : UserControl
             _campathDragInitiated = true;
             var data = new DataTransfer();
             var item = new DataTransferItem();
-            item.Set(CampathDragFormat, campathVm.Id.ToString("D"));
+            var draggedCampaths = campathVm.IsSelected && _viewModel != null
+                ? _viewModel.SelectedCampaths
+                : new[] { campathVm };
+            item.Set(CampathDragFormat, string.Join(";", draggedCampaths.Select(campath => campath.Id.ToString("D"))));
             data.Add(item);
             if (_campathPressEvent != null)
             {
@@ -308,6 +327,100 @@ public partial class CampathsDockView : UserControl
     private void OnCampathPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
         ResetCampathPointerState(sender as Control);
+    }
+
+    private void OnCampathSurfacePointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(_campathSurface).Properties.IsLeftButtonPressed && sender is Control surface)
+        {
+            _marqueeStartPoint = e.GetPosition(surface);
+            _marqueeModifiers = e.KeyModifiers;
+            _marqueePointer = e.Pointer;
+            _marqueePointer.Capture(surface);
+            UpdateMarquee(_marqueeStartPoint.Value, _marqueeStartPoint.Value);
+            e.Handled = true;
+        }
+    }
+
+    private void OnCampathSurfacePointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_marqueeStartPoint.HasValue || sender is not Control surface)
+            return;
+
+        if (!e.GetCurrentPoint(surface).Properties.IsLeftButtonPressed)
+        {
+            ResetMarquee();
+            return;
+        }
+
+        UpdateMarquee(_marqueeStartPoint.Value, e.GetPosition(surface));
+        e.Handled = true;
+    }
+
+    private void OnCampathSurfacePointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton != MouseButton.Left || !_marqueeStartPoint.HasValue || sender is not Control surface)
+            return;
+
+        var selection = GetCampathsWithin(CreateMarqueeRect(_marqueeStartPoint.Value, e.GetPosition(surface)));
+        if (DataContext is CampathsDockViewModel vm)
+        {
+            var additive = _marqueeModifiers.HasFlag(KeyModifiers.Control) || _marqueeModifiers.HasFlag(KeyModifiers.Shift);
+            vm.SelectCampaths(selection, additive);
+        }
+
+        ResetMarquee();
+        e.Handled = true;
+    }
+
+    private void OnCampathSurfacePointerCaptureLost(object? sender, PointerCaptureLostEventArgs e) => ResetMarquee();
+
+    private IReadOnlyList<CampathItemViewModel> GetCampathsWithin(Rect marquee)
+    {
+        if (_campathSurface == null || DataContext is not CampathsDockViewModel vm || vm.SelectedProfile == null)
+            return Array.Empty<CampathItemViewModel>();
+
+        var profile = vm.SelectedProfile;
+
+        return _campathSurface.GetVisualDescendants()
+            .OfType<Control>()
+            .Where(control => control.DataContext is CampathItemViewModel)
+            .Where(control => control.TranslatePoint(default, _campathSurface) is Point point && marquee.Intersects(new Rect(point, control.Bounds.Size)))
+            .Select(control => (CampathItemViewModel)control.DataContext!)
+            .Distinct()
+            .Where(profile.Campaths.Contains)
+            .ToList();
+    }
+
+    private void UpdateMarquee(Point start, Point end)
+    {
+        if (_campathMarquee == null)
+            return;
+
+        var rectangle = CreateMarqueeRect(start, end);
+        Canvas.SetLeft(_campathMarquee, rectangle.X);
+        Canvas.SetTop(_campathMarquee, rectangle.Y);
+        _campathMarquee.Width = rectangle.Width;
+        _campathMarquee.Height = rectangle.Height;
+        _campathMarquee.IsVisible = rectangle.Width > 0 || rectangle.Height > 0;
+    }
+
+    private static Rect CreateMarqueeRect(Point start, Point end) => new(
+        Math.Min(start.X, end.X),
+        Math.Min(start.Y, end.Y),
+        Math.Abs(end.X - start.X),
+        Math.Abs(end.Y - start.Y));
+
+    private void ResetMarquee()
+    {
+        _marqueeStartPoint = null;
+        if (_campathMarquee != null)
+            _campathMarquee.IsVisible = false;
+        if (_marqueePointer != null)
+        {
+            _marqueePointer.Capture(null);
+            _marqueePointer = null;
+        }
     }
 
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
@@ -392,7 +505,7 @@ public partial class CampathsDockView : UserControl
             return;
 
         TryResolveGroup(e.DataTransfer, vm, out var draggedGroup);
-        TryResolveCampath(e.DataTransfer, vm, out var draggedCampath);
+        var draggedCampaths = ResolveCampaths(e.DataTransfer, vm);
         var group = (sender as Control)?.DataContext as CampathGroupViewModel;
         if (group == null)
             return;
@@ -405,9 +518,9 @@ public partial class CampathsDockView : UserControl
                 e.Handled = true;
             }
         }
-        else if (draggedCampath != null)
+        else if (draggedCampaths.Count > 0)
         {
-            vm.AddCampathToGroup(draggedCampath, group);
+            vm.AddCampathsToGroup(draggedCampaths, group);
             e.Handled = true;
         }
     }
@@ -465,12 +578,21 @@ public partial class CampathsDockView : UserControl
     {
         campath = null;
 
-        var idText = dataTransfer.TryGetValue(CampathDragFormat);
-        if (string.IsNullOrWhiteSpace(idText) || !Guid.TryParse(idText, out var id))
-            return false;
-
-        campath = vm.SelectedProfile?.Campaths.FirstOrDefault(c => c.Id == id);
+        campath = ResolveCampaths(dataTransfer, vm).FirstOrDefault();
         return campath != null;
+    }
+
+    private static IReadOnlyList<CampathItemViewModel> ResolveCampaths(IDataTransfer dataTransfer, CampathsDockViewModel vm)
+    {
+        var idText = dataTransfer.TryGetValue(CampathDragFormat);
+        if (string.IsNullOrWhiteSpace(idText) || vm.SelectedProfile == null)
+            return Array.Empty<CampathItemViewModel>();
+
+        var ids = idText.Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Select(value => Guid.TryParse(value, out var id) ? id : (Guid?)null)
+            .OfType<Guid>()
+            .ToHashSet();
+        return vm.SelectedProfile.Campaths.Where(campath => ids.Contains(campath.Id)).ToList();
     }
 
     private static bool TryResolveGroup(IDataTransfer dataTransfer, CampathsDockViewModel vm, out CampathGroupViewModel? group)

@@ -45,6 +45,7 @@ public class CampathsDockViewModel : Tool
     private readonly DelegateCommand _populateFromFolderCommand;
     private readonly DelegateCommand _addGroupCommand;
     private readonly DelegateCommand _removeCampathCommand;
+    private readonly DelegateCommand _removeSelectedCampathsCommand;
     private readonly DelegateCommand _renameCampathCommand;
     private readonly DelegateCommand _browseCampathCommand;
     private readonly DelegateCommand _browseImageCommand;
@@ -89,6 +90,7 @@ public class CampathsDockViewModel : Tool
         _populateFromFolderCommand = new DelegateCommand(async _ => await PopulateFromFolderAsync(), _ => SelectedProfile != null);
         _addGroupCommand = new DelegateCommand(async _ => await AddGroupAsync(), _ => SelectedProfile != null);
         _removeCampathCommand = new DelegateCommand(param => { RemoveCampath(param as CampathItemViewModel); return Task.CompletedTask; }, _ => SelectedProfile != null);
+        _removeSelectedCampathsCommand = new DelegateCommand(_ => { RemoveSelectedCampaths(); return Task.CompletedTask; }, _ => SelectedProfile != null && HasMultipleCampathSelection);
         _renameCampathCommand = new DelegateCommand(async param => await RenameCampathAsync(param as CampathItemViewModel), _ => SelectedProfile != null);
         _browseCampathCommand = new DelegateCommand(async param => await BrowseCampathAsync(param as CampathItemViewModel), _ => SelectedProfile != null);
         _browseImageCommand = new DelegateCommand(async param => await BrowseImageAsync(param as CampathItemViewModel), _ => SelectedProfile != null);
@@ -114,12 +116,19 @@ public class CampathsDockViewModel : Tool
         get => _selectedProfile;
         set
         {
+            if (!ReferenceEquals(_selectedProfile, value) && _selectedProfile != null)
+            {
+                foreach (var campath in _selectedProfile.Campaths)
+                    campath.IsSelected = false;
+            }
+
             SetProperty(ref _selectedProfile, value);
 
             _removeProfileCommand.RaiseCanExecuteChanged();
             _addCampathCommand.RaiseCanExecuteChanged();
             _populateFromFolderCommand.RaiseCanExecuteChanged();
             _addGroupCommand.RaiseCanExecuteChanged();
+            ClearCampathSelection();
             StartSelectedProfileThumbnailLoading();
             RefreshHotkeyDisplays();
         }
@@ -178,6 +187,7 @@ public class CampathsDockViewModel : Tool
     public ICommand PopulateFromFolderCommand => _populateFromFolderCommand;
     public ICommand AddGroupCommand => _addGroupCommand;
     public ICommand RemoveCampathCommand => _removeCampathCommand;
+    public ICommand RemoveSelectedCampathsCommand => _removeSelectedCampathsCommand;
     public ICommand RenameCampathCommand => _renameCampathCommand;
     public ICommand BrowseCampathCommand => _browseCampathCommand;
     public ICommand BrowseImageCommand => _browseImageCommand;
@@ -188,6 +198,52 @@ public class CampathsDockViewModel : Tool
     public ICommand ViewGroupCommand => _viewGroupCommand;
     public ICommand PlayCampathCommand => _playCampathCommand;
     public ICommand PlayCampathGroupCommand => _playCampathGroupCommand;
+
+    public bool HasMultipleCampathSelection => SelectedProfile?.Campaths.Count(item => item.IsSelected) > 1;
+    public bool HasAtMostOneCampathSelection => !HasMultipleCampathSelection;
+
+    public IReadOnlyList<CampathItemViewModel> SelectedCampaths => SelectedProfile == null
+        ? Array.Empty<CampathItemViewModel>()
+        : SelectedProfile.Campaths.Where(item => item.IsSelected).ToList();
+
+    public void SelectCampaths(IEnumerable<CampathItemViewModel> items, bool addToSelection)
+    {
+        if (SelectedProfile == null)
+            return;
+
+        var selected = items.Where(SelectedProfile.Campaths.Contains).ToHashSet();
+        if (!addToSelection)
+        {
+            foreach (var campath in SelectedProfile.Campaths)
+                campath.IsSelected = selected.Contains(campath);
+        }
+        else
+        {
+            foreach (var campath in selected)
+                campath.IsSelected = true;
+        }
+
+        NotifyCampathSelectionChanged();
+    }
+
+    public void ClearCampathSelection()
+    {
+        if (SelectedProfile != null)
+        {
+            foreach (var campath in SelectedProfile.Campaths)
+                campath.IsSelected = false;
+        }
+
+        NotifyCampathSelectionChanged();
+    }
+
+    private void NotifyCampathSelectionChanged()
+    {
+        OnPropertyChanged(nameof(SelectedCampaths));
+        OnPropertyChanged(nameof(HasMultipleCampathSelection));
+        OnPropertyChanged(nameof(HasAtMostOneCampathSelection));
+        _removeSelectedCampathsCommand.RaiseCanExecuteChanged();
+    }
 
     public double CampathPlaybackProgress
     {
@@ -447,6 +503,18 @@ public class CampathsDockViewModel : Tool
             return;
 
         SelectedProfile.RemoveCampath(item.Id);
+        Save();
+    }
+
+    public void RemoveSelectedCampaths()
+    {
+        if (SelectedProfile == null)
+            return;
+
+        foreach (var item in SelectedCampaths)
+            SelectedProfile.RemoveCampath(item.Id);
+
+        NotifyCampathSelectionChanged();
         Save();
     }
 
@@ -934,11 +1002,15 @@ public class CampathsDockViewModel : Tool
     }
 
     public void AddCampathToGroup(CampathItemViewModel campath, CampathGroupViewModel group)
+        => AddCampathsToGroup(new[] { campath }, group);
+
+    public void AddCampathsToGroup(IEnumerable<CampathItemViewModel> campaths, CampathGroupViewModel group)
     {
         if (SelectedProfile == null)
             return;
 
-        group.AddCampath(campath.Id);
+        foreach (var campath in campaths.Where(SelectedProfile.Campaths.Contains))
+            group.AddCampath(campath.Id);
         Save();
     }
 
@@ -1229,6 +1301,7 @@ public class CampathItemViewModel : ViewModelBase
     private string? _hotkeyDisplay;
     private double _playbackProgress;
     private bool _isPlaying;
+    private bool _isSelected;
     private System.Timers.Timer? _progressTimer;
     private DateTime _playbackStartTime;
     private double _campathDuration;
@@ -1308,6 +1381,18 @@ public class CampathItemViewModel : ViewModelBase
         get => _isPlaying;
         private set => SetProperty(ref _isPlaying, value);
     }
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (SetProperty(ref _isSelected, value))
+                OnPropertyChanged(nameof(BorderBrush));
+        }
+    }
+
+    public string BorderBrush => IsSelected ? "#79B8FF" : "#2E2E2E";
 
     public CampathData ToData() => new()
     {

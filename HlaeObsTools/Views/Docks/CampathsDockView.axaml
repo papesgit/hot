@@ -99,13 +99,17 @@
 
     <DockPanel Grid.Row="1" Grid.Column="2" Focusable="True" Background="#121212">
       <ScrollViewer x:Name="CampathScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid x:Name="CampathSurface" Background="Transparent" MinHeight="{Binding ElementName=CampathScrollViewer, Path=Viewport.Height}"
+              PointerPressed="OnCampathSurfacePointerPressed" PointerMoved="OnCampathSurfacePointerMoved"
+              PointerReleased="OnCampathSurfacePointerReleased" PointerCaptureLost="OnCampathSurfacePointerCaptureLost">
         <ItemsControl ItemsSource="{Binding SelectedProfile.Campaths}" VerticalAlignment="Top">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><WrapPanel Width="{Binding ElementName=CampathScrollViewer, Path=Viewport.Width}" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border Background="#222" BorderBrush="#2E2E2E" BorderThickness="1" Padding="0" Margin="6"
+              <Border Background="#222" BorderThickness="1" Padding="0" Margin="6"
+                      BorderBrush="{Binding BorderBrush}"
                       hotkeys:HotkeyTarget.CampathId="{Binding Id}"
                       DragDrop.AllowDrop="True" DragDrop.Drop="OnCampathDrop" DragDrop.DragOver="OnCampathDragOver"
                       PointerPressed="OnCampathPointerPressed" PointerMoved="OnCampathPointerMoved" PointerReleased="OnCampathPointerReleased" PointerCaptureLost="OnCampathPointerCaptureLost">
@@ -118,13 +122,14 @@
                 <Border.Height><Binding Path="Width" RelativeSource="{RelativeSource Self}" Converter="{StaticResource CardHeightConverter}" /></Border.Height>
                 <Border.ContextFlyout>
                   <MenuFlyout>
-                    <MenuItem Header="Rename" Command="{Binding #Root.DataContext.RenameCampathCommand}" CommandParameter="{Binding}" />
-                    <MenuItem Header="Browse campath file" Command="{Binding #Root.DataContext.BrowseCampathCommand}" CommandParameter="{Binding}" />
-                    <MenuItem Header="Set thumbnail image" Command="{Binding #Root.DataContext.BrowseImageCommand}" CommandParameter="{Binding}" />
-                    <MenuItem Header="Capture thumbnail" Command="{Binding #Root.DataContext.ScreenShotCommand}" CommandParameter="{Binding}" />
-                    <MenuItem Header="Set offset" Command="{Binding #Root.DataContext.SetOffsetCommand}" CommandParameter="{Binding}" />
-                    <Separator />
-                    <MenuItem Header="Remove campath" Command="{Binding #Root.DataContext.RemoveCampathCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Rename" IsVisible="{Binding #Root.DataContext.HasAtMostOneCampathSelection}" Command="{Binding #Root.DataContext.RenameCampathCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Browse campath file" IsVisible="{Binding #Root.DataContext.HasAtMostOneCampathSelection}" Command="{Binding #Root.DataContext.BrowseCampathCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Set thumbnail image" IsVisible="{Binding #Root.DataContext.HasAtMostOneCampathSelection}" Command="{Binding #Root.DataContext.BrowseImageCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Capture thumbnail" IsVisible="{Binding #Root.DataContext.HasAtMostOneCampathSelection}" Command="{Binding #Root.DataContext.ScreenShotCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Set offset" IsVisible="{Binding #Root.DataContext.HasAtMostOneCampathSelection}" Command="{Binding #Root.DataContext.SetOffsetCommand}" CommandParameter="{Binding}" />
+                    <Separator IsVisible="{Binding #Root.DataContext.HasAtMostOneCampathSelection}" />
+                    <MenuItem Header="Remove campath" IsVisible="{Binding #Root.DataContext.HasAtMostOneCampathSelection}" Command="{Binding #Root.DataContext.RemoveCampathCommand}" CommandParameter="{Binding}" />
+                    <MenuItem Header="Remove selected" IsVisible="{Binding #Root.DataContext.HasMultipleCampathSelection}" Command="{Binding #Root.DataContext.RemoveSelectedCampathsCommand}" />
                   </MenuFlyout>
                 </Border.ContextFlyout>
                 <Grid>
@@ -148,6 +153,10 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+          <Canvas IsHitTestVisible="False">
+            <Border x:Name="CampathMarquee" Background="#2279B8FF" BorderBrush="#79B8FF" BorderThickness="1" IsVisible="False" />
+          </Canvas>
+        </Grid>
       </ScrollViewer>
     </DockPanel>
   </Grid>
