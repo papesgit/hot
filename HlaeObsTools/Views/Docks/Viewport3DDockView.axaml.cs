@@ -79,7 +79,7 @@ public partial class Viewport3DDockView : UserControl
         _viewModel.SelectedCampathEditorChanged += OnSelectedCampathEditorChanged;
         _viewModel.SequencerGizmoChanged += OnSequencerGizmoChanged;
         SetCampathEditor(_viewModel.SelectedCampathEditor);
-        _viewModel.CampathStateProvider = CaptureFreecamState;
+        _viewModel.CampathStateProvider = CaptureCameraState;
         _viewModel.SequencerPreviewChanged += OnSequencerPreviewChanged;
         _viewModel.SequencerChannelValueEdited += OnSequencerChannelValueEdited;
         _viewModel.SequencerSampleEdited += OnSequencerSampleEdited;
@@ -100,7 +100,7 @@ public partial class Viewport3DDockView : UserControl
         if (_campathEditor != null)
             DetachCampathEditor(_campathEditor);
         _campathEditor = null;
-        if (_viewModel.CampathStateProvider == CaptureFreecamState)
+        if (_viewModel.CampathStateProvider == CaptureCameraState)
             _viewModel.CampathStateProvider = null;
         _viewModel.SequencerPreviewChanged -= OnSequencerPreviewChanged;
         _viewModel.SequencerChannelValueEdited -= OnSequencerChannelValueEdited;
@@ -429,12 +429,12 @@ public partial class Viewport3DDockView : UserControl
         }
     }
 
-    private ViewportFreecamState? CaptureFreecamState()
+    private ViewportFreecamState? CaptureCameraState()
     {
         if (_viewport == null)
             return null;
 
-        return _viewport.TryGetFreecamState(out var state) ? state : null;
+        return _viewport.TryGetCameraState(out var state) ? state : null;
     }
 
     private void UpdateDepthOfField()

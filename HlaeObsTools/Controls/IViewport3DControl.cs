@@ -22,6 +22,7 @@ public interface IViewport3DControl
     void ForwardPointerWheel(PointerWheelEventArgs e);
 
     bool TryGetFreecamState(out ViewportFreecamState state);
+    bool TryGetCameraState(out ViewportFreecamState state);
     void DisableFreecamInput();
     void SetExternalCamera(Vector3 position, Quaternion rotation, float fov);
     void ClearExternalCamera();

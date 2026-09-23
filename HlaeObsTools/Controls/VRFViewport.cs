@@ -1197,6 +1197,46 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         return true;
     }
 
+    public bool TryGetCameraState(out ViewportFreecamState state)
+    {
+        if (_externalCameraActive)
+        {
+            state = CreateCameraState(_externalCameraPosition, _externalCameraRotation, _externalCameraFov);
+            return true;
+        }
+
+        if (_freecamActive)
+            return TryGetFreecamState(out state);
+
+        var position = GetCameraPosition();
+        var forward = Vector3.Normalize(GetActiveOrbitTarget() - position);
+        GetYawPitchFromForward(forward, out var yaw, out var pitch);
+        var roll = ComputeRollForUp(pitch, yaw, Vector3.UnitZ);
+        var rotation = BuildQuat(pitch, yaw, roll);
+        // Orbit rendering uses a 60-degree vertical FOV; campath FOV is horizontal
+        // at 4:3, so convert before storing the view as a key.
+        var verticalFov = DegToRad(60f);
+        var sourceFov = RadToDeg(2f * MathF.Atan(MathF.Tan(verticalFov * 0.5f) * (4f / 3f)));
+        state = CreateCameraState(position, rotation, sourceFov);
+        return true;
+    }
+
+    private static ViewportFreecamState CreateCameraState(Vector3 position, Quaternion rotation, float fov)
+    {
+        var forward = Vector3.Normalize(GetForwardFromQuat(rotation));
+        var up = Vector3.Normalize(GetUpFromQuat(rotation));
+        GetYawPitchFromForward(forward, out var yaw, out var pitch);
+        var roll = ComputeRollForUp(pitch, yaw, up);
+        return new ViewportFreecamState
+        {
+            RawPosition = position, RawOrientation = rotation,
+            RawForward = forward, RawUp = up,
+            RawPitch = pitch, RawYaw = yaw, RawRoll = roll, RawFov = fov,
+            SmoothedPosition = position, SmoothedOrientation = rotation,
+            SmoothedForward = forward, SmoothedUp = up, SmoothedFov = fov
+        };
+    }
+
     public void DisableFreecamInput()
     {
         EndFreecamInput();
