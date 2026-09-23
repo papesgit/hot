@@ -402,53 +402,61 @@ public class D3DSharedTextureHost : NativeControlHost
             return;
         }
 
+        // A legacy D3D11 shared texture can only be opened by a device on the
+        // adapter that created it. This commonly differs from the default
+        // adapter on hybrid-GPU laptops, so probe the physical adapters before
+        // treating the handle as invalid.
+        if (TryRecreateDeviceForSharedTexture())
+            return;
+
         if (!_sharedHandleInvalidNotified)
         {
-            Log("OpenSharedResource failed for shared handle; will retry after re-register.");
+            Log("OpenSharedResource failed on every adapter; will retry after re-register.");
             _sharedHandleInvalidNotified = true;
             _sharedHandle = IntPtr.Zero;
             SharedHandleInvalidated?.Invoke(this, EventArgs.Empty);
         }
-        TryRecreateDeviceForSharedTexture();
-        // If it fails we leave _sharedTexture null and will try again next loop.
     }
 
-    private void TryRecreateDeviceForSharedTexture()
+    private bool TryRecreateDeviceForSharedTexture()
     {
-        if (!_ownsDevice)
-            return;
-        if (_factory == null) return;
+        IDXGIFactory2? factory = null;
+        try
+        {
+            // Use a factory we own while probing. The initial device may belong
+            // to D3D11DeviceService and must not be released by this host.
+            factory = DXGI.CreateDXGIFactory2<IDXGIFactory2>(false);
+        }
+        catch (Exception ex)
+        {
+            Log($"Unable to create DXGI factory for adapter probe: {ex.Message}");
+            return false;
+        }
 
         for (uint i = 0; ; i++)
         {
-            if (_factory.EnumAdapters1(i, out IDXGIAdapter1? adapter).Failure)
+            if (factory.EnumAdapters1(i, out IDXGIAdapter1? adapter).Failure)
                 break;
 
-            if (TryCreateDeviceOnAdapter(adapter))
+            if (TryCreateDeviceOnAdapter(adapter, factory))
             {
                 adapter.Release();
-                break;
+                return true;
             }
 
             adapter.Release();
         }
+
+        factory.Release();
+        return false;
     }
 
-    private bool TryCreateDeviceOnAdapter(IDXGIAdapter1 adapter)
+    private bool TryCreateDeviceOnAdapter(IDXGIAdapter1 adapter, IDXGIFactory2 factory)
     {
-        if (!_ownsDevice)
-            return false;
-        ReleaseSwapChain();
-        _sharedTexture?.Release();
-        _sharedTexture = null;
-        _context?.Release();
-        _context = null;
-        _device1?.Release();
-        _device1 = null;
-        _device?.Release();
-        _device = null;
-        _adapter?.Release();
-        _adapter = null;
+        var description = adapter.Description1;
+        Log($"Probing shared texture on adapter '{description.Description}' " +
+            $"(vendor=0x{description.VendorId:X4}, device=0x{description.DeviceId:X4}, " +
+            $"dedicatedMemory={description.DedicatedVideoMemory / (1024 * 1024)} MiB).");
 
         var levels = new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 };
         var flags = DeviceCreationFlags.BgraSupport;
@@ -458,51 +466,65 @@ public class D3DSharedTextureHost : NativeControlHost
             DriverType.Unknown,
             flags,
             levels,
-            out _device,
+            out ID3D11Device? device,
             out _,
-            out _context);
+            out ID3D11DeviceContext? context);
 
-        if (res.Failure || _device == null || _context == null)
+        if (res.Failure || device == null || context == null)
         {
+            Log($"Failed to create D3D11 device on adapter '{description.Description}': 0x{res.Code:X8}");
             return false;
         }
 
-        _device1 = _device.QueryInterfaceOrNull<ID3D11Device1>();
+        var device1 = device.QueryInterfaceOrNull<ID3D11Device1>();
 
-        if (_sharedHandle != IntPtr.Zero)
+        try
         {
-            try
+            var tex = device.OpenSharedResource<ID3D11Texture2D>(_sharedHandle);
+            if (tex == null)
             {
-                var tex = _device.OpenSharedResource<ID3D11Texture2D>(_sharedHandle);
-                if (tex != null)
-                {
-                    _sharedTexture = tex;
-                    _sharedKeyedMutex?.Release();
-                    _sharedKeyedMutex = _sharedTexture.QueryInterfaceOrNull<IDXGIKeyedMutex>();
-                    Log($"SharedTextureHost: keyed mutex {(_sharedKeyedMutex != null ? "available" : "unavailable")} (adapter handle)");
-                    LogTextureDesc("opened handle on adapter", _sharedTexture.Description);
-                    _texAspect = tex.Description.Width / (double)tex.Description.Height;
-                    UpdateChildWindowSize();
-                    _adapter = adapter;
-                    return true;
-                }
+                device1?.Release();
+                context.Release();
+                device.Release();
+                return false;
             }
-            catch (Exception ex)
-            {
-                Log($"TryCreateDeviceOnAdapter: OpenSharedResource threw {ex.GetType().Name}: {ex.Message}");
-            }
-        }
 
-        // Failed, clean up:
-        _sharedTexture?.Release();
-        _sharedTexture = null;
-        _context?.Release();
-        _context = null;
-        _device1?.Release();
-        _device1 = null;
-        _device?.Release();
-        _device = null;
-        return false;
+            ReleaseSwapChain();
+            if (_ownsDevice)
+            {
+                _context?.Release();
+                _device1?.Release();
+                _device?.Release();
+                _adapter?.Release();
+                _factory?.Release();
+            }
+
+            _device = device;
+            _device1 = device1;
+            _context = context;
+            _factory = factory;
+            _adapter = adapter;
+            _adapter.AddRef();
+            _deviceLock = new object();
+            _ownsDevice = true;
+            _sharedTexture = tex;
+            _sharedKeyedMutex?.Release();
+            _sharedKeyedMutex = tex.QueryInterfaceOrNull<IDXGIKeyedMutex>();
+            _loggedFallback = false;
+            Log($"Opened shared texture on adapter '{description.Description}'; keyed mutex {(_sharedKeyedMutex != null ? "available" : "unavailable")}.");
+            LogTextureDesc("opened handle on adapter", tex.Description);
+            _texAspect = tex.Description.Width / (double)tex.Description.Height;
+            UpdateChildWindowSize();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log($"OpenSharedResource failed on adapter '{description.Description}': {ex.GetType().Name}: {ex.Message}");
+            device1?.Release();
+            context.Release();
+            device.Release();
+            return false;
+        }
     }
 
     private static void Log(string msg)

@@ -1,4 +1,6 @@
 using System;
+using SharpGen.Runtime;
+using Vortice;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -31,14 +33,25 @@ public sealed class D3D11DeviceService : IDisposable
     {
         var levels = new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 };
         var flags = DeviceCreationFlags.BgraSupport;
-        var result = D3D11CreateDevice(
-            null,
-            DriverType.Hardware,
-            flags,
-            levels,
-            out _device,
-            out _,
-            out _context);
+        _factory = DXGI.CreateDXGIFactory2<IDXGIFactory2>(false);
+
+        // On hybrid-GPU systems Windows' default adapter is often the iGPU,
+        // while CS2 normally renders on the dGPU. Prefer the high-performance
+        // adapter for the initial shared-texture device. The texture host still
+        // probes all adapters if this does not match the CS2 adapter.
+        var result = TryCreateHighPerformanceDevice(levels, flags);
+
+        if (result.Failure)
+        {
+            result = D3D11CreateDevice(
+                null,
+                DriverType.Hardware,
+                flags,
+                levels,
+                out _device,
+                out _,
+                out _context);
+        }
 
         if (result.Failure)
         {
@@ -56,7 +69,6 @@ public sealed class D3D11DeviceService : IDisposable
             throw new InvalidOperationException($"Failed to create shared D3D11 device: 0x{result.Code:X8}");
 
         _device1 = _device.QueryInterfaceOrNull<ID3D11Device1>();
-        _factory = DXGI.CreateDXGIFactory2<IDXGIFactory2>(false);
 
         try
         {
@@ -66,6 +78,36 @@ public sealed class D3D11DeviceService : IDisposable
         catch
         {
             // Ignore if multithread interface isn't available.
+        }
+    }
+
+    private Result TryCreateHighPerformanceDevice(FeatureLevel[] levels, DeviceCreationFlags flags)
+    {
+        using var factory6 = _factory?.QueryInterfaceOrNull<IDXGIFactory6>();
+        if (factory6 == null ||
+            factory6.EnumAdapterByGpuPreference(0, GpuPreference.HighPerformance, out IDXGIAdapter1? adapter).Failure ||
+            adapter == null)
+        {
+            return D3D11CreateDevice(
+                null,
+                DriverType.Hardware,
+                flags,
+                levels,
+                out _device,
+                out _,
+                out _context);
+        }
+
+        using (adapter)
+        {
+            return D3D11CreateDevice(
+                adapter,
+                DriverType.Unknown,
+                flags,
+                levels,
+                out _device,
+                out _,
+                out _context);
         }
     }
 
