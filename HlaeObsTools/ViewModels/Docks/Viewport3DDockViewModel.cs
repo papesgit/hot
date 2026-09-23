@@ -53,6 +53,8 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     public event Action<IReadOnlyList<ViewportPlayerStatus>>? PlayerStatusesUpdated;
     public event Action<IReadOnlyList<CueEventViewModel>>? CueEventsUpdated;
     public event Action<CampathSample?>? SequencerPreviewChanged;
+    public event Action<string, double>? SequencerChannelValueEdited;
+    public event Action<CampathSample>? SequencerSampleEdited;
     public event Action<CampathEditorViewModel?>? SelectedCampathEditorChanged;
     public event Action? SequencerGizmoChanged;
     public bool IsSequencerPiloting => _sequence?.IsPiloting == true;
@@ -242,6 +244,9 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
         CampathEditor.Keyframes.CollectionChanged -= OnCampathKeyframesChanged;
         if (_sequence != null)
         {
+            _sequence.LiveCameraStateProvider = null;
+            _sequence.ApplyLiveCameraChannelValue = null;
+            _sequence.ApplyLiveCameraSample = null;
             _sequence.PreviewChanged -= OnSequencePreviewChanged;
             _sequence.CameraKeyRequested -= OnSequenceCameraKeyRequested;
             _sequence.PropertyChanged -= OnSequencePropertyChanged;
@@ -370,6 +375,16 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     {
         if (_sequence != null)
         {
+            _sequence.LiveCameraStateProvider = null;
+            _sequence.ApplyLiveCameraChannelValue = null;
+            _sequence.ApplyLiveCameraSample = null;
+        }
+        sequence.LiveCameraStateProvider = () => CampathStateProvider?.Invoke();
+        sequence.ApplyLiveCameraChannelValue = (channelId, value) =>
+            SequencerChannelValueEdited?.Invoke(channelId, value);
+        sequence.ApplyLiveCameraSample = sample => SequencerSampleEdited?.Invoke(sample);
+        if (_sequence != null)
+        {
             _sequence.PreviewChanged -= OnSequencePreviewChanged;
             _sequence.CameraKeyRequested -= OnSequenceCameraKeyRequested;
             _sequence.PropertyChanged -= OnSequencePropertyChanged;
@@ -424,6 +439,7 @@ public sealed class Viewport3DDockViewModel : Tool, IDisposable
     }
 
     public void BeginSequencerPiloting() => _sequence?.BeginPiloting();
+    public bool HasDirectlyPossessedCamera => _sequence?.PossessionKind == SequencerPossessionKind.Camera;
     public CampathDofSettings GetSequencerDepthOfField() =>
         _sequence?.EvaluatePossession(_sequence.PlayheadTime)?.Dof ?? CampathDofSettings.Default;
     public void AcquireSequencerPlaybackTicks(object owner, Action releasePreviousSubscription)

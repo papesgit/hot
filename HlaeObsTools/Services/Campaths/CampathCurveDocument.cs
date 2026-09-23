@@ -44,6 +44,10 @@ public sealed class CampathCurveChannel : ViewModelBase
     private bool _isVisible = true;
     private bool _isLocked;
     private string _color = "#FFFFFF";
+    private double _defaultValue;
+    private bool _hasExplicitDefault;
+    private double? _pendingValue;
+    private double _pendingTime;
 
     public required string Id { get; init; }
     public required string Name { get; init; }
@@ -52,10 +56,33 @@ public sealed class CampathCurveChannel : ViewModelBase
     public bool IsVisible { get => _isVisible; set => SetProperty(ref _isVisible, value); }
     public bool IsLocked { get => _isLocked; set => SetProperty(ref _isLocked, value); }
     public string Color { get => _color; set => SetProperty(ref _color, value); }
+    public double DefaultValue
+    {
+        get => _defaultValue;
+        set { _hasExplicitDefault = true; SetProperty(ref _defaultValue, value); }
+    }
+    public bool HasExplicitDefault => _hasExplicitDefault;
+    public void StageValue(double time, double value)
+    {
+        _pendingTime = time;
+        _pendingValue = value;
+    }
+    public bool TryGetPendingValue(double time, out double value)
+    {
+        value = _pendingValue.GetValueOrDefault();
+        return _pendingValue.HasValue && Math.Abs(_pendingTime - time) < 0.0001;
+    }
+    public void ClearPendingValue() => _pendingValue = null;
+    public void RestoreDefault(double value, bool explicitDefault)
+    {
+        _defaultValue = value;
+        _hasExplicitDefault = explicitDefault;
+        OnPropertyChanged(nameof(DefaultValue));
+    }
 
     public double Evaluate(double time)
     {
-        if (Keys.Count == 0) return 0.0;
+        if (Keys.Count == 0) return DefaultValue;
         if (Keys.Count == 1 || time <= Keys[0].Time) return Keys[0].Value;
         if (time >= Keys[^1].Time) return Keys[^1].Value;
 
@@ -125,12 +152,12 @@ public sealed class CampathCurveDocument
         return null;
     }
 
-    public bool CanEvaluateCamera => Has("position.x") && Has("position.y") && Has("position.z")
-        && Has("rotation.pitch") && Has("rotation.yaw") && Has("rotation.roll") && Has("fov");
+    public bool CanEvaluateCamera => Channels.Any(channel => !channel.Id.StartsWith("dof.", StringComparison.Ordinal)
+        && (channel.Keys.Count > 0 || channel.HasExplicitDefault));
 
     public CampathSample Evaluate(double time)
     {
-        if (!CanEvaluateCamera) throw new InvalidOperationException("Camera curve channels are incomplete.");
+        if (!CanEvaluateCamera) throw new InvalidOperationException("Camera curve has no keys.");
         var position = new Vector3((float)Value("position.x", time), (float)Value("position.y", time), (float)Value("position.z", time));
         var rotation = EulerToQuaternion(Value("rotation.pitch", time), Value("rotation.yaw", time), Value("rotation.roll", time));
         var dof = new CampathDofSettings(
@@ -176,8 +203,7 @@ public sealed class CampathCurveDocument
         return result;
     }
 
-    private bool Has(string id) => Find(id)?.Keys.Count > 0;
-    private double Value(string id, double time, double fallback = 0) => Find(id) is { Keys.Count: > 0 } channel ? channel.Evaluate(time) : fallback;
+    private double Value(string id, double time, double fallback = 0) => Find(id)?.Evaluate(time) ?? fallback;
 
     private static Quaternion EulerToQuaternion(double pitchDeg, double yawDeg, double rollDeg)
     {

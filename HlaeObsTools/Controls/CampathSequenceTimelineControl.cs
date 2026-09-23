@@ -13,6 +13,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using HlaeObsTools.Services.Campaths;
+using HlaeObsTools.Services.Viewport3D;
 using HlaeObsTools.ViewModels;
 using HlaeObsTools.Views;
 
@@ -46,6 +47,7 @@ public sealed class CampathSequenceTimelineControl : Panel
     private readonly List<ValueEditorEntry> _valueEditors = new();
     private readonly List<ModeEditorEntry> _modeEditors = new();
     private readonly TimelineDrawingSurface _drawingSurface;
+    private readonly DispatcherTimer _liveValueTimer;
     private bool _updatingValueEditors;
     private bool _updatingModeEditors;
     private bool _rebuildingValueEditors;
@@ -86,6 +88,12 @@ public sealed class CampathSequenceTimelineControl : Panel
         ClipToBounds = true;
         Focusable = true;
         _drawingSurface = new TimelineDrawingSurface(this) { IsHitTestVisible = true };
+        _liveValueTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        _liveValueTimer.Tick += (_, _) =>
+        {
+            if (Sequence?.IsPiloting == true)
+                UpdateValueEditors();
+        };
         Children.Add(_drawingSurface);
         PointerPressed += OnPointerPressed;
         PointerMoved += OnPointerMoved;
@@ -100,6 +108,7 @@ public sealed class CampathSequenceTimelineControl : Panel
         if (_subscriptionsAttached)
             return;
         _subscriptionsAttached = true;
+        _liveValueTimer.Start();
         if (Sequence != null)
         {
             Sequence.PropertyChanged -= OnSequencePropertyChanged;
@@ -113,6 +122,7 @@ public sealed class CampathSequenceTimelineControl : Panel
         if (_subscriptionsAttached && Sequence != null)
             Sequence.PropertyChanged -= OnSequencePropertyChanged;
         _subscriptionsAttached = false;
+        _liveValueTimer.Stop();
         RefreshCurveSelectionSubscriptions();
         base.OnDetachedFromVisualTree(e);
     }
@@ -521,10 +531,12 @@ public sealed class CampathSequenceTimelineControl : Panel
                 var multiple = selected.Count > 1;
                 entry.Field.IsReadOnly = multiple;
                 entry.Field.IsMixedValue = multiple;
-                entry.Field.IsHighlighted = selected.Count == 1;
+                entry.Field.IsHighlighted = selected.Count == 1
+                    || (entry.Camera.Editor.IsCurveMode && entry.Channel.TryGetPendingValue(
+                        Sequence?.PlayheadTime ?? entry.Camera.Editor.PlayheadTime, out _));
                 if (!force && entry.Field.IsKeyboardFocusWithin && entry.Field.IsEditing)
                     continue;
-                if (!multiple && TryGetDisplayedValue(entry.Camera.Editor, entry.Channel,
+                if (!multiple && TryGetDisplayedValue(entry.Camera, entry.Channel,
                         Sequence?.PlayheadTime ?? entry.Camera.Editor.PlayheadTime, selected, out var value))
                     entry.Field.Value = value;
             }
@@ -555,16 +567,25 @@ public sealed class CampathSequenceTimelineControl : Panel
         || scope == $"channel:{channel.Id}"
         || (!string.IsNullOrWhiteSpace(channel.Group) && scope == $"group:{channel.Group}");
 
-    private static bool TryGetDisplayedValue(CampathEditorViewModel editor, CampathCurveChannel channel,
+    private bool TryGetDisplayedValue(CampathCameraTrackViewModel camera, CampathCurveChannel channel,
         double playheadTime, IReadOnlyList<TimelineKey> selected, out double value)
     {
+        var editor = camera.Editor;
         if (selected.Count == 1)
         {
             value = selected[0].CurveKey?.Value
                 ?? GetClassicChannelValue(selected[0].ClassicKey!, channel.Id);
             return true;
         }
-        if (editor.IsCurveMode && channel.Keys.Count > 0)
+        if (Sequence?.IsPiloting == true
+            && ReferenceEquals(Sequence.GetDirectlyPossessedCamera(), camera)
+            && Sequence.LiveCameraStateProvider?.Invoke() is { } liveState
+            && TryGetLiveChannelValue(channel.Id, liveState, out value))
+            return true;
+        if (selected.Count == 0 && editor.IsCurveMode
+            && channel.TryGetPendingValue(playheadTime, out value))
+            return true;
+        if (editor.IsCurveMode)
         {
             value = channel.Evaluate(playheadTime);
             return true;
@@ -576,6 +597,24 @@ public sealed class CampathSequenceTimelineControl : Panel
         }
         value = 0;
         return false;
+    }
+
+    private static bool TryGetLiveChannelValue(string id, ViewportFreecamState state, out double value)
+    {
+        var (pitch, yaw, roll) = QuaternionToEuler(state.RawOrientation);
+        value = id switch
+        {
+            "position.x" => state.RawPosition.X,
+            "position.y" => state.RawPosition.Y,
+            "position.z" => state.RawPosition.Z,
+            "rotation.pitch" => pitch,
+            "rotation.yaw" => yaw,
+            "rotation.roll" => roll,
+            "fov" => state.RawFov,
+            _ => 0
+        };
+        return id is "position.x" or "position.y" or "position.z"
+            or "rotation.pitch" or "rotation.yaw" or "rotation.roll" or "fov";
     }
 
     private void BeginValueEditorEdit(ValueEditorEntry entry)
@@ -600,6 +639,9 @@ public sealed class CampathSequenceTimelineControl : Panel
         if (implicitEdit)
             BeginValueEditorEdit(entry);
         value = Math.Clamp(value, GetChannelMinimum(entry.Channel.Id), GetChannelMaximum(entry.Channel.Id));
+        var isPossessedCamera = ReferenceEquals(Sequence.GetDirectlyPossessedCamera(), entry.Camera);
+        if (isPossessedCamera)
+            Sequence.BeginPiloting();
         try
         {
             if (selected.Count == 1)
@@ -608,11 +650,23 @@ public sealed class CampathSequenceTimelineControl : Panel
             }
             else if (entry.Camera.Editor.IsCurveMode)
             {
-                SetCurveValueAtPlayhead(entry.Camera, entry.Channel, value);
+                if (entry.Channel.Keys.Count == 0)
+                {
+                    entry.Channel.DefaultValue = value;
+                    entry.Camera.Editor.NotifyCurveDocumentChanged();
+                }
+                entry.Channel.StageValue(Sequence.PlayheadTime, value);
             }
             else
             {
                 SetClassicValueAtPlayhead(entry.Camera, entry.Channel, value);
+            }
+            if (isPossessedCamera)
+            {
+                if (selected.Count == 1 && entry.Camera.Editor.CanEvaluate())
+                    Sequence.ApplyLiveCameraSample?.Invoke(entry.Camera.Editor.Evaluate(Sequence.PlayheadTime));
+                else
+                    Sequence.ApplyLiveCameraChannelValue?.Invoke(entry.Channel.Id, value);
             }
         }
         finally
@@ -634,34 +688,6 @@ public sealed class CampathSequenceTimelineControl : Panel
         Sequence.CommitHistoryTransaction();
         UpdateValueEditors(force: true);
         InvalidateVisual();
-    }
-
-    private void SetCurveValueAtPlayhead(CampathCameraTrackViewModel camera,
-        CampathCurveChannel channel, double value)
-    {
-        var time = Sequence!.PlayheadTime;
-        var key = channel.Keys.FirstOrDefault(candidate => Math.Abs(candidate.Time - time) < 0.0001);
-        if (key == null)
-        {
-            key = new CampathCurveKey
-            {
-                Time = time,
-                Value = value,
-                Selected = true,
-                Interpolation = CurveInterpolationMode.Bezier
-            };
-            var index = 0;
-            while (index < channel.Keys.Count && channel.Keys[index].Time < time)
-                index++;
-            channel.Keys.Insert(index, key);
-        }
-        else
-        {
-            key.Value = value;
-            key.Selected = true;
-        }
-        CampathPathConversion.AutoTangents(channel);
-        camera.Editor.NotifyCurveDocumentChanged();
     }
 
     private void SetClassicValueAtPlayhead(CampathCameraTrackViewModel camera,
@@ -2023,6 +2049,9 @@ public sealed class CampathSequenceTimelineControl : Panel
 
     private void OnSequencePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(CampathSequenceViewModel.PlayheadTime) && Sequence != null)
+            foreach (var channel in Sequence.Cameras.SelectMany(camera => camera.Editor.CurveDocument.Channels))
+                channel.ClearPendingValue();
         if (e.PropertyName == nameof(CampathSequenceViewModel.ContentEnd))
             RefreshCurveSelectionSubscriptions();
         if (e.PropertyName == nameof(CampathSequenceViewModel.SelectedCamera))

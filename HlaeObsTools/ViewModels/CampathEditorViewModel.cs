@@ -82,7 +82,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
     public bool IsCurveMode => PathModel == CameraPathModel.Curves;
     public bool IsClassicMode => PathModel == CameraPathModel.Classic;
     public bool HasAuthoredKeys => PathModel == CameraPathModel.Curves
-        ? CurveDocument.Channels.Any(channel => channel.Keys.Count > 0)
+        ? CurveDocument.Channels.Any(channel => channel.Keys.Count > 0 || channel.HasExplicitDefault)
         : Keyframes.Count > 0;
 
     public void SetEditorMode(CampathEditorMode mode)
@@ -373,7 +373,11 @@ public sealed class CampathEditorViewModel : ViewModelBase
         PlayheadTime = SelectedKeyframe?.Time ?? 0.0;
         RebuildCurve();
         foreach (var channel in CurveDocument.Channels)
+        {
             channel.Keys.Clear();
+            channel.ClearPendingValue();
+            channel.RestoreDefault(CampathPathConversion.DefaultChannelValue(channel.Id), false);
+        }
         if (data.CurveDocument != null)
         {
             CurveDocument.DofEnabled = data.CurveDocument.DofEnabled;
@@ -386,6 +390,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
                     CurveDocument.Channels.Add(target);
                 }
                 target.Keys.Clear();
+                target.RestoreDefault(source.DefaultValue, source.HasExplicitDefault);
                 foreach (var key in source.Keys)
                     target.Keys.Add(new CampathCurveKey
                     {
@@ -404,7 +409,8 @@ public sealed class CampathEditorViewModel : ViewModelBase
         var classicKeys = Keyframes.Select(key => new ClassicKeySnapshot(
             key.Time, key.Position, key.Rotation, key.Fov, key.Selected, key.Dof)).ToList();
         var channels = CurveDocument.Channels.Select(channel => new CurveChannelSnapshot(
-            channel.Id, channel.Name, channel.Group, channel.Color,
+            channel.Id, channel.Name, channel.Group, channel.Color, channel.DefaultValue,
+            channel.HasExplicitDefault,
             channel.Keys.Select(key => new CurveKeySnapshot(
                 key.Time, key.Value, key.InTangent, key.OutTangent, key.InWeight, key.OutWeight,
                 key.Selected, key.Interpolation, key.TangentMode, key.WeightedTangents)).ToList())).ToList();
@@ -437,7 +443,10 @@ public sealed class CampathEditorViewModel : ViewModelBase
             RebuildCurve();
 
             foreach (var channel in CurveDocument.Channels)
+            {
                 channel.Keys.Clear();
+                channel.ClearPendingValue();
+            }
             CurveDocument.DofEnabled = snapshot.CurveDofEnabled;
             foreach (var source in snapshot.Channels)
             {
@@ -450,6 +459,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
                     };
                     CurveDocument.Channels.Add(target);
                 }
+                target.RestoreDefault(source.DefaultValue, source.HasExplicitDefault);
                 foreach (var key in source.Keys)
                     target.Keys.Add(new CampathCurveKey
                     {
@@ -480,6 +490,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
             var a = left.Channels[i];
             var b = right.Channels[i];
             if (a.Id != b.Id || a.Name != b.Name || a.Group != b.Group || a.Color != b.Color
+                || a.DefaultValue != b.DefaultValue || a.HasExplicitDefault != b.HasExplicitDefault
                 || !a.Keys.SequenceEqual(b.Keys)) return false;
         }
         return true;
@@ -495,6 +506,7 @@ public sealed class CampathEditorViewModel : ViewModelBase
     internal sealed record ClassicKeySnapshot(double Time, Vector3 Position, Quaternion Rotation,
         double Fov, bool Selected, CampathDofSettings Dof);
     internal sealed record CurveChannelSnapshot(string Id, string Name, string Group, string Color,
+        double DefaultValue, bool HasExplicitDefault,
         List<CurveKeySnapshot> Keys);
     internal sealed record CurveKeySnapshot(double Time, double Value, double InTangent,
         double OutTangent, double InWeight, double OutWeight, bool Selected,

@@ -167,9 +167,16 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
             var time = _editor.PlayheadTime;
             var liveState = useEvaluatedValue ? null : _viewport.CampathStateProvider?.Invoke();
             var liveEuler = liveState.HasValue ? QuaternionToEuler(liveState.Value.RawOrientation) : default;
+            if (liveState.HasValue && !Document.Channels.Any(channel => channel.Keys.Count > 0))
+            {
+                foreach (var channel in Document.Channels.Where(channel => !channel.HasExplicitDefault))
+                    channel.DefaultValue = GetCurrentValue(channel.Id, liveState, liveEuler, time);
+            }
             foreach (var channel in affectedChannels)
             {
-                var value = useEvaluatedValue && channel.Keys.Count > 0
+                var value = channel.TryGetPendingValue(time, out var pendingValue)
+                    ? pendingValue
+                    : useEvaluatedValue && channel.Keys.Count > 0
                     ? channel.Evaluate(time)
                     : GetCurrentValue(channel.Id, liveState, liveEuler, time);
                 var existing = channel.Keys.FirstOrDefault(key => Math.Abs(key.Time - time) < 0.0001);
@@ -186,6 +193,7 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
                     var index = 0; while (index < channel.Keys.Count && channel.Keys[index].Time < time) index++;
                     channel.Keys.Insert(index, key);
                 }
+                channel.ClearPendingValue();
             }
             foreach (var channel in affectedChannels)
                 CampathPathConversion.AutoTangents(channel);
@@ -216,7 +224,7 @@ public sealed class CurveEditorDockViewModel : Tool, IDisposable
             "dof.farBlurry" => dof.FarBlurry,
             "dof.maxBlur" => dof.MaxBlurSize,
             "dof.radiusScale" => dof.RadiusScale,
-            _ => Document.Find(id) is { Keys.Count: > 0 } channel ? channel.Evaluate(time) : 0
+            _ => Document.Find(id)?.Evaluate(time) ?? 0
         };
     }
 

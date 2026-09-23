@@ -57,8 +57,20 @@ public static class CampathPathConversion
                 Group = definition.Group,
                 Color = definition.Color
             });
+            document.Find(definition.Id)!.RestoreDefault(DefaultChannelValue(definition.Id), false);
         }
     }
+
+    public static double DefaultChannelValue(string id) => id switch
+    {
+        "fov" => 90,
+        "dof.nearBlurry" => -100,
+        "dof.farCrisp" => 180,
+        "dof.farBlurry" => 2000,
+        "dof.maxBlur" => 5,
+        "dof.radiusScale" => .25,
+        _ => 0
+    };
 
     public static void ClassicToCurves(IEnumerable<CampathKeyframe> keyframes,
         ClassicCampathInterpolation interpolation, CampathCurveDocument document)
@@ -107,6 +119,8 @@ public static class CampathPathConversion
         // preserves all authored timing events while intentionally flattening the channels.
         var times = document.Channels.SelectMany(channel => channel.Keys)
             .Select(key => key.Time).Distinct().OrderBy(time => time).ToList();
+        if (times.Count == 0)
+            times.Add(0.0);
         return times.Select(time =>
         {
             var sample = document.Evaluate(time);

@@ -191,8 +191,12 @@ public static class CampathFileIo
                     Group = channelElement.Attribute("group")?.Value ?? "Other",
                     Color = channelElement.Attribute("color")?.Value ?? "#FFFFFF"
                 };
+                channel.RestoreDefault(ParseDouble(channelElement.Attribute("default")?.Value,
+                    CampathPathConversion.DefaultChannelValue(id)), channelElement.Attribute("default") != null);
                 foreach (var keyElement in channelElement.Elements("key"))
                 {
+                    if (ParseBool(keyElement.Attribute("implicit")?.Value))
+                        continue;
                     channel.Keys.Add(new CampathCurveKey
                     {
                         Time = ParseDouble(keyElement.Attribute("t")?.Value),
@@ -210,7 +214,7 @@ public static class CampathFileIo
                 }
                 curveDocument.Channels.Add(channel);
             }
-            if (curveDocument.Channels.Any(channel => channel.Keys.Count > 0))
+            if (curveDocument.Channels.Any(channel => channel.Keys.Count > 0 || channel.HasExplicitDefault))
                 data.CurveDocument = curveDocument;
         }
 
@@ -345,14 +349,28 @@ public static class CampathFileIo
 
     private static XElement WriteCurveEditor(CampathEditorViewModel editor, bool applyTimeOffset)
     {
+        var document = editor.CurveDocument;
+        var materializeDefaults = document.CanEvaluateCamera;
+        var firstTime = document.GetCameraKeyTimes().DefaultIfEmpty(0.0).Min()
+            + (applyTimeOffset ? editor.TimeOffset : 0.0);
         var curveEditor = new XElement("curveEditor",
             new XAttribute("version", "1"),
-            new XAttribute("dofEnabled", editor.CurveDocument.DofEnabled));
-        foreach (var channel in editor.CurveDocument.Channels.Where(channel => channel.Keys.Count > 0))
+            new XAttribute("dofEnabled", document.DofEnabled));
+        foreach (var channel in document.Channels.Where(channel => channel.Keys.Count > 0
+            || channel.HasExplicitDefault || materializeDefaults && IsRequiredCameraChannel(channel.Id)))
         {
             var channelElement = new XElement("channel",
                 new XAttribute("id", channel.Id), new XAttribute("name", channel.Name),
                 new XAttribute("group", channel.Group), new XAttribute("color", channel.Color));
+            if (channel.HasExplicitDefault)
+                channelElement.SetAttributeValue("default", ToXml(channel.DefaultValue));
+            // HLAE still requires a key in every camera channel. It reads this as a
+            // constant key; our loader skips it so the channel remains unkeyed here.
+            if (materializeDefaults && channel.Keys.Count == 0)
+                channelElement.Add(new XElement("key",
+                    new XAttribute("t", ToXml(firstTime)),
+                    new XAttribute("v", ToXml(channel.DefaultValue)),
+                    new XAttribute("implicit", true)));
             foreach (var key in channel.Keys.OrderBy(key => key.Time))
             {
                 channelElement.Add(new XElement("key",
@@ -370,6 +388,10 @@ public static class CampathFileIo
         }
         return curveEditor;
     }
+
+    private static bool IsRequiredCameraChannel(string id) => id is
+        "position.x" or "position.y" or "position.z" or
+        "rotation.pitch" or "rotation.yaw" or "rotation.roll" or "fov";
 
     private static bool HasQuaternion(XElement p)
     {

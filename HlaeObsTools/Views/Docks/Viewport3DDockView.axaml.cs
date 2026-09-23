@@ -81,6 +81,8 @@ public partial class Viewport3DDockView : UserControl
         SetCampathEditor(_viewModel.SelectedCampathEditor);
         _viewModel.CampathStateProvider = CaptureFreecamState;
         _viewModel.SequencerPreviewChanged += OnSequencerPreviewChanged;
+        _viewModel.SequencerChannelValueEdited += OnSequencerChannelValueEdited;
+        _viewModel.SequencerSampleEdited += OnSequencerSampleEdited;
         _viewModelEventsAttached = true;
     }
 
@@ -101,6 +103,8 @@ public partial class Viewport3DDockView : UserControl
         if (_viewModel.CampathStateProvider == CaptureFreecamState)
             _viewModel.CampathStateProvider = null;
         _viewModel.SequencerPreviewChanged -= OnSequencerPreviewChanged;
+        _viewModel.SequencerChannelValueEdited -= OnSequencerChannelValueEdited;
+        _viewModel.SequencerSampleEdited -= OnSequencerSampleEdited;
         _viewModelEventsAttached = false;
     }
 
@@ -670,6 +674,42 @@ public partial class Viewport3DDockView : UserControl
         _viewport.SetDepthOfField(value.Dof);
     }
 
+    private void OnSequencerChannelValueEdited(string channelId, double value)
+    {
+        if (_viewport == null || !_viewport.TryGetFreecamState(out var state))
+            return;
+
+        var position = state.RawPosition;
+        var pitch = (double)state.RawPitch;
+        var yaw = (double)state.RawYaw;
+        var roll = (double)state.RawRoll;
+        var fov = state.RawFov;
+        switch (channelId)
+        {
+            case "position.x": position.X = (float)value; break;
+            case "position.y": position.Y = (float)value; break;
+            case "position.z": position.Z = (float)value; break;
+            case "rotation.pitch": pitch = value; break;
+            case "rotation.yaw": yaw = value; break;
+            case "rotation.roll": roll = value; break;
+            case "fov": fov = (float)value; break;
+            default: return;
+        }
+
+        const double radians = Math.PI / 180.0;
+        var rotation = Quaternion.Normalize(
+            Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)(yaw * radians))
+            * Quaternion.CreateFromAxisAngle(Vector3.UnitY, (float)(pitch * radians))
+            * Quaternion.CreateFromAxisAngle(Vector3.UnitX, (float)(roll * radians)));
+        _viewport.SetFreecamPose(position, rotation, fov);
+    }
+
+    private void OnSequencerSampleEdited(CampathSample sample)
+    {
+        _viewport?.SetFreecamPose(sample.Position, sample.Rotation, (float)sample.Fov);
+        _viewport?.SetDepthOfField(sample.Dof);
+    }
+
     private static double GetEditorContentEnd(CampathEditorViewModel editor) =>
         editor.IsCurveMode
             ? editor.CurveDocument.Channels.SelectMany(channel => channel.Keys)
@@ -703,6 +743,12 @@ public partial class Viewport3DDockView : UserControl
     {
         if (_viewModel == null)
             return;
+
+        // Native viewport input bypasses the Avalonia pointer handler. Detect it
+        // here as well so freecam motion takes ownership of a possessed camera.
+        if (_viewModel.HasDirectlyPossessedCamera && !_viewModel.IsSequencerPiloting
+            && _viewport?.IsFreecamInputEnabled == true)
+            Dispatcher.UIThread.Post(() => _viewModel?.BeginSequencerPiloting());
 
         if (_viewModel.IsSequencerPlaying)
             Dispatcher.UIThread.Post(() => _viewModel.AdvanceSequencerPlayback(this, delta));

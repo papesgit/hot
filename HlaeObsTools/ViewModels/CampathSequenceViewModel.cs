@@ -7,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using Avalonia.Threading;
 using HlaeObsTools.Services.Campaths;
+using HlaeObsTools.Services.Viewport3D;
 
 namespace HlaeObsTools.ViewModels;
 
@@ -486,6 +487,9 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
     }
 
     public event Action<CampathSample?>? PreviewChanged;
+    public Func<ViewportFreecamState?>? LiveCameraStateProvider { get; set; }
+    public Action<string, double>? ApplyLiveCameraChannelValue { get; set; }
+    public Action<CampathSample>? ApplyLiveCameraSample { get; set; }
     public event Action<Guid, IReadOnlyList<string>?>? CameraKeyRequested;
     public event Action? PlayheadScrubCompleted;
 
@@ -721,7 +725,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
 
     public void BeginPiloting()
     {
-        if (GetDirectlyPossessedCamera() == null)
+        if (GetDirectlyPossessedCamera() == null || IsPiloting)
             return;
         StopPlayback();
         IsPiloting = true;
@@ -858,7 +862,7 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
             OnPropertyChanged(nameof(GizmoSelection));
             return;
         }
-        NotifyRangeChanged();
+        NotifyRangeChanged(preservePiloting: true);
         EvaluatePossessedCamera();
         if (!Cameras.Any(camera => camera.Editor.IsHistoryTransactionActive))
             RecordExternalMutation();
@@ -873,11 +877,12 @@ public sealed class CampathSequenceViewModel : ViewModelBase, IDisposable
         RecordExternalMutation();
     }
 
-    private void NotifyRangeChanged()
+    private void NotifyRangeChanged(bool preservePiloting = false)
     {
         OnPropertyChanged(nameof(ContentEnd));
         OnPropertyChanged(nameof(PlaybackEnd));
-        IsPiloting = false;
+        if (!preservePiloting)
+            IsPiloting = false;
         EvaluatePossessedCamera();
     }
 
