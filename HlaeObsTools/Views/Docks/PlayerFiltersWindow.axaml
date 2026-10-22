@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="HlaeObsTools.Views.Docks.PlayerFiltersWindow"
+        x:CompileBindings="False"
+        Title="Player filters" Width="650" Height="540" MinWidth="490" MinHeight="400"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+  <Grid Margin="16" RowDefinitions="Auto,*,Auto,Auto,Auto,Auto" RowSpacing="12">
+    <Grid ColumnDefinitions="150,*" ColumnSpacing="8">
+      <TextBlock Text="Match" />
+      <TextBlock Grid.Column="1" Text="Player name" />
+    </Grid>
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" AllowAutoHide="False">
+      <ItemsControl ItemsSource="{Binding Rules}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Grid ColumnDefinitions="150,*,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+              <ComboBox ItemsSource="{Binding MatchOptions}" SelectedIndex="{Binding MatchIndex, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+              <TextBox Grid.Column="1" Text="{Binding Name, Mode=TwoWay}" PlaceholderText="Player name" />
+              <Button Grid.Column="2" Content="×" Click="RemoveRule_Click" ToolTip.Tip="Remove filter" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    <WrapPanel Grid.Row="2" ItemSpacing="8" LineSpacing="8">
+      <Button Content="+ Add filter" Click="AddRule_Click" />
+      <ComboBox Width="220" ItemsSource="{Binding Roster}" SelectedItem="{Binding SelectedPlayer, Mode=TwoWay}" PlaceholderText="Current players…" />
+      <Button Content="Add player" Click="AddPlayer_Click" IsEnabled="{Binding CanAddPlayer}" />
+    </WrapPanel>
+    <StackPanel Grid.Row="3" Spacing="6">
+      <TextBlock Text="Currently matches" FontWeight="SemiBold" />
+      <ScrollViewer MaxHeight="110" AllowAutoHide="False">
+        <TextBlock Text="{Binding Preview}" TextWrapping="Wrap" Foreground="#AAAAAA" />
+      </ScrollViewer>
+    </StackPanel>
+    <TextBlock Grid.Row="4" Text="Faceit 'Coach|…' filtering is always active." Foreground="#AAAAAA" />
+    <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+      <Button Content="Cancel" IsCancel="True" Click="Cancel_Click" />
+      <Button Content="Save" IsDefault="True" IsEnabled="{Binding CanSave}" Click="Save_Click" />
+    </StackPanel>
+  </Grid>
+</Window>

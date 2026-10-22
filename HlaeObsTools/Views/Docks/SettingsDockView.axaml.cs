@@ -12,6 +12,18 @@ public partial class SettingsDockView : UserControl
         InitializeComponent();
     }
 
+    private async void OpenPlayerFilters_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not SettingsDockViewModel vm || TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+        var dialog = new PlayerFiltersWindow(vm);
+        await HlaeObsTools.Services.Input.KeyboardInputGate.RunSuppressedAsync(async () =>
+        {
+            await dialog.ShowDialog(owner);
+            return true;
+        });
+    }
+
     private void OpenAnimationEditor_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not SettingsDockViewModel vm)

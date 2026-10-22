@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HlaeObsTools.ViewModels.Docks"
              xmlns:rootvm="using:HlaeObsTools.ViewModels"
@@ -32,6 +32,11 @@
                             <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" Margin="0,8,0,0" VerticalAlignment="Center">
                                 <ToggleSwitch IsChecked="{Binding IsXrayEnabled, Mode=TwoWay}" Content="Show Xray" Foreground="#E6E6E6" hotkeys:HotkeyTarget.Path="IsXrayEnabled" Margin="0,0,10,0" />
                                 <ToggleSwitch IsChecked="{Binding UseAltPlayerBinds, Mode=TwoWay}" Content="Use alt player binds" hotkeys:HotkeyTarget.Path="UseAltPlayerBinds" Foreground="#E6E6E6" />
+                            </WrapPanel>
+                            <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="Player filters" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding PlayerFiltersSummary}" VerticalAlignment="Center" Foreground="#AAAAAA" />
+                                <Button Content="Configure" Click="OpenPlayerFilters_Click" ToolTip.Tip="{Binding PlayerFiltersSyncStatus}" />
                             </WrapPanel>
                             <ToggleSwitch IsChecked="{Binding DisableFocusInputGate, Mode=TwoWay}" Content="Disable Focus Input-Gate" hotkeys:HotkeyTarget.Path="DisableFocusInputGate" Foreground="#E6E6E6" />
                             <Button Content="DemoUI" Command="{Binding ToggleDemouiCommand}" />

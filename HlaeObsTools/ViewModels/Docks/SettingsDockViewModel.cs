@@ -200,6 +200,9 @@ namespace HlaeObsTools.ViewModels.Docks
             // Initialize network fields
             var settings = storedSettings ?? new AppSettingsData();
             _storedSettings = settings;
+            _playerFilters = (settings.PlayerFilters ?? new()).Where(r => r != null &&
+                !string.IsNullOrWhiteSpace(r.Name) && !r.Name.Contains('\0') && (r.Match == "exact" || r.Match == "contains")).ToArray();
+            _gsiServer?.ConfigurePlayerFilters(_playerFilters);
             _showHlaeCampathControls = settings.ShowHlaeCampathControls;
             if (Enum.TryParse<CampathEditorMode>(
                     settings.DefaultCampathInterp, ignoreCase: true, out var defaultCampathInterp))
@@ -1224,11 +1227,13 @@ namespace HlaeObsTools.ViewModels.Docks
 
         private void OnWebSocketDisconnected(object? sender, EventArgs e)
         {
+            Dispatcher.UIThread.Post(() => PlayerFiltersSyncStatus = "HLAE sync pending (disconnected)");
             RefreshNetworkHealth();
         }
 
         private void OnWebSocketMessage(object? sender, string message)
         {
+            HandlePlayerFiltersResult(message);
             if (!_awaitingCurtime)
                 return;
 
@@ -1259,6 +1264,67 @@ namespace HlaeObsTools.ViewModels.Docks
             }
         }
 
+        private PlayerFilterRule[] _playerFilters = Array.Empty<PlayerFilterRule>();
+        private long _playerFiltersRevision;
+        private string _playerFiltersSyncStatus = "HLAE sync pending (disconnected)";
+        public string PlayerFiltersSyncStatus
+        {
+            get => _playerFiltersSyncStatus;
+            private set => SetProperty(ref _playerFiltersSyncStatus, value);
+        }
+        public IReadOnlyList<PlayerFilterRule> PlayerFilters => _playerFilters;
+        public string PlayerFiltersSummary => $"{_playerFilters.Length} custom rule{(_playerFilters.Length == 1 ? "" : "s")}";
+        public string[] GetPlayerFilterRoster() => _gsiServer?.GetUnfilteredPlayerNames() ?? Array.Empty<string>();
+
+        public void SavePlayerFilters(IEnumerable<PlayerFilterRule> rules)
+        {
+            _playerFilters = rules.ToArray();
+            _settingsStorage.Update(data => data.PlayerFilters = _playerFilters.ToList());
+            _gsiServer?.ConfigurePlayerFilters(_playerFilters);
+            OnPropertyChanged(nameof(PlayerFiltersSummary));
+            SendPlayerFilters();
+        }
+
+        private void SendPlayerFilters()
+        {
+            var revision = Interlocked.Increment(ref _playerFiltersRevision);
+            var connected = _ws?.IsConnected == true;
+            Dispatcher.UIThread.Post(() => PlayerFiltersSyncStatus = connected
+                ? "HLAE sync pending" : "HLAE sync pending (disconnected)");
+            if (!connected) return;
+            _ = _ws!.SendCommandAsync("player_filters", new
+            {
+                revision,
+                rules = _playerFilters.Select(r => new { name = r.Name, match = r.Match }).ToArray()
+            });
+        }
+
+        private void HandlePlayerFiltersResult(string message)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(message);
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object ||
+                    !root.TryGetProperty("command", out var command) || command.ValueKind != JsonValueKind.String ||
+                    command.GetString() != "player_filters") return;
+                if (!root.TryGetProperty("revision", out var rev))
+                {
+                    Dispatcher.UIThread.Post(() => PlayerFiltersSyncStatus = "Player filters require an updated HLAE fork");
+                    return;
+                }
+                if (rev.ValueKind != JsonValueKind.Number || !rev.TryGetInt64(out var revision) ||
+                    revision != Interlocked.Read(ref _playerFiltersRevision)) return;
+                var ok = root.TryGetProperty("ok", out var result) && result.ValueKind == JsonValueKind.True;
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (revision == Interlocked.Read(ref _playerFiltersRevision) && _ws?.IsConnected == true)
+                        PlayerFiltersSyncStatus = ok ? "HLAE synchronized" : "HLAE could not apply filters";
+                });
+            }
+            catch (JsonException) { }
+        }
+
         private void SendAltPlayerBindsMode()
         {
             if (_ws == null) return;
@@ -1268,6 +1334,7 @@ namespace HlaeObsTools.ViewModels.Docks
         private void ApplyConnectedWebSocketState()
         {
             SendAltPlayerBindsMode();
+            SendPlayerFilters();
             _ = SendAllFreecamConfigAsync();
             RefreshNetworkHealth();
         }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -94,6 +95,68 @@ public sealed class GsiServer : IDisposable
         "Host",
         "Content-Length"
     };
+
+    private readonly object _stateLock = new();
+    private PlayerFilterRule[] _playerFilters = Array.Empty<PlayerFilterRule>();
+    private string? _lastBody;
+    private string[] _unfilteredPlayerNames = Array.Empty<string>();
+
+    public string[] GetUnfilteredPlayerNames() => Volatile.Read(ref _unfilteredPlayerNames);
+
+    public void ConfigurePlayerFilters(IEnumerable<PlayerFilterRule> rules)
+    {
+        lock (_stateLock)
+        {
+            _playerFilters = rules.ToArray();
+            // Rebuild from the original document so removing a rule restores players immediately.
+            if (_lastBody != null)
+                PublishState(_lastBody, Interlocked.Increment(ref _heartbeat));
+        }
+    }
+
+    private string PublishState(string body, long heartbeat)
+    {
+        var document = JsonNode.Parse(body) as JsonObject;
+        if (document == null) return body;
+        var excludedIds = new HashSet<string>(StringComparer.Ordinal);
+        if (document["allplayers"] is JsonObject players)
+        {
+            Volatile.Write(ref _unfilteredPlayerNames, players.Select(p =>
+                p.Value?["name"]?.GetValue<string>() ?? string.Empty).Where(n => n.Length > 0)
+                .Distinct(StringComparer.Ordinal).OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToArray());
+            foreach (var player in players.ToArray())
+            {
+                var name = player.Value?["name"]?.GetValue<string>() ?? string.Empty;
+                if (IsCoachName(name) || _playerFilters.Any(rule => rule.Matches(name)))
+                {
+                    excludedIds.Add(player.Key);
+                    players.Remove(player.Key);
+                }
+            }
+        }
+        else
+        {
+            Volatile.Write(ref _unfilteredPlayerNames, Array.Empty<string>());
+        }
+        if (document["player"] is JsonObject focused &&
+            ((focused["steamid"] is JsonValue id && excludedIds.Contains(id.GetValue<string>())) ||
+             (focused["name"] is JsonValue focusedName && (IsCoachName(focusedName.GetValue<string>()) ||
+                _playerFilters.Any(rule => rule.Matches(focusedName.GetValue<string>()))))))
+        {
+            // Preserve activity (used for connection health), without exposing an excluded focus.
+            document["player"] = new JsonObject { ["activity"] = focused["activity"]?.DeepClone() };
+        }
+        var filteredBody = document.ToJsonString();
+        var state = ParseState(filteredBody, heartbeat);
+        if (state != null)
+        {
+            _lastBody = body;
+            state = ApplyDroppedDefuserTracking(state);
+            GameStateUpdated?.Invoke(this, state);
+            return state.RawJson;
+        }
+        return filteredBody;
+    }
 
     public event EventHandler<GsiGameState>? GameStateUpdated;
 
@@ -373,14 +436,11 @@ public sealed class GsiServer : IDisposable
             Interlocked.Exchange(ref _lastRequestUtcTicks, DateTime.UtcNow.Ticks);
 
             var currentHeartbeat = Interlocked.Increment(ref _heartbeat);
-            var state = ParseState(body, currentHeartbeat);
-            if (state != null)
-            {
-                state = ApplyDroppedDefuserTracking(state);
-                GameStateUpdated?.Invoke(this, state);
-            }
+            string filteredBody;
+            lock (_stateLock)
+                filteredBody = PublishState(body, currentHeartbeat);
 
-            var relayBody = RelayPayloadTransformer?.Invoke(body) ?? body;
+            var relayBody = RelayPayloadTransformer?.Invoke(filteredBody) ?? filteredBody;
             RelayPayload(new RelayEnvelope
             {
                 RawBody = Encoding.UTF8.GetBytes(relayBody),
@@ -723,10 +783,6 @@ public sealed class GsiServer : IDisposable
                     var playerElem = playerProp.Value;
                     string team = playerElem.TryGetProperty("team", out var teamElem) ? teamElem.GetString() ?? string.Empty : string.Empty;
                     string pname = playerElem.TryGetProperty("name", out var pnameElem) ? pnameElem.GetString() ?? string.Empty : string.Empty;
-                    if (IsCoachName(pname))
-                    {
-                        continue;
-                    }
                     string steamId = playerProp.Name;
                     var pos = playerElem.TryGetProperty("position", out var posElem) ? Vec3.Parse(posElem.GetString()) : default;
                     var forward = playerElem.TryGetProperty("forward", out var fwdElem) ? Vec3.Parse(fwdElem.GetString()) : default;
@@ -904,10 +960,14 @@ public sealed class GsiServer : IDisposable
             }
 
             NormalizeObserverSlots(players);
+            // Graphics and relay consumers must see the same filtered slot numbers as HOT.
+            var output = JsonNode.Parse(body)!;
+            foreach (var player in players)
+                output["allplayers"]![player.SteamId]!["observer_slot"] = player.Slot;
 
             return new GsiGameState
             {
-                RawJson = body,
+                RawJson = output.ToJsonString(),
                 PlayerActivity = playerActivity,
                 HasAllPlayers = root.TryGetProperty("allplayers", out _),
                 MapName = mapName,
@@ -940,13 +1000,20 @@ public sealed class GsiServer : IDisposable
             (string.Equals(p.Team, "CT", StringComparison.OrdinalIgnoreCase) && p.Slot >= 5) ||
             (string.Equals(p.Team, "T", StringComparison.OrdinalIgnoreCase) && p.Slot >= 0 && p.Slot < 5)) ||
             HasDuplicateSlots(players, "CT") ||
-            HasDuplicateSlots(players, "T");
+            HasDuplicateSlots(players, "T") || HasSlotGaps(players, "CT", 0) || HasSlotGaps(players, "T", 5);
 
         if (!needsNormalize)
             return;
 
         NormalizeTeamSlots(players, "CT", 0);
         NormalizeTeamSlots(players, "T", 5);
+    }
+
+    private static bool HasSlotGaps(List<GsiPlayer> players, string team, int offset)
+    {
+        var slots = players.Where(p => string.Equals(p.Team, team, StringComparison.OrdinalIgnoreCase))
+            .Select(p => p.Slot).OrderBy(slot => slot).ToArray();
+        return !slots.SequenceEqual(Enumerable.Range(offset, slots.Length));
     }
 
     private static void NormalizeTeamSlots(List<GsiPlayer> players, string team, int slotOffset)

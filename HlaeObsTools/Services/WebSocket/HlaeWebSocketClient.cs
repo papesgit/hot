@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -13,6 +14,7 @@ namespace HlaeObsTools.Services.WebSocket;
 /// </summary>
 public class HlaeWebSocketClient : IDisposable
 {
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
     private string _serverAddress;
     private int _serverPort;
     private ClientWebSocket? _webSocket;
@@ -162,8 +164,10 @@ public class HlaeWebSocketClient : IDisposable
         if (!IsConnected || _webSocket == null)
             return;
 
+        await _sendLock.WaitAsync();
         try
         {
+            if (!IsConnected || _webSocket == null) return;
             var json = JsonSerializer.Serialize(obj);
             var bytes = Encoding.UTF8.GetBytes(json);
             var segment = new ArraySegment<byte>(bytes);
@@ -175,11 +179,13 @@ public class HlaeWebSocketClient : IDisposable
             Console.WriteLine($"WebSocket send error: {ex.Message}");
             ErrorOccurred?.Invoke(this, ex);
         }
+        finally { _sendLock.Release(); }
     }
 
     private async Task ReceiveLoop(CancellationToken cancellationToken)
     {
         var buffer = new byte[4096];
+        using var messageBuffer = new MemoryStream();
 
         try
         {
@@ -197,8 +203,13 @@ public class HlaeWebSocketClient : IDisposable
 
                 if (result.MessageType == WebSocketMessageType.Text)
                 {
-                    var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    MessageReceived?.Invoke(this, message);
+                    messageBuffer.Write(buffer, 0, result.Count);
+                    if (result.EndOfMessage)
+                    {
+                        var message = Encoding.UTF8.GetString(messageBuffer.GetBuffer(), 0, (int)messageBuffer.Length);
+                        messageBuffer.SetLength(0);
+                        MessageReceived?.Invoke(this, message);
+                    }
                 }
             }
         }
