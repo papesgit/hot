@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -33,7 +33,8 @@ using HlaeObsTools.ViewModels.Cues;
 using SkiaSharp;
 using Svg.Skia;
 using ValveResourceFormat;
-using SteamDatabase.ValvePak;
+using ValveResourceFormat.CompiledShader;
+using ValvePak;
 using ValveResourceFormat.IO;
 using ValveResourceFormat.Renderer;
 using ValveResourceFormat.Renderer.Materials;
@@ -42,6 +43,7 @@ using ValveResourceFormat.Renderer.Utils;
 using ValveResourceFormat.Renderer.World;
 using ValveResourceFormat.ResourceTypes;
 using ValveResourceFormat.ResourceTypes.ModelAnimation;
+using Color32 = ValveResourceFormat.Utils.Color32;
 
 namespace HlaeObsTools.Controls;
 
@@ -145,6 +147,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     private int _renderHeight;
 
     private RendererContext? _rendererContext;
+    private GraphicsContext? _graphicsContext;
     private Renderer? _renderer;
     private CampathDofSettings _campathDofSettings = CampathDofSettings.Default;
     private TextRenderer? _textRenderer;
@@ -1430,7 +1433,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         if (!TryGetRay(position, out var rayOrigin, out var rayDir))
             return false;
 
-        var trace = _renderer.Scene.PhysicsWorld.TraceRay(rayOrigin, rayOrigin + rayDir * 10000f);
+        // The decal filter hits surfaces and pass-bullet geometry, excluding sky and clip volumes.
+        var trace = _renderer.Scene.PhysicsWorld.TraceRay(rayOrigin, rayOrigin + rayDir * 10000f, "decal");
         if (!trace.Hit)
             return false;
 
@@ -1616,7 +1620,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         if (_externalCameraActive)
         {
             var fovRad = GetSourceVerticalFovRadians(_externalCameraFov);
-            _rendererContext.FieldOfView = RadToDeg(fovRad);
+            SetCameraVerticalFov(RadToDeg(fovRad));
             _renderer.Camera.SetViewportSize(width, height);
             var forward = GetForwardFromQuat(_externalCameraRotation);
             var up = GetUpFromQuat(_externalCameraRotation);
@@ -1626,7 +1630,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         {
             var output = _freecamOutput;
             var fovRad = GetSourceVerticalFovRadians(output.Fov);
-            _rendererContext.FieldOfView = RadToDeg(fovRad);
+            SetCameraVerticalFov(RadToDeg(fovRad));
             _renderer.Camera.SetViewportSize(width, height);
             var forward = GetForwardFromQuat(output.Orientation);
             var up = GetUpFromQuat(output.Orientation);
@@ -1634,7 +1638,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
         else
         {
-            _rendererContext.FieldOfView = 60f;
+            SetCameraVerticalFov(60f);
             _renderer.Camera.SetViewportSize(width, height);
             var target = GetActiveOrbitTarget();
             var cameraPos = GetCameraPosition();
@@ -1647,6 +1651,16 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 DegToRad(yawDeg),
                 DegToRad(rollDeg));
         }
+    }
+
+    private void SetCameraVerticalFov(float verticalDegrees)
+    {
+        if (_renderer == null || _rendererContext == null)
+            return;
+
+        _rendererContext.FieldOfView = verticalDegrees;
+        // VRF cameras now store horizontal FOV at 4:3; viewport overlays still use vertical FOV.
+        _renderer.Camera.FieldOfView = RadToDeg(2f * MathF.Atan(MathF.Tan(DegToRad(verticalDegrees) * 0.5f) * (4f / 3f)));
     }
 
     private void UpdateFreecam(float deltaTime)
@@ -2826,7 +2840,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         return _inputSender.TryGetAnalogState(out var enabled, out analogLX, out analogLY, out analogRY, out analogRX) && enabled;
     }
 
-    private bool TryGetWalkPhysics(out Rubikon physics)
+    private bool TryGetWalkPhysics(out PhysicsWorld physics)
     {
         var physicsWorld = _renderer?.Scene?.PhysicsWorld;
         if (physicsWorld == null)
@@ -2851,16 +2865,14 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         return MathF.Max(0f, GetWalkHalfHeight(crouchAmount) - _freecamConfig.WalkCameraTopInset);
     }
 
-    private bool TryTraceWalkHullMove(Rubikon physics, Vector3 from, Vector3 to, float halfHeight, out Rubikon.TraceResult trace)
+    private bool TryTraceWalkHullMove(PhysicsWorld physics, Vector3 from, Vector3 to, float halfHeight, out Rubikon.TraceResult trace)
     {
-        var aabb = new AABB(
-            new Vector3(-_freecamConfig.WalkHullRadius, -_freecamConfig.WalkHullRadius, -halfHeight),
-            new Vector3(_freecamConfig.WalkHullRadius, _freecamConfig.WalkHullRadius, halfHeight));
-        trace = physics.TraceAABB(from, to, aabb, "player");
+        var halfExtents = new Vector3(_freecamConfig.WalkHullRadius, _freecamConfig.WalkHullRadius, halfHeight);
+        trace = physics.TraceAABB(from, to, halfExtents, "player");
         return true;
     }
 
-    private bool ProbeWalkGround(Rubikon physics, Vector3 from, float probeDistance, float halfHeight, out Rubikon.TraceResult trace)
+    private bool ProbeWalkGround(PhysicsWorld physics, Vector3 from, float probeDistance, float halfHeight, out Rubikon.TraceResult trace)
     {
         return TryTraceWalkHullMove(physics, from, from - new Vector3(0f, 0f, probeDistance), halfHeight, out trace);
     }
@@ -2873,7 +2885,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             : fallback;
     }
 
-    private bool TryWalkHorizontalMove(Rubikon physics, Vector3 from, Vector3 delta, bool allowStep, float halfHeight, out Vector3 result)
+    private bool TryWalkHorizontalMove(PhysicsWorld physics, Vector3 from, Vector3 delta, bool allowStep, float halfHeight, out Vector3 result)
     {
         var directTo = from + delta;
         TryTraceWalkHullMove(physics, from, directTo, halfHeight, out var directTrace);
@@ -3298,45 +3310,58 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
     {
         LogMessage("DisposeRenderer");
         _rendererReady = false;
-        ClearLiveLinkNodes();
-        _textRenderer = null;
-        _renderer?.Dispose();
-        _renderer = null;
-        _rendererContext?.Dispose();
-        _rendererContext = null;
-        _fileLoader?.Dispose();
-        _fileLoader = null;
-        _mapPackage?.Dispose();
-        _mapPackage = null;
-        if (_mainFramebuffer != null && _mainFramebuffer != _defaultFramebuffer)
-        {
-            _mainFramebuffer.Delete();
-        }
-        _mainFramebuffer = null;
-        _defaultFramebuffer = null;
-        DisableFreecam();
-        _mapHasExternalReferences = false;
 
         lock (_nativeWindowLock)
         {
-            if (_nativeWindow != null)
+            var nativeWindow = _nativeWindow;
+            var graphicsContext = _graphicsContext;
+            try
             {
-                try
+                nativeWindow?.Context.MakeCurrent();
+                graphicsContext?.Begin();
+
+                ClearLiveLinkNodes();
+                _textRenderer = null;
+                _renderer?.Dispose();
+                _renderer = null;
+                _rendererContext?.Dispose();
+                _rendererContext = null;
+                _fileLoader?.Dispose();
+                _fileLoader = null;
+                _mapPackage?.Dispose();
+                _mapPackage = null;
+                if (_mainFramebuffer != null && _mainFramebuffer != _defaultFramebuffer)
                 {
-                    _nativeWindow.Context.MakeCurrent();
-                    DisposePinResources();
-                    DisposeLiveLinkIconResources();
-                    DisposeCampathOverlayResources();
-                    DisposeGizmoResources();
+                    _mainFramebuffer.Delete();
                 }
-                catch (Exception ex)
+                _mainFramebuffer = null;
+                _defaultFramebuffer = null;
+                DisableFreecam();
+                _mapHasExternalReferences = false;
+
+                if (nativeWindow != null)
                 {
-                    LogMessage($"DisposePinResources failed: {ex.GetType().Name}: {ex.Message}");
+                    try
+                    {
+                        DisposePinResources();
+                        DisposeLiveLinkIconResources();
+                        DisposeCampathOverlayResources();
+                        DisposeGizmoResources();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage($"DisposePinResources failed: {ex.GetType().Name}: {ex.Message}");
+                    }
                 }
-                _nativeWindow.Context.MakeNoneCurrent();
-                if (disposeWindow)
+            }
+            finally
+            {
+                graphicsContext?.End();
+                _graphicsContext = null;
+                nativeWindow?.Context.MakeNoneCurrent();
+                if (disposeWindow && nativeWindow != null)
                 {
-                    _nativeWindow.Dispose();
+                    nativeWindow.Dispose();
                     _nativeWindow = null;
                 }
             }
@@ -3975,9 +4000,9 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _renderer.ShowTranslucent = !_skipTranslucentEnabledCached;
 
         ApplyRenderModeToScene(_renderer.Scene, effectiveRenderMode);
-        if (_renderer.SkyboxScene != null)
+        foreach (var scene in _renderer.Scenes.Skip(1))
         {
-            ApplyRenderModeToScene(_renderer.SkyboxScene, effectiveRenderMode);
+            ApplyRenderModeToScene(scene, effectiveRenderMode);
         }
 
         if (_renderer.ViewBuffer?.Data != null)
@@ -4184,9 +4209,31 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             return;
         }
 
+        if (TryTakeMapLoadRequest(out var pendingMapPath, out var mapGeneration))
+        {
+            if (!string.IsNullOrWhiteSpace(pendingMapPath))
+            {
+                try
+                {
+                    LoadMap(pendingMapPath, mapGeneration);
+                }
+                catch (Exception ex)
+                {
+                    LogMessage($"LoadMap failed: {ex}");
+                    FailMapLoad(mapGeneration, pendingMapPath, ex.Message);
+                }
+            }
+            else
+            {
+                DisposeRenderer(disposeWindow: false);
+            }
+            return;
+        }
+
         try
         {
             nativeWindow.Context.MakeCurrent();
+            _graphicsContext?.Begin();
         }
         catch (Exception ex)
         {
@@ -4196,28 +4243,6 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
         try
         {
-            if (TryTakeMapLoadRequest(out var pendingMapPath, out var mapGeneration))
-            {
-                if (!string.IsNullOrWhiteSpace(pendingMapPath))
-                {
-                    try
-                    {
-                        LoadMap(pendingMapPath, mapGeneration);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogMessage($"LoadMap failed: {ex}");
-                        FailMapLoad(mapGeneration, pendingMapPath, ex.Message);
-                    }
-                    return;
-                }
-                else
-                {
-                    DisposeRenderer(disposeWindow: false);
-                    return;
-                }
-            }
-
             if (!_rendererReady || _renderer == null || _mainFramebuffer == null || _defaultFramebuffer == null)
             {
                 if (_renderWidth > 0 && _renderHeight > 0)
@@ -4323,6 +4348,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
         finally
         {
+            _graphicsContext?.End();
             nativeWindow.Context.MakeNoneCurrent();
         }
     }
@@ -4383,6 +4409,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             }
 
             _rendererContext = new RendererContext(_fileLoader, NullLogger.Instance);
+            _graphicsContext = _rendererContext.Device.CreateContext();
+            _graphicsContext.Begin();
             _rendererContext.MaxTextureSize = _maxTextureSizeCached;
             _renderer = new Renderer(_rendererContext);
             _renderer.ShadowTextureSize = _shadowTextureSizeCached;
@@ -4416,11 +4444,15 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
                 Math.Max(1, _renderWidth),
                 Math.Max(1, _renderHeight),
                 1,
-                new Framebuffer.AttachmentFormat(PixelInternalFormat.Rgba16f, GLPixelFormat.Rgba, PixelType.HalfFloat),
-                Framebuffer.DepthAttachmentFormat.Depth32FStencil8);
-            var status = _mainFramebuffer.Initialize();
-            if (status != FramebufferErrorCode.FramebufferComplete)
+                ImageFormat.RGBA16161616F,
+                ImageFormat.D32FS8);
+            try
             {
+                _mainFramebuffer.Initialize();
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogMessage($"Main framebuffer initialization failed: {ex.Message}");
                 _mainFramebuffer.Delete();
                 _mainFramebuffer = _defaultFramebuffer;
             }
@@ -4446,10 +4478,13 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             }
 
             _mapHasExternalReferences = worldResource.ExternalReferences != null;
-            var worldLoader = new WorldLoader(world, _renderer.Scene);
+            _renderer.EntitySystem.Enabled = false;
+            var worldLoader = new WorldLoader(world, _renderer.Scene, _renderer.EntitySystem);
             worldLoader.Load(worldResource.ExternalReferences);
-            _renderer.SkyboxScene = worldLoader.SkyboxScene;
-            _renderer.Skybox2D = worldLoader.Skybox2D;
+            foreach (var spawnGroup in worldLoader.SpawnGroups)
+            {
+                _renderer.AddSpawnGroup(spawnGroup);
+            }
 
             PostSceneLoad(worldLoader.DefaultEnabledLayers);
             if (!IsLatestMapLoadRequest(generation))
@@ -4468,6 +4503,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         }
         finally
         {
+            _graphicsContext?.End();
             var nativeWindow = _nativeWindow;
             if (nativeWindow != null)
             {
@@ -4822,7 +4858,8 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
             var node = new ModelSceneNode(_renderer.Scene, model, isWorldPreview: true, skipAnimations: true)
             {
-                LayerName = "HLAE LiveLink",
+                // Map layer selection must not hide models supplied by the LiveLink receiver.
+                LayerName = "Internal - HLAE LiveLink",
                 Name = modelName
             };
             node.SetRenderMode(GetEffectiveRenderMode());
@@ -4892,7 +4929,10 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         _renderer.Scene.EnableOcclusionCulling = _mapHasExternalReferences;
         _renderer.Scene.FogEnabled = false;
         _renderer.Scene.Initialize();
-        _renderer.SkyboxScene?.Initialize();
+        foreach (var scene in _renderer.Scenes.Skip(1))
+        {
+            scene.Initialize();
+        }
 
         if (_renderer.Scene.FogInfo.CubeFogActive)
         {
@@ -5386,7 +5426,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
             attacker ? new SKRect(62, 89, 124, 107) : new SKRect(76, 82, 110, 116));
         canvas.Flush();
         var texture = MaterialLoader.LoadBitmapTexture(bitmap);
-        texture.SetWrapMode(TextureWrapMode.ClampToEdge);
+        texture.SetWrapMode(RsTextureAddressMode.Clamp);
         texture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         _cueTextures[key] = new CueTextureEntry(step, signature, texture);
         return texture;
@@ -5409,7 +5449,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
         canvas.DrawText(label, 64, 77, SKTextAlign.Center, font, textPaint);
         canvas.Flush();
         var texture = MaterialLoader.LoadBitmapTexture(bitmap);
-        texture.SetWrapMode(TextureWrapMode.ClampToEdge);
+        texture.SetWrapMode(RsTextureAddressMode.Clamp);
         texture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
         _cueTextures[key] = new CueTextureEntry(-1, label, texture);
         return texture;
@@ -5482,7 +5522,7 @@ public sealed class VRFViewport : NativeControlHost, IViewport3DControl
 
             using var bitmap = RasterizeSvg(svg, 128);
             var texture = MaterialLoader.LoadBitmapTexture(bitmap);
-            texture.SetWrapMode(TextureWrapMode.ClampToEdge);
+            texture.SetWrapMode(RsTextureAddressMode.Clamp);
             texture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
             _liveLinkIconTextures[iconKey] = texture;
             return texture;
