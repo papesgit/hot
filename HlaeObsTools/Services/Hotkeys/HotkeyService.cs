@@ -1135,7 +1135,7 @@ public sealed class HotkeyService
         if (!string.Equals(action, "execute", StringComparison.OrdinalIgnoreCase))
             return false;
 
-        if (page < 0 || index < 0 || targetSlot < 0 || targetSlot > 9)
+        if (page < 0 || index < 0 || targetSlot < 0 || targetSlot > SettingsDockViewModel.CurrentAttachPresetSlot)
             return false;
 
         var presetName = button.DataContext switch
@@ -1148,7 +1148,9 @@ public sealed class HotkeyService
         presetPage = page;
         presetIndex = index;
         slot = targetSlot;
-        displayName = $"[Page {page + 1}] Attach {presetName} -> Slot {GetSlotLabel(targetSlot)}";
+        var targetLabel = targetSlot == SettingsDockViewModel.CurrentAttachPresetSlot
+            ? "Current player" : $"Slot {GetSlotLabel(targetSlot)}";
+        displayName = $"[Page {page + 1}] Attach {presetName} -> {targetLabel}";
         return true;
     }
 

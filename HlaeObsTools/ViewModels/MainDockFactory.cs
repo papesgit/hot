@@ -377,7 +377,9 @@ public class MainDockFactory : Factory, IDisposable
         var hudSettings = new HudSettings
         {
             UseAltPlayerBinds = _storedSettings.UseAltPlayerBinds,
-            HudSize = _storedSettings.HudSize
+            HudSize = _storedSettings.HudSize,
+            ShowKillfeed = _storedSettings.ShowKillfeed,
+            ShowKillfeedAttackerSlot = _storedSettings.ShowKillfeedAttackerSlot
         };
         hudSettings.ActiveAttachPresetPage = _storedSettings.ActiveAttachPresetPage;
         hudSettings.ApplyAttachPresetPages(_storedSettings.AttachPresetPages, _storedSettings.AttachPresets);

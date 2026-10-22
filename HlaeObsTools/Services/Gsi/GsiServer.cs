@@ -99,6 +99,18 @@ public sealed class GsiServer : IDisposable
     private readonly object _stateLock = new();
     private PlayerFilterRule[] _playerFilters = Array.Empty<PlayerFilterRule>();
     private string? _lastBody;
+    private GsiGameState? _latestState;
+
+    public int? GetFocusedPlayerSlot()
+    {
+        var state = Volatile.Read(ref _latestState);
+        if (state == null || string.IsNullOrEmpty(state.FocusedPlayerSteamId) ||
+            string.Equals(state.PlayerActivity, "menu", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var player = state.Players.FirstOrDefault(p => p.SteamId == state.FocusedPlayerSteamId);
+        return player?.Slot is >= 0 and <= 9 ? player.Slot : null;
+    }
+
     private string[] _unfilteredPlayerNames = Array.Empty<string>();
 
     public string[] GetUnfilteredPlayerNames() => Volatile.Read(ref _unfilteredPlayerNames);
@@ -152,6 +164,7 @@ public sealed class GsiServer : IDisposable
         {
             _lastBody = body;
             state = ApplyDroppedDefuserTracking(state);
+            Volatile.Write(ref _latestState, state);
             GameStateUpdated?.Invoke(this, state);
             return state.RawJson;
         }

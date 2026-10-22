@@ -839,6 +839,14 @@
                                                                     hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
                                                                     hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
                                                                     hotkeys:HotkeyTarget.AttachSlot="9"/>
+                                                            <Button Content="C"
+                                                                    ToolTip.Tip="Execute preset on the currently spectated player"
+                                                                    Command="{Binding DataContext.ExecuteAttachPresetCurrentCommand, ElementName=Root}"
+                                                                    CommandParameter="{Binding}"
+                                                                    hotkeys:HotkeyTarget.AttachAction="execute"
+                                                                    hotkeys:HotkeyTarget.AttachPresetIndex="{Binding PresetIndex}"
+                                                                    hotkeys:HotkeyTarget.AttachPresetPage="{Binding DataContext.ActiveAttachPresetPage, ElementName=Root}"
+                                                                    hotkeys:HotkeyTarget.AttachSlot="10"/>
                                                 </WrapPanel>
                                                 <TextBlock Text="Preset Name" Foreground="#AAAAAA" FontSize="12"/>
                                                 <TextBox MinWidth="80" MaxWidth="300"

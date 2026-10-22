@@ -141,6 +141,8 @@ public class AppSettingsData
     public double MarkerScale { get; set; } = 1.0;
     public double HeightScaleMultiplier { get; set; } = 1.0;
     public double HudSize { get; set; } = 1.0;
+    public bool ShowKillfeed { get; set; } = true;
+    public bool ShowKillfeedAttackerSlot { get; set; } = true;
     public List<HlaeObsTools.Services.Gsi.PlayerFilterRule> PlayerFilters { get; set; } = new();
     public bool UseAltPlayerBinds { get; set; } = false;
     public bool DisplayNumbersTopmost { get; set; } = true;

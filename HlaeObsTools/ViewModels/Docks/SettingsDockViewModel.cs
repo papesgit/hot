@@ -150,6 +150,9 @@ namespace HlaeObsTools.ViewModels.Docks
         private readonly ICommand _executeAttachPresetSlot8Command;
         private readonly ICommand _executeAttachPresetSlot9Command;
         private readonly ICommand _executeAttachPresetSlot0Command;
+        private readonly ICommand _executeAttachPresetCurrentCommand;
+        // Stored in TargetAttachSlot so current-player actions use the existing hotkey persistence.
+        public const int CurrentAttachPresetSlot = 10;
         private readonly ICommand _addGsiRelayEndpointCommand;
         private readonly ICommand _removeGsiRelayEndpointCommand;
         private readonly ICommand _refreshVmixStateCommand;
@@ -311,6 +314,7 @@ namespace HlaeObsTools.ViewModels.Docks
             _executeAttachPresetSlot8Command = CreateExecuteAttachPresetSlotCommand(7);
             _executeAttachPresetSlot9Command = CreateExecuteAttachPresetSlotCommand(8);
             _executeAttachPresetSlot0Command = CreateExecuteAttachPresetSlotCommand(9);
+            _executeAttachPresetCurrentCommand = CreateExecuteAttachPresetSlotCommand(CurrentAttachPresetSlot);
 
             foreach (var category in _vmixShortcutCatalog.Categories)
             {
@@ -1395,6 +1399,7 @@ namespace HlaeObsTools.ViewModels.Docks
         public ICommand ExecuteAttachPresetSlot8Command => _executeAttachPresetSlot8Command;
         public ICommand ExecuteAttachPresetSlot9Command => _executeAttachPresetSlot9Command;
         public ICommand ExecuteAttachPresetSlot0Command => _executeAttachPresetSlot0Command;
+        public ICommand ExecuteAttachPresetCurrentCommand => _executeAttachPresetCurrentCommand;
 
         private void LoadAttachPresets()
         {
@@ -1481,8 +1486,7 @@ namespace HlaeObsTools.ViewModels.Docks
             if (presetIndex < 0 || presetIndex >= AttachPresets.Count)
                 return;
 
-            var preset = AttachPresets[presetIndex].ToModel();
-            await _ws.SendCommandAsync("attach_camera", BuildAttachCameraArgs(observerSlot, preset, targetObserverSlot: null));
+            await ExecuteAttachPresetSlotCommandAsync(AttachPresets[presetIndex], observerSlot);
         }
 
         private ICommand CreateExecuteAttachPresetSlotCommand(int observerSlot)
@@ -1496,6 +1500,15 @@ namespace HlaeObsTools.ViewModels.Docks
         {
             if (_ws == null || preset == null)
                 return;
+
+            // Resolve at execution time, including hotkeys, so the target follows spectating changes.
+            if (observerSlot == CurrentAttachPresetSlot)
+            {
+                var currentSlot = _gsiServer?.GetFocusedPlayerSlot();
+                if (!currentSlot.HasValue) return;
+                observerSlot = currentSlot.Value;
+            }
+            if (observerSlot is < 0 or > 9) return;
 
             await _ws.SendCommandAsync("attach_camera", BuildAttachCameraArgs(observerSlot, preset.ToModel(), targetObserverSlot: null));
         }
@@ -2099,6 +2112,8 @@ namespace HlaeObsTools.ViewModels.Docks
                 data.MarkerScale = _radarSettings.MarkerScale;
                 data.HeightScaleMultiplier = _radarSettings.HeightScaleMultiplier;
                 data.HudSize = _hudSettings.HudSize;
+                data.ShowKillfeed = _hudSettings.ShowKillfeed;
+                data.ShowKillfeedAttackerSlot = _hudSettings.ShowKillfeedAttackerSlot;
                 data.UseAltPlayerBinds = _radarSettings.UseAltPlayerBinds;
                 data.DisplayNumbersTopmost = _radarSettings.DisplayNumbersTopmost;
                 data.ShowPlayerNames = _radarSettings.ShowPlayerNames;
